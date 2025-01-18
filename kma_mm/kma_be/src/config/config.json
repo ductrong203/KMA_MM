@@ -1,8 +1,8 @@
 {
   "development": {
     "username": "root",
-    "password": null,
-    "database": "database_development",
+    "password": "trong123",
+    "database": "quan_ly_dao_tao",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
