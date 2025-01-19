@@ -8,7 +8,6 @@ const api = axios.create({
         "Content-Type": "application/json", // Header mặc định
     },
 });
-
 // Thêm interceptor để xử lý request trước khi gửi
 api.interceptors.request.use(
     (config) => {
