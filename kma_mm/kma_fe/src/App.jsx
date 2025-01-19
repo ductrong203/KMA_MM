@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
@@ -8,14 +8,29 @@ import PrivateRoute from "./setPermiss/PrivateRoute";
 import AdminManage from "./components/manage/AdminManage";
 
 const App = () => {
-  const [role, setRole] = useState("");
+  // Lấy role từ localStorage khi khởi động
+  const [role, setRole] = useState(localStorage.getItem("role") || "");
 
+  // Hàm xử lý đăng nhập (set role và lưu vào localStorage)
+  const handleLogin = (role) => {
+    setRole(role);
+    localStorage.setItem("role", role); // Lưu role vào localStorage
+  };
 
   return (
     <Router>
       <Routes>
         {/* Login Route */}
-        <Route path="/login" element={!role ? <Login onLogin={setRole} /> : <Navigate to={`/${role}/dashboard`} />} />
+        <Route
+          path="/login"
+          element={
+            !role ? (
+              <Login onLogin={handleLogin} />
+            ) : (
+              <Navigate to={`/${role}/dashboard`} />
+            )
+          }
+        />
 
         {/* Protected Routes */}
         <Route
@@ -31,7 +46,7 @@ const App = () => {
           path="/admin/manage"
           element={
             <PrivateRoute role={role} allowedRoles={["admin"]}>
-              <AdminManage />  {/* Hiển thị component admin manage */}
+              <AdminManage /> {/* Hiển thị component admin manage */}
             </PrivateRoute>
           }
         />

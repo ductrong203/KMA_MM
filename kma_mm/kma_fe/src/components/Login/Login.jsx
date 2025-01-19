@@ -6,10 +6,12 @@ const Login = ({ onLogin }) => {
 
     const handleLogin = () => {
         if (username === "admin" && password === "1234") {
-            localStorage.setItem("role", "admin")
+            localStorage.setItem("access_token", "abc");
+            localStorage.setItem("role", "admin");
             onLogin("admin");
         } else if (username === "sv123" && password === "123") {
-            localStorage.setItem("role", "sv")
+            localStorage.setItem("access_token", "abc");
+            localStorage.setItem("role", "sv");
             onLogin("sv");
         } else {
             alert("Invalid username or password");
@@ -68,3 +70,4 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
+
