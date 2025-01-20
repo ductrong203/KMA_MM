@@ -96,6 +96,11 @@ const Login = ({ onLogin }) => {
             localStorage.setItem("access_token", "abc");
             localStorage.setItem("role", "sv");
             onLogin("sv");
+        }
+        else if (username === "dt123" && password === "123") {
+            localStorage.setItem("access_token", "abc");
+            localStorage.setItem("role", "training");
+            onLogin("training");
         } else {
             alert("Invalid username or password");
         }

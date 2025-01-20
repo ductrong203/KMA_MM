@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Tab,
-  Tabs,
-  Alert,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Avatar,
-  Card,
-  CardContent,
-  Grid,
-  Divider,
-} from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout';
+/* eslint-disable react/prop-types */
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import GradeIcon from '@mui/icons-material/Grade';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import GradeIcon from '@mui/icons-material/Grade';
+import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import {
+    Alert,
+    AppBar,
+    Avatar,
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    Grid,
+    Paper,
+    Tab,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tabs,
+    TextField,
+    Toolbar,
+    Typography
+} from '@mui/material';
+import { useState } from 'react';
 
 // Mock data
 const mockGrades = [
