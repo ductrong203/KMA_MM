@@ -11,10 +11,10 @@ export const login = async (username, password) => {
 
     // Lưu token và thông tin người dùng vào localStorage
     localStorage.setItem("access_token", access_token);
-    localStorage.setItem("role", data.role === 1 ? "admin" : "sv");
+    localStorage.setItem("role", data.role === 1 ? "training" : "sv");
     localStorage.setItem("username", data.username);
 
-    return data.role === 1 ? "admin" : "sv"; // Trả về role để sử dụng
+    return data.role === 1 ? "training" : "sv"; // Trả về role để sử dụng
 };
 
 // Hàm xử lý đăng ký
