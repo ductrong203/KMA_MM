@@ -12,20 +12,21 @@ const register = (newUser) => {
           message:
             "this username has already exited! Please try another username !",
         });
-      }
-      const hash = Bcrypt.hashSync(password, 10);
+      } else {
+        const hash = Bcrypt.hashSync(password, 10);
 
-      const createdUser = await User.create({
-        username,
-        password: hash,
-        //confirmPassword,
-      });
-      if (createdUser) {
-        resolve({
-          status: "OK",
-          message: "Success!",
-          data: createdUser,
+        const createdUser = await User.create({
+          username,
+          password: hash,
+          //confirmPassword,
         });
+        if (createdUser) {
+          resolve({
+            status: "OK",
+            message: "Success!",
+            data: createdUser,
+          });
+        }
       }
     } catch (e) {
       reject(e);
