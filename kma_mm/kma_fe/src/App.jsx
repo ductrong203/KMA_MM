@@ -7,6 +7,9 @@ import StudentDashboard from "./components/Dashboard/StudentDashboard";
 import PrivateRoute from "./setPermiss/PrivateRoute";
 import AdminManage from "./components/manage/AdminManage";
 
+import TrainingDashboard from "./components/Dashboard/TrainingDashboard";
+
+
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
@@ -58,6 +61,16 @@ const App = () => {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="/training/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["training"]}>
+              <TrainingDashboard />
+            </PrivateRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
