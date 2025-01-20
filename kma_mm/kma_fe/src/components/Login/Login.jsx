@@ -1,9 +1,21 @@
 // import React, { useState } from "react";
+// import {
+//     Container,
+//     TextField,
+//     Button,
+//     Typography,
+//     Box,
+//     Paper,
+//     Grid,
+// } from "@mui/material";
 
 // const Login = ({ onLogin }) => {
+//     const [isLoginMode, setIsLoginMode] = useState(true); // Quản lý chế độ
 //     const [username, setUsername] = useState("");
 //     const [password, setPassword] = useState("");
+//     const [confirmPassword, setConfirmPassword] = useState("");
 
+//     // Xử lý đăng nhập
 //     const handleLogin = () => {
 //         if (username === "admin" && password === "1234") {
 //             localStorage.setItem("access_token", "abc");
@@ -18,58 +30,136 @@
 //         }
 //     };
 
+//     // Xử lý đăng ký
+//     const handleRegister = () => {
+//         if (!username || !password || !confirmPassword) {
+//             alert("Please fill all fields");
+//             return;
+//         }
+//         if (password !== confirmPassword) {
+//             alert("Passwords do not match");
+//             return;
+//         }
+//         alert("Registration successful! You can now log in.");
+//         setIsLoginMode(true); // Chuyển về chế độ đăng nhập sau khi đăng ký thành công
+//     };
+
 //     return (
-//         <div className="flex items-center justify-center min-h-screen bg-gray-100">
-//             <div className="w-full max-w-sm bg-white rounded-lg shadow-lg p-6">
-//                 <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-//                     Login
-//                 </h1>
-//                 <div className="space-y-4">
-//                     <div>
-//                         <label
-//                             htmlFor="username"
-//                             className="block text-sm font-medium text-gray-700"
-//                         >
-//                             Username
-//                         </label>
-//                         <input
-//                             type="text"
-//                             id="username"
-//                             placeholder="Enter your username"
-//                             value={username}
-//                             onChange={(e) => setUsername(e.target.value)}
-//                             className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                         />
-//                     </div>
-//                     <div>
-//                         <label
-//                             htmlFor="password"
-//                             className="block text-sm font-medium text-gray-700"
-//                         >
-//                             Password
-//                         </label>
-//                         <input
-//                             type="password"
-//                             id="password"
-//                             placeholder="Enter your password"
-//                             value={password}
-//                             onChange={(e) => setPassword(e.target.value)}
-//                             className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                         />
-//                     </div>
-//                 </div>
-//                 <button
-//                     onClick={handleLogin}
-//                     className="w-full mt-6 bg-blue-500 text-white py-2 px-4 rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
+//         <Container
+//             maxWidth="sm"
+//             sx={{
+//                 mt: 2,
+//                 display: "flex",
+//                 alignItems: "center",
+//                 justifyContent: "center",
+//                 minHeight: "95vh",
+//                 background:
+//                     "linear-gradient(135deg, rgba(58,123,213,1) 0%, rgba(58,213,158,1) 100%)",
+//                 borderRadius: 2,
+//                 padding: 4,
+//             }}
+//         >
+//             <Paper
+//                 elevation={6}
+//                 sx={{
+//                     p: 4,
+//                     borderRadius: 4,
+//                     boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+//                     width: "100%",
+//                 }}
+//             >
+//                 <Typography
+//                     variant="h4"
+//                     align="center"
+//                     gutterBottom
+//                     sx={{
+//                         fontWeight: "bold",
+//                         color: "primary.main",
+//                         mb: 3,
+//                         textTransform: "uppercase",
+//                     }}
 //                 >
-//                     Login
-//                 </button>
-//             </div>
-//         </div>
+//                     {isLoginMode ? "Welcome Back!" : "Create Account"}
+//                 </Typography>
+//                 <Box
+//                     component="form"
+//                     sx={{
+//                         display: "flex",
+//                         flexDirection: "column",
+//                         "& .MuiTextField-root": { mb: 2 },
+//                     }}
+//                     noValidate
+//                 >
+//                     <TextField
+//                         label="Username"
+//                         variant="outlined"
+//                         fullWidth
+//                         value={username}
+//                         onChange={(e) => setUsername(e.target.value)}
+//                     />
+//                     <TextField
+//                         label="Password"
+//                         type="password"
+//                         variant="outlined"
+//                         fullWidth
+//                         value={password}
+//                         onChange={(e) => setPassword(e.target.value)}
+//                     />
+//                     {!isLoginMode && (
+//                         <TextField
+//                             label="Confirm Password"
+//                             type="password"
+//                             variant="outlined"
+//                             fullWidth
+//                             value={confirmPassword}
+//                             onChange={(e) => setConfirmPassword(e.target.value)}
+//                         />
+//                     )}
+//                     <Button
+//                         variant="contained"
+//                         fullWidth
+//                         onClick={isLoginMode ? handleLogin : handleRegister}
+//                         sx={{
+//                             mt: 2,
+//                             py: 1.5,
+//                             background: "linear-gradient(45deg, #2196F3, #21CBF3)",
+//                             fontWeight: "bold",
+//                             "&:hover": {
+//                                 background: "linear-gradient(45deg, #1976D2, #2196F3)",
+//                             },
+//                         }}
+//                     >
+//                         {isLoginMode ? "Login" : "Register"}
+//                     </Button>
+//                     <Button
+//                         fullWidth
+//                         onClick={() => setIsLoginMode(!isLoginMode)}
+//                         sx={{
+//                             mt: 1,
+//                             py: 1.5,
+//                             color: "primary.main",
+//                             textTransform: "none",
+//                         }}
+//                     >
+//                         {isLoginMode
+//                             ? "Don't have an account? Register"
+//                             : "Already have an account? Login"}
+//                     </Button>
+//                 </Box>
+//             </Paper>
+//         </Container>
 //     );
 // };
 
 // export default Login;
+
+
+
+
+
+
+
+
 
 
 import React, { useState } from "react";
@@ -79,45 +169,106 @@ import {
     Button,
     Typography,
     Box,
-    Grid,
     Paper,
 } from "@mui/material";
-
+import axios from "axios"; // Import Axios để gọi API
+import { login, register } from "../../Api_controller/Service/authService";
 const Login = ({ onLogin }) => {
+    const [isLoginMode, setIsLoginMode] = useState(true); // Quản lý chế độ
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState(""); // Lưu thông báo lỗi
 
-    const handleLogin = () => {
-        if (username === "admin" && password === "1234") {
-            localStorage.setItem("access_token", "abc");
-            localStorage.setItem("role", "admin");
-            onLogin("admin");
-        } else if (username === "sv123" && password === "123") {
-            localStorage.setItem("access_token", "abc");
-            localStorage.setItem("role", "sv");
-            onLogin("sv");
-        } else {
-            alert("Invalid username or password");
+    const handleLogin = async () => {
+        if (!username || !password) {
+            setErrorMessage("Please enter both username and password.");
+            return;
+        }
+
+        try {
+            const role = await login(username, password); // Gọi hàm login từ authService
+            // Cập nhật trạng thái đăng nhập sau khi đăng nhập thành công
+            onLogin(role);
+        } catch (error) {
+            setErrorMessage(error.message || "Failed to login. Please try again.");
+        }
+    };
+
+
+    const handleRegister = async () => {
+        if (!username || !password || !confirmPassword) {
+            setErrorMessage("Please fill all fields.");
+            return;
+        }
+        if (password !== confirmPassword) {
+            setErrorMessage("Passwords do not match.");
+            return;
+        }
+
+        try {
+            const message = await register(username, password, confirmPassword); // Gọi hàm register từ authService
+            alert(message); // Hiển thị thông báo đăng ký thành công
+            setIsLoginMode(true); // Chuyển sang chế độ đăng nhập
+        } catch (error) {
+            setErrorMessage(error.message || "Failed to register. Please try again.");
         }
     };
 
     return (
-        <Container maxWidth="sm" sx={{ mt: 8 }}>
-            <Paper elevation={3} sx={{ p: 4 }}>
+        <Container
+            maxWidth="sm"
+            sx={{
+                mt: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "95vh",
+                background:
+                    "linear-gradient(135deg, rgba(58,123,213,1) 0%, rgba(58,213,158,1) 100%)",
+                borderRadius: 2,
+                padding: 4,
+            }}
+        >
+            <Paper
+                elevation={6}
+                sx={{
+                    p: 4,
+                    borderRadius: 4,
+                    boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+                    width: "100%",
+                }}
+            >
                 <Typography
                     variant="h4"
                     align="center"
                     gutterBottom
-                    sx={{ fontWeight: "bold", color: "primary.main" }}
+                    sx={{
+                        fontWeight: "bold",
+                        color: "primary.main",
+                        mb: 3,
+                        textTransform: "uppercase",
+                    }}
                 >
-                    Login
+                    {isLoginMode ? "Welcome Back!" : "Create Account"}
                 </Typography>
+
+                {errorMessage && (
+                    <Typography
+                        variant="body2"
+                        color="error"
+                        sx={{ mb: 2, textAlign: "center" }}
+                    >
+                        {errorMessage}
+                    </Typography>
+                )}
+
                 <Box
                     component="form"
                     sx={{
-                        "& .MuiTextField-root": { mb: 2 },
                         display: "flex",
                         flexDirection: "column",
+                        "& .MuiTextField-root": { mb: 2 },
                     }}
                     noValidate
                 >
@@ -136,14 +287,45 @@ const Login = ({ onLogin }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
+                    {!isLoginMode && (
+                        <TextField
+                            label="Confirm Password"
+                            type="password"
+                            variant="outlined"
+                            fullWidth
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                    )}
                     <Button
                         variant="contained"
-                        color="primary"
                         fullWidth
-                        onClick={handleLogin}
-                        sx={{ mt: 2 }}
+                        onClick={isLoginMode ? handleLogin : handleRegister}
+                        sx={{
+                            mt: 2,
+                            py: 1.5,
+                            background: "linear-gradient(45deg, #2196F3, #21CBF3)",
+                            fontWeight: "bold",
+                            "&:hover": {
+                                background: "linear-gradient(45deg, #1976D2, #2196F3)",
+                            },
+                        }}
                     >
-                        Login
+                        {isLoginMode ? "Login" : "Register"}
+                    </Button>
+                    <Button
+                        fullWidth
+                        onClick={() => setIsLoginMode(!isLoginMode)}
+                        sx={{
+                            mt: 1,
+                            py: 1.5,
+                            color: "primary.main",
+                            textTransform: "none",
+                        }}
+                    >
+                        {isLoginMode
+                            ? "Don't have an account? Register"
+                            : "Already have an account? Login"}
                     </Button>
                 </Box>
             </Paper>
