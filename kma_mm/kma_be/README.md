@@ -25,3 +25,13 @@ A Node.js-based backend for managing data using Express, MySQL, and Sequelize.
 5. open terminal -> "cd src"
 6. execute migration: "npx sequelize-cli db:migrate"
 7. run : "npm start"
+
+## User role
+
+1. Phòng đào tạo (người thuộc phòng đào tạo và có quyền)
+2. Phòng khảo thí
+3. Phòng quản lý sinh viên
+4. Thư viện
+5. Ban giám đốc
+6. Sinh viên
+7. Admin
