@@ -5,10 +5,15 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import AdminDashboard from "./components/Dashboard/AdminDashboard";
 import StudentDashboard from "./components/Dashboard/StudentDashboard";
 import PrivateRoute from "./setPermiss/PrivateRoute";
-import AdminManage from "./components/manage/AdminManage";
 
+import Layout from "./layout/Layout";
 import TrainingDashboard from "./components/Dashboard/TrainingDashboard";
-
+// Các component chức năng admin
+import AddAccount from "./components/admin/AddAccount";
+import ManageAccounts from "./components/admin/ManageAccounts";
+import AssignRoles from "./components/admin/AssignRoles";
+import ActivityLogs from "./components/admin/ActivityLogs";
+import DeleteAccount from "./components/admin/DeleteAccount";
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
@@ -19,6 +24,12 @@ const App = () => {
     setRole(role);
     localStorage.setItem("role", role); // Lưu role vào localStorage
   };
+
+  const info = {
+    name: "Nguyễn Văn A",
+    id: "T1001"
+  }
+
 
   return (
     <Router>
@@ -40,24 +51,86 @@ const App = () => {
           path="/admin/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["admin"]}>
-              <AdminDashboard />
+              <Layout Info={info} title="Admin Dashboard">
+                <AdminDashboard />
+              </Layout>
+
             </PrivateRoute>
           }
         />
-        {/* Thêm route admin/manage */}
+
+
+        {/* Route thêm tài khoản */}
         <Route
-          path="/admin/manage"
+          path="/admin/add-account"
           element={
             <PrivateRoute role={role} allowedRoles={["admin"]}>
-              <AdminManage /> {/* Hiển thị component admin manage */}
+              <Layout Info={info} title="Admin Dashboard">
+                <AddAccount />
+              </Layout>
+
             </PrivateRoute>
           }
         />
+
+        {/* Route quản lý tài khoản */}
+        <Route
+          path="/admin/manage-accounts"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <ManageAccounts />
+              </Layout>
+
+            </PrivateRoute>
+          }
+        />
+
+        {/* Route phân quyền */}
+        <Route
+          path="/admin/assign-roles"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <AssignRoles />
+              </Layout>
+
+            </PrivateRoute>
+          }
+        />
+
+        {/* Route nhật ký hoạt động */}
+        <Route
+          path="/admin/activity-logs"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <ActivityLogs />
+              </Layout>
+
+            </PrivateRoute>
+          }
+        />
+
+        {/* Route xóa tài khoản */}
+        <Route
+          path="/admin/delete-account"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <DeleteAccount />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="/sv/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["sv"]}>
-              <StudentDashboard />
+              <Layout Info={info} title="HỆ THỐNG QUẢN LÝ SINH VIÊN">
+                <StudentDashboard />
+              </Layout>
             </PrivateRoute>
           }
         />
@@ -66,7 +139,9 @@ const App = () => {
           path="/training/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["training"]}>
-              <TrainingDashboard />
+              <Layout Info={info} title="HỆ QUẢN LÝ ĐÀO TẠO">
+                <TrainingDashboard />
+              </Layout>
             </PrivateRoute>
           }
         />
