@@ -46,3 +46,23 @@ export const register = async (username, password, confirmPassword) => {
 
     return response.data.message || "Registration successful!"; // Trả về thông báo thành công
 };
+
+
+// Hàm xử lý đăng ký
+export const AdminRegister = async (username, password, confirmPassword, role) => {
+    if (!username || !password || !confirmPassword || !role) {
+        throw new Error("Please fill all fields.");
+    }
+    if (password !== confirmPassword) {
+        throw new Error("Passwords do not match.");
+    }
+
+    const response = await api.post("/auth/register", {
+        username,
+        password,
+        confirmPassword,
+        role
+    });
+
+    return response.data.message || "Registration successful!"; // Trả về thông báo thành công
+};

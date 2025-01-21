@@ -5,7 +5,7 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import AdminDashboard from "./components/Dashboard/AdminDashboard";
 import StudentDashboard from "./components/Dashboard/StudentDashboard";
 import PrivateRoute from "./setPermiss/PrivateRoute";
-import AdminManage from "./components/manage/AdminManage";
+
 import Layout from "./layout/Layout";
 import TrainingDashboard from "./components/Dashboard/TrainingDashboard";
 // Các component chức năng admin
@@ -58,17 +58,7 @@ const App = () => {
             </PrivateRoute>
           }
         />
-        <Route
-          path="/admin/manage"
-          element={
-            <PrivateRoute role={role} allowedRoles={["admin"]}>
-              <Layout Info={info} title="Admin Dashboard">
-                <AdminManage /> {/* Hiển thị component admin manage */}
-              </Layout>
 
-            </PrivateRoute>
-          }
-        />
 
         {/* Route thêm tài khoản */}
         <Route
