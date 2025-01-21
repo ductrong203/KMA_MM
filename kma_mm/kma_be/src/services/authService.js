@@ -12,7 +12,7 @@ const register = (newUser) => {
           message:
             "this username has already exited! Please try another username !",
         });
-<<<<<<< HEAD
+
       } else {
         const hash = Bcrypt.hashSync(password, 10);
 
@@ -28,7 +28,7 @@ const register = (newUser) => {
             data: createdUser,
           });
         }
-=======
+
       }
       const hash = Bcrypt.hashSync(password, 10);
 
@@ -43,7 +43,7 @@ const register = (newUser) => {
           message: "Success!",
           data: createdUser,
         });
->>>>>>> d41713428c37de6bbc25a7b7534d832c56d17b25
+
       }
     } catch (e) {
       reject(e);
