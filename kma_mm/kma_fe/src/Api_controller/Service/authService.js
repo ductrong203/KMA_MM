@@ -25,7 +25,7 @@ export const login = async (username, password) => {
     // Lưu token và thông tin người dùng vào localStorage
     localStorage.setItem("access_token", access_token);
     localStorage.setItem("role", roleName);
-    localStorage.setItem("username", data.username);
+    // localStorage.setItem("username", data.username);
     return roleName; // Trả về role để sử dụng
 };
 
