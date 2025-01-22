@@ -46,6 +46,8 @@ import {
     Typography
 } from '@mui/material';
 import React, { useState } from 'react';
+import { createTraining } from "../../Api_controller/Service/trainingService";
+
 // Mock data
 const trainerInfo = {
     name: 'Nguyễn Văn A',
@@ -106,13 +108,14 @@ function TrainingDashboard() {
         setCurrentTab(newValue);
     };
 
-    const handleAddTraining = () => {
+    const handleAddTraining = async () => {
         // Validate code length
         if (newTraining.code.length > 5) {
             alert('Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!');
             return;
         }
         // Add training type logic here
+        await createTraining(newTraining)
         setOpenAddTraining(false);
         setNewTraining({ code: '', name: '', active: true });
     };
