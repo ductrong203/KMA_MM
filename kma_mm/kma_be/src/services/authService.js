@@ -1,3 +1,5 @@
+
+
 const { User } = require("../models");
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
@@ -131,7 +133,6 @@ const getDetailUser = async (id) => {
 const updateUser = async (id, data) => {
   try {
     const checkUser = await User.findOne({ where: { id } });
-
     if (!checkUser) {
       return {
         status: "ERR",
@@ -187,3 +188,7 @@ module.exports = {
   updateUser,
   changePassword,
 };
+
+
+
+
