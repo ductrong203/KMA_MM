@@ -14,6 +14,7 @@ import ManageAccounts from "./components/admin/ManageAccounts";
 import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
+import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
@@ -141,6 +142,17 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["training"]}>
               <Layout Info={info} title="HỆ QUẢN LÝ ĐÀO TẠO">
                 <TrainingDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/examination/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["examination"]}>
+              <Layout Info={info} title="HỆ QUẢN LÝ KHẢO THÍ">
+                <ExamDashboard />
               </Layout>
             </PrivateRoute>
           }
