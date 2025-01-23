@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, Typography, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Button, Pagination, TextField } from '@mui/material';
+import { Table, TableBody, Typography, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Button, Pagination, TextField, MenuItem, Box } from '@mui/material';
 import { getAllUser } from '../../Api_controller/Service/adminService';
 import { useNavigate } from 'react-router-dom';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
-const ManageAccounts = () => {
-    const [users, setUsers] = useState([]); // Danh sách user
-    const [filteredUsers, setFilteredUsers] = useState([]); // Danh sách user sau khi lọc
-    const [loading, setLoading] = useState(true); // Trạng thái loading
-    const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
-    const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
-    const rowsPerPage = 5; // Số hàng mỗi trang
-    const navigate = useNavigate(); // Hook điều hướng
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-    // Bảng ánh xạ role từ API sang tên vai trò
+const ManageAccounts = () => {
+    const [users, setUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedRole, setSelectedRole] = useState('');
+    const rowsPerPage = 5;
+    const navigate = useNavigate();
+
     const roleMapping = {
         1: "training",
         2: "examination",
@@ -23,11 +24,9 @@ const ManageAccounts = () => {
         7: "admin",
     };
 
-
     const handleBackToDashboard = () => {
-        navigate('/admin/dashboard'); // Điều hướng về trang Admin Dashboard
+        navigate('/admin/dashboard');
     };
-
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -35,7 +34,7 @@ const ManageAccounts = () => {
                 const response = await getAllUser();
                 if (response.status === 200) {
                     setUsers(response.data.data);
-                    setFilteredUsers(response.data.data); // Gán danh sách ban đầu cho danh sách lọc
+                    setFilteredUsers(response.data.data);
                 } else {
                     console.error('Failed to fetch users:', response.message);
                 }
@@ -50,29 +49,26 @@ const ManageAccounts = () => {
     }, []);
 
     useEffect(() => {
-        // Lọc danh sách user theo từ khóa
-        const filtered = users.filter((user) =>
-            user.username.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        // Lọc danh sách dựa trên username và role
+        const filtered = users.filter((user) => {
+            const matchesUsername = user.username.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesRole = selectedRole ? user.role === parseInt(selectedRole) : true;
+            return matchesUsername && matchesRole;
+        });
         setFilteredUsers(filtered);
-        setCurrentPage(1); // Đưa về trang đầu khi tìm kiếm
-    }, [searchTerm, users]);
+        setCurrentPage(1);
+    }, [searchTerm, selectedRole, users]);
 
     if (loading) {
         return <Typography>Loading...</Typography>;
     }
 
-    // Tính toán dữ liệu hiển thị dựa trên trang hiện tại
     const indexOfLastUser = currentPage * rowsPerPage;
     const indexOfFirstUser = indexOfLastUser - rowsPerPage;
     const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
     const handlePageChange = (event, value) => {
-        setCurrentPage(value); // Cập nhật trang hiện tại
-    };
-
-    const handleSearchChange = (event) => {
-        setSearchTerm(event.target.value); // Cập nhật từ khóa tìm kiếm
+        setCurrentPage(value);
     };
 
     return (
@@ -81,22 +77,42 @@ const ManageAccounts = () => {
                 <IconButton
                     color="primary"
                     onClick={handleBackToDashboard}
-                    sx={{ mr: 1, mb: 1 }} // Khoảng cách giữa icon và tiêu đề
+                    sx={{ mr: 1, mb: 1 }}
                 >
                     <ArrowBackIcon />
                 </IconButton>
                 Manage Account
             </Typography>
+            <Box display="flex" gap={2} alignItems="center" marginBottom={2}>
+                {/* Thanh tìm kiếm */}
+                <TextField
+                    label="Search by Username"
+                    variant="outlined"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    sx={{ flex: 2 }} // Chiếm 2 phần tỉ lệ
+                />
+                {/* Bộ lọc Role */}
+                <TextField
+                    select
+                    label="Filter by Role"
+                    variant="outlined"
+                    fullWidth
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    sx={{ flex: 1 }} // Chiếm 1 phần tỉ lệ
+                >
+                    <MenuItem value="">All Roles</MenuItem>
+                    {Object.entries(roleMapping).map(([key, value]) => (
+                        <MenuItem key={key} value={key}>
+                            {value}
+                        </MenuItem>
+                    ))}
+                </TextField>
+            </Box>
 
-            {/* Thanh tìm kiếm */}
-            <TextField
-                label="Search by Username"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                value={searchTerm}
-                onChange={handleSearchChange}
-            />
+
 
             <TableContainer component={Paper}>
                 <Table>
@@ -136,7 +152,7 @@ const ManageAccounts = () => {
 
             {/* Phân trang */}
             <Pagination
-                count={Math.ceil(filteredUsers.length / rowsPerPage)} // Tổng số trang sau khi lọc
+                count={Math.ceil(filteredUsers.length / rowsPerPage)}
                 page={currentPage}
                 onChange={handlePageChange}
                 color="primary"

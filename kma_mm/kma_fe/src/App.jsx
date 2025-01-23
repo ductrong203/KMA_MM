@@ -15,6 +15,8 @@ import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
+import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
+import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
@@ -153,6 +155,27 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["examination"]}>
               <Layout Info={info} title="HỆ QUẢN LÝ KHẢO THÍ">
                 <ExamDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/director/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["director"]}>
+              <Layout Info={info} title="Director dashboard">
+                <DirectorDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/library/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["library"]}>
+              <Layout Info={info} title="Library dashboard">
+                <LibraryDashBoard />
               </Layout>
             </PrivateRoute>
           }
