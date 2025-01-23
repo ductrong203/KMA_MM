@@ -25,6 +25,7 @@ export const login = async (username, password) => {
     // Lưu token và thông tin người dùng vào localStorage
     localStorage.setItem("access_token", access_token);
     localStorage.setItem("role", roleName);
+    localStorage.setItem("id", data.id)
     // localStorage.setItem("username", data.username);
     return roleName; // Trả về role để sử dụng
 };
@@ -66,3 +67,7 @@ export const AdminRegister = async (username, password, confirmPassword, role) =
 
     return response.data.message || "Registration successful!"; // Trả về thông báo thành công
 };
+export const getDetailUserById = async (id) => {
+    const response = await api.get(`/auth/get-detail-user/${id}`)
+    return response.data
+}

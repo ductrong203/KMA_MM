@@ -149,7 +149,7 @@ const Login = ({ onLogin }) => {
                     >
                         {isLoginMode ? "Login" : "Register"}
                     </Button>
-                    <Button
+                    {/* <Button
                         fullWidth
                         onClick={() => setIsLoginMode(!isLoginMode)}
                         sx={{
@@ -162,7 +162,7 @@ const Login = ({ onLogin }) => {
                         {isLoginMode
                             ? "Don't have an account? Register"
                             : "Already have an account? Login"}
-                    </Button>
+                    </Button> */}
                 </Box>
             </Paper>
         </Container>

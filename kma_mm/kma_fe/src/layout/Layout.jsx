@@ -10,7 +10,15 @@ const Layout = ({ children, Info, title }) => {
         console.log('Logging out...');
         window.location.href = '/login'; // Điều hướng tới trang login
     };
-
+    const roleMapping = {
+        1: "training",
+        2: "examination",
+        3: "student_manage",
+        4: "library",
+        5: "director",
+        6: "sv",
+        7: "admin",
+    };
     return (
         <div>
             {/* Thanh điều hướng */}
@@ -27,10 +35,10 @@ const Layout = ({ children, Info, title }) => {
                         </Avatar>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {Info.name}
+                                {Info.username}
                             </Typography>
                             <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                {Info.id}
+                                {roleMapping[Info.role]}
                             </Typography>
                         </Box>
                         <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mx: 2 }} />
