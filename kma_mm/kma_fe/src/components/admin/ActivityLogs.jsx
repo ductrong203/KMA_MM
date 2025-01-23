@@ -1,6 +1,7 @@
 import React from 'react';
-import { List, ListItem, ListItemText, Typography } from '@mui/material';
-import Layout from '../../layout/Layout';
+import { List, ListItem, ListItemText, Typography, IconButton, Paper, Box } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
+import { useNavigate } from 'react-router-dom';
 
 const mockLogs = [
     { id: 1, log: 'User admin logged in' },
@@ -9,25 +10,37 @@ const mockLogs = [
 ];
 
 const ActivityLogs = () => {
+    const navigate = useNavigate(); // Hook điều hướng
 
-    const trainerInfo = {
-        name: "Nguyễn Văn A",
-        id: "T1001"
+    const handleBackToDashboard = () => {
+        navigate('/admin/dashboard'); // Điều hướng đến trang AdminDashboard
     };
 
     return (
-        <div>
+        <Box sx={{ padding: 2 }}>
+            {/* Icon Button back to Dashboard */}
+            <Box display="flex" alignItems="center" mb={2}>
+                <IconButton
+                    color="primary"
+                    onClick={handleBackToDashboard}
+                    sx={{ mr: 2 }} // Khoảng cách giữa icon và tiêu đề
+                >
+                    <ArrowBackIcon />
+                </IconButton>
+                <Typography variant="h5">Activity Logs</Typography>
+            </Box>
 
-            <Typography variant="h5" gutterBottom>Activity Logs</Typography>
-            <List>
-                {mockLogs.map((log) => (
-                    <ListItem key={log.id}>
-                        <ListItemText primary={log.log} />
-                    </ListItem>
-                ))}
-            </List>
-
-        </div>
+            {/* Danh sách hoạt động */}
+            <Paper sx={{ padding: 2 }}>
+                <List>
+                    {mockLogs.map((log) => (
+                        <ListItem key={log.id}>
+                            <ListItemText primary={log.log} />
+                        </ListItem>
+                    ))}
+                </List>
+            </Paper>
+        </Box>
     );
 };
 

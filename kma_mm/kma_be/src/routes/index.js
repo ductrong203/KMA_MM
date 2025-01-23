@@ -6,8 +6,10 @@ const studentRouter = require("./student");
 const teacherRouter = require("./teacher");
 const classRouter = require("./class");
 const scheduleRouter = require("./schedule");
+const trainingRouter = require("./training");
 const routes = (app) => {
   app.use("/auth", authRouter);
+  app.use("/training", trainingRouter);
   //   app.use("student", studentRouter);
   //   app.use("teacher", teacherRouter);
   //   app.use("exam", examRouter);

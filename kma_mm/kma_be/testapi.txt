@@ -1,0 +1,16 @@
+Actor: User - changePassword, get detail info
+Actor: Admin - changePassword, change users info ( role), get all users, delete users, create users
+
+for example: 
+api : get all users 
+    GET http://localhost:8000/auth/get-all
+    header: Authorization
+    Bearer token "access token"
+api : update user 
+    PUT http://localhost:8000/auth/update-user/4
+    header: Authorization
+    Bearer token "access token"
+    body raw : 
+    {
+    "role":6
+    }
