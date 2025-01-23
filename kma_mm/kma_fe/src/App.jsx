@@ -18,6 +18,7 @@ import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
 import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
 import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";
 import { getDetailUserById } from "./Api_controller/Service/authService";
+import UserInfo from "./components/Infor/UserInfor";
 
 
 const App = () => {
@@ -183,6 +184,17 @@ const App = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path={`/${role}/info`}
+          element={
+            <PrivateRoute role={role} allowedRoles={[`${role}`]}>
+              <Layout Info={info} title="Library dashboard">
+                <UserInfo />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="/library/dashboard"
           element={

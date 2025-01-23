@@ -71,3 +71,13 @@ export const getDetailUserById = async (id) => {
     const response = await api.get(`/auth/get-detail-user/${id}`)
     return response.data
 }
+
+export const changeUserPassWord = async (id, data) => {
+    try {
+        const response = await api.put(`/auth/change-password/${id}`, data);
+        return response; // Trả về response để xử lý ở phía trên
+    } catch (error) {
+        console.error("Error in changeUserPassWord:", error);
+        throw error; // Ném lỗi để xử lý ở phía trên
+    }
+};

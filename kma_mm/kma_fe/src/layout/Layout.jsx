@@ -1,15 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { AppBar, Toolbar, Typography, Box, Avatar, Button, Divider } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
+import { getDetailUserById } from "../Api_controller/Service/authService";
+import { useNavigate } from "react-router-dom";
 
 const Layout = ({ children, Info, title }) => {
+
+    const navigate = useNavigate();
+
+    const handleUserClick = () => {
+        let role = localStorage.getItem("role")
+        navigate(`/${role}/info`); // Thay đường dẫn bằng URL trang thông tin người dùng
+    };
     const handleLogout = () => {
         localStorage.removeItem('role');
         localStorage.removeItem('access_token');
         console.log('Logging out...');
         window.location.href = '/login'; // Điều hướng tới trang login
     };
+    const [info, setInfo] = useState();
     const roleMapping = {
         1: "training",
         2: "examination",
@@ -19,6 +29,28 @@ const Layout = ({ children, Info, title }) => {
         6: "sv",
         7: "admin",
     };
+    // Fix the useEffect hook usage and conditional rendering
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                let id = localStorage.getItem("id");
+                if (id) {
+                    const response = await getDetailUserById(id);
+
+                    console.log(">>", response.data)
+                    if (response.data) {
+                        setInfo(response.data);
+                        console.log(">>", info)
+                    }
+
+                }
+            } catch (e) {
+                throw e;
+            }
+        };
+
+        fetchUserInfo();
+    }, []);
     return (
         <div>
             {/* Thanh điều hướng */}
@@ -30,17 +62,23 @@ const Layout = ({ children, Info, title }) => {
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: '#1565c0' }}>
-                            <PersonIcon />
-                        </Avatar>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {Info.username}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                {roleMapping[Info.role]}
-                            </Typography>
+                        <Box
+                            sx={{ display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }}
+                            onClick={handleUserClick}
+                        >
+                            <Avatar sx={{ bgcolor: '#1565c0' }}>
+                                <PersonIcon />
+                            </Avatar>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                    {info ? info.username : "Đang tải..."}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                    {info ? roleMapping[info.role] : "Đang tải..."}
+                                </Typography>
+                            </Box>
                         </Box>
+
                         <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mx: 2 }} />
                         <Button
                             color="inherit"
