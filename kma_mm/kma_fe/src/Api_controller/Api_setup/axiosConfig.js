@@ -34,41 +34,53 @@ api.interceptors.request.use(
     },
     (error) => Promise.reject(error)
 );
-
-// Thêm interceptor để xử lý response
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
         if (error.response && error.response.status === 401) {
-            // Nếu chưa làm mới token
+            const message = error.response.data.message;
+
+            // Nếu refresh token không hợp lệ hoặc thiếu
+            if (message === "token is required!") {
+                // Xóa token và chuyển hướng đến trang đăng nhập
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                window.location.href = "/login";
+                return Promise.reject(error);
+            }
+
+            // Nếu là lỗi khác và cần làm mới token
             if (!isRefreshing) {
                 isRefreshing = true;
 
                 try {
-                    // Gửi request làm mới token
-                    const response = await axios.post(
-                        `${config.baseUrl}/auth/refresh-token`,
-                        {}, // Không cần payload, vì refresh_token ở trong cookie
-                        { withCredentials: true } // Gửi cookie với request
-                    );
+                    const refreshToken = localStorage.getItem("refresh_token");
 
-                    if (response.data.message === "token is required!") {
-                        throw new Error("Refresh token is invalid or expired.");
+                    if (!refreshToken) {
+                        throw new Error("Refresh token is missing.");
                     }
 
+                    // Gửi request làm mới token
+                    const response = await api.post(
+                        "/auth/refresh-token",
+                        { token: refreshToken }, // Backend yêu cầu token trong payload
+                        { withCredentials: true } // Nếu cần gửi cookie
+                    );
+
+                    // Nhận access token mới từ backend
                     const newToken = response.data.access_token;
 
                     // Lưu token mới vào localStorage
                     localStorage.setItem("access_token", newToken);
 
-                    // Thông báo tất cả các request đang chờ
+                    // Gọi lại tất cả các request đang chờ
                     onRefreshed(newToken);
                 } catch (refreshError) {
-                    // Nếu làm mới token thất bại, chuyển hướng đến login
+                    // Nếu làm mới token thất bại, chuyển hướng đến trang đăng nhập
                     localStorage.removeItem("access_token");
-                    localStorage.clear();
+                    localStorage.removeItem("refresh_token");
                     window.location.href = "/login";
                     return Promise.reject(refreshError);
                 } finally {
@@ -76,7 +88,7 @@ api.interceptors.response.use(
                 }
             }
 
-            // Đợi token được làm mới
+            // Đợi token mới
             return new Promise((resolve) => {
                 subscribeTokenRefresh((newToken) => {
                     originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -88,5 +100,7 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+
 
 export default api;

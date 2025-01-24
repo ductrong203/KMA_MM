@@ -104,15 +104,15 @@ const ManageAccounts = () => {
     };
 
     const handleUserUpdated = (updatedUser) => {
-        console.log(updatedUser)
+        //console.log("Updated user:", updatedUser);
         // Cập nhật danh sách người dùng mà không gọi lại API
         setUsers((prevUsers) =>
             prevUsers.map((user) =>
                 user.id === updatedUser.id ? { ...user, ...updatedUser } : user
             )
         );
-
     };
+
 
 
     return (
