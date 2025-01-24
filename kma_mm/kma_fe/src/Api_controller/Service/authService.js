@@ -81,3 +81,26 @@ export const changeUserPassWord = async (id, data) => {
         throw error; // Ném lỗi để xử lý ở phía trên
     }
 };
+
+
+
+// Hàm xóa người dùng dựa trên ID
+export const deleteUserById = async (id) => {
+    try {
+        const response = await api.delete(`/auth/delete-user/${id}`); // Gọi endpoint xóa
+        if (response.status === 200) {
+
+            return response.data; // Trả về dữ liệu từ server
+        } else {
+            alert("Xóa người dùng không thành công!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Lỗi khi xóa người dùng:", error);
+        alert("Đã xảy ra lỗi khi xóa người dùng!");
+        throw error;
+    }
+};
+
+
+

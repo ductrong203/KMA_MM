@@ -37,10 +37,10 @@ const Layout = ({ children, Info, title }) => {
                 if (id) {
                     const response = await getDetailUserById(id);
 
-                    console.log(">>", response.data)
+                    //  console.log(">>", response.data)
                     if (response.data) {
                         setInfo(response.data);
-                        console.log(">>", info)
+                        //  console.log(">>", info)
                     }
 
                 }

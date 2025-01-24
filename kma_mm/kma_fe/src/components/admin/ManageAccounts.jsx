@@ -3,6 +3,8 @@ import { Table, TableBody, Typography, TableCell, TableContainer, TableHead, Tab
 import { getAllUser } from '../../Api_controller/Service/adminService';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { deleteUserById } from '../../Api_controller/Service/authService';
+import EditUserModal from './EditUserModal';  // Import modal
 
 const ManageAccounts = () => {
     const [users, setUsers] = useState([]);
@@ -11,6 +13,8 @@ const ManageAccounts = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('');
+    const [selectedUser, setSelectedUser] = useState(null);  // State để lưu người dùng đang chỉnh sửa
+    const [openModal, setOpenModal] = useState(false);  // Điều khiển việc mở modal
     const rowsPerPage = 5;
     const navigate = useNavigate();
 
@@ -28,6 +32,7 @@ const ManageAccounts = () => {
         navigate('/admin/dashboard');
     };
 
+    // Fetch dữ liệu người dùng
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -48,16 +53,38 @@ const ManageAccounts = () => {
         fetchUsers();
     }, []);
 
+    const handleDeleteUser = async (userId) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
+            try {
+                const response = await deleteUserById(userId);
+                if (response.status === "OK") {
+                    // Cập nhật danh sách người dùng sau khi xóa
+                    setUsers((prevUsers) => {
+                        const updatedUsers = prevUsers.filter((user) => user.id !== userId);
+                        return updatedUsers;
+                    });
+
+                    // Không cần cập nhật filteredUsers ở đây, vì useEffect sẽ tự động xử lý
+                    alert("Xóa người dùng thành công!");
+                } else {
+                    alert("Không thể xóa người dùng. Vui lòng thử lại.");
+                }
+            } catch (error) {
+                console.error("Lỗi khi xóa người dùng:", error);
+                alert("Có lỗi xảy ra khi xóa người dùng.");
+            }
+        }
+    };
+
+    // Lọc danh sách người dùng khi tìm kiếm hoặc thay đổi vai trò
     useEffect(() => {
-        // Lọc danh sách dựa trên username và role
         const filtered = users.filter((user) => {
             const matchesUsername = user.username.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesRole = selectedRole ? user.role === parseInt(selectedRole) : true;
             return matchesUsername && matchesRole;
         });
         setFilteredUsers(filtered);
-        setCurrentPage(1);
-    }, [searchTerm, selectedRole, users]);
+    }, [searchTerm, selectedRole, users]); // Khi users, searchTerm hoặc selectedRole thay đổi
 
     if (loading) {
         return <Typography>Loading...</Typography>;
@@ -70,6 +97,23 @@ const ManageAccounts = () => {
     const handlePageChange = (event, value) => {
         setCurrentPage(value);
     };
+
+    const handleEditUser = (user) => {
+        setSelectedUser(user);
+        setOpenModal(true);  // Mở modal chỉnh sửa
+    };
+
+    const handleUserUpdated = (updatedUser) => {
+        console.log(updatedUser)
+        // Cập nhật danh sách người dùng mà không gọi lại API
+        setUsers((prevUsers) =>
+            prevUsers.map((user) =>
+                user.id === updatedUser.id ? { ...user, ...updatedUser } : user
+            )
+        );
+
+    };
+
 
     return (
         <div>
@@ -112,8 +156,6 @@ const ManageAccounts = () => {
                 </TextField>
             </Box>
 
-
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -132,14 +174,14 @@ const ManageAccounts = () => {
                                     <Button
                                         variant="outlined"
                                         color="primary"
-                                        onClick={() => alert(`Edit ${account.username}`)}
+                                        onClick={() => handleEditUser(account)}  // Mở modal chỉnh sửa
                                     >
                                         Edit
                                     </Button>
                                     <Button
                                         variant="outlined"
                                         color="secondary"
-                                        onClick={() => alert(`Delete ${account.username}`)}
+                                        onClick={() => handleDeleteUser(account.id)} // Sửa lại id cho đúng
                                     >
                                         Delete
                                     </Button>
@@ -157,6 +199,14 @@ const ManageAccounts = () => {
                 onChange={handlePageChange}
                 color="primary"
                 sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
+            />
+
+            {/* Modal chỉnh sửa người dùng */}
+            <EditUserModal
+                user={selectedUser}
+                open={openModal}
+                onClose={() => setOpenModal(false)}  // Đóng modal
+                onUserUpdated={handleUserUpdated}  // Cập nhật dữ liệu người dùng sau khi sửa
             />
         </div>
     );
