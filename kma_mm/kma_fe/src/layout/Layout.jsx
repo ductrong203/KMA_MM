@@ -6,13 +6,16 @@ import { getDetailUserById } from "../Api_controller/Service/authService";
 import { useNavigate } from "react-router-dom";
 
 const Layout = ({ children, Info, title }) => {
-
+    const [roleInfo, setRoleInfo] = useState();
     const navigate = useNavigate();
 
     const handleUserClick = () => {
         let role = localStorage.getItem("role")
         navigate(`/${role}/info`); // Thay đường dẫn bằng URL trang thông tin người dùng
     };
+    const handleBackToHome = () => {
+        navigate(`/${roleInfo}/dashboard`)
+    }
     const handleLogout = () => {
         localStorage.removeItem('role');
         localStorage.removeItem('access_token');
@@ -33,6 +36,8 @@ const Layout = ({ children, Info, title }) => {
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
+                setRoleInfo(localStorage.getItem("role"));
+
                 let id = localStorage.getItem("id");
                 if (id) {
                     const response = await getDetailUserById(id);
@@ -57,7 +62,7 @@ const Layout = ({ children, Info, title }) => {
             <AppBar position="static" sx={{ bgcolor: '#1976d2' }}>
                 <Toolbar>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+                        <Typography onClick={handleBackToHome} variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }}>
                             {title}
                         </Typography>
                     </Box>

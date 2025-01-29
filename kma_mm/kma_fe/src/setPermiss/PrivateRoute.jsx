@@ -5,7 +5,10 @@ const PrivateRoute = ({ role, allowedRoles, children }) => {
     const accessToken = localStorage.getItem("access_token");
 
     if (!accessToken || !allowedRoles.includes(role)) {
-        return <Navigate to="/login" />;
+        localStorage.removeItem("role");
+        // Redirect về trang login
+        window.location.href = "/login";
+        return null;
     }
 
     return children;

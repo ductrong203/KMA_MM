@@ -146,7 +146,9 @@ const LibraryDashBoard = () => {
                                     <Typography variant="body2" color="error.main">Chưa đủ điều kiện</Typography>
                                 )}
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell
+                                onClick={(e) => e.stopPropagation()}
+                                align="center">
                                 <Button
                                     variant="outlined"
                                     color="primary"
