@@ -25,6 +25,7 @@ export const login = async (username, password) => {
     // Lưu token và thông tin người dùng vào localStorage
     localStorage.setItem("access_token", access_token);
     localStorage.setItem("role", roleName);
+    localStorage.setItem("id", data.id)
     // localStorage.setItem("username", data.username);
     return roleName; // Trả về role để sử dụng
 };
@@ -66,3 +67,40 @@ export const AdminRegister = async (username, password, confirmPassword, role) =
 
     return response.data.message || "Registration successful!"; // Trả về thông báo thành công
 };
+export const getDetailUserById = async (id) => {
+    const response = await api.get(`/auth/get-detail-user/${id}`)
+    return response.data
+}
+
+export const changeUserPassWord = async (id, data) => {
+    try {
+        const response = await api.put(`/auth/change-password/${id}`, data);
+        return response; // Trả về response để xử lý ở phía trên
+    } catch (error) {
+        console.error("Error in changeUserPassWord:", error);
+        throw error; // Ném lỗi để xử lý ở phía trên
+    }
+};
+
+
+
+// Hàm xóa người dùng dựa trên ID
+export const deleteUserById = async (id) => {
+    try {
+        const response = await api.delete(`/auth/delete-user/${id}`); // Gọi endpoint xóa
+        if (response.status === 200) {
+
+            return response.data; // Trả về dữ liệu từ server
+        } else {
+            alert("Xóa người dùng không thành công!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Lỗi khi xóa người dùng:", error);
+        alert("Đã xảy ra lỗi khi xóa người dùng!");
+        throw error;
+    }
+};
+
+
+
