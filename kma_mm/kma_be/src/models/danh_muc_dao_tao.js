@@ -1,9 +1,10 @@
-const Sequelize = require('sequelize');
+"use strict";
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('danh_muc_dao_tao', {
+  const danh_muc_dao_tao = sequelize.define('danh_muc_dao_tao', {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      autoIncrement: true,
       primaryKey: true
     },
     ma_he_dao_tao: {
@@ -33,4 +34,6 @@ module.exports = function(sequelize, DataTypes) {
       },
     ]
   });
+  return danh_muc_dao_tao
 };
+

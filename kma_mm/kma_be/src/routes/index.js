@@ -6,10 +6,12 @@ const studentRouter = require("./student");
 const teacherRouter = require("./teacher");
 const lopRouter = require("./lop");
 const scheduleRouter = require("./schedule");
+const trainingRouter = require("./training");
 const routes = (app) => {
   app.use("/auth", authRouter);
   app.use("/lop", lopRouter);
   //app.use()
+  app.use("/training", trainingRouter);
   //   app.use("student", studentRouter);
   //   app.use("teacher", teacherRouter);
   //   app.use("exam", examRouter);
