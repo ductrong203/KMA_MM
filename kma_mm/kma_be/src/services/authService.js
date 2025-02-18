@@ -63,7 +63,6 @@ const loginUser = async (user) => {
       id: checkUser.id,
       role: checkUser.role,
     });
-
     return {
       status: "OK",
       message: "Login successful!",
