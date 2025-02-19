@@ -131,17 +131,23 @@ const getDetailUser = async (id) => {
 const updateUser = async (id, data) => {
   try {
     const checkUser = await User.findOne({ where: { id } });
-
     if (!checkUser) {
       return {
         status: "ERR",
         message: "User is not defined!",
       };
     }
-    const updatedUser = await User.update(data, {
+    const rowsUpdated = await User.update(data, {
       where: { id },
-      returning: true,
     });
+    if (rowsUpdated[0] === 0) {
+      return {
+        status: "ERR",
+        message: "Failed to update user!",
+      };
+    }
+    const updatedUser = await User.findOne({ where: { id } });
+
     return {
       status: "OK",
       message: "User is updated!",
@@ -151,6 +157,7 @@ const updateUser = async (id, data) => {
     throw new Error(error.message);
   }
 };
+
 const changePassword = async (id, oldPassword, newPassword) => {
   try {
     const user = await User.findOne({ where: { id } });

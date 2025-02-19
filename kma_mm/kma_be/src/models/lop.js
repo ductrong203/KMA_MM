@@ -6,7 +6,9 @@ module.exports = function (sequelize, DataTypes) {
       id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      autoIncrement: true,
         primaryKey: true,
+        autoIncrement: true,
       },
       ma_lop: {
         type: DataTypes.STRING(50),

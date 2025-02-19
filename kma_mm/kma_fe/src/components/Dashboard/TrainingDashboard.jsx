@@ -46,6 +46,8 @@ import {
     Typography
 } from '@mui/material';
 import React, { useState } from 'react';
+import { createTraining } from "../../Api_controller/Service/trainingService";
+
 // Mock data
 const trainerInfo = {
     name: 'Nguyễn Văn A',
@@ -106,13 +108,14 @@ function TrainingDashboard() {
         setCurrentTab(newValue);
     };
 
-    const handleAddTraining = () => {
+    const handleAddTraining = async () => {
         // Validate code length
         if (newTraining.code.length > 5) {
             alert('Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!');
             return;
         }
         // Add training type logic here
+        await createTraining(newTraining)
         setOpenAddTraining(false);
         setNewTraining({ code: '', name: '', active: true });
     };
@@ -142,41 +145,7 @@ function TrainingDashboard() {
 
     return (
         <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
-            <AppBar position="static" sx={{ bgcolor: '#1976d2' }}>
-                <Toolbar>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-                            HỆ THỐNG QUẢN LÝ ĐÀO TẠO
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: '#1565c0' }}>
-                            <PersonIcon />
-                        </Avatar>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {trainerInfo.name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                {trainerInfo.id}
-                            </Typography>
-                        </Box>
-                        <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mx: 2 }} />
-                        <Button
-                            color="inherit"
-                            startIcon={<LogoutIcon />}
-                            onClick={handleLogout}
-                            sx={{
-                                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' },
-                                borderRadius: '8px',
-                                textTransform: 'none'
-                            }}
-                        >
-                            Đăng xuất
-                        </Button>
-                    </Box>
-                </Toolbar>
-            </AppBar>
+
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
                     <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 3 }}>
