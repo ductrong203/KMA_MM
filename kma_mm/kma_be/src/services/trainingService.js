@@ -12,14 +12,12 @@ const createTraining = async (newTraining) => {
         message: "This training already exists!",
       };
     }
-console.log(checkTraining)
     
     const createdTraining = await danh_muc_dao_tao.create({
         ma_he_dao_tao:code,
         ten_he_dao_tao:name,
         trang_thai: 1
     });
-    console.log(createdTraining)
 
     return {
       status: "OK",
