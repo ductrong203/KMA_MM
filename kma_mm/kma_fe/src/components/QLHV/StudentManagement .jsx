@@ -18,7 +18,8 @@ import {
     Typography,
     Tabs,
     Tab,
-    FormControlLabel,
+    FormControlLabel, FormControl, InputLabel, Select, MenuItem,
+
     Grid
 } from "@mui/material";
 
@@ -208,7 +209,7 @@ const StudentManagement = () => {
         if (index !== null) {
             setStudentData(students[index]);
         } else {
-            setStudentData({ name: "", credits: "", completedRules: false, isSoldier: false, militaryInfo: "" });
+            setStudentData({ ten: "" });
         }
         setOpen(true);
     };
@@ -226,6 +227,22 @@ const StudentManagement = () => {
         setOpenDetail(false);
     };
 
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filter, setFilter] = useState({ lop_id: "", dang_hoc: "", noi_tru: "" });
+    const filteredStudents = students.filter(student => {
+        return (
+            (student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.ma_sinh_vien.includes(searchTerm)) &&
+            (filter.lop_id === "" || student.lop_id.toString() === filter.lop_id) &&
+            (filter.dang_hoc === "" || student.dang_hoc.toString() === filter.dang_hoc) &&
+            (filter.noi_tru === "" || student.noi_tru.toString() === filter.noi_tru)
+        );
+    });
+
+
+
+
     const handleSave = () => {
         if (editIndex !== null) {
             const updatedStudents = [...students];
@@ -239,10 +256,70 @@ const StudentManagement = () => {
 
     return (
         <Container maxWidth="md">
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom style={{ fontWeight: 600, marginBottom: "20px" }}>
                 Quản lý học viên
             </Typography>
-            <Button variant="contained" color="primary" onClick={() => handleOpen()}>
+
+            {/* Thanh tìm kiếm */}
+            <TextField
+                label="Tìm kiếm học viên..."
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
+            {/* Bộ lọc */}
+            {/* Bộ lọc */}
+            <Grid
+                sx={{ marginTop: "4px" }}
+                container spacing={2} alignItems="center" justifyContent="center">
+                <Grid item xs={4}>
+                    <FormControl fullWidth>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }} >Lớp</InputLabel>
+                        <Select
+                            value={filter.lop_id}
+                            onChange={(e) => setFilter({ ...filter, lop_id: e.target.value })}
+                        >
+                            <MenuItem value="">Tất cả</MenuItem>
+                            <MenuItem value="101">Lớp 101</MenuItem>
+                            <MenuItem value="102">Lớp 102</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+
+                <Grid item xs={4}>
+                    <FormControl fullWidth>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}  >Trạng thái</InputLabel>
+                        <Select
+                            value={filter.dang_hoc}
+                            onChange={(e) => setFilter({ ...filter, dang_hoc: e.target.value })}
+                        >
+                            <MenuItem value="">Tất cả</MenuItem>
+                            <MenuItem value="1">Đang học</MenuItem>
+                            <MenuItem value="0">Đã tốt nghiệp</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+
+                <Grid item xs={4}>
+                    <FormControl fullWidth>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }} >Nội trú</InputLabel>
+                        <Select
+                            value={filter.noi_tru}
+                            onChange={(e) => setFilter({ ...filter, noi_tru: e.target.value })}
+                        >
+                            <MenuItem value="">Tất cả</MenuItem>
+                            <MenuItem value="1">Nội trú</MenuItem>
+                            <MenuItem value="0">Ngoại trú</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+            </Grid>
+            <Button
+                sx={{ marginTop: "8px" }}
+                variant="contained" color="primary" onClick={() => handleOpen()}>
                 Thêm học viên
             </Button>
             <TableContainer component={Paper} style={{ marginTop: 20 }}>
@@ -256,7 +333,7 @@ const StudentManagement = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {students.map((student, index) => (
+                        {filteredStudents.map((student, index) => (
                             <TableRow key={student.id}>
                                 <TableCell>{student.ho_dem} {student.ten}</TableCell>
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
