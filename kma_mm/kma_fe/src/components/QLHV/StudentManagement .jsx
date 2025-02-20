@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Container,
     Button,
@@ -22,133 +22,23 @@ import {
 
     Grid
 } from "@mui/material";
+import { createNewStudent, getAllStudent } from "../../Api_controller/Service/qlhvService";
 
 const StudentManagement = () => {
+
     const [students, setStudents] = useState([
-        {
-            id: 1,
-            ma_sinh_vien: "SV123456",
-            ngay_sinh: "2002-08-15",
-            gioi_tinh: 1,
-            que_quan: "Hà Nội",
-            lop_id: 101,
-            doi_tuong_id: 3,
-            dang_hoc: 1,
-            ghi_chu: "Học viên chăm chỉ",
-            ho_dem: "Nguyễn Văn",
-            ten: "A",
-            so_tai_khoan: "123456789",
-            ngan_hang: "Vietcombank",
-            chuc_vu: "Lớp trưởng",
-            CCCD: "0123456789",
-            ngay_cap_CCCD: "2020-05-20",
-            noi_cap_CCCD: "Hà Nội",
-            ky_nhap_hoc: "2022",
-            ngay_vao_doan: "2018-09-15",
-            ngay_vao_dang: null,
-            ngay_vao_truong: "2022-09-05",
-            ngay_ra_truong: "2026-06-30",
-            tinh_thanh: "Hà Nội",
-            quan_huyen: "Cầu Giấy",
-            phuong_xa_khoi: "Dịch Vọng",
-            dan_toc: "Kinh",
-            ton_giao: "Không",
-            quoc_tich: "Việt Nam",
-            trung_tuyen_theo_nguyen_vong: "1",
-            nam_tot_nghiep_PTTH: "2022",
-            thanh_phan_gia_dinh: "Công nhân viên chức",
-            doi_tuong_dao_tao: "Chính quy",
-            dv_lien_ket_dao_tao: null,
-            so_dien_thoai: "0987654321",
-            dien_thoai_gia_dinh: "0123456789",
-            dien_thoai_CQ: null,
-            email: "nguyenvana@example.com",
-            khi_can_bao_tin_cho_ai: "Nguyễn Văn Bố - 0912345678",
-            noi_tru: 1,
-            ngoai_tru: 0,
 
-            // phần này của quân nhân
-            sinh_vien_id: 1001, // Số nguyên (INTEGER)
-            ngay_nhap_ngu: "2020-06-15", // Ngày (DATEONLY - định dạng YYYY-MM-DD)
-            cap_bac: "Thượng úy", // Chuỗi (STRING)
-            trinh_do_van_hoa: "Đại học", // Chuỗi (STRING)
-            noi_o_hien_nay: "Hà Nội", // Chuỗi (STRING)
-            don_vi_cu_di_hoc: "Lữ đoàn 144", // Chuỗi (STRING)
-            loai_luong: "Lương cơ bản", // Chuỗi (STRING)
-            nhom_luong: "Nhóm 3", // Chuỗi (STRING)
-            bac_luong: "Bậc 2", // Chuỗi (STRING)
-            he_so_luong: "4.5", // Chuỗi (STRING)
-            ngay_nhan_luong: "2023-01-01", // Ngày (DATEONLY)
-            chuc_vu: "Chỉ huy trưởng", // Chuỗi (STRING)
-            suc_khoe: "Tốt" // Chuỗi (STRING)
-        },
-        {
-            id: 2,
-            ma_sinh_vien: "SV654321",
-            ngay_sinh: "2003-03-10",
-            gioi_tinh: 0,
-            que_quan: "TP. Hồ Chí Minh",
-            lop_id: 102,
-            doi_tuong_id: 4,
-            dang_hoc: 1,
-            ghi_chu: "Thành viên tích cực",
-            ho_dem: "Trần Thị",
-            ten: "B",
-            so_tai_khoan: "987654321",
-            ngan_hang: "Techcombank",
-            chuc_vu: "Bí thư",
-            CCCD: "9876543210",
-            ngay_cap_CCCD: "2021-07-15",
-            noi_cap_CCCD: "TP. Hồ Chí Minh",
-            ky_nhap_hoc: "2022",
-            ngay_vao_doan: "2019-06-10",
-            ngay_vao_dang: null,
-            ngay_vao_truong: "2022-09-05",
-            ngay_ra_truong: "2026-06-30",
-            tinh_thanh: "TP. Hồ Chí Minh",
-            quan_huyen: "Quận 1",
-            phuong_xa_khoi: "Bến Nghé",
-            dan_toc: "Kinh",
-            ton_giao: "Không",
-            quoc_tich: "Việt Nam",
-            trung_tuyen_theo_nguyen_vong: "2",
-            nam_tot_nghiep_PTTH: "2022",
-            thanh_phan_gia_dinh: "Kinh doanh",
-            doi_tuong_dao_tao: "Chính quy",
-            dv_lien_ket_dao_tao: null,
-            so_dien_thoai: "0908765432",
-            dien_thoai_gia_dinh: "0123987654",
-            dien_thoai_CQ: null,
-            email: "tranthib@example.com",
-            khi_can_bao_tin_cho_ai: "Trần Văn C - 0987123456",
-            noi_tru: 0,
-            ngoai_tru: 1,
-
-
-            // phần này của quân nhân
-            sinh_vien_id: 1001, // Số nguyên (INTEGER)
-            ngay_nhap_ngu: "2020-06-15", // Ngày (DATEONLY - định dạng YYYY-MM-DD)
-            cap_bac: "Thượng úy", // Chuỗi (STRING)
-            trinh_do_van_hoa: "Đại học", // Chuỗi (STRING)
-            noi_o_hien_nay: "Hà Nội", // Chuỗi (STRING)
-            don_vi_cu_di_hoc: "Lữ đoàn 144", // Chuỗi (STRING)
-            loai_luong: "Lương cơ bản", // Chuỗi (STRING)
-            nhom_luong: "Nhóm 3", // Chuỗi (STRING)
-            bac_luong: "Bậc 2", // Chuỗi (STRING)
-            he_so_luong: "4.5", // Chuỗi (STRING)
-            ngay_nhan_luong: "2023-01-01", // Ngày (DATEONLY)
-            chuc_vu: "Chỉ huy trưởng", // Chuỗi (STRING)
-            suc_khoe: "Tốt" // Chuỗi (STRING)
-        }
     ]
     );
+
+
 
     const [open, setOpen] = useState(false);
     const [openDetail, setOpenDetail] = useState(false);
     const [editIndex, setEditIndex] = useState(null);
     const [tabIndex, setTabIndex] = useState(0);
     const [studentData, setStudentData] = useState({
-        id: "",
+
         ma_sinh_vien: "",
         ngay_sinh: "",
         gioi_tinh: false,
@@ -204,15 +94,89 @@ const StudentManagement = () => {
         suc_khoe: ""
     });
 
+
+
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const data = await getAllStudent(); // Gọi API
+                console.log(data)
+                setStudents(data); // Cập nhật danh sách học viên
+            } catch (error) {
+                console.error("Lỗi khi lấy danh sách học viên:", error);
+            }
+        };
+
+        fetchStudents();
+    }, []);
+
+
     const handleOpen = (index = null) => {
         setEditIndex(index);
         if (index !== null) {
             setStudentData(students[index]);
         } else {
-            setStudentData({ ten: "" });
+            setStudentData({
+
+                ma_sinh_vien: "",
+                ngay_sinh: "",
+                gioi_tinh: false,
+                que_quan: "",
+                lop_id: "",
+                doi_tuong_id: "",
+                dang_hoc: false,
+                ghi_chu: "",
+                ho_dem: "",
+                ten: "",
+                so_tai_khoan: "",
+                ngan_hang: "",
+                chuc_vu: "",
+                CCCD: "",
+                ngay_cap_CCCD: "",
+                noi_cap_CCCD: "",
+                ky_nhap_hoc: "",
+                ngay_vao_doan: "",
+                ngay_vao_dang: "",
+                ngay_vao_truong: "",
+                ngay_ra_truong: "",
+                tinh_thanh: "",
+                quan_huyen: "",
+                phuong_xa_khoi: "",
+                dan_toc: "",
+                ton_giao: "",
+                quoc_tich: "",
+                trung_tuyen_theo_nguyen_vong: "",
+                nam_tot_nghiep_PTTH: "",
+                thanh_phan_gia_dinh: "",
+                doi_tuong_dao_tao: "",
+                dv_lien_ket_dao_tao: "",
+                so_dien_thoai: "",
+                dien_thoai_gia_dinh: "",
+                dien_thoai_CQ: "",
+                email: "",
+                khi_can_bao_tin_cho_ai: "",
+                noi_tru: false,
+                ngoai_tru: false,
+                // đoạn sau này của quân nhân
+                sinh_vien_id: null,
+                ngay_nhap_ngu: "",
+                cap_bac: "",
+                trinh_do_van_hoa: "",
+                noi_o_hien_nay: "",
+                don_vi_cu_di_hoc: "",
+                loai_luong: "",
+                nhom_luong: "",
+                bac_luong: "",
+                he_so_luong: "",
+                ngay_nhan_luong: "",
+                chuc_vu: "",
+                suc_khoe: ""
+            });
         }
         setOpen(true);
     };
+
 
     const handleOpenDetail = (index) => {
         setStudentData(students[index]);
@@ -243,15 +207,24 @@ const StudentManagement = () => {
 
 
 
-    const handleSave = () => {
-        if (editIndex !== null) {
-            const updatedStudents = [...students];
-            updatedStudents[editIndex] = studentData;
-            setStudents(updatedStudents);
-        } else {
-            setStudents([...students, { ...studentData, id: students.length + 1 }]);
+    const handleSave = async () => {
+        try {
+            if (editIndex === null) {
+                // Gọi API để thêm học viên mới
+                const newStudent = await createNewStudent(studentData);
+
+                // Cập nhật danh sách học viên sau khi thêm thành công
+                setStudents([...students, newStudent]);
+            } else {
+                // Cập nhật học viên trong danh sách
+                const updatedStudents = [...students];
+                updatedStudents[editIndex] = studentData;
+                setStudents(updatedStudents);
+            }
+            setOpen(false);
+        } catch (error) {
+            console.error("Lỗi khi thêm học viên:", error);
         }
-        setOpen(false);
     };
 
     return (
@@ -333,7 +306,7 @@ const StudentManagement = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredStudents.map((student, index) => (
+                        {students.map((student, index) => (
                             <TableRow key={student.id}>
                                 <TableCell>{student.ho_dem} {student.ten}</TableCell>
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
@@ -355,7 +328,7 @@ const StudentManagement = () => {
                 <DialogTitle>Chi tiết học viên</DialogTitle>
                 <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)}>
                     <Tab label="Chi tiết học viên" />
-                    {studentData.doi_tuong_id > 1 && <Tab label="Chi tiết quân nhân" />}
+                    {filteredStudents.doi_tuong_id > 1 && <Tab label="Chi tiết quân nhân" />}
                 </Tabs>
                 <DialogContent>
                     {tabIndex === 0 && (
