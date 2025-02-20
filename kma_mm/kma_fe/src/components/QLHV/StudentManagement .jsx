@@ -64,7 +64,22 @@ const StudentManagement = () => {
             email: "nguyenvana@example.com",
             khi_can_bao_tin_cho_ai: "Nguyễn Văn Bố - 0912345678",
             noi_tru: 1,
-            ngoai_tru: 0
+            ngoai_tru: 0,
+
+            // phần này của quân nhân
+            sinh_vien_id: 1001, // Số nguyên (INTEGER)
+            ngay_nhap_ngu: "2020-06-15", // Ngày (DATEONLY - định dạng YYYY-MM-DD)
+            cap_bac: "Thượng úy", // Chuỗi (STRING)
+            trinh_do_van_hoa: "Đại học", // Chuỗi (STRING)
+            noi_o_hien_nay: "Hà Nội", // Chuỗi (STRING)
+            don_vi_cu_di_hoc: "Lữ đoàn 144", // Chuỗi (STRING)
+            loai_luong: "Lương cơ bản", // Chuỗi (STRING)
+            nhom_luong: "Nhóm 3", // Chuỗi (STRING)
+            bac_luong: "Bậc 2", // Chuỗi (STRING)
+            he_so_luong: "4.5", // Chuỗi (STRING)
+            ngay_nhan_luong: "2023-01-01", // Ngày (DATEONLY)
+            chuc_vu: "Chỉ huy trưởng", // Chuỗi (STRING)
+            suc_khoe: "Tốt" // Chuỗi (STRING)
         },
         {
             id: 2,
@@ -106,7 +121,23 @@ const StudentManagement = () => {
             email: "tranthib@example.com",
             khi_can_bao_tin_cho_ai: "Trần Văn C - 0987123456",
             noi_tru: 0,
-            ngoai_tru: 1
+            ngoai_tru: 1,
+
+
+            // phần này của quân nhân
+            sinh_vien_id: 1001, // Số nguyên (INTEGER)
+            ngay_nhap_ngu: "2020-06-15", // Ngày (DATEONLY - định dạng YYYY-MM-DD)
+            cap_bac: "Thượng úy", // Chuỗi (STRING)
+            trinh_do_van_hoa: "Đại học", // Chuỗi (STRING)
+            noi_o_hien_nay: "Hà Nội", // Chuỗi (STRING)
+            don_vi_cu_di_hoc: "Lữ đoàn 144", // Chuỗi (STRING)
+            loai_luong: "Lương cơ bản", // Chuỗi (STRING)
+            nhom_luong: "Nhóm 3", // Chuỗi (STRING)
+            bac_luong: "Bậc 2", // Chuỗi (STRING)
+            he_so_luong: "4.5", // Chuỗi (STRING)
+            ngay_nhan_luong: "2023-01-01", // Ngày (DATEONLY)
+            chuc_vu: "Chỉ huy trưởng", // Chuỗi (STRING)
+            suc_khoe: "Tốt" // Chuỗi (STRING)
         }
     ]
     );
@@ -155,7 +186,21 @@ const StudentManagement = () => {
         email: "",
         khi_can_bao_tin_cho_ai: "",
         noi_tru: false,
-        ngoai_tru: false
+        ngoai_tru: false,
+        // của quân nhân
+        sinh_vien_id: null,
+        ngay_nhap_ngu: "",
+        cap_bac: "",
+        trinh_do_van_hoa: "",
+        noi_o_hien_nay: "",
+        don_vi_cu_di_hoc: "",
+        loai_luong: "",
+        nhom_luong: "",
+        bac_luong: "",
+        he_so_luong: "",
+        ngay_nhan_luong: "",
+        chuc_vu: "",
+        suc_khoe: ""
     });
 
     const handleOpen = (index = null) => {
@@ -233,7 +278,7 @@ const StudentManagement = () => {
                 <DialogTitle>Chi tiết học viên</DialogTitle>
                 <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)}>
                     <Tab label="Chi tiết học viên" />
-                    {studentData.isSoldier && <Tab label="Chi tiết quân nhân" />}
+                    {studentData.doi_tuong_id > 1 && <Tab label="Chi tiết quân nhân" />}
                 </Tabs>
                 <DialogContent>
                     {tabIndex === 0 && (
@@ -290,8 +335,34 @@ const StudentManagement = () => {
                         </Grid>
 
                     )}
-                    {tabIndex === 1 && studentData.isSoldier && (
-                        <Typography variant="body1">{studentData.militaryInfo}</Typography>
+                    {tabIndex === 1 && studentData.doi_tuong_id > 2 && (
+                        <Grid container spacing={2}>
+                            {[
+
+                                { label: "Sinh viên ID", value: studentData.sinh_vien_id },
+                                { label: "Ngày nhập ngũ", value: studentData.ngay_nhap_ngu },
+                                { label: "Cấp bậc", value: studentData.cap_bac },
+                                { label: "Trình độ văn hóa", value: studentData.trinh_do_van_hoa },
+                                { label: "Nơi ở hiện nay", value: studentData.noi_o_hien_nay },
+                                { label: "Đơn vị cử đi học", value: studentData.don_vi_cu_di_hoc },
+                                { label: "Loại lương", value: studentData.loai_luong },
+                                { label: "Nhóm lương", value: studentData.nhom_luong },
+                                { label: "Bậc lương", value: studentData.bac_luong },
+                                { label: "Ngày nhận lương", value: studentData.ngay_nhap_ngu },
+                                { label: "Chức vụ", value: studentData.chuc_vu },
+                                { label: "Sức khỏe", value: studentData.suc_khoe },
+
+                            ].map((item, index) =>
+                                item.value ? (
+                                    <Grid item xs={12} sm={6} key={index}>
+                                        <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+                                            {item.label}:
+                                        </Typography>
+                                        <Typography variant="body1">{item.value}</Typography>
+                                    </Grid>
+                                ) : null
+                            )}
+                        </Grid>
                     )}
                 </DialogContent>
                 <DialogActions>
@@ -359,23 +430,41 @@ const StudentManagement = () => {
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={studentData.isSoldier}
-                                        onChange={(e) => setStudentData({ ...studentData, isSoldier: e.target.checked })}
+                                        checked={studentData.doi_tuong_id > 1}
+                                        onChange={(e) => setStudentData({ ...studentData, doi_tuong_id: e.target.checked ? "2" : "1" })}
                                     />
                                 }
                                 label="Là quân nhân"
                             />
                         </Grid>
 
-                        {studentData.isSoldier && (
-                            <Grid item xs={12}>
-                                <TextField
-                                    label="Thông tin quân nhân"
-                                    value={studentData.militaryInfo}
-                                    onChange={(e) => setStudentData({ ...studentData, militaryInfo: e.target.value })}
-                                    fullWidth
-                                    margin="normal"
-                                />
+                        {studentData.doi_tuong_id > 1 && (
+                            <Grid container spacing={2}>
+                                {[
+                                    { label: "Sinh viên ID", key: "sinh_vien_id" },
+                                    { label: "Ngày nhập ngũ", key: "ngay_nhap_ngu" },
+                                    { label: "Cấp bậc", key: "cap_bac" },
+                                    { label: "Trình độ văn hóa", key: "trinh_do_van_hoa" },
+                                    { label: "Nơi ở hiện nay", key: "noi_o_hien_nay" },
+                                    { label: "Đơn vị cử đi học", key: "don_vi_cu_di_hoc" },
+                                    { label: "Loại lương", key: "loai_luong" },
+                                    { label: "Nhóm lương", key: "nhom_luong" },
+                                    { label: "Bậc lương", key: "bac_luong" },
+                                    { label: "Ngày nhận lương", key: "ngay_nhan_luong" },
+                                    { label: "Chức vụ", key: "chuc_vu" },
+                                    { label: "Sức khỏe", key: "suc_khoe" },
+                                ].map(({ label, key }) => (
+                                    <Grid item xs={12} sm={6} key={key}>
+                                        <TextField
+                                            label={label}
+                                            value={studentData[key] || ""}
+                                            onChange={(e) => setStudentData((prev) => ({ ...prev, [key]: e.target.value }))}
+                                            fullWidth
+                                            margin="normal"
+                                            variant="outlined"
+                                        />
+                                    </Grid>
+                                ))}
                             </Grid>
                         )}
                     </Grid>
