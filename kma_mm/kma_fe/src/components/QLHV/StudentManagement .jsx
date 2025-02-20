@@ -15,40 +15,52 @@ import {
     DialogActions,
     TextField,
     Checkbox,
-    Typography
+    Typography,
+    Tabs,
+    Tab
 } from "@mui/material";
 
 const StudentManagement = () => {
     const [students, setStudents] = useState([
-        { id: 1, name: "Nguyễn Văn A", credits: 15, completedRules: true },
-        { id: 2, name: "Trần Thị B", credits: 8, completedRules: false }
+        { id: 1, name: "Nguyễn Văn A", credits: 15, completedRules: true, isSoldier: true, militaryInfo: "Chi tiết quân nhân A" },
+        { id: 2, name: "Trần Thị B", credits: 8, completedRules: false, isSoldier: false }
     ]);
 
     const [open, setOpen] = useState(false);
+    const [openDetail, setOpenDetail] = useState(false);
     const [editIndex, setEditIndex] = useState(null);
+    const [tabIndex, setTabIndex] = useState(0);
     const [studentData, setStudentData] = useState({
         name: "",
         credits: "",
-        completedRules: false
+        completedRules: false,
+        isSoldier: false,
+        militaryInfo: ""
     });
 
-    // Mở form thêm/chỉnh sửa
     const handleOpen = (index = null) => {
         setEditIndex(index);
         if (index !== null) {
             setStudentData(students[index]);
         } else {
-            setStudentData({ name: "", credits: "", completedRules: false });
+            setStudentData({ name: "", credits: "", completedRules: false, isSoldier: false, militaryInfo: "" });
         }
         setOpen(true);
     };
 
-    // Đóng form
+    const handleOpenDetail = (index) => {
+        setStudentData(students[index]);
+        setOpenDetail(true);
+    };
+
     const handleClose = () => {
         setOpen(false);
     };
 
-    // Lưu dữ liệu
+    const handleCloseDetail = () => {
+        setOpenDetail(false);
+    };
+
     const handleSave = () => {
         if (editIndex !== null) {
             const updatedStudents = [...students];
@@ -65,13 +77,9 @@ const StudentManagement = () => {
             <Typography variant="h5" gutterBottom>
                 Quản lý học viên
             </Typography>
-
-            {/* Nút Thêm Sinh Viên */}
             <Button variant="contained" color="primary" onClick={() => handleOpen()}>
-                Thêm sinh viên
+                Thêm học viên
             </Button>
-
-            {/* Bảng danh sách sinh viên */}
             <TableContainer component={Paper} style={{ marginTop: 20 }}>
                 <Table>
                     <TableHead>
@@ -91,9 +99,8 @@ const StudentManagement = () => {
                                     <Checkbox checked={student.completedRules} disabled />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="outlined" onClick={() => handleOpen(index)}>
-                                        Chỉnh sửa
-                                    </Button>
+                                    <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
+                                    <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -101,44 +108,41 @@ const StudentManagement = () => {
                 </Table>
             </TableContainer>
 
-            {/* Dialog Form Thêm/Chỉnh sửa */}
+            {/* Dialog Chi Tiết */}
+            <Dialog open={openDetail} onClose={handleCloseDetail}>
+                <DialogTitle>Chi tiết học viên</DialogTitle>
+                <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)}>
+                    <Tab label="Chi tiết học viên" />
+                    {studentData.isSoldier && <Tab label="Chi tiết quân nhân" />}
+                </Tabs>
+                <DialogContent>
+                    {tabIndex === 0 && (
+                        <Typography variant="body1">Tên: {studentData.name}</Typography>
+                    )}
+                    {tabIndex === 1 && studentData.isSoldier && (
+                        <Typography variant="body1">{studentData.militaryInfo}</Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDetail} color="secondary">Đóng</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog Chỉnh Sửa */}
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{editIndex !== null ? "Chỉnh sửa sinh viên" : "Thêm sinh viên"}</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        label="Họ và tên"
-                        name="name"
-                        value={studentData.name}
-                        onChange={(e) => setStudentData({ ...studentData, name: e.target.value })}
-                        fullWidth
-                        margin="normal"
-                    />
-                    <TextField
-                        label="Số tín chỉ"
-                        name="credits"
-                        type="number"
-                        value={studentData.credits}
-                        onChange={(e) => setStudentData({ ...studentData, credits: e.target.value })}
-                        fullWidth
-                        margin="normal"
-                    />
-                    <div>
-                        <Checkbox
-                            checked={studentData.completedRules}
-                            onChange={(e) => setStudentData({ ...studentData, completedRules: e.target.checked })}
-                        />
-                        <Typography variant="body1" display="inline">
-                            Đã hoàn thành nội quy, quy chế
-                        </Typography>
-                    </div>
+                    <TextField label="Họ và tên" value={studentData.name} onChange={(e) => setStudentData({ ...studentData, name: e.target.value })} fullWidth margin="normal" />
+                    <TextField label="Số tín chỉ" type="number" value={studentData.credits} onChange={(e) => setStudentData({ ...studentData, credits: e.target.value })} fullWidth margin="normal" />
+                    <Checkbox checked={studentData.completedRules} onChange={(e) => setStudentData({ ...studentData, completedRules: e.target.checked })} /> Hoàn thành nội quy
+                    <Checkbox checked={studentData.isSoldier} onChange={(e) => setStudentData({ ...studentData, isSoldier: e.target.checked })} /> Là quân nhân
+                    {studentData.isSoldier && (
+                        <TextField label="Thông tin quân nhân" value={studentData.militaryInfo} onChange={(e) => setStudentData({ ...studentData, militaryInfo: e.target.value })} fullWidth margin="normal" />
+                    )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="secondary">
-                        Hủy
-                    </Button>
-                    <Button onClick={handleSave} color="primary">
-                        Lưu
-                    </Button>
+                    <Button onClick={handleClose} color="secondary">Hủy</Button>
+                    <Button onClick={handleSave} color="primary">Lưu</Button>
                 </DialogActions>
             </Dialog>
         </Container>
