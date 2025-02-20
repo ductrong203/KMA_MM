@@ -20,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: "6",
-
     },
   });
 
