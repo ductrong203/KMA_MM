@@ -7,6 +7,7 @@ const api = axios.create({
     headers: {
         "Content-Type": "application/json", // Header mặc định
     },
+    //withCredentials: true, // Bật gửi cookie trong request
 });
 
 let isRefreshing = false;

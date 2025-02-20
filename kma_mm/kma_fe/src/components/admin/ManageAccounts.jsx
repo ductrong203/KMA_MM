@@ -19,12 +19,12 @@ const ManageAccounts = () => {
     const navigate = useNavigate();
 
     const roleMapping = {
-        1: "training",
-        2: "examination",
-        3: "student_manage",
-        4: "library",
-        5: "director",
-        6: "sv",
+        1: "đào tạo",
+        2: "khảo thí",
+        3: "quản lý sinh viên",
+        4: "thư viện",
+        5: "giám đốc",
+        6: "sinh viên",
         7: "admin",
     };
 
@@ -125,12 +125,12 @@ const ManageAccounts = () => {
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                Manage Account
+                Quản lý tài khoản
             </Typography>
             <Box display="flex" gap={2} alignItems="center" marginBottom={2}>
                 {/* Thanh tìm kiếm */}
                 <TextField
-                    label="Search by Username"
+                    label="Tìm kiếm bằng Username"
                     variant="outlined"
                     fullWidth
                     value={searchTerm}
@@ -140,14 +140,14 @@ const ManageAccounts = () => {
                 {/* Bộ lọc Role */}
                 <TextField
                     select
-                    label="Filter by Role"
+                    label="xét theo quyền"
                     variant="outlined"
                     fullWidth
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
                     sx={{ flex: 1 }} // Chiếm 1 phần tỉ lệ
                 >
-                    <MenuItem value="">All Roles</MenuItem>
+                    <MenuItem value="">Tất cả các quyền</MenuItem>
                     {Object.entries(roleMapping).map(([key, value]) => (
                         <MenuItem key={key} value={key}>
                             {value}
@@ -161,8 +161,8 @@ const ManageAccounts = () => {
                     <TableHead>
                         <TableRow className='bg-blue-100 text-white'>
                             <TableCell>Username</TableCell>
-                            <TableCell>Role</TableCell>
-                            <TableCell>Actions</TableCell>
+                            <TableCell>Quyền</TableCell>
+                            <TableCell>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -176,14 +176,14 @@ const ManageAccounts = () => {
                                         color="primary"
                                         onClick={() => handleEditUser(account)}  // Mở modal chỉnh sửa
                                     >
-                                        Edit
+                                        Sửa
                                     </Button>
                                     <Button
                                         variant="outlined"
                                         color="secondary"
                                         onClick={() => handleDeleteUser(account.id)} // Sửa lại id cho đúng
                                     >
-                                        Delete
+                                        Xóa
                                     </Button>
                                 </TableCell>
                             </TableRow>

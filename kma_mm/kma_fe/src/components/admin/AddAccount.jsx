@@ -50,7 +50,7 @@ const AddAccount = () => {
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                Add New Account
+                Thêm tài khoản
             </Typography>
             <Grid container spacing={3}>
                 {/* Username */}
@@ -109,7 +109,7 @@ const AddAccount = () => {
                 {/* Submit Button */}
                 <Grid item xs={12}>
                     <Button variant="contained" color="primary" onClick={handleSubmit}>
-                        Add Account
+                        Thêm tài khoản
                     </Button>
                 </Grid>
             </Grid>
