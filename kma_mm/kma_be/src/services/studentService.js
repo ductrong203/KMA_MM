@@ -1,4 +1,7 @@
-const { sinh_vien } = require("../models");
+const { initModels } = require("../models/init-models");
+const { sequelize } = require("../models");
+const models = initModels(sequelize);
+const { doi_tuong_quan_ly, sinh_vien } = models;
 
 class SinhVienService {
   static async createSinhVien(data) {
@@ -10,11 +13,27 @@ class SinhVienService {
   }
 
   static async getAllSinhViens() {
-    return await sinh_vien.findAll();
+    return await sinh_vien.findAll({
+      include: [
+        {
+          model: doi_tuong_quan_ly,
+          as: "doi_tuong",
+          attributes: ["ten_doi_tuong"],
+        },
+      ],
+    });
   }
 
   static async getSinhVienById(id) {
-    return await sinh_vien.findByPk(id);
+    return await sinh_vien.findByPk(id, {
+      include: [
+        {
+          model: doi_tuong_quan_ly,
+          as: "doi_tuong",
+          attributes: ["ten_doi_tuong"],
+        },
+      ],
+    });
   }
 
   static async updateSinhVien(id, data) {
