@@ -18,15 +18,11 @@ class ThongTinQuanNhanService {
   }
 
   static async getAllThongTin() {
-    return await thong_tin_quan_nhan.findAll({
-      include: [{ model: sinh_vien, as: "sinh_vien" }],
-    });
+    return await thong_tin_quan_nhan.findAll();
   }
 
   static async getThongTinById(id) {
-    return await thong_tin_quan_nhan.findByPk(id, {
-      include: [{ model: sinh_vien, as: "sinh_vien" }],
-    });
+    return await thong_tin_quan_nhan.findByPk(id);
   }
 
   static async updateThongTin(id, data) {
