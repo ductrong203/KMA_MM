@@ -130,7 +130,7 @@ const AssignRoles = () => {
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                Assign Role
+                Phân quyền
             </Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
@@ -175,7 +175,7 @@ const AssignRoles = () => {
                 </Grid>
                 <Grid item xs={12}>
                     <Button variant="contained" color="primary" onClick={handleAssignRole}>
-                        Assign Role
+                        Gán quyền
                     </Button>
                 </Grid>
             </Grid>

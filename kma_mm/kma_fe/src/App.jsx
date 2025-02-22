@@ -17,21 +17,37 @@ import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
 import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
 import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";
+import { getDetailUserById } from "./Api_controller/Service/authService";
+import UserInfo from "./components/Infor/UserInfor";
+import StudentManagement from "./components/Dashboard/StudentManageDashboard";
+import StudentManagementDashboard from "./components/Dashboard/StudentManageDashboard";
+
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
-
-  // Hàm xử lý đăng nhập (set role và lưu vào localStorage)
-  const handleLogin = (role) => {
+  const [info, setInfo] = useState({
+    name: "Nguyễn Văn A",
+    id: "T1001"
+  })
+  const handleLogin = async (role) => {
+    if (!role) {
+      // Redirect to login if role is empty (logout scenario)
+      window.location.href = "/login";
+      return;
+    }
+    try {
+      let id = localStorage.getItem("id");
+      const response = await getDetailUserById(id); // 
+      console.log(response.data);
+      setInfo(response.data)
+    } catch (e) {
+      throw e;
+    }
     setRole(role);
     localStorage.setItem("role", role); // Lưu role vào localStorage
   };
 
-  const info = {
-    name: "Nguyễn Văn A",
-    id: "T1001"
-  }
 
 
   return (
@@ -171,11 +187,33 @@ const App = () => {
           }
         />
         <Route
+          path={`/${role}/info`}
+          element={
+            <PrivateRoute role={role} allowedRoles={[`${role}`]}>
+              <Layout Info={info} title="Library dashboard">
+                <UserInfo />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
           path="/library/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["library"]}>
               <Layout Info={info} title="Library dashboard">
                 <LibraryDashBoard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/student_manage/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["student_manage"]}>
+              <Layout Info={info} title="Quản lý học viên">
+                <StudentManagementDashboard />
               </Layout>
             </PrivateRoute>
           }

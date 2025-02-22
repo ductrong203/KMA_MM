@@ -1,5 +1,3 @@
-
-
 const { User } = require("../models");
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
@@ -139,10 +137,17 @@ const updateUser = async (id, data) => {
         message: "User is not defined!",
       };
     }
-    const updatedUser = await User.update(data, {
+    const rowsUpdated = await User.update(data, {
       where: { id },
-      returning: true,
     });
+    if (rowsUpdated[0] === 0) {
+      return {
+        status: "ERR",
+        message: "Failed to update user!",
+      };
+    }
+    const updatedUser = await User.findOne({ where: { id } });
+
     return {
       status: "OK",
       message: "User is updated!",
@@ -152,6 +157,7 @@ const updateUser = async (id, data) => {
     throw new Error(error.message);
   }
 };
+
 const changePassword = async (id, oldPassword, newPassword) => {
   try {
     const user = await User.findOne({ where: { id } });
@@ -188,7 +194,3 @@ module.exports = {
   updateUser,
   changePassword,
 };
-
-
-
-

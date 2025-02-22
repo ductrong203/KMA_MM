@@ -14,3 +14,23 @@ api : update user
     {
     "role":6
     }
+
+CRUD sinhvien
+getall:
+    http://localhost:8000/student
+getbyid:
+    http://localhost:8000/student/1
+post: tạo
+    http://localhost:8000/student
+update:
+    http://localhost:8000/student/1
+delete:
+    http://localhost:8000/student/1
+
+CRUD thongtinquannhan
+    http://localhost:8000/thongtinquannhan
+    http://localhost:8000/thongtinquannhan/1
+
+CRUD doituongquanly
+    http://localhost:8000/doituongquanly
+    http://localhost:8000/doituongquanly/1
