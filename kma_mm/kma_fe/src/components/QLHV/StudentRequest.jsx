@@ -36,7 +36,7 @@ const StudentRequests = () => {
         filter === "Tất cả" ? requests : requests.filter((req) => req.status === filter);
 
     return (
-        <Container maxWidth="md">
+        <Container maxWidth="xl">
             <Typography variant="h5" gutterBottom>
                 Quản lý đơn từ sinh viên
             </Typography>

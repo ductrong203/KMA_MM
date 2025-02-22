@@ -48,7 +48,7 @@ export default function StudentManagementDashboard() {
     };
 
     return (
-        <Container maxWidth="md" sx={{ marginTop: 5 }}>
+        <Container maxWidth="xl" sx={{ marginTop: 5 }}>
             <Paper position="sticky">
                 <Tabs
                     value={value}
