@@ -32,10 +32,36 @@ class ThongTinQuanNhanController {
     }
   }
 
+  static async getByIdSinhVien(req, res) {
+    try {
+      const { id } = req.params;
+      const thongTin = await ThongTinQuanNhanService.getThongTinByIdSinhVien(id);
+      if (!thongTin) {
+        return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
+      }
+      return res.json(thongTin);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   static async update(req, res) {
     try {
       const { id } = req.params;
       const updated = await ThongTinQuanNhanService.updateThongTin(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
+      }
+      return res.json(updated);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  static async updateByIdSinhVien(req, res) {
+    try {
+      const { id } = req.params;
+      const updated = await ThongTinQuanNhanService.updateThongTinByIdSinhVien(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
       }
