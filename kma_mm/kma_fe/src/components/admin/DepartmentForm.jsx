@@ -8,6 +8,9 @@ import {
   TextField,
   Button,
   Box,
+  Switch,
+  FormControlLabel,
+  Grid,
 } from '@mui/material';
 import { createPhongBan, updatePhongBan } from '../../Api_controller/Service/phongBanService';
 
@@ -16,6 +19,7 @@ const DepartmentForm = ({ department, onClose, onSubmit }) => {
     code: '',
     name: '',
     notes: '',
+    thuocKhoa: false
   });
 
   const [errors, setErrors] = useState({});
@@ -25,6 +29,7 @@ const DepartmentForm = ({ department, onClose, onSubmit }) => {
         code: department.ma_phong_ban || '',  // Hiển thị mã phòng nếu có
         name: department.ten_phong_ban || '',  // Hiển thị tên phòng nếu có
         notes: department.ghi_chu || '',
+        thuocKhoa: department.thuoc_khoa || false
       });
     }
   }, [department]);
@@ -69,7 +74,7 @@ const DepartmentForm = ({ department, onClose, onSubmit }) => {
       }));
     }
   };
-
+console.log(formData)
   return (
     <form onSubmit={handleSubmit}>
       <DialogTitle>
@@ -97,6 +102,22 @@ const DepartmentForm = ({ department, onClose, onSubmit }) => {
             required
             fullWidth
           />
+          <Grid item xs={12} md={6}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.thuocKhoa}
+                  onChange={(e) => handleChange({
+                    target: {
+                      name: 'thuocKhoa',
+                      value: e.target.checked
+                    }
+                  })}
+                />
+              }
+              label={formData.thuocKhoa ? "Thuộc khoa" : "Thuộc phòng ban"}
+            />
+          </Grid>
           <TextField
             name="notes"
             label="Notes"

@@ -20,16 +20,18 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { getPhongBan } from '../../Api_controller/Service/phongBanService';
 import FormGiangVien from './TeacherForm';
+import { getGiangVien } from '../../Api_controller/Service/giangVienService';
 
 const QuanLyGiangViens = () => {
     const [giangViens, setGiangViens] = useState([]);
     const [openForm, setOpenForm] = useState(false);
     const [selectedGiangVien, setSelectedGiangVien] = useState(null);
+    const [danhSachPhongBan, setDanhSachPhongBan] = useState([]);
 
     // Tạo hàm fetchgiangViens với useCallback để tránh tạo lại hàm mới mỗi lần render
     const fetchgiangViens = useCallback(async () => {
         try {
-            const response = await getPhongBan();
+            const response = await getGiangVien();
             setGiangViens(response);
         } catch (error) {
             console.error('Error fetching giangViens:', error);
@@ -66,9 +68,9 @@ const QuanLyGiangViens = () => {
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">giangVien Management</Typography>
+                <Typography variant="h4">QUẢN LÝ GIẢNG VIÊN</Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenForm(true)}>
-                    Add giangVien
+                    Thêm giảng viên
                 </Button>
             </Box>
 
@@ -76,18 +78,18 @@ const QuanLyGiangViens = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Mã Phòng Ban</TableCell>
-                            <TableCell>Tên Phòng Ban</TableCell>
-                            <TableCell>Ghi chú</TableCell>
+                            <TableCell>Mã Giảng Viên</TableCell>
+                            <TableCell>Tên Giảng Viên</TableCell>
+                            <TableCell>Giảng Viên</TableCell>
                             <TableCell align="right">Hành động</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {giangViens.map((giangVien) => (
-                            <TableRow key={giangVien.ma_phong_ban}>
-                                <TableCell>{giangVien.ma_phong_ban}</TableCell>
-                                <TableCell>{giangVien.ten_phong_ban}</TableCell>
-                                <TableCell>{giangVien.ghi_chu}</TableCell>
+                            <TableRow key={giangVien.ma_giang_vien}>
+                                <TableCell>{giangVien.ma_giang_vien}</TableCell>
+                                <TableCell>{giangVien.ho_ten}</TableCell>
+                                <TableCell>{!giangVien.la_giang_vien_moi?"Cơ hữu":"Thỉnh giảng"}</TableCell>
                                 <TableCell align="right">
                                     <IconButton color="primary" onClick={() => handleEdit(giangVien)}>
                                         <EditIcon />
