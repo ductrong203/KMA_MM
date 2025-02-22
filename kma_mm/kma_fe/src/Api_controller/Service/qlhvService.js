@@ -33,3 +33,26 @@ export const updateStudentById = async (data, id) => {
         throw error;
     }
 };
+
+
+
+
+
+
+// Lấy thông tin quân nhân theo sinh viên ID
+export const getMilitaryInfoByStudentId = async (id) => {
+    const response = await api.get(`/thongtinquannhan/byidsinhvien/${id}`);
+    return response.data;
+};
+
+// Thêm mới thông tin quân nhân
+export const createMilitaryInfo = async (data) => {
+    const response = await api.post(`/thongtinquannhan/`, data);
+    return response.data;
+};
+
+// Cập nhật thông tin quân nhân theo sinh viên ID
+export const updateMilitaryInfoByStudentId = async (id, data) => {
+    const response = await api.put(`/thongtinquannhan/byidsinhvien/${id}`, data);
+    return response.data;
+};

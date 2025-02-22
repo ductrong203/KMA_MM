@@ -18,11 +18,16 @@ import {
     Typography,
     Tabs,
     Tab,
-    FormControlLabel, FormControl, InputLabel, Select, MenuItem,
-
-    Grid
+    FormControlLabel,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Grid,
+    TablePagination
 } from "@mui/material";
-import { createNewStudent, getAllMiri, getAllStudent, updateStudentById } from "../../Api_controller/Service/qlhvService";
+
+import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, updateMilitaryInfoByStudentId, updateStudentById } from "../../Api_controller/Service/qlhvService";
 
 const StudentManagement = () => {
 
@@ -30,9 +35,6 @@ const StudentManagement = () => {
 
     ]
     );
-
-
-
     const [open, setOpen] = useState(false);
     const [onClose, setOnclose] = useState(false);
     const [openDetail, setOpenDetail] = useState(false);
@@ -256,23 +258,26 @@ const StudentManagement = () => {
 
     const handleSave = async () => {
         try {
-            //form tao moi du lieu sinh vien
+            let res; // Khai báo biến res để tránh lỗi ReferenceError
+
             if (editIndex === null) {
-                const newStudent = await createNewStudent(studentData);
-                setStudents([...students, newStudent]);
+                // Form tạo mới sinh viên
+                res = await createNewStudent(studentData);
+                setStudents([...students, res]);
             } else {
-                // form chinh sua du lieu sinh vien
-                let res = await updateStudentById(studentData, studentData.id);
+                // Form chỉnh sửa sinh viên
+                res = await updateStudentById(studentData, studentData.id);
                 const updatedStudents = [...students];
                 updatedStudents[editIndex] = res;
                 setStudents(updatedStudents);
-
-
-                if (res.doi_tuong_id > 2) {
-                    setOpenMilitaryPopup(true);
-                    setMilitaryData(prev => ({ ...prev, sinh_vien_id: res.id }));
-                }
             }
+
+            // Nếu đối tượng có id > 2 thì mở popup và set dữ liệu quân nhân
+            if (res.doi_tuong_id > 2) {
+                setOpenMilitaryPopup(true);
+                setMilitaryData(prev => ({ ...prev, sinh_vien_id: res.id }));
+            }
+
             setOpen(false);
         } catch (error) {
             console.error("Lỗi khi cập nhật học viên:", error);
@@ -281,16 +286,65 @@ const StudentManagement = () => {
 
 
 
+
+    useEffect(() => {
+        const fetchMilitaryInfo = async () => {
+            if (tabIndex === 1 && studentData.id) {
+                try {
+                    const data = await getMilitaryInfoByStudentId(studentData.id);
+                    setMilitaryData(data);
+                } catch (error) {
+                    console.error("Lỗi khi lấy thông tin quân nhân:", error);
+                }
+            }
+        };
+
+        fetchMilitaryInfo();
+    }, [tabIndex, studentData.id]);
+
+
+
+
     const handleSaveMilitary = async () => {
         try {
             console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
-            // Sau này có thể gọi API để lưu thông tin quân nhân tại đây
+
+            if (editIndex !== null) {
+                // Nếu đang chỉnh sửa thì gọi API cập nhật
+                await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, militaryData);
+                console.log("Cập nhật thông tin quân nhân thành công!");
+            } else {
+                // Nếu thêm mới thì gọi API tạo mới
+                await createMilitaryInfo(militaryData);
+                console.log("Thêm mới thông tin quân nhân thành công!");
+            }
 
             setOpenMilitaryPopup(false);
         } catch (error) {
             console.error("Lỗi khi lưu thông tin quân nhân:", error);
         }
     };
+
+
+
+    // Quản lý trạng thái phân trang
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10); // Số dòng mỗi trang
+
+    // Cắt danh sách sinh viên dựa trên trang hiện tại
+    const paginatedStudents = filteredStudents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+    // Xử lý thay đổi trang
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    // Xử lý thay đổi số dòng trên mỗi trang
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0); // Reset về trang đầu tiên
+    };
+
 
 
 
@@ -368,21 +422,16 @@ const StudentManagement = () => {
                         <TableRow>
                             <TableCell>Họ và tên</TableCell>
                             <TableCell>Mã học viên</TableCell>
-                            <TableCell>giới tính</TableCell>
-
+                            <TableCell>Giới tính</TableCell>
                             <TableCell>Hành động</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredStudents.map((student, index) => (
+                        {paginatedStudents.map((student, index) => (
                             <TableRow key={student.id}>
                                 <TableCell>{student.ho_dem} {student.ten}</TableCell>
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
-
-
-                                <TableCell>
-                                    {student.gioi_tinh === 0 ? "nữ" : "nam"}
-                                </TableCell>
+                                <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
                                 <TableCell>
                                     <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
                                     <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
@@ -391,10 +440,22 @@ const StudentManagement = () => {
                         ))}
                     </TableBody>
                 </Table>
+
+                {/* Phân trang */}
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 20]} // Các tùy chọn số dòng mỗi trang
+                    component="div"
+                    count={filteredStudents.length} // Tổng số dòng
+                    rowsPerPage={rowsPerPage} // Số dòng mỗi trang
+                    page={page} // Trang hiện tại
+                    onPageChange={handleChangePage} // Khi chuyển trang
+                    onRowsPerPageChange={handleChangeRowsPerPage} // Khi thay đổi số dòng mỗi trang
+                    labelRowsPerPage="Số dòng mỗi trang" // Đổi sang tiếng Việt
+                />
             </TableContainer>
 
             {/* Dialog Chi Tiết */}
-            <Dialog maxWidth="xl" open={openDetail} onClose={handleCloseDetail}>
+            <Dialog fullWidth maxWidth="xl" open={openDetail} onClose={handleCloseDetail}>
                 <DialogTitle>Chi tiết học viên</DialogTitle>
                 <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)}>
                     <Tab label="Chi tiết học viên" />
@@ -457,7 +518,7 @@ const StudentManagement = () => {
                     )}
 
                     {tabIndex === 1 && studentData.doi_tuong_id && (
-                        <Grid maxWidth="xl" xs={12} sm={3} container spacing={2}>
+                        <Grid maxWidth="" xs={12} sm={3} container spacing={2}>
                             {[
                                 { label: "Sinh viên ID", value: militaryData.sinh_vien_id },
                                 { label: "Ngày nhập ngũ", value: militaryData.ngay_nhap_ngu },
@@ -617,77 +678,6 @@ const StudentManagement = () => {
                             </Grid>
                         ))}
 
-
-
-
-                        {studentData.doi_tuong_id && (
-                            <>
-                                {/* {[
-                                    { label: "Sinh viên ID", key: "sinh_vien_id" },
-                                    { label: "Ngày nhập ngũ", key: "ngay_nhap_ngu" },
-                                    { label: "Cấp bậc", key: "cap_bac" },
-                                    { label: "Trình độ văn hóa", key: "trinh_do_van_hoa" },
-                                    { label: "Nơi ở hiện nay", key: "noi_o_hien_nay" },
-                                    { label: "Đơn vị cử đi học", key: "don_vi_cu_di_hoc" },
-                                    { label: "Loại lương", key: "loai_luong" },
-                                    { label: "Nhóm lương", key: "nhom_luong" },
-                                    { label: "Bậc lương", key: "bac_luong" },
-                                    { label: "Ngày nhận lương", key: "ngay_nhan_luong" },
-                                    { label: "Chức vụ", key: "chuc_vu" },
-                                    { label: "Sức khỏe", key: "suc_khoe" },
-                                ].map(({ label, key }) => (
-                                    <Grid sx={{}} item xs={12} sm={6} key={key}>
-                                        <TextField
-                                            label={label}
-                                            value={miritaryData[key] || ""}
-                                            onChange={(e) => setStudentData((prev) => ({ ...prev, [key]: e.target.value }))}
-                                            fullWidth
-                                            margin="normal"
-                                            variant="outlined"
-                                        />
-                                    </Grid>
-                                ))} */}
-
-
-                                {/* <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                                    <DialogTitle>Nhập Thông Tin Quân Nhân</DialogTitle>
-                                    <DialogContent>
-                                        <Grid container spacing={2}>
-                                            {[
-                                                { label: "Sinh viên ID", key: "sinh_vien_id" },
-                                                { label: "Ngày nhập ngũ", key: "ngay_nhap_ngu" },
-                                                { label: "Cấp bậc", key: "cap_bac" },
-                                                { label: "Trình độ văn hóa", key: "trinh_do_van_hoa" },
-                                                { label: "Nơi ở hiện nay", key: "noi_o_hien_nay" },
-                                                { label: "Đơn vị cử đi học", key: "don_vi_cu_di_hoc" },
-                                                { label: "Loại lương", key: "loai_luong" },
-                                                { label: "Nhóm lương", key: "nhom_luong" },
-                                                { label: "Bậc lương", key: "bac_luong" },
-                                                { label: "Ngày nhận lương", key: "ngay_nhan_luong" },
-                                                { label: "Chức vụ", key: "chuc_vu" },
-                                                { label: "Sức khỏe", key: "suc_khoe" },
-                                            ].map(({ label, key }) => (
-                                                <Grid item xs={12} sm={6} key={key}>
-                                                    <TextField
-                                                        label={label}
-                                                        value={militaryData[key] || ""}
-                                                        onChange={(e) => handleChange(key, e.target.value)}
-                                                        fullWidth
-                                                        margin="normal"
-                                                        variant="outlined"
-                                                    />
-                                                </Grid>
-                                            ))}
-                                        </Grid>
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button onClick={handleClose} color="secondary">Hủy</Button>
-                                        <Button onClick={handleSave} color="primary" variant="contained">Lưu</Button>
-                                    </DialogActions>
-                                </Dialog> */}
-
-                            </>
-                        )}
                     </Grid>
                 </DialogContent>
                 <DialogActions>
