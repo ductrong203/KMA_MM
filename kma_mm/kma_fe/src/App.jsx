@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Login from "./components/Login/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
 import AdminDashboard from "./components/Dashboard/AdminDashboard";
@@ -21,15 +26,15 @@ import { getDetailUserById } from "./Api_controller/Service/authService";
 import UserInfo from "./components/Infor/UserInfor";
 import StudentManagement from "./components/Dashboard/StudentManageDashboard";
 import StudentManagementDashboard from "./components/Dashboard/StudentManageDashboard";
-
+import ManageObjects from "./components/admin/ManageObject";
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
   const [info, setInfo] = useState({
     name: "Nguyễn Văn A",
-    id: "T1001"
-  })
+    id: "T1001",
+  });
   const handleLogin = async (role) => {
     if (!role) {
       // Redirect to login if role is empty (logout scenario)
@@ -38,17 +43,15 @@ const App = () => {
     }
     try {
       let id = localStorage.getItem("id");
-      const response = await getDetailUserById(id); // 
+      const response = await getDetailUserById(id); //
       console.log(response.data);
-      setInfo(response.data)
+      setInfo(response.data);
     } catch (e) {
       throw e;
     }
     setRole(role);
     localStorage.setItem("role", role); // Lưu role vào localStorage
   };
-
-
 
   return (
     <Router>
@@ -73,11 +76,9 @@ const App = () => {
               <Layout Info={info} title="Admin Dashboard">
                 <AdminDashboard />
               </Layout>
-
             </PrivateRoute>
           }
         />
-
 
         {/* Route thêm tài khoản */}
         <Route
@@ -87,7 +88,6 @@ const App = () => {
               <Layout Info={info} title="Admin Dashboard">
                 <AddAccount />
               </Layout>
-
             </PrivateRoute>
           }
         />
@@ -100,7 +100,17 @@ const App = () => {
               <Layout Info={info} title="Admin Dashboard">
                 <ManageAccounts />
               </Layout>
-
+            </PrivateRoute>
+          }
+        />
+        {/* Route quản lý đối tượng */}
+        <Route
+          path="/admin/manage-objects"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <ManageObjects />
+              </Layout>
             </PrivateRoute>
           }
         />
@@ -113,7 +123,6 @@ const App = () => {
               <Layout Info={info} title="Admin Dashboard">
                 <AssignRoles />
               </Layout>
-
             </PrivateRoute>
           }
         />
@@ -126,7 +135,6 @@ const App = () => {
               <Layout Info={info} title="Admin Dashboard">
                 <ActivityLogs />
               </Layout>
-
             </PrivateRoute>
           }
         />
