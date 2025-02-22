@@ -18,7 +18,11 @@ module.exports = function(sequelize, DataTypes) {
     ghi_chu: {
       type: DataTypes.TEXT,
       allowNull: true
-    }
+    },
+    thuoc_khoa: {
+      type: DataTypes.TINYINT,  
+      allowNull: true,
+    },
   }, {
     sequelize,
     tableName: 'phong_ban',

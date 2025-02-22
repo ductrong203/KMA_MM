@@ -20,6 +20,10 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      thuoc_khoa: {
+        type: DataTypes.TINYINT,
+        allowNull: true,
+      },
     });
   },
 

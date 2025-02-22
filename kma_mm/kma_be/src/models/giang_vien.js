@@ -1,4 +1,4 @@
-const Sequelize = require('sequelize');
+const DataTypes = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('giang_vien', {
     id: {
@@ -42,7 +42,39 @@ module.exports = function(sequelize, DataTypes) {
         model: 'phong_ban',
         key: 'id'
       }
-    }
+    },
+    hoc_ham: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    hoc_vi: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    chuyen_mon: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    trang_thai: {
+      type: DataTypes.TINYINT,  // Sử dụng TINYINT để lưu trạng thái (0 = đã nghỉ, 1 = còn hoạt động)
+      allowNull: true,
+    },
+    thuoc_khoa: {
+      type: DataTypes.TINYINT,  
+      allowNull: true,
+    },
+    gioi_tinh: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    ngay_sinh: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    email: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
   }, {
     sequelize,
     tableName: 'giang_vien',

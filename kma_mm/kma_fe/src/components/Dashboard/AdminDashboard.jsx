@@ -28,10 +28,10 @@ const AdminDashboard = () => {
               </IconButton>
             </Link>
             <Typography variant="h6" component="div" mt={2}>
-              Tạo tài khoản
+              Create Account
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Tạo tài khoản cho người dùng
+              Create new accounts for users or admins.
             </Typography>
           </CardContent>
         </Card>
@@ -47,28 +47,10 @@ const AdminDashboard = () => {
               </IconButton>
             </Link>
             <Typography variant="h6" component="div" mt={2}>
-              Quản lý tài khoản
+              Manage Accounts
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Thêm sửa xóa tài khoản
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      {/* Manage Accounts */}
-      <Grid item xs={12} sm={6} md={4}>
-        <Card>
-          <CardContent>
-            <Link to="/admin/manage-objects">
-              <IconButton color="primary" sx={{ fontSize: 50 }}>
-                <ManageAccountsIcon />
-              </IconButton>
-            </Link>
-            <Typography variant="h6" component="div" mt={2}>
-              Quản lý đối tượng
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Thêm sửa xóa đối tượng
+              Edit, update, or disable user accounts.
             </Typography>
           </CardContent>
         </Card>
@@ -84,10 +66,10 @@ const AdminDashboard = () => {
               </IconButton>
             </Link>
             <Typography variant="h6" component="div" mt={2}>
-              Phân quyền
+              Assign Roles
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Gán quyền hoặc phân quyền cho người dùng
+              Assign or update roles for users.
             </Typography>
           </CardContent>
         </Card>
@@ -103,33 +85,33 @@ const AdminDashboard = () => {
               </IconButton>
             </Link>
             <Typography variant="h6" component="div" mt={2}>
-              Nhật kí hoạt động
+              Activity Logs
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Xem hành động của người dùng
+              View login history or actions performed by users.
             </Typography>
           </CardContent>
         </Card>
       </Grid>
 
       {/* Delete Account */}
-      {/* <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                    <CardContent>
-                        <Link to="/admin/delete-account">
-                            <IconButton color="primary" sx={{ fontSize: 50 }}>
-                                <DeleteIcon />
-                            </IconButton>
-                        </Link>
-                        <Typography variant="h6" component="div" mt={2}>
-                            Delete Account
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                            Remove inactive or unwanted accounts.
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Grid> */}
+      <Grid item xs={12} sm={6} md={4}>
+        <Card>
+          <CardContent>
+            <Link to="/admin/delete-account">
+              <IconButton color="primary" sx={{ fontSize: 50 }}>
+                <DeleteIcon />
+              </IconButton>
+            </Link>
+            <Typography variant="h6" component="div" mt={2}>
+              Delete Account
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Remove inactive or unwanted accounts.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
     </Grid>
   );
 };
