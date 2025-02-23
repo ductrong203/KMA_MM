@@ -2,7 +2,7 @@ const { phong_ban } = require("../models");
 
 const createPhongBan = async (phongBan) => {
     console.log(phongBan)
-    const {code,name } = phongBan;
+    const {code,name, notes, thuocKhoa } = phongBan;
   
   try {
     const checkPhongBan = await phong_ban.findOne({ where: { ma_phong_ban: code } });
@@ -13,6 +13,8 @@ const createPhongBan = async (phongBan) => {
     const createdPhongBan = await phong_ban.create({
         ma_phong_ban:code,
         ten_phong_ban:name,
+        ghi_chu: notes,
+        thuoc_khoa:thuocKhoa
     });
 
     return {
@@ -33,20 +35,6 @@ try {
   throw new Error(error.message);
 }
 };
-// const updatePhongBan = async (code, data) => {
-  
-//   try {
-//     console.log(code)
-//     console.log(data)
-//     const result = await phong_ban.update(data, { where: { code } });
-//     const updatedCount = result[0];
-    
-//     if(updatedCount===0) return null
-//     return await phong_ban.findOne({ where: { code } });
-//   } catch (error) {
-//     throw new Error(error.message);
-//   }
-//   };
 
 const updatePhongBan = async (code, data) => {
   try {
@@ -63,7 +51,8 @@ const updatePhongBan = async (code, data) => {
     return await phong_ban.update({
       ma_phong_ban: data.code,
       ten_phong_ban: data.name,
-      ghi_chu: data.notes
+      ghi_chu: data.notes,
+      thuoc_khoa: data.thuocKhoa
     }, { where: { ma_phong_ban:code } });
   } catch (error) {
     console.error("Lỗi cập nhật:", error.message);
