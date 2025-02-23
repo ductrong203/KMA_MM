@@ -423,6 +423,8 @@ const StudentManagement = () => {
                             <TableCell>Họ và tên</TableCell>
                             <TableCell>Mã học viên</TableCell>
                             <TableCell>Giới tính</TableCell>
+                            <TableCell>Lớp</TableCell>
+                            <TableCell>Đối tượng quản lý</TableCell>
                             <TableCell>Hành động</TableCell>
                         </TableRow>
                     </TableHead>
@@ -432,6 +434,8 @@ const StudentManagement = () => {
                                 <TableCell>{student.ho_dem} {student.ten}</TableCell>
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
                                 <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
+                                <TableCell>{student.lop_id}</TableCell>
+                                <TableCell>{student.doi_tuong_dao_tao}</TableCell>
                                 <TableCell>
                                     <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
                                     <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
