@@ -47,6 +47,7 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 import { createTraining } from "../../Api_controller/Service/trainingService";
+import StudentManagement from '../QLHV/StudentManagement ';
 
 // Mock data
 const trainerInfo = {
@@ -144,7 +145,7 @@ function TrainingDashboard() {
     };
 
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
 
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
@@ -350,50 +351,51 @@ function TrainingDashboard() {
 
                 {/* Student Management Tab */}
                 {currentTab === 3 && (
-                    <Box>
-                        <Button
-                            variant="contained"
-                            startIcon={<PersonAddIcon />}
-                            onClick={() => setOpenAddStudent(true)}
-                            sx={{ mb: 3 }}
-                        >
-                            Thêm sinh viên
-                        </Button>
+                    // <Box>
+                    //     <Button
+                    //         variant="contained"
+                    //         startIcon={<PersonAddIcon />}
+                    //         onClick={() => setOpenAddStudent(true)}
+                    //         sx={{ mb: 3 }}
+                    //     >
+                    //         Thêm sinh viên
+                    //     </Button>
 
-                        <TableContainer>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Mã SV</TableCell>
-                                        <TableCell>Họ tên</TableCell>
-                                        <TableCell>Lớp</TableCell>
-                                        <TableCell>Số tín chỉ</TableCell>
-                                        <TableCell>GPA</TableCell>
-                                        <TableCell align="right">Thao tác</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {mockStudents.map((student) => (
-                                        <TableRow key={student.id}>
-                                            <TableCell>{student.code}</TableCell>
-                                            <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.class}</TableCell>
-                                            <TableCell>{student.credits}</TableCell>
-                                            <TableCell>{student.gpa}</TableCell>
-                                            <TableCell align="right">
-                                                <IconButton onClick={() => { }}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton onClick={() => { }}>
-                                                    <FileDownloadIcon />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Box>
+                    //     <TableContainer>
+                    //         <Table>
+                    //             <TableHead>
+                    //                 <TableRow>
+                    //                     <TableCell>Mã SV</TableCell>
+                    //                     <TableCell>Họ tên</TableCell>
+                    //                     <TableCell>Lớp</TableCell>
+                    //                     <TableCell>Số tín chỉ</TableCell>
+                    //                     <TableCell>GPA</TableCell>
+                    //                     <TableCell align="right">Thao tác</TableCell>
+                    //                 </TableRow>
+                    //             </TableHead>
+                    //             <TableBody>
+                    //                 {mockStudents.map((student) => (
+                    //                     <TableRow key={student.id}>
+                    //                         <TableCell>{student.code}</TableCell>
+                    //                         <TableCell>{student.name}</TableCell>
+                    //                         <TableCell>{student.class}</TableCell>
+                    //                         <TableCell>{student.credits}</TableCell>
+                    //                         <TableCell>{student.gpa}</TableCell>
+                    //                         <TableCell align="right">
+                    //                             <IconButton onClick={() => { }}>
+                    //                                 <EditIcon />
+                    //                             </IconButton>
+                    //                             <IconButton onClick={() => { }}>
+                    //                                 <FileDownloadIcon />
+                    //                             </IconButton>
+                    //                         </TableCell>
+                    //                     </TableRow>
+                    //                 ))}
+                    //             </TableBody>
+                    //         </Table>
+                    //     </TableContainer>
+                    // </Box>
+                    <StudentManagement />
                 )}
 
                 {/* Graduation Eligibility Tab */}
