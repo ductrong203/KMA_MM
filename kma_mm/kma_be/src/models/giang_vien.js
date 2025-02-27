@@ -1,10 +1,10 @@
-const DataTypes = require('sequelize');
+const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('giang_vien', {
     id: {
+      autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
-      autoIncrement: true,
       primaryKey: true
     },
     ma_giang_vien: {
@@ -29,7 +29,8 @@ module.exports = function(sequelize, DataTypes) {
     },
     password: {
       type: DataTypes.STRING(100),
-      allowNull: true
+      allowNull: true,
+      defaultValue: "1"
     },
     la_giang_vien_moi: {
       type: DataTypes.TINYINT,
@@ -45,36 +46,36 @@ module.exports = function(sequelize, DataTypes) {
     },
     hoc_ham: {
       type: DataTypes.STRING(50),
-      allowNull: true,
+      allowNull: true
     },
     hoc_vi: {
       type: DataTypes.STRING(50),
-      allowNull: true,
+      allowNull: true
     },
     chuyen_mon: {
       type: DataTypes.STRING(100),
-      allowNull: true,
+      allowNull: true
     },
     trang_thai: {
-      type: DataTypes.TINYINT,  // Sử dụng TINYINT để lưu trạng thái (0 = đã nghỉ, 1 = còn hoạt động)
-      allowNull: true,
+      type: DataTypes.TINYINT,
+      allowNull: true
     },
     thuoc_khoa: {
-      type: DataTypes.TINYINT,  
-      allowNull: true,
+      type: DataTypes.TINYINT,
+      allowNull: true
     },
     gioi_tinh: {
       type: DataTypes.STRING(10),
-      allowNull: true,
+      allowNull: true
     },
     ngay_sinh: {
       type: DataTypes.DATE,
-      allowNull: true,
+      allowNull: true
     },
     email: {
       type: DataTypes.STRING(50),
-      allowNull: true,
-    },
+      allowNull: true
+    }
   }, {
     sequelize,
     tableName: 'giang_vien',

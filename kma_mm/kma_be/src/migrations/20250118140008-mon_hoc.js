@@ -1,33 +1,38 @@
 "use strict";
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable("lop", {
+    await queryInterface.createTable("mon_hoc", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
         autoIncrement: true,
       },
-      ma_lop: {
+      ma_mon_hoc: {
         type: Sequelize.STRING(50),
         allowNull: true,
       },
-      danh_muc_dao_tao_id: {
+      ten_mon_hoc: {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+      },
+      so_tin_chi: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: {
-          model: "danh_muc_dao_tao",
-          key: "id",
-        },
+      },
+      tinh_diem: {
+        type: Sequelize.TINYINT,
+        allowNull: true,
       },
       trang_thai: {
         type: Sequelize.TINYINT,
         allowNull: true,
+        defaultValue: 1,
       },
     });
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable("lop");
+    await queryInterface.dropTable("mon_hoc");
   },
 };

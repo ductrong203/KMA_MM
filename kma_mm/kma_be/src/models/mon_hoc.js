@@ -2,9 +2,9 @@ const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('mon_hoc', {
     id: {
+      autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
-      autoIncrement: true,
       primaryKey: true
     },
     ma_mon_hoc: {
@@ -22,6 +22,11 @@ module.exports = function(sequelize, DataTypes) {
     tinh_diem: {
       type: DataTypes.TINYINT,
       allowNull: true
+    },
+    trang_thai: {
+      type: DataTypes.TINYINT,
+      allowNull: true,
+      defaultValue: 1
     }
   }, {
     sequelize,

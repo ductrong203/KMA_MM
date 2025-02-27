@@ -2,11 +2,10 @@ const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('thoi_khoa_bieu', {
     id: {
+      autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
-      autoIncrement: true,
       primaryKey: true
-      
     },
     lop_id: {
       type: DataTypes.INTEGER,

@@ -33,6 +33,7 @@ module.exports = {
         password: {
           type: Sequelize.STRING(100),
           allowNull: true,
+          defaultValue: "1",
         },
         la_giang_vien_moi: {
           type: Sequelize.TINYINT,
@@ -59,11 +60,11 @@ module.exports = {
           allowNull: true,
         },
         trang_thai: {
-          type: Sequelize.TINYINT,  // Sử dụng TINYINT để lưu trạng thái (0 = đã nghỉ, 1 = còn hoạt động)
+          type: Sequelize.TINYINT, // Sử dụng TINYINT để lưu trạng thái (0 = đã nghỉ, 1 = còn hoạt động)
           allowNull: true,
         },
         thuoc_khoa: {
-          type: Sequelize.TINYINT,  
+          type: Sequelize.TINYINT,
           allowNull: true,
         },
         gioi_tinh: {
@@ -91,7 +92,7 @@ module.exports = {
             name: "phong_ban_id",
             using: "BTREE",
             fields: [{ name: "phong_ban_id" }],
-          }
+          },
         ],
         timestamps: false, // Điều này giống như trong model của bạn
       }

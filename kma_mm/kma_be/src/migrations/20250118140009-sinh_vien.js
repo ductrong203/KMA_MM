@@ -172,6 +172,15 @@ module.exports = {
         type: Sequelize.TINYINT,
         allowNull: true,
       },
+      username: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      },
+      password: {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+        defaultValue: "1",
+      },
     });
   },
 

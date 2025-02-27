@@ -12,7 +12,7 @@ module.exports = {
         },
         danh_muc_id: {
           type: Sequelize.INTEGER,
-          allowNull: true,
+          allowNull: false,
           references: {
             model: "danh_muc_dao_tao", // Bảng này phải tồn tại trong cơ sở dữ liệu
             key: "id",
@@ -20,11 +20,15 @@ module.exports = {
         },
         mon_hoc_id: {
           type: Sequelize.INTEGER,
-          allowNull: true,
+          allowNull: false,
+          references: {
+            model: "mon_hoc", // Bảng này phải tồn tại trong cơ sở dữ liệu
+            key: "id",
+          },
         },
         ky_hoc: {
           type: Sequelize.INTEGER,
-          allowNull: true,
+          allowNull: false,
         },
         bat_buoc: {
           type: Sequelize.TINYINT,
@@ -43,6 +47,11 @@ module.exports = {
             name: "danh_muc_id",
             using: "BTREE",
             fields: [{ name: "danh_muc_id" }],
+          },
+          {
+            name: "mon_hoc_id",
+            using: "BTREE",
+            fields: [{ name: "mon_hoc_id" }],
           },
         ],
         timestamps: false, // Điều này giống như trong model của bạn

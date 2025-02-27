@@ -1,4 +1,4 @@
-"use strict";
+("use strict");
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable("phong_ban", {
@@ -21,7 +21,7 @@ module.exports = {
         allowNull: true,
       },
       thuoc_khoa: {
-        type: DataTypes.TINYINT,
+        type: Sequelize.TINYINT,
         allowNull: true,
       },
     });
