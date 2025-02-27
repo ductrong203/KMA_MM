@@ -1,4 +1,3 @@
-const { DataTypes } = require("sequelize");
 ("use strict");
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -22,7 +21,7 @@ module.exports = {
         allowNull: true,
       },
       thuoc_khoa: {
-        type: DataTypes.TINYINT,
+        type: Sequelize.TINYINT,
         allowNull: true,
       },
     });
