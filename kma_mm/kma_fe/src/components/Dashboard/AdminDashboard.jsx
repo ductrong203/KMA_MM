@@ -67,6 +67,13 @@ const menuItems = [
     icon: <BusinessIcon sx={{ fontSize: 40 }} />,
     href: '/admin/teacher-management',
     color: 'info.main'
+  },
+  {
+    title: 'Đối tượng quản lý',
+    description: 'Create, edit, and manage object',
+    icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+    href: '/admin/manage-objects',
+    color: 'info.main'
   }
 ];
 
