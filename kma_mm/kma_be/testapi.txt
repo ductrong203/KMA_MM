@@ -41,7 +41,7 @@ CRUD khoadaotao
     json mẫu:
         {
             "he_dao_tao_id": 1,
-            "ten_khoa": "Khoa Công Nghệ Thông Tin",
+            "ten_khoa": "CT6",
             "nam_hoc": "2024-2025"
         }
 Lớp: 
