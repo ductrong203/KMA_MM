@@ -34,3 +34,20 @@ CRUD thongtinquannhan
 CRUD doituongquanly
     http://localhost:8000/doituongquanly
     http://localhost:8000/doituongquanly/1
+
+Khoá đào tạo : he_dao_tao_id là bắt buộc, và phải tồn tại
+CRUD khoadaotao
+    http://localhost:8000/khoadaotao
+    json mẫu:
+        {
+            "he_dao_tao_id": 1,
+            "ten_khoa": "Khoa Công Nghệ Thông Tin",
+            "nam_hoc": "2024-2025"
+        }
+Lớp: 
+CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
+    http://localhost:8000/lop
+    json mẫu:
+        {
+        "khoa_dao_tao_id": "1"
+        }

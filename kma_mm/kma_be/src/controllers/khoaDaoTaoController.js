@@ -1,0 +1,55 @@
+const KhoaDaoTaoService = require("../services/khoaDaoTaoService");
+
+class KhoaDaoTaoController {
+  static async create(req, res) {
+    try {
+      const { he_dao_tao_id, ten_khoa, nam_hoc } = req.body;
+      const khoaDaoTao = await KhoaDaoTaoService.createKhoaDaoTao(he_dao_tao_id, ten_khoa, nam_hoc);
+      res.status(201).json(khoaDaoTao);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  static async getAll(req, res) {
+    try {
+      const khoaList = await KhoaDaoTaoService.getAllKhoaDaoTao();
+      res.json(khoaList);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async getById(req, res) {
+    try {
+      const { id } = req.params;
+      const khoa = await KhoaDaoTaoService.getKhoaDaoTaoById(id);
+      if (!khoa) return res.status(404).json({ error: "Không tìm thấy khoá đào tạo" });
+      res.json(khoa);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async update(req, res) {
+    try {
+      const { id } = req.params;
+      const updatedKhoa = await KhoaDaoTaoService.updateKhoaDaoTao(id, req.body);
+      res.json(updatedKhoa);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  static async delete(req, res) {
+    try {
+      const { id } = req.params;
+      const result = await KhoaDaoTaoService.deleteKhoaDaoTao(id);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+}
+
+module.exports = KhoaDaoTaoController;
