@@ -184,6 +184,9 @@ module.exports = function(sequelize, DataTypes) {
     sequelize,
     tableName: 'sinh_vien',
     timestamps: false,
+    defaultScope: {
+      attributes: { exclude: ["password"] }, // Mặc định ẩn password
+    },
     indexes: [
       {
         name: "PRIMARY",

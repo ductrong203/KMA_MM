@@ -1,12 +1,26 @@
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
-const { doi_tuong_quan_ly, sinh_vien } = models;
+const { doi_tuong_quan_ly, sinh_vien, lop } = models;
 
 class SinhVienService {
   static async createSinhVien(data) {
     try {
-      return await sinh_vien.create(data);
+      const lopInfo = await lop.findByPk(data.lop_id);
+      if (!lopInfo) {
+        throw new Error("Lớp không tồn tại");
+      }
+
+      const count = await sinh_vien.count({ where: { lop_id: data.lop_id } });
+      const maSinhVien = `${lopInfo.ma_lop}${String(count + 1).padStart(2, "0")}`;
+      data.ma_sinh_vien = maSinhVien;
+      const sinhVien = await sinh_vien.create(data);
+        
+      // Chuyển đối tượng thành JSON và xóa password
+      const sinhVienData = sinhVien.toJSON();
+      delete sinhVienData.password;
+
+      return sinhVienData;
     } catch (error) {
       throw new Error(error.message);
     }
