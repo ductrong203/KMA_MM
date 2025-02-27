@@ -8,6 +8,7 @@ const AddAccount = () => {
     const navigate = useNavigate(); // Hook điều hướng
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [ho_ten, setHoten] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [role, setRole] = useState(6); // Default to 'sv'
 
@@ -22,13 +23,14 @@ const AddAccount = () => {
     };
 
     const handleSubmit = async () => {
+        console.log(password, confirmPassword, ho_ten)
         if (password !== confirmPassword) {
             alert('Passwords do not match!');
             return;
         }
 
         try {
-            const res = await AdminRegister(username, password, confirmPassword, role); // Truyền từng tham số
+            const res = await AdminRegister(username, ho_ten, password, confirmPassword, role); // Truyền từng tham số
             console.log('Adding new account:', { username, password, confirmPassword, role });
             alert(res); // Hiển thị thông báo từ server
         } catch (error) {
@@ -64,6 +66,16 @@ const AddAccount = () => {
                     />
                 </Grid>
 
+                {/* Username */}
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Họ tên"
+                        variant="outlined"
+                        fullWidth
+                        value={ho_ten}
+                        onChange={(e) => setHoten(e.target.value)}
+                    />
+                </Grid>
                 {/* Password */}
                 <Grid item xs={12} sm={6}>
                     <TextField

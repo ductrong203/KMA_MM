@@ -50,7 +50,7 @@ export const register = async (username, password, confirmPassword) => {
 
 
 // Hàm xử lý đăng ký
-export const AdminRegister = async (username, password, confirmPassword, role) => {
+export const AdminRegister = async (username, ho_ten, password, confirmPassword, role) => {
     if (!username || !password || !confirmPassword || !role) {
         throw new Error("Please fill all fields.");
     }
@@ -60,6 +60,7 @@ export const AdminRegister = async (username, password, confirmPassword, role) =
 
     const response = await api.post("/auth/register", {
         username,
+        ho_ten,
         password,
         confirmPassword,
         role
