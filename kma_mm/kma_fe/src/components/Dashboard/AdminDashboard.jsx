@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
-  IconButton, 
+import {
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
   Container,
   Box
 } from '@mui/material';
-import { 
+import {
   Add as AddIcon,
   ManageAccounts as ManageAccountsIcon,
   Security as SecurityIcon,
@@ -67,6 +67,13 @@ const menuItems = [
     icon: <BusinessIcon sx={{ fontSize: 40 }} />,
     href: '/admin/teacher-management',
     color: 'info.main'
+  },
+  {
+    title: 'Đối tượng quản lý',
+    description: 'Create, edit, and manage object',
+    icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+    href: '/admin/manage-objects',
+    color: 'info.main'
   }
 ];
 
@@ -77,8 +84,8 @@ const AdminDashboard = () => {
       <Grid container spacing={3}>
         {menuItems.map((item, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card 
-              sx={{ 
+            <Card
+              sx={{
                 height: '100%',
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 '&:hover': {
@@ -87,10 +94,10 @@ const AdminDashboard = () => {
                 }
               }}
             >
-              <CardContent sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
+              <CardContent sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 textAlign: 'center',
                 height: '100%',
                 p: 3
@@ -115,7 +122,7 @@ const AdminDashboard = () => {
                     {item.icon}
                   </Box>
                 </Link>
-                
+
                 <Typography variant="h6" component="h2" gutterBottom>
                   {item.title}
                 </Typography>

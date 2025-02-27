@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Button, TextField, Grid, Typography, MenuItem } from '@mui/material';
+import { Button, TextField, Grid, Typography, MenuItem, IconButton } from '@mui/material';
 import { AdminRegister } from '../../Api_controller/Service/authService';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
+import { useNavigate } from 'react-router-dom';
 
 const AddAccount = () => {
+    const navigate = useNavigate(); // Hook điều hướng
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,11 +36,21 @@ const AddAccount = () => {
         }
     };
 
+    const handleBackToDashboard = () => {
+        navigate('/admin/dashboard'); // Điều hướng về trang Admin Dashboard
+    };
 
     return (
         <div>
             <Typography variant="h5" gutterBottom>
-                Add New Account
+                <IconButton
+                    color="primary"
+                    onClick={handleBackToDashboard}
+                    sx={{ mr: 1, mb: 1 }} // Khoảng cách giữa icon và tiêu đề
+                >
+                    <ArrowBackIcon />
+                </IconButton>
+                Thêm tài khoản
             </Typography>
             <Grid container spacing={3}>
                 {/* Username */}
@@ -96,7 +109,7 @@ const AddAccount = () => {
                 {/* Submit Button */}
                 <Grid item xs={12}>
                     <Button variant="contained" color="primary" onClick={handleSubmit}>
-                        Add Account
+                        Thêm tài khoản
                     </Button>
                 </Grid>
             </Grid>

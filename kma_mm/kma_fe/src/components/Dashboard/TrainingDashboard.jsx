@@ -47,6 +47,8 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 import { createTraining } from "../../Api_controller/Service/trainingService";
+import StudentManagement from '../QLHV/StudentManagement ';
+import ClassManagement from '../LOP/ClassManagement';
 
 // Mock data
 const trainerInfo = {
@@ -144,7 +146,7 @@ function TrainingDashboard() {
     };
 
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
 
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
@@ -212,64 +214,7 @@ function TrainingDashboard() {
 
                     {/* Classes Tab */}
                     {currentTab === 1 && (
-                        <Box>
-                            <Grid container spacing={3} sx={{ mb: 3 }}>
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Hệ đào tạo</InputLabel>
-                                        <Select
-                                            value=""
-                                            label="Hệ đào tạo"
-                                        >
-                                            {mockTrainingTypes
-                                                .filter(type => type.active)
-                                                .map(type => (
-                                                    <MenuItem key={type.id} value={type.id}>
-                                                        {type.name}
-                                                    </MenuItem>
-                                                ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<AddIcon />}
-                                        onClick={() => setOpenAddClass(true)}
-                                    >
-                                        Tạo lớp mới
-                                    </Button>
-                                </Grid>
-                            </Grid>
-
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Mã lớp</TableCell>
-                                            <TableCell>Số sinh viên</TableCell>
-                                            <TableCell align="right">Thao tác</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {mockClasses.map((cls) => (
-                                            <TableRow key={cls.id}>
-                                                <TableCell>{cls.code}</TableCell>
-                                                <TableCell>{cls.students}</TableCell>
-                                                <TableCell align="right">
-                                                    <IconButton onClick={() => { }}>
-                                                        <FileDownloadIcon />
-                                                    </IconButton>
-                                                    <IconButton onClick={() => { }}>
-                                                        <PrintIcon />
-                                                    </IconButton>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </Box>
+                        <ClassManagement />
                     )}
 
                     {/* Statistics Tab */}
@@ -350,50 +295,51 @@ function TrainingDashboard() {
 
                 {/* Student Management Tab */}
                 {currentTab === 3 && (
-                    <Box>
-                        <Button
-                            variant="contained"
-                            startIcon={<PersonAddIcon />}
-                            onClick={() => setOpenAddStudent(true)}
-                            sx={{ mb: 3 }}
-                        >
-                            Thêm sinh viên
-                        </Button>
+                    // <Box>
+                    //     <Button
+                    //         variant="contained"
+                    //         startIcon={<PersonAddIcon />}
+                    //         onClick={() => setOpenAddStudent(true)}
+                    //         sx={{ mb: 3 }}
+                    //     >
+                    //         Thêm sinh viên
+                    //     </Button>
 
-                        <TableContainer>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Mã SV</TableCell>
-                                        <TableCell>Họ tên</TableCell>
-                                        <TableCell>Lớp</TableCell>
-                                        <TableCell>Số tín chỉ</TableCell>
-                                        <TableCell>GPA</TableCell>
-                                        <TableCell align="right">Thao tác</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {mockStudents.map((student) => (
-                                        <TableRow key={student.id}>
-                                            <TableCell>{student.code}</TableCell>
-                                            <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.class}</TableCell>
-                                            <TableCell>{student.credits}</TableCell>
-                                            <TableCell>{student.gpa}</TableCell>
-                                            <TableCell align="right">
-                                                <IconButton onClick={() => { }}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton onClick={() => { }}>
-                                                    <FileDownloadIcon />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Box>
+                    //     <TableContainer>
+                    //         <Table>
+                    //             <TableHead>
+                    //                 <TableRow>
+                    //                     <TableCell>Mã SV</TableCell>
+                    //                     <TableCell>Họ tên</TableCell>
+                    //                     <TableCell>Lớp</TableCell>
+                    //                     <TableCell>Số tín chỉ</TableCell>
+                    //                     <TableCell>GPA</TableCell>
+                    //                     <TableCell align="right">Thao tác</TableCell>
+                    //                 </TableRow>
+                    //             </TableHead>
+                    //             <TableBody>
+                    //                 {mockStudents.map((student) => (
+                    //                     <TableRow key={student.id}>
+                    //                         <TableCell>{student.code}</TableCell>
+                    //                         <TableCell>{student.name}</TableCell>
+                    //                         <TableCell>{student.class}</TableCell>
+                    //                         <TableCell>{student.credits}</TableCell>
+                    //                         <TableCell>{student.gpa}</TableCell>
+                    //                         <TableCell align="right">
+                    //                             <IconButton onClick={() => { }}>
+                    //                                 <EditIcon />
+                    //                             </IconButton>
+                    //                             <IconButton onClick={() => { }}>
+                    //                                 <FileDownloadIcon />
+                    //                             </IconButton>
+                    //                         </TableCell>
+                    //                     </TableRow>
+                    //                 ))}
+                    //             </TableBody>
+                    //         </Table>
+                    //     </TableContainer>
+                    // </Box>
+                    <StudentManagement />
                 )}
 
                 {/* Graduation Eligibility Tab */}

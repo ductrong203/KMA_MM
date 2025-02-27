@@ -1,4 +1,5 @@
-"use strict";
+const { DataTypes } = require("sequelize");
+("use strict");
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable("phong_ban", {

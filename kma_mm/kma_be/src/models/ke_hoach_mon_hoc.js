@@ -2,14 +2,14 @@ const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('ke_hoach_mon_hoc', {
     id: {
+      autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
-      autoIncrement: true,
       primaryKey: true
     },
     danh_muc_id: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'danh_muc_dao_tao',
         key: 'id'
@@ -17,11 +17,15 @@ module.exports = function(sequelize, DataTypes) {
     },
     mon_hoc_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false,
+      references: {
+        model: 'mon_hoc',
+        key: 'id'
+      }
     },
     ky_hoc: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     bat_buoc: {
       type: DataTypes.TINYINT,
@@ -45,6 +49,13 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "danh_muc_id" },
+        ]
+      },
+      {
+        name: "mon_hoc_id",
+        using: "BTREE",
+        fields: [
+          { name: "mon_hoc_id" },
         ]
       },
     ]
