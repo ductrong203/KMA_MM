@@ -15,6 +15,9 @@ import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
+import ManageDepartments from "./components/admin/ManageDepartment";
+import FormGiangVien from "./components/admin/TeacherForm";
+import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
 
 const App = () => {
   // Lấy role từ localStorage khi khởi động
@@ -114,6 +117,26 @@ const App = () => {
         />
 
         {/* Route xóa tài khoản */}
+        <Route
+          path="/admin/departments"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <ManageDepartments />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/teacher-management"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <QuanLyGiangViens />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/admin/delete-account"
           element={
