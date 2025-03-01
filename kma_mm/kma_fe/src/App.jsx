@@ -50,7 +50,7 @@ const App = () => {
     try {
       let id = localStorage.getItem("id");
       const response = await getDetailUserById(id); //
-      console.log(response.data);
+      //console.log(response.data);
       setInfo(response.data);
     } catch (e) {
       throw e;

@@ -28,6 +28,9 @@ import {
 } from "@mui/material";
 
 import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, updateMilitaryInfoByStudentId, updateStudentById } from "../../Api_controller/Service/qlhvService";
+import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
+import { getAllDoiTuongQuanLy } from "../../Api_controller/Service/dtqlService";
+import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 
 const StudentManagement = () => {
 
@@ -124,9 +127,15 @@ const StudentManagement = () => {
     const [openMilitaryPopup, setOpenMilitaryPopup] = useState(false);
 
 
+
+
     const handleCloseMiPopup = () => {
         setOpenMilitaryPopup(false); // Đóng popup
     };
+    const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
+    const [danhSachDoiTuongQL, setDanhSachDoiTuongQL] = useState([]);
+    const [danhSachLop, setDanhSachLop] = useState([]);
+
 
 
 
@@ -135,10 +144,19 @@ const StudentManagement = () => {
             try {
                 const data = await getAllStudent(); // Gọi API
                 const data2 = await getAllMiri(); // gọi api lấy tất cả thông tin quân nhân
+                const data3 = await fetchDanhSachHeDaoTao()
+                const data4 = await getAllDoiTuongQuanLy()
+                const data5 = await getDanhSachLop()
                 console.log(data)
                 console.log(data2)
+                console.log("danh sach he dao tao", data3)
+                console.log("danh doi tuong quan ly", data4)
+                console.log("danh lop", data5)
                 setMilitary(data2);
                 setStudents(data); // Cập nhật danh sách học viên
+                setDanhSachHeDaoTao(data3);
+                setDanhSachDoiTuongQL(data4)
+                setDanhSachLop(data5)
             } catch (error) {
                 console.error("Lỗi khi lấy danh sách học viên:", error);
             }
@@ -272,8 +290,14 @@ const StudentManagement = () => {
                 setStudents(updatedStudents);
             }
 
-            // Nếu đối tượng có id > 2 thì mở popup và set dữ liệu quân nhân
-            if (res.doi_tuong_id > 2) {
+            // Danh sách các đối tượng được coi là quân nhân (chuyển về chữ thường)
+            const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
+
+            // Tìm đối tượng dựa trên doi_tuong_id của sinh viên mới lưu
+            const doiTuong = danhSachDoiTuongQL.find(item => item.id === res.doi_tuong_id);
+
+            // Nếu đối tượng tồn tại và chi_tiet_doi_tuong thuộc danh sách quân nhân
+            if (doiTuong && quanNhanList.includes(doiTuong.chi_tiet_doi_tuong.toLowerCase())) {
                 setOpenMilitaryPopup(true);
                 setMilitaryData(prev => ({ ...prev, sinh_vien_id: res.id }));
             }
@@ -283,6 +307,7 @@ const StudentManagement = () => {
             console.error("Lỗi khi cập nhật học viên:", error);
         }
     };
+
 
 
 
@@ -324,6 +349,69 @@ const StudentManagement = () => {
             console.error("Lỗi khi lưu thông tin quân nhân:", error);
         }
     };
+
+
+
+
+
+
+
+
+
+
+
+    const renderField = (field) => (
+        <Grid item xs={12} sm={4} key={field.key}>
+            {field.type === "select" ? (
+                <FormControl fullWidth margin="normal" required={field.required}>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+                    <Select
+                        value={studentData[field.key] || ""}
+                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    >
+                        {field.options.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            ) : field.type === "api" ? (
+                <FormControl fullWidth margin="normal" required={field.required}>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+                    <Select
+                        value={studentData[field.key] || ""}
+                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    >
+                        <MenuItem value={0}>Không</MenuItem>
+                        {field.options.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>
+                                {item[field.optionLabel]}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            ) : (
+                <TextField
+                    label={field.label}
+                    value={studentData[field.key] || ""}
+                    onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    fullWidth
+                    margin="normal"
+                />
+            )}
+        </Grid>
+    );
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -555,6 +643,9 @@ const StudentManagement = () => {
                 </DialogActions>
             </Dialog>
 
+
+
+
             {/* Dialog Chỉnh Sửa */}
             <Dialog maxWidth="xl" open={open} onClose={handleClose}>
                 <DialogTitle>{editIndex !== null ? `Chỉnh sửa sinh viên: ${studentData.ho_dem + " " + studentData.ten}` : `Thêm sinh viên`}</DialogTitle>
@@ -662,23 +753,44 @@ const StudentManagement = () => {
                                                             onChange={(e) => setStudentData({ ...studentData, doi_tuong_id: e.target.value })}
                                                         >
                                                             <MenuItem value={0}>Không</MenuItem>
-                                                            <MenuItem value={1}>Cảnh sát</MenuItem>
-                                                            <MenuItem value={2}>Nội bộ</MenuItem>
-                                                            <MenuItem value={3}>Bộ đội</MenuItem>
-
+                                                            {danhSachDoiTuongQL.map((item) => (
+                                                                <MenuItem key={item.id} value={item.id}>
+                                                                    {item.chi_tiet_doi_tuong}
+                                                                </MenuItem>
+                                                            ))}
                                                         </Select>
                                                     </FormControl>
                                                 )
 
-                                                    : (
-                                                        <TextField
-                                                            label={field.label}
-                                                            value={studentData[field.key] || ""}
-                                                            onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-                                                            fullWidth
-                                                            margin="normal"
-                                                        />
-                                                    )}
+                                                    :
+
+                                                    // đoạn này sau sẽ dùng api để render id và tên
+                                                    field.key === "lop_id" ? (
+                                                        <FormControl fullWidth margin="normal">
+                                                            <InputLabel sx={{ backgroundColor: "white" }}>Lớp ID </InputLabel>
+                                                            <Select
+                                                                value={studentData.lop_id}
+                                                                onChange={(e) => setStudentData({ ...studentData, lop_id: e.target.value })}
+                                                            >
+                                                                <MenuItem value={0}>Không</MenuItem>
+                                                                {danhSachLop.map((item) => (
+                                                                    <MenuItem key={item.id} value={item.id}>
+                                                                        {item.ma_lop}
+                                                                    </MenuItem>
+                                                                ))}
+                                                            </Select>
+                                                        </FormControl>
+                                                    )
+
+                                                        : (
+                                                            <TextField
+                                                                label={field.label}
+                                                                value={studentData[field.key] || ""}
+                                                                onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                                                                fullWidth
+                                                                margin="normal"
+                                                            />
+                                                        )}
                             </Grid>
                         ))}
 
@@ -689,6 +801,18 @@ const StudentManagement = () => {
                     <Button onClick={handleSave} color="primary">Lưu</Button>
                 </DialogActions>
             </Dialog>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
