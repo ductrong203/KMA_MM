@@ -14,8 +14,18 @@ api : update user
     {
     "role":6
     }
-
-CRUD sinhvien
+    
+Sinh viên
+CRUD sinhvien: lop_id là bắt buộc, và phải tồn tại
+json mẫu:
+{
+  "ho_dem": "Nguyen",
+  "ten": "Van C",
+  "ngay_sinh": "2002-05-11",
+  "gioi_tinh": 1,
+  "que_quan": "Ha Noi",
+  "lop_id": 1
+}
 getall:
     http://localhost:8000/student
 getbyid:
@@ -34,3 +44,20 @@ CRUD thongtinquannhan
 CRUD doituongquanly
     http://localhost:8000/doituongquanly
     http://localhost:8000/doituongquanly/1
+
+Khoá đào tạo : he_dao_tao_id là bắt buộc, và phải tồn tại
+CRUD khoadaotao
+    http://localhost:8000/khoadaotao
+    json mẫu:
+        {
+            "he_dao_tao_id": 1,
+            "ten_khoa": "CT6",
+            "nam_hoc": "2024-2025"
+        }
+Lớp: 
+CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
+    http://localhost:8000/lop
+    json mẫu:
+        {
+        "khoa_dao_tao_id": "1"
+        }

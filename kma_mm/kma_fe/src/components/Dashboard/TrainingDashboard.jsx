@@ -43,12 +43,17 @@ import {
     Tabs,
     TextField,
     Toolbar,
-    Typography
+    Typography,
+    Snackbar,
+    Alert,
+    CircularProgress
 } from '@mui/material';
-import React, { useState } from 'react';
-import { createTraining } from "../../Api_controller/Service/trainingService";
+import React, { useState, useEffect } from 'react';
+import { createTraining, fetchDanhSachHeDaoTao, updateTraining } from "../../Api_controller/Service/trainingService";
 import StudentManagement from '../QLHV/StudentManagement ';
 import ClassManagement from '../LOP/ClassManagement';
+import QuanLyKhoa from '../Khoa/QuanLyKhoa';
+import QuanLyLop from '../LOP/ClassManagement';
 
 // Mock data
 const trainerInfo = {
@@ -79,17 +84,6 @@ const mockStudents = [
         hasDegree: true
     }
 ];
-const mockTrainingTypes = [
-    { id: 1, code: 'LT', name: 'Liên thông', active: true },
-    { id: 2, code: 'TC', name: 'Tại chức', active: true },
-    { id: 3, code: 'VL', name: 'Vừa làm vừa học', active: false },
-];
-
-const mockClasses = [
-    { id: 1, code: 'LT01', trainingTypeId: 1, students: 35 },
-    { id: 2, code: 'LT02', trainingTypeId: 1, students: 40 },
-    { id: 3, code: 'TC01', trainingTypeId: 2, students: 45 },
-];
 
 function TrainingDashboard() {
     const [currentTab, setCurrentTab] = useState(0);
@@ -101,11 +95,48 @@ function TrainingDashboard() {
         name: '',
         active: true,
     });
+    const [trainingTypes, setTrainingTypes] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [openAddStudent, setOpenAddStudent] = useState(false);
     const [openGraduationCheck, setOpenGraduationCheck] = useState(false);
     const [openDegreeIssue, setOpenDegreeIssue] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [activeStep, setActiveStep] = useState(0);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
+
+    const mockClasses = [
+        { id: 1, code: 'LT01', trainingTypeId: 1, students: 35 },
+        { id: 2, code: 'LT02', trainingTypeId: 1, students: 40 },
+        { id: 3, code: 'TC01', trainingTypeId: 2, students: 45 },
+    ];
+
+    // Fetch training types from API on component mount
+    useEffect(() => {
+        fetchTrainingTypes();
+    }, []);
+
+    // Function to fetch training types from API
+    const fetchTrainingTypes = async () => {
+        setLoading(true);
+        try {
+            const response = await fetchDanhSachHeDaoTao();
+            setTrainingTypes(response);
+        } catch (error) {
+            console.error('Error fetching training types:', error);
+            setSnackbar({
+                open: true,
+                message: 'Không thể tải danh sách hệ đào tạo. Vui lòng thử lại!',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleTabChange = (event, newValue) => {
         setCurrentTab(newValue);
     };
@@ -113,19 +144,95 @@ function TrainingDashboard() {
     const handleAddTraining = async () => {
         // Validate code length
         if (newTraining.code.length > 5) {
-            alert('Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!');
+            setSnackbar({
+                open: true,
+                message: 'Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!',
+                severity: 'error'
+            });
             return;
         }
-        // Add training type logic here
-        await createTraining(newTraining)
-        setOpenAddTraining(false);
-        setNewTraining({ code: '', name: '', active: true });
+
+        // Validate required fields
+        if (!newTraining.code || !newTraining.name) {
+            setSnackbar({
+                open: true,
+                message: 'Vui lòng điền đầy đủ thông tin!',
+                severity: 'error'
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (editingTraining) {
+                // Update existing training
+                console.log(newTraining)
+                console.log(editingTraining)
+                await updateTraining(editingTraining.ma_he_dao_tao, newTraining);
+                setSnackbar({
+                    open: true,
+                    message: 'Cập nhật hệ đào tạo thành công!',
+                    severity: 'success'
+                });
+            } else {
+                // Add new training
+                await createTraining(newTraining);
+                setSnackbar({
+                    open: true,
+                    message: 'Thêm hệ đào tạo thành công!',
+                    severity: 'success'
+                });
+            }
+
+            // Refresh the list
+            fetchTrainingTypes();
+
+            // Close dialog and reset form
+            setOpenAddTraining(false);
+            setEditingTraining(null);
+            setNewTraining({ code: '', name: '', active: true });
+        } catch (error) {
+            console.error('Error adding/updating training:', error);
+            setSnackbar({
+                open: true,
+                message: 'Đã xảy ra lỗi! Vui lòng thử lại.',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleEditTraining = (training) => {
         setEditingTraining(training);
-        setNewTraining(training);
+        setNewTraining({
+            code: training.ma_he_dao_tao,
+            name: training.ten_he_dao_tao,
+            active: training.trang_thai
+        });
         setOpenAddTraining(true);
+    };
+
+    const handleToggleTrainingStatus = async (id) => {
+        setLoading(true);
+        try {
+            await toggleTrainingStatus(id);
+            fetchTrainingTypes(); // Refresh the list after toggling
+            setSnackbar({
+                open: true,
+                message: 'Cập nhật trạng thái thành công!',
+                severity: 'success'
+            });
+        } catch (error) {
+            console.error('Error toggling training status:', error);
+            setSnackbar({
+                open: true,
+                message: 'Không thể cập nhật trạng thái. Vui lòng thử lại!',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const graduationSteps = ['Kiểm tra điều kiện', 'Xét duyệt', 'Hoàn thành'];
@@ -139,19 +246,23 @@ function TrainingDashboard() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('role')
-        localStorage.removeItem('access_token')
+        localStorage.removeItem('role');
+        localStorage.removeItem('access_token');
         console.log('Logging out...');
-        window.location.href = '/login'
+        window.location.href = '/login';
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
     };
 
     return (
         <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
-
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
                     <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 3 }}>
                         <Tab label="Hệ đào tạo" />
+                        <Tab label="Quản lý khóa" />
                         <Tab label="Quản lý lớp" />
                         <Tab label="Thống kê" />
                         <Tab label="Sinh viên" />
@@ -168,57 +279,69 @@ function TrainingDashboard() {
                                 startIcon={<AddIcon />}
                                 onClick={() => setOpenAddTraining(true)}
                                 sx={{ mb: 3 }}
+                                disabled={loading}
                             >
                                 Thêm hệ đào tạo
                             </Button>
 
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Ký hiệu</TableCell>
-                                            <TableCell>Tên hệ đào tạo</TableCell>
-                                            <TableCell align="center">Trạng thái</TableCell>
-                                            <TableCell align="right">Thao tác</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {mockTrainingTypes.map((type) => (
-                                            <TableRow key={type.id}>
-                                                <TableCell>{type.code}</TableCell>
-                                                <TableCell>{type.name}</TableCell>
-                                                <TableCell align="center">
-                                                    <FormControlLabel
-                                                        control={
-                                                            <Switch
-                                                                checked={type.active}
-                                                                onChange={() => { }}
-                                                                color="primary"
-                                                            />
-                                                        }
-                                                        label={type.active ? "Đang hoạt động" : "Không hoạt động"}
-                                                    />
-                                                </TableCell>
-                                                <TableCell align="right">
-                                                    <IconButton onClick={() => handleEditTraining(type)}>
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                </TableCell>
+                            {loading ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : (
+                                <TableContainer>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Ký hiệu</TableCell>
+                                                <TableCell>Tên hệ đào tạo</TableCell>
+                                                <TableCell >Thao tác</TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        </TableHead>
+                                        <TableBody>
+                                            {trainingTypes.length > 0 ? (
+                                                trainingTypes.map((type) => (
+                                                    <TableRow key={type.id}>
+                                                        <TableCell>{type.ma_he_dao_tao}</TableCell>
+                                                        <TableCell>{type.ten_he_dao_tao}</TableCell>
+
+                                                        <TableCell >
+                                                            <IconButton
+                                                                onClick={() => handleEditTraining(type)}
+                                                                disabled={loading}
+                                                            >
+                                                                <EditIcon />
+                                                            </IconButton>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} align="center">
+                                                        Không có dữ liệu hệ đào tạo
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            )}
+                        </Box>
+                    )}
+
+                    {currentTab === 1 && (
+                        <Box>
+                            <QuanLyKhoa />
                         </Box>
                     )}
 
                     {/* Classes Tab */}
-                    {currentTab === 1 && (
-                        <ClassManagement />
+                    {currentTab === 2 && (
+                        <QuanLyLop />
                     )}
 
                     {/* Statistics Tab */}
-                    {currentTab === 2 && (
+                    {currentTab === 3 && (
                         <Box>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
@@ -244,290 +367,266 @@ function TrainingDashboard() {
                             </Grid>
                         </Box>
                     )}
-                </Paper>
 
-                {/* Add/Edit Training Type Dialog */}
-                <Dialog
-                    open={openAddTraining}
-                    onClose={() => {
-                        setOpenAddTraining(false);
-                        setEditingTraining(null);
-                        setNewTraining({ code: '', name: '', active: true });
-                    }}
-                >
-                    <DialogTitle>
-                        {editingTraining ? 'Sửa hệ đào tạo' : 'Thêm hệ đào tạo'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            label="Ký hiệu"
-                            fullWidth
-                            margin="normal"
-                            value={newTraining.code}
-                            onChange={(e) => setNewTraining({ ...newTraining, code: e.target.value })}
-                            inputProps={{ maxLength: 5 }}
-                            helperText="Tối đa 5 ký tự"
-                        />
-                        <TextField
-                            label="Tên hệ đào tạo"
-                            fullWidth
-                            margin="normal"
-                            value={newTraining.name}
-                            onChange={(e) => setNewTraining({ ...newTraining, name: e.target.value })}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newTraining.active}
-                                    onChange={(e) => setNewTraining({ ...newTraining, active: e.target.checked })}
-                                />
-                            }
-                            label="Hoạt động"
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setOpenAddTraining(false)}>Hủy</Button>
-                        <Button onClick={handleAddTraining} variant="contained">
-                            {editingTraining ? 'Cập nhật' : 'Thêm'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    {/* Add/Edit Training Type Dialog */}
+                    <Dialog
+                        open={openAddTraining}
+                        onClose={() => {
+                            setOpenAddTraining(false);
+                            setEditingTraining(null);
+                            setNewTraining({ code: '', name: '', active: true });
+                        }}
+                    >
+                        <DialogTitle>
+                            {editingTraining ? 'Sửa hệ đào tạo' : 'Thêm hệ đào tạo'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <TextField
+                                label="Ký hiệu"
+                                fullWidth
+                                margin="normal"
+                                value={newTraining.code}
+                                onChange={(e) => setNewTraining({ ...newTraining, code: e.target.value })}
+                                inputProps={{ maxLength: 5 }}
+                                helperText="Tối đa 5 ký tự"
+                                required
+                                error={!newTraining.code}
+                                disabled={loading}
+                            />
+                            <TextField
+                                label="Tên hệ đào tạo"
+                                fullWidth
+                                margin="normal"
+                                value={newTraining.name}
+                                onChange={(e) => setNewTraining({ ...newTraining, name: e.target.value })}
+                                required
+                                error={!newTraining.name}
+                                disabled={loading}
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={newTraining.active}
+                                        onChange={(e) => setNewTraining({ ...newTraining, active: e.target.checked })}
+                                        disabled={loading}
+                                    />
+                                }
+                                label="Hoạt động"
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                onClick={() => {
+                                    setOpenAddTraining(false);
+                                    setEditingTraining(null);
+                                    setNewTraining({ code: '', name: '', active: true });
+                                }}
+                                disabled={loading}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                onClick={handleAddTraining}
+                                variant="contained"
+                                disabled={loading}
+                            >
+                                {loading ? <CircularProgress size={24} /> : (editingTraining ? 'Cập nhật' : 'Thêm')}
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
 
-                {/* Student Management Tab */}
-                {currentTab === 3 && (
-                    // <Box>
-                    //     <Button
-                    //         variant="contained"
-                    //         startIcon={<PersonAddIcon />}
-                    //         onClick={() => setOpenAddStudent(true)}
-                    //         sx={{ mb: 3 }}
-                    //     >
-                    //         Thêm sinh viên
-                    //     </Button>
+                    {/* Student Management Tab */}
+                    {currentTab === 4 && (
+                        <StudentManagement />
+                    )}
 
-                    //     <TableContainer>
-                    //         <Table>
-                    //             <TableHead>
-                    //                 <TableRow>
-                    //                     <TableCell>Mã SV</TableCell>
-                    //                     <TableCell>Họ tên</TableCell>
-                    //                     <TableCell>Lớp</TableCell>
-                    //                     <TableCell>Số tín chỉ</TableCell>
-                    //                     <TableCell>GPA</TableCell>
-                    //                     <TableCell align="right">Thao tác</TableCell>
-                    //                 </TableRow>
-                    //             </TableHead>
-                    //             <TableBody>
-                    //                 {mockStudents.map((student) => (
-                    //                     <TableRow key={student.id}>
-                    //                         <TableCell>{student.code}</TableCell>
-                    //                         <TableCell>{student.name}</TableCell>
-                    //                         <TableCell>{student.class}</TableCell>
-                    //                         <TableCell>{student.credits}</TableCell>
-                    //                         <TableCell>{student.gpa}</TableCell>
-                    //                         <TableCell align="right">
-                    //                             <IconButton onClick={() => { }}>
-                    //                                 <EditIcon />
-                    //                             </IconButton>
-                    //                             <IconButton onClick={() => { }}>
-                    //                                 <FileDownloadIcon />
-                    //                             </IconButton>
-                    //                         </TableCell>
-                    //                     </TableRow>
-                    //                 ))}
-                    //             </TableBody>
-                    //         </Table>
-                    //     </TableContainer>
-                    // </Box>
-                    <StudentManagement />
-                )}
-
-                {/* Graduation Eligibility Tab */}
-                {currentTab === 4 && (
-                    <Box>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={8}>
-                                <Paper sx={{ p: 3, borderRadius: 2 }}>
-                                    <Typography variant="h6" gutterBottom>
-                                        Xét điều kiện tốt nghiệp
-                                    </Typography>
-
-                                    <Stepper activeStep={activeStep} sx={{ mt: 3, mb: 4 }}>
-                                        {graduationSteps.map((label) => (
-                                            <Step key={label}>
-                                                <StepLabel>{label}</StepLabel>
-                                            </Step>
-                                        ))}
-                                    </Stepper>
-
-                                    <Box sx={{ mt: 2 }}>
-                                        {activeStep === 0 && (
-                                            <Box>
-                                                <FormControl fullWidth sx={{ mb: 2 }}>
-                                                    <Autocomplete
-                                                        options={mockStudents}
-                                                        getOptionLabel={(option) => `${option.code} - ${option.name}`}
-                                                        renderInput={(params) => (
-                                                            <TextField {...params} label="Chọn sinh viên" />
-                                                        )}
-                                                        onChange={(event, newValue) => setSelectedStudent(newValue)}
-                                                    />
-                                                </FormControl>
-
-                                                {selectedStudent && (
-                                                    <Card sx={{ mt: 2 }}>
-                                                        <CardContent>
-                                                            <Grid container spacing={2}>
-                                                                <Grid item xs={6}>
-                                                                    <Typography color="textSecondary">Số tín chỉ tích lũy</Typography>
-                                                                    <Typography variant="h6">
-                                                                        {selectedStudent.credits}/130
-                                                                    </Typography>
-                                                                </Grid>
-                                                                <Grid item xs={6}>
-                                                                    <Typography color="textSecondary">GPA</Typography>
-                                                                    <Typography variant="h6">
-                                                                        {selectedStudent.gpa}/4.0
-                                                                    </Typography>
-                                                                </Grid>
-                                                            </Grid>
-                                                        </CardContent>
-                                                    </Card>
-                                                )}
-                                            </Box>
-                                        )}
-
-                                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                                            {activeStep > 0 && (
-                                                <Button onClick={handleBack} sx={{ mr: 1 }}>
-                                                    Quay lại
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleNext}
-                                                disabled={!selectedStudent}
-                                            >
-                                                {activeStep === graduationSteps.length - 1 ? 'Hoàn thành' : 'Tiếp theo'}
-                                            </Button>
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                            </Grid>
-
-                            <Grid item xs={12} md={4}>
-                                <Paper sx={{ p: 3, borderRadius: 2 }}>
-                                    <Typography variant="h6" gutterBottom>
-                                        Điều kiện tốt nghiệp
-                                    </Typography>
-                                    <Box sx={{ mt: 2 }}>
-                                        <Typography variant="body2" gutterBottom>
-                                            • Tích lũy đủ 130 tín chỉ
+                    {/* Graduation Eligibility Tab */}
+                    {currentTab === 5 && (
+                        <Box>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={8}>
+                                    <Paper sx={{ p: 3, borderRadius: 2 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Xét điều kiện tốt nghiệp
                                         </Typography>
-                                        <Typography variant="body2" gutterBottom>
-                                            • GPA tổng ≥ 2.0
-                                        </Typography>
-                                        <Typography variant="body2" gutterBottom>
-                                            • Hoàn thành các môn bắt buộc
-                                        </Typography>
-                                    </Box>
-                                </Paper>
-                            </Grid>
-                        </Grid>
-                    </Box>
-                )}
 
-                {/* Degree Management Tab */}
-                {currentTab === 5 && (
-                    <Box>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12}>
-                                <TableContainer component={Paper}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Mã SV</TableCell>
-                                                <TableCell>Họ tên</TableCell>
-                                                <TableCell>Ngày xét TN</TableCell>
-                                                <TableCell>Trạng thái bằng</TableCell>
-                                                <TableCell align="right">Thao tác</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {mockStudents.map((student) => (
-                                                <TableRow key={student.id}>
-                                                    <TableCell>{student.code}</TableCell>
-                                                    <TableCell>{student.name}</TableCell>
-                                                    <TableCell>20/01/2024</TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            label={student.hasDegree ? "Đã cấp bằng" : "Chưa cấp bằng"}
-                                                            color={student.hasDegree ? "success" : "default"}
-                                                            size="small"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            startIcon={<PrintIcon />}
-                                                            onClick={() => { }}
-                                                            disabled={!student.hasDegree}
-                                                        >
-                                                            In xác nhận
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
+                                        <Stepper activeStep={activeStep} sx={{ mt: 3, mb: 4 }}>
+                                            {graduationSteps.map((label) => (
+                                                <Step key={label}>
+                                                    <StepLabel>{label}</StepLabel>
+                                                </Step>
                                             ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </Grid>
-                        </Grid>
-                    </Box>
-                )}
+                                        </Stepper>
 
-                {/* Detailed Statistics Tab */}
-                {currentTab === 6 && (
-                    <Box>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                                <Paper sx={{ p: 3, borderRadius: 2 }}>
-                                    <Typography variant="h6" gutterBottom>
-                                        Thống kê điểm theo lớp
-                                    </Typography>
-                                    <FormControl fullWidth sx={{ mb: 2 }}>
-                                        <InputLabel>Lớp</InputLabel>
-                                        <Select value="" label="Lớp">
-                                            <MenuItem value="LT01">LT01</MenuItem>
-                                            <MenuItem value="LT02">LT02</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                    <Button variant="outlined" startIcon={<FileDownloadIcon />}>
-                                        Xuất báo cáo
-                                    </Button>
-                                </Paper>
+                                        <Box sx={{ mt: 2 }}>
+                                            {activeStep === 0 && (
+                                                <Box>
+                                                    <FormControl fullWidth sx={{ mb: 2 }}>
+                                                        <Autocomplete
+                                                            options={mockStudents}
+                                                            getOptionLabel={(option) => `${option.code} - ${option.name}`}
+                                                            renderInput={(params) => (
+                                                                <TextField {...params} label="Chọn sinh viên" />
+                                                            )}
+                                                            onChange={(event, newValue) => setSelectedStudent(newValue)}
+                                                        />
+                                                    </FormControl>
+
+                                                    {selectedStudent && (
+                                                        <Card sx={{ mt: 2 }}>
+                                                            <CardContent>
+                                                                <Grid container spacing={2}>
+                                                                    <Grid item xs={6}>
+                                                                        <Typography color="textSecondary">Số tín chỉ tích lũy</Typography>
+                                                                        <Typography variant="h6">
+                                                                            {selectedStudent.credits}/130
+                                                                        </Typography>
+                                                                    </Grid>
+                                                                    <Grid item xs={6}>
+                                                                        <Typography color="textSecondary">GPA</Typography>
+                                                                        <Typography variant="h6">
+                                                                            {selectedStudent.gpa}/4.0
+                                                                        </Typography>
+                                                                    </Grid>
+                                                                </Grid>
+                                                            </CardContent>
+                                                        </Card>
+                                                    )}
+                                                </Box>
+                                            )}
+
+                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                                                {activeStep > 0 && (
+                                                    <Button onClick={handleBack} sx={{ mr: 1 }}>
+                                                        Quay lại
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={handleNext}
+                                                    disabled={!selectedStudent}
+                                                >
+                                                    {activeStep === graduationSteps.length - 1 ? 'Hoàn thành' : 'Tiếp theo'}
+                                                </Button>
+                                            </Box>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+
+                                <Grid item xs={12} md={4}>
+                                    <Paper sx={{ p: 3, borderRadius: 2 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Điều kiện tốt nghiệp
+                                        </Typography>
+                                        <Box sx={{ mt: 2 }}>
+                                            <Typography variant="body2" gutterBottom>
+                                                • Tích lũy đủ 130 tín chỉ
+                                            </Typography>
+                                            <Typography variant="body2" gutterBottom>
+                                                • GPA tổng ≥ 2.0
+                                            </Typography>
+                                            <Typography variant="body2" gutterBottom>
+                                                • Hoàn thành các môn bắt buộc
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Paper sx={{ p: 3, borderRadius: 2 }}>
-                                    <Typography variant="h6" gutterBottom>
-                                        Thống kê tốt nghiệp
-                                    </Typography>
-                                    <FormControl fullWidth sx={{ mb: 2 }}>
-                                        <InputLabel>Khóa</InputLabel>
-                                        <Select value="" label="Khóa">
-                                            <MenuItem value="2020">2020</MenuItem>
-                                            <MenuItem value="2021">2021</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                    <Button variant="outlined" startIcon={<BarChartIcon />}>
-                                        Xem biểu đồ
-                                    </Button>
-                                </Paper>
+                        </Box>
+                    )}
+
+                    {/* Degree Management Tab */}
+                    {currentTab === 6 && (
+                        <Box>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12}>
+                                    <TableContainer component={Paper}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Mã SV</TableCell>
+                                                    <TableCell>Họ tên</TableCell>
+                                                    <TableCell>Ngày xét TN</TableCell>
+                                                    <TableCell>Trạng thái bằng</TableCell>
+                                                    <TableCell align="right">Thao tác</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {mockStudents.map((student) => (
+                                                    <TableRow key={student.id}>
+                                                        <TableCell>{student.code}</TableCell>
+                                                        <TableCell>{student.name}</TableCell>
+                                                        <TableCell>20/01/2024</TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={student.hasDegree ? "Đã cấp bằng" : "Chưa cấp bằng"}
+                                                                color={student.hasDegree ? "success" : "default"}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            <Button
+                                                                variant="outlined"
+                                                                size="small"
+                                                                startIcon={<PrintIcon />}
+                                                                onClick={() => { }}
+                                                                disabled={!student.hasDegree}
+                                                            >
+                                                                In xác nhận
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Grid>
                             </Grid>
-                        </Grid>
-                    </Box>
-                )}
+                        </Box>
+                    )}
+
+                    {/* Detailed Statistics Tab */}
+                    {currentTab === 7 && (
+                        <Box>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Paper sx={{ p: 3, borderRadius: 2 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Thống kê điểm theo lớp
+                                        </Typography>
+                                        <FormControl fullWidth sx={{ mb: 2 }}>
+                                            <InputLabel>Lớp</InputLabel>
+                                            <Select value="" label="Lớp">
+                                                <MenuItem value="LT01">LT01</MenuItem>
+                                                <MenuItem value="LT02">LT02</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                        <Button variant="outlined" startIcon={<FileDownloadIcon />}>
+                                            Xuất báo cáo
+                                        </Button>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Paper sx={{ p: 3, borderRadius: 2 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Thống kê tốt nghiệp
+                                        </Typography>
+                                        <FormControl fullWidth sx={{ mb: 2 }}>
+                                            <InputLabel>Khóa</InputLabel>
+                                            <Select value="" label="Khóa">
+                                                <MenuItem value="2020">2020</MenuItem>
+                                                <MenuItem value="2021">2021</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                        <Button variant="outlined" startIcon={<BarChartIcon />}>
+                                            Xem biểu đồ
+                                        </Button>
+                                    </Paper>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    )}
+                </Paper>
 
                 {/* Add Student Dialog */}
                 <Dialog open={openAddStudent} onClose={() => setOpenAddStudent(false)} maxWidth="md" fullWidth>
@@ -581,6 +680,22 @@ function TrainingDashboard() {
                         <Button variant="contained">Thêm</Button>
                     </DialogActions>
                 </Dialog>
+
+                {/* Snackbar for notifications */}
+                <Snackbar
+                    open={snackbar.open}
+                    autoHideDuration={6000}
+                    onClose={handleCloseSnackbar}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                >
+                    <Alert
+                        onClose={handleCloseSnackbar}
+                        severity={snackbar.severity}
+                        sx={{ width: '100%' }}
+                    >
+                        {snackbar.message}
+                    </Alert>
+                </Snackbar>
             </Container>
         </Box>
     );

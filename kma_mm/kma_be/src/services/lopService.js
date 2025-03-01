@@ -1,24 +1,23 @@
-const { lop } = require("../models");
-const { danh_muc_dao_tao } = require("../models");
+const { lop, khoa_dao_tao } = require("../models");
 
 class LopService {
 
-  static async createLop(danh_muc_dao_tao_id) {
+  static async createLop(khoa_dao_tao_id) {
     try {
-      const danhMuc = await danh_muc_dao_tao.findByPk(danh_muc_dao_tao_id);
-      if (!danhMuc) {
-        throw new Error("Danh mục đào tạo không tồn tại");
+      const khoa = await khoa_dao_tao.findByPk(khoa_dao_tao_id);
+      if (!khoa) {
+        throw new Error("Khoá đào tạo không tồn tại");
       }
-      if (danhMuc.ma_he_dao_tao == null){
-        throw new Error("Mã hệ đào tạo không tồn tại");
+      if (khoa.ma_khoa == null){
+        throw new Error("Mã khoá đào tạo không tồn tại");
       }
-      const count = await lop.count({ where: { danh_muc_dao_tao_id } });
+      const count = await lop.count({ where: { khoa_dao_tao_id } });
       console.log("count", count);
-      const maLop = `${danhMuc.ma_he_dao_tao}${String(count+1).padStart(2, "0")}`;
+      const maLop = `${khoa.ma_khoa}${String(count+1).padStart(2, "0")}`;
 
       const newLop = await lop.create({
         ma_lop: maLop,
-        danh_muc_dao_tao_id,
+        khoa_dao_tao_id,
         trang_thai: 1
       });
       return newLop;
