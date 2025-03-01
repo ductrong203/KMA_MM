@@ -27,7 +27,19 @@ try {
   }
 }
 
+const fetchDanhSachHeDaoTao = async (req, res) => {
+  try {
+    const response = await trainingService.fetchDanhSachHeDaoTao();
+    return res.status(201).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
+
 module.exports = {
-    createTraining
+    createTraining,
+    fetchDanhSachHeDaoTao
   };
   

@@ -1,7 +1,7 @@
 const { danh_muc_dao_tao } = require("../models");
 
 const createTraining = async (newTraining) => {
-    console.log(newTraining)
+    console.log("newTraining:",newTraining)
     const {code,name } = newTraining;
   
   try {
@@ -29,7 +29,18 @@ const createTraining = async (newTraining) => {
   }
 };
 
+const fetchDanhSachHeDaoTao = async () => {
+
+  try {
+    return await danh_muc_dao_tao.findAll()
+
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
-    createTraining
+    createTraining,
+    fetchDanhSachHeDaoTao
   };
   
