@@ -27,7 +27,7 @@ import {
     TablePagination
 } from "@mui/material";
 
-import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, updateMilitaryInfoByStudentId, updateStudentById } from "../../Api_controller/Service/qlhvService";
+import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, getMilitaryInfoByStudentId, updateMilitaryInfoByStudentId, updateStudentById } from "../../Api_controller/Service/qlhvService";
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
 import { getAllDoiTuongQuanLy } from "../../Api_controller/Service/dtqlService";
 import { getDanhSachLop } from "../../Api_controller/Service/lopService";
@@ -273,30 +273,38 @@ const StudentManagement = () => {
             gioi_tinh: event.target.value === "Nam", // Chuyển đổi thành boolean
         }));
     };
-
     const handleSave = async () => {
         try {
-            let res; // Khai báo biến res để tránh lỗi ReferenceError
+            let res;
+
+            // Chuyển đổi dữ liệu ngày từ chuỗi thành định dạng YYYY-MM-DD
+            const formattedStudentData = {
+                ...studentData,
+                ngay_sinh: studentData.ngay_sinh ? new Date(studentData.ngay_sinh).toISOString().split('T')[0] : null,
+                ngay_cap_CCCD: studentData.ngay_cap_CCCD ? new Date(studentData.ngay_cap_CCCD).toISOString().split('T')[0] : null,
+                ky_nhap_hoc: studentData.ky_nhap_hoc ? new Date(studentData.ky_nhap_hoc).toISOString().split('T')[0] : null,
+                ngay_vao_doan: studentData.ngay_vao_doan ? new Date(studentData.ngay_vao_doan).toISOString().split('T')[0] : null,
+                ngay_vao_dang: studentData.ngay_vao_dang ? new Date(studentData.ngay_vao_dang).toISOString().split('T')[0] : null,
+                ngay_vao_truong: studentData.ngay_vao_truong ? new Date(studentData.ngay_vao_truong).toISOString().split('T')[0] : null,
+                ngay_ra_truong: studentData.ngay_ra_truong ? new Date(studentData.ngay_ra_truong).toISOString().split('T')[0] : null,
+                nam_tot_nghiep_PTTH: studentData.ngay_ra_truong ? new Date(studentData.ngay_ra_truong).toISOString().split('T')[0] : null
+            };
+
+            console.log("Dữ liệu gửi đi:", formattedStudentData);
 
             if (editIndex === null) {
-                // Form tạo mới sinh viên
-                res = await createNewStudent(studentData);
+                res = await createNewStudent(formattedStudentData);
                 setStudents([...students, res]);
             } else {
-                // Form chỉnh sửa sinh viên
-                res = await updateStudentById(studentData, studentData.id);
+                res = await updateStudentById(formattedStudentData, formattedStudentData.id);
                 const updatedStudents = [...students];
                 updatedStudents[editIndex] = res;
                 setStudents(updatedStudents);
             }
 
-            // Danh sách các đối tượng được coi là quân nhân (chuyển về chữ thường)
             const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
-
-            // Tìm đối tượng dựa trên doi_tuong_id của sinh viên mới lưu
             const doiTuong = danhSachDoiTuongQL.find(item => item.id === res.doi_tuong_id);
 
-            // Nếu đối tượng tồn tại và chi_tiet_doi_tuong thuộc danh sách quân nhân
             if (doiTuong && quanNhanList.includes(doiTuong.chi_tiet_doi_tuong.toLowerCase())) {
                 setOpenMilitaryPopup(true);
                 setMilitaryData(prev => ({ ...prev, sinh_vien_id: res.id }));
@@ -307,7 +315,6 @@ const StudentManagement = () => {
             console.error("Lỗi khi cập nhật học viên:", error);
         }
     };
-
 
 
 
@@ -334,13 +341,18 @@ const StudentManagement = () => {
         try {
             console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
 
+            // Chuyển đổi các trường ngày từ string sang định dạng phù hợp
+            const formattedData = {
+                ...militaryData,
+                ngay_nhap_ngu: militaryData.ngay_nhap_ngu ? new Date(militaryData.ngay_nhap_ngu).toISOString() : null,
+                ngay_nhan_luong: militaryData.ngay_nhan_luong ? new Date(militaryData.ngay_nhan_luong).toISOString() : null,
+            };
+
             if (editIndex !== null) {
-                // Nếu đang chỉnh sửa thì gọi API cập nhật
-                await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, militaryData);
+                await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
                 console.log("Cập nhật thông tin quân nhân thành công!");
             } else {
-                // Nếu thêm mới thì gọi API tạo mới
-                await createMilitaryInfo(militaryData);
+                await createMilitaryInfo(formattedData);
                 console.log("Thêm mới thông tin quân nhân thành công!");
             }
 
@@ -349,6 +361,7 @@ const StudentManagement = () => {
             console.error("Lỗi khi lưu thông tin quân nhân:", error);
         }
     };
+
 
 
 
@@ -650,6 +663,8 @@ const StudentManagement = () => {
             <Dialog maxWidth="xl" open={open} onClose={handleClose}>
                 <DialogTitle>{editIndex !== null ? `Chỉnh sửa sinh viên: ${studentData.ho_dem + " " + studentData.ten}` : `Thêm sinh viên`}</DialogTitle>
                 <DialogContent>
+
+
                     <Grid container spacing={2}>
                         {[
                             { label: "Họ đệm", key: "ho_dem" },
@@ -703,98 +718,89 @@ const StudentManagement = () => {
                                             <MenuItem value={0}>Nữ</MenuItem>
                                         </Select>
                                     </FormControl>
-                                ) :
-                                    field.key === "dang_hoc" ? (
-                                        <FormControl fullWidth margin="normal">
-                                            <InputLabel sx={{ backgroundColor: "white" }}>Đang học</InputLabel>
-                                            <Select
-                                                value={studentData.dang_hoc}
-                                                onChange={(e) => setStudentData({ ...studentData, dang_hoc: e.target.value })}
-                                            >
-                                                <MenuItem value={1}>Có</MenuItem>
-                                                <MenuItem value={0}>Không</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    )
-                                        :
-                                        field.key === "noi_tru" ? (
-                                            <FormControl fullWidth margin="normal">
-                                                <InputLabel sx={{ backgroundColor: "white" }}>Nội trú</InputLabel>
-                                                <Select
-                                                    value={studentData.noi_tru}
-                                                    onChange={(e) => setStudentData({ ...studentData, noi_tru: e.target.value })}
-                                                >
-                                                    <MenuItem value={1}>Có</MenuItem>
-                                                    <MenuItem value={0}>Không</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        )
-                                            :
-                                            field.key === "ngoai_tru" ? (
-                                                <FormControl fullWidth margin="normal">
-                                                    <InputLabel sx={{ backgroundColor: "white" }}>Ngoại trú</InputLabel>
-                                                    <Select
-                                                        value={studentData.ngoai_tru}
-                                                        onChange={(e) => setStudentData({ ...studentData, ngoai_tru: e.target.value })}
-                                                    >
-                                                        <MenuItem value={1}>Có</MenuItem>
-                                                        <MenuItem value={0}>Không</MenuItem>
-                                                    </Select>
-                                                </FormControl>
-                                            )
-                                                :
-
-                                                // đoạn này sau sẽ dùng api để render id và tên
-                                                field.key === "doi_tuong_id" ? (
-                                                    <FormControl fullWidth margin="normal">
-                                                        <InputLabel sx={{ backgroundColor: "white" }}>Đối tượng ID</InputLabel>
-                                                        <Select
-                                                            value={studentData.doi_tuong_id}
-                                                            onChange={(e) => setStudentData({ ...studentData, doi_tuong_id: e.target.value })}
-                                                        >
-                                                            <MenuItem value={0}>Không</MenuItem>
-                                                            {danhSachDoiTuongQL.map((item) => (
-                                                                <MenuItem key={item.id} value={item.id}>
-                                                                    {item.chi_tiet_doi_tuong}
-                                                                </MenuItem>
-                                                            ))}
-                                                        </Select>
-                                                    </FormControl>
-                                                )
-
-                                                    :
-
-                                                    // đoạn này sau sẽ dùng api để render id và tên
-                                                    field.key === "lop_id" ? (
-                                                        <FormControl fullWidth margin="normal">
-                                                            <InputLabel sx={{ backgroundColor: "white" }}>Lớp ID </InputLabel>
-                                                            <Select
-                                                                value={studentData.lop_id}
-                                                                onChange={(e) => setStudentData({ ...studentData, lop_id: e.target.value })}
-                                                            >
-                                                                <MenuItem value={0}>Không</MenuItem>
-                                                                {danhSachLop.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.id}>
-                                                                        {item.ma_lop}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Select>
-                                                        </FormControl>
-                                                    )
-
-                                                        : (
-                                                            <TextField
-                                                                label={field.label}
-                                                                value={studentData[field.key] || ""}
-                                                                onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-                                                                fullWidth
-                                                                margin="normal"
-                                                            />
-                                                        )}
+                                ) : field.key === "dang_hoc" ? (
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel sx={{ backgroundColor: "white" }}>Đang học</InputLabel>
+                                        <Select
+                                            value={studentData.dang_hoc}
+                                            onChange={(e) => setStudentData({ ...studentData, dang_hoc: e.target.value })}
+                                        >
+                                            <MenuItem value={1}>Có</MenuItem>
+                                            <MenuItem value={0}>Không</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                ) : field.key === "noi_tru" ? (
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel sx={{ backgroundColor: "white" }}>Nội trú</InputLabel>
+                                        <Select
+                                            value={studentData.noi_tru}
+                                            onChange={(e) => setStudentData({ ...studentData, noi_tru: e.target.value })}
+                                        >
+                                            <MenuItem value={1}>Có</MenuItem>
+                                            <MenuItem value={0}>Không</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                ) : field.key === "ngoai_tru" ? (
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel sx={{ backgroundColor: "white" }}>Ngoại trú</InputLabel>
+                                        <Select
+                                            value={studentData.ngoai_tru}
+                                            onChange={(e) => setStudentData({ ...studentData, ngoai_tru: e.target.value })}
+                                        >
+                                            <MenuItem value={1}>Có</MenuItem>
+                                            <MenuItem value={0}>Không</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                ) : field.key === "doi_tuong_id" ? (
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel sx={{ backgroundColor: "white" }}>Đối tượng ID</InputLabel>
+                                        <Select
+                                            value={studentData.doi_tuong_id}
+                                            onChange={(e) => setStudentData({ ...studentData, doi_tuong_id: e.target.value })}
+                                        >
+                                            <MenuItem value={0}>Không</MenuItem>
+                                            {danhSachDoiTuongQL.map((item) => (
+                                                <MenuItem key={item.id} value={item.id}>
+                                                    {item.chi_tiet_doi_tuong}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                ) : field.key === "lop_id" ? (
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel sx={{ backgroundColor: "white" }}>Lớp ID </InputLabel>
+                                        <Select
+                                            value={studentData.lop_id}
+                                            onChange={(e) => setStudentData({ ...studentData, lop_id: e.target.value })}
+                                        >
+                                            <MenuItem value={0}>Không</MenuItem>
+                                            {danhSachLop.map((item) => (
+                                                <MenuItem key={item.id} value={item.id}>
+                                                    {item.ma_lop}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                ) : (
+                                    <TextField
+                                        label={field.label}
+                                        type={["ngay_sinh", "ngay_cap_CCCD", "ky_nhap_hoc", "ngay_vao_doan", "ngay_vao_dang", "ngay_vao_truong", "ngay_ra_truong,nam_tot_nghiep_PTTH"].includes(field.key) ? "date" : "text"}
+                                        value={studentData[field.key] || ""}
+                                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                                        fullWidth
+                                        margin="normal"
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                    />
+                                )}
                             </Grid>
                         ))}
-
                     </Grid>
+
+
+
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="secondary">Hủy</Button>
@@ -824,32 +830,51 @@ const StudentManagement = () => {
                 <DialogContent>
                     <Grid container spacing={2}>
                         {[
-                            //  { label: "Sinh viên ID", key: "sinh_vien_id" },
                             { label: "Ngày nhập ngũ", key: "ngay_nhap_ngu" },
                             { label: "Cấp bậc", key: "cap_bac" },
                             { label: "Trình độ văn hóa", key: "trinh_do_van_hoa" },
                             { label: "Nơi ở hiện nay", key: "noi_o_hien_nay" },
                             { label: "Đơn vị cử đi học", key: "don_vi_cu_di_hoc" },
-                            { label: "Loại lương", key: "loai_luong" },
+                            { label: "Loại lương", key: "loai_luong" },  // Không phải date
                             { label: "Nhóm lương", key: "nhom_luong" },
                             { label: "Bậc lương", key: "bac_luong" },
                             { label: "Ngày nhận lương", key: "ngay_nhan_luong" },
                             { label: "Chức vụ", key: "chuc_vu" },
                             { label: "Sức khỏe", key: "suc_khoe" },
-                        ].map(({ label, key }) => (
-                            <Grid item xs={12} sm={6} key={key}>
-                                <TextField
-                                    label={label}
-                                    value={militaryData[key] || ""}
-                                    onChange={(e) => setMilitaryData(prev => ({ ...prev, [key]: e.target.value }))}
-                                    fullWidth
-                                    margin="normal"
-                                    variant="outlined"
-                                />
-                            </Grid>
-                        ))}
+                        ].map(({ label, key }) => {
+                            const isDateField = ["ngay_nhap_ngu", "ngay_nhan_luong"].includes(key);
 
+                            return (
+                                <Grid item xs={12} sm={6} key={key}>
+                                    <TextField
+                                        label={label}
+                                        type={isDateField ? "date" : "text"}  // Đúng trường mới là date
+                                        value={isDateField
+                                            ? (militaryData[key] ? militaryData[key].slice(0, 10) : "")
+                                            : (militaryData[key] || "")
+                                        }
+                                        onChange={(e) =>
+                                            setMilitaryData(prev => ({
+                                                ...prev,
+                                                [key]: isDateField
+                                                    ? (e.target.value && !isNaN(Date.parse(e.target.value))
+                                                        ? new Date(e.target.value).toISOString()
+                                                        : e.target.value)
+                                                    : e.target.value // Nếu không phải ngày thì lưu nguyên
+                                            }))
+                                        }
+                                        fullWidth
+                                        margin="normal"
+                                        variant="outlined"
+                                        InputLabelProps={{ shrink: true }} // Giữ label luôn ở trên
+                                    />
+                                </Grid>
+                            );
+                        })}
                     </Grid>
+
+
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseMiPopup} color="secondary">Hủy</Button>
