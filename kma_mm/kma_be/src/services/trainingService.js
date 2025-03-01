@@ -39,8 +39,30 @@ const fetchDanhSachHeDaoTao = async () => {
   }
 };
 
+const updateTraining = async (code, data) => {
+  try {
+    // Kiểm tra phòng ban có tồn tại không
+    const daoTao = await danh_muc_dao_tao.findOne({ where: { ma_he_dao_tao:code } });
+    if (!daoTao) {
+      console.log("Không tìm thấy hệ đào tạo!");
+      return null;
+    }
+
+    // Thực hiện cập nhật
+    return await danh_muc_dao_tao.update({
+      ma_he_dao_tao: data.code,
+      ten_he_dao_tao: data.name,
+      trang_thai: data.active
+    }, { where: { ma_he_dao_tao:code } });
+  } catch (error) {
+    console.error("Lỗi cập nhật:", error.message);
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
     createTraining,
-    fetchDanhSachHeDaoTao
+    fetchDanhSachHeDaoTao,
+    updateTraining
   };
   
