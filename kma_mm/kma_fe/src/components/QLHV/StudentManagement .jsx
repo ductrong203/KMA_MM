@@ -347,6 +347,7 @@ const StudentManagement = () => {
                     setMilitaryData(data);
                 } catch (error) {
                     console.error("Lỗi khi lấy thông tin quân nhân:", error);
+                    setMilitaryData([]);
                 }
             }
         };
@@ -391,8 +392,6 @@ const StudentManagement = () => {
 
 
 
-
-
     const renderField = (field) => (
         <Grid item xs={12} sm={4} key={field.key}>
             {field.type === "select" ? (
@@ -424,6 +423,18 @@ const StudentManagement = () => {
                         ))}
                     </Select>
                 </FormControl>
+            ) : field.type === "date" ? ( // ✅ Xử lý trường ngày
+                <TextField
+                    label={field.label}
+                    type="date"
+                    value={studentData[field.key] || ""}
+                    onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    fullWidth
+                    margin="normal"
+                    InputLabelProps={{
+                        shrink: true, // ✅ Giúp label không che mất giá trị nhập vào
+                    }}
+                />
             ) : (
                 <TextField
                     label={field.label}
@@ -435,7 +446,6 @@ const StudentManagement = () => {
             )}
         </Grid>
     );
-
 
 
 
@@ -556,7 +566,7 @@ const StudentManagement = () => {
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
                                 <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
                                 <TableCell>{getMaLop(student.lop_id)}</TableCell>
-                                <TableCell>{getDoiTuongName(student.doi_tuong_dao_tao)}</TableCell>
+                                <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
                                 <TableCell>
                                     <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
                                     <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
@@ -681,152 +691,89 @@ const StudentManagement = () => {
 
             {/* Dialog Chỉnh Sửa */}
             <Dialog maxWidth="xl" open={open} onClose={handleClose}>
-                <DialogTitle>{editIndex !== null ? `Chỉnh sửa sinh viên: ${studentData.ho_dem + " " + studentData.ten}` : `Thêm sinh viên`}</DialogTitle>
+                <DialogTitle>
+                    {editIndex !== null ? `Chỉnh sửa sinh viên: ${studentData.ho_dem + " " + studentData.ten}` : `Thêm sinh viên`}
+                </DialogTitle>
                 <DialogContent>
-
-
                     <Grid container spacing={2}>
+
+                        {/* Thông tin cá nhân */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", mt: 2 }}>Thông tin cá nhân</Typography>
+                        </Grid>
                         {[
                             { label: "Họ đệm", key: "ho_dem" },
                             { label: "Tên", key: "ten" },
                             { label: "Mã sinh viên", key: "ma_sinh_vien" },
-                            { label: "Ngày sinh", key: "ngay_sinh" },
-                            { label: "Giới tính", key: "gioi_tinh" },
+                            { label: "Ngày sinh", key: "ngay_sinh", type: "date" },
+                            { label: "Giới tính", key: "gioi_tinh", type: "select", options: [{ value: 1, label: "Nam" }, { value: 0, label: "Nữ" }] },
                             { label: "Quê quán", key: "que_quan" },
-                            { label: "Lớp ID", key: "lop_id" },
-                            { label: "Đối tượng ID", key: "doi_tuong_id" },
-                            { label: "Đang học", key: "dang_hoc" },
-                            { label: "Ghi chú", key: "ghi_chu" },
-                            { label: "Số tài khoản", key: "so_tai_khoan" },
-                            { label: "Ngân hàng", key: "ngan_hang" },
-                            { label: "Chức vụ", key: "chuc_vu" },
-                            { label: "CCCD", key: "CCCD" },
-                            { label: "Ngày cấp CCCD", key: "ngay_cap_CCCD" },
-                            { label: "Kỳ nhập học", key: "ky_nhap_hoc" },
-                            { label: "Ngày vào đoàn", key: "ngay_vao_doan" },
-                            { label: "Ngày vào đảng", key: "ngay_vao_dang" },
-                            { label: "Ngày vào trường", key: "ngay_vao_truong" },
-                            { label: "Ngày ra trường", key: "ngay_ra_truong" },
-                            { label: "Tỉnh thành", key: "tinh_thanh" },
-                            { label: "Quận huyện", key: "quan_huyen" },
-                            { label: "Phường xã khối", key: "phuong_xa_khoi" },
                             { label: "Dân tộc", key: "dan_toc" },
                             { label: "Tôn giáo", key: "ton_giao" },
-                            { label: "Quốc tịch", key: "quoc_tich" },
+                            { label: "Quốc tịch", key: "quoc_tich" }
+                        ].map(renderField)}
+
+                        {/* Thông tin học tập */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", mt: 2 }}>Thông tin học tập</Typography>
+                        </Grid>
+                        {[
+                            { label: "Lớp", key: "lop_id", type: "api", options: danhSachLop, optionLabel: "ma_lop" },
+                            { label: "Đối tượng", key: "doi_tuong_id", type: "api", options: danhSachDoiTuongQL, optionLabel: "ten_doi_tuong" },
+                            { label: "Đang học", key: "dang_hoc", type: "select", options: [{ value: 1, label: "Có" }, { value: 0, label: "Không" }] },
+                            { label: "Ghi chú", key: "ghi_chu" },
+                            { label: "Kỳ nhập học", key: "ky_nhap_hoc" },
+                            { label: "Ngày vào trường", key: "ngay_vao_truong", type: "date" },
+                            { label: "Ngày ra trường", key: "ngay_ra_truong", type: "date" },
                             { label: "Trúng tuyển theo nguyện vọng", key: "trung_tuyen_theo_nguyen_vong" },
                             { label: "Năm tốt nghiệp PTTH", key: "nam_tot_nghiep_PTTH" },
                             { label: "Thành phần gia đình", key: "thanh_phan_gia_dinh" },
                             { label: "Đối tượng đào tạo", key: "doi_tuong_dao_tao" },
-                            { label: "Đơn vị liên kết đào tạo", key: "dv_lien_ket_dao_tao" },
+                            { label: "Đơn vị liên kết đào tạo", key: "dv_lien_ket_dao_tao" }
+                        ].map(renderField)}
+
+                        {/* Thông tin liên hệ */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", mt: 2 }}>Thông tin liên hệ</Typography>
+                        </Grid>
+                        {[
                             { label: "Số điện thoại", key: "so_dien_thoai" },
                             { label: "Điện thoại gia đình", key: "dien_thoai_gia_dinh" },
                             { label: "Điện thoại cơ quan", key: "dien_thoai_CQ" },
                             { label: "Email", key: "email" },
-                            { label: "Khi cần báo tin cho ai", key: "khi_can_bao_tin_cho_ai" },
-                            { label: "Nội trú", key: "noi_tru" },
-                            { label: "Ngoại trú", key: "ngoai_tru" }
-                        ].map((field) => (
-                            <Grid item xs={12} sm={4} key={field.key}>
-                                {field.key === "gioi_tinh" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Giới tính</InputLabel>
-                                        <Select
-                                            value={studentData.gioi_tinh}
-                                            onChange={(e) => setStudentData({ ...studentData, gioi_tinh: e.target.value })}
-                                        >
-                                            <MenuItem value={1}>Nam</MenuItem>
-                                            <MenuItem value={0}>Nữ</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                ) : field.key === "dang_hoc" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Đang học</InputLabel>
-                                        <Select
-                                            value={studentData.dang_hoc}
-                                            onChange={(e) => setStudentData({ ...studentData, dang_hoc: e.target.value })}
-                                        >
-                                            <MenuItem value={1}>Có</MenuItem>
-                                            <MenuItem value={0}>Không</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                ) : field.key === "noi_tru" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Nội trú</InputLabel>
-                                        <Select
-                                            value={studentData.noi_tru}
-                                            onChange={(e) => setStudentData({ ...studentData, noi_tru: e.target.value })}
-                                        >
-                                            <MenuItem value={1}>Có</MenuItem>
-                                            <MenuItem value={0}>Không</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                ) : field.key === "ngoai_tru" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Ngoại trú</InputLabel>
-                                        <Select
-                                            value={studentData.ngoai_tru}
-                                            onChange={(e) => setStudentData({ ...studentData, ngoai_tru: e.target.value })}
-                                        >
-                                            <MenuItem value={1}>Có</MenuItem>
-                                            <MenuItem value={0}>Không</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                ) : field.key === "doi_tuong_id" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Đối tượng ID</InputLabel>
-                                        <Select
-                                            value={studentData.doi_tuong_id}
-                                            onChange={(e) => setStudentData({ ...studentData, doi_tuong_id: e.target.value })}
-                                        >
-                                            <MenuItem value={0}>Không</MenuItem>
-                                            {danhSachDoiTuongQL.map((item) => (
-                                                <MenuItem key={item.id} value={item.id}>
-                                                    {item.chi_tiet_doi_tuong}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                ) : field.key === "lop_id" ? (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel sx={{ backgroundColor: "white" }}>Lớp ID </InputLabel>
-                                        <Select
-                                            value={studentData.lop_id}
-                                            onChange={(e) => setStudentData({ ...studentData, lop_id: e.target.value })}
-                                        >
-                                            <MenuItem value={0}>Không</MenuItem>
-                                            {danhSachLop.map((item) => (
-                                                <MenuItem key={item.id} value={item.id}>
-                                                    {item.ma_lop}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                ) : (
-                                    <TextField
-                                        label={field.label}
-                                        type={["ngay_sinh", "ngay_cap_CCCD", "ky_nhap_hoc", "ngay_vao_doan", "ngay_vao_dang", "ngay_vao_truong", "ngay_ra_truong,nam_tot_nghiep_PTTH"].includes(field.key) ? "date" : "text"}
-                                        value={studentData[field.key] || ""}
-                                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-                                        fullWidth
-                                        margin="normal"
-                                        InputLabelProps={{
-                                            shrink: true,
-                                        }}
-                                    />
-                                )}
-                            </Grid>
-                        ))}
+                            { label: "Khi cần báo tin cho ai", key: "khi_can_bao_tin_cho_ai" }
+                        ].map(renderField)}
+
+                        {/* Thông tin cư trú */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", mt: 2 }}>Thông tin cư trú</Typography>
+                        </Grid>
+                        {[
+                            { label: "Nội trú", key: "noi_tru", type: "select", options: [{ value: 1, label: "Có" }, { value: 0, label: "Không" }] },
+                            { label: "Ngoại trú", key: "ngoai_tru", type: "select", options: [{ value: 1, label: "Có" }, { value: 0, label: "Không" }] },
+                            { label: "Tỉnh thành", key: "tinh_thanh" },
+                            { label: "Quận huyện", key: "quan_huyen" },
+                            { label: "Phường xã khối", key: "phuong_xa_khoi" }
+                        ].map(renderField)}
+
+                        {/* Thông tin chính trị - đoàn thể */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", mt: 2 }}>Thông tin chính trị - đoàn thể</Typography>
+                        </Grid>
+                        {[
+                            { label: "Ngày vào đoàn", key: "ngay_vao_doan", type: "date" },
+                            { label: "Ngày vào đảng", key: "ngay_vao_dang", type: "date" },
+                            { label: "CCCD", key: "CCCD" },
+                            { label: "Ngày cấp CCCD", key: "ngay_cap_CCCD", type: "date" }
+                        ].map(renderField)}
+
                     </Grid>
-
-
-
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="secondary">Hủy</Button>
                     <Button onClick={handleSave} color="primary">Lưu</Button>
                 </DialogActions>
             </Dialog>
-
 
 
 
