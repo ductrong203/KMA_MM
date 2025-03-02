@@ -31,6 +31,7 @@ import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, getMil
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
 import { getAllDoiTuongQuanLy } from "../../Api_controller/Service/dtqlService";
 import { getDanhSachLop } from "../../Api_controller/Service/lopService";
+import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
 
 const StudentManagement = () => {
 
@@ -135,7 +136,7 @@ const StudentManagement = () => {
     const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
     const [danhSachDoiTuongQL, setDanhSachDoiTuongQL] = useState([]);
     const [danhSachLop, setDanhSachLop] = useState([]);
-
+    const [danhSachKhoa, setDanhSachKhoa] = useState([]);
 
 
 
@@ -147,16 +148,19 @@ const StudentManagement = () => {
                 const data3 = await fetchDanhSachHeDaoTao()
                 const data4 = await getAllDoiTuongQuanLy()
                 const data5 = await getDanhSachLop()
+                const data6 = await fetchDanhSachKhoa()
                 console.log(data)
                 console.log(data2)
                 console.log("danh sach he dao tao", data3)
                 console.log("danh doi tuong quan ly", data4)
                 console.log("danh sách lop", data5)
+                console.log("danh sách khoa", data6)
                 setMilitary(data2);
                 setStudents(data); // Cập nhật danh sách học viên
                 setDanhSachHeDaoTao(data3);
                 setDanhSachDoiTuongQL(data4)
-                setDanhSachLop(data5)
+                setDanhSachLop(data5);
+                setDanhSachKhoa(data6);
             } catch (error) {
                 console.error("Lỗi khi lấy danh sách học viên:", error);
             }
@@ -166,6 +170,28 @@ const StudentManagement = () => {
     }, []);
 
 
+
+
+    const generateMaSinhVien = (lop_id = lop_tu_sinh?.lop_id) => {
+        if (!lop_id) return "";
+
+        // Tìm lớp theo ID
+        const lop = danhSachLop.find(l => l.id === lop_id);
+        if (!lop) return "";
+
+        // Đếm số lượng sinh viên thuộc lớp này
+        const soLuongSinhVien = students.filter(sv => sv.lop_id === lop_id).length;
+
+        // Tạo mã sinh viên mới: [Mã lớp] + [Số thứ tự]
+        return `${lop.ma_lop}${String(soLuongSinhVien + 1).padStart(2, '0')}`;
+    };
+
+
+
+
+
+
+
     const handleOpen = (index = null) => {
         setEditIndex(index);
 
@@ -173,13 +199,18 @@ const StudentManagement = () => {
             setStudentData(students[index]);
             console.log(students[index])
         } else {
+
+            // Nếu thêm mới, tạo mã sinh viên theo số lượng sinh viên hiện có
+            const newMaSinhVien = generateMaSinhVien();
+
+
             setStudentData({
 
-                ma_sinh_vien: "",
+                ma_sinh_vien: newMaSinhVien,
                 ngay_sinh: "",
                 gioi_tinh: false,
                 que_quan: "",
-                lop_id: "",
+                lop_id: lop_tu_sinh.lop_id,
                 doi_tuong_id: "",
                 dang_hoc: false,
                 ghi_chu: "",
@@ -255,15 +286,12 @@ const StudentManagement = () => {
     };
 
     const [searchTerm, setSearchTerm] = useState("");
-    const [filter, setFilter] = useState({ lop_id: "", dang_hoc: "", noi_tru: "" });
+    const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
     const filteredStudents = students.filter(student => {
         return (
             (student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 student.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.ma_sinh_vien.includes(searchTerm)) &&
-            (filter.lop_id === "" || student.lop_id.toString() === filter.lop_id) &&
-            (filter.dang_hoc === "" || student.dang_hoc.toString() === filter.dang_hoc) &&
-            (filter.noi_tru === "" || student.noi_tru.toString() === filter.noi_tru)
+                student.ma_sinh_vien.includes(searchTerm))
         );
     });
 
@@ -295,6 +323,27 @@ const StudentManagement = () => {
             if (editIndex === null) {
                 res = await createNewStudent(formattedStudentData);
                 setStudents([...students, res]);
+
+
+
+                // if (!studentData.lop_id) {
+                //     alert("Vui lòng chọn lớp trước khi thêm sinh viên!");
+                //     return;
+                // }
+
+                // // Lấy số lượng sinh viên hiện có trong lớp
+                // const soLuongSinhVien = students.filter(sv => sv.lop_id === studentData.lop_id).length;
+
+                // // Tạo mã sinh viên mới (số thứ tự luôn có 2 chữ số)
+                // formattedStudentData.ma_sinh_vien = `${studentData.lop_id}${String(soLuongSinhVien + 1).padStart(2, '0')}`;
+
+                // res = await createNewStudent(formattedStudentData);
+                // setStudents([...students, res]);
+
+
+
+
+
             } else {
                 res = await updateStudentById(formattedStudentData, formattedStudentData.id);
                 const updatedStudents = [...students];
@@ -392,14 +441,76 @@ const StudentManagement = () => {
 
 
 
+    // const renderField = (field) => (
+    //     <Grid item xs={12} sm={4} key={field.key}>
+    //         {field.type === "select" ? (
+    //             <FormControl fullWidth margin="normal" required={field.required}>
+    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+    //                 <Select
+    //                     value={studentData[field.key] || ""}
+    //                     onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+    //                 >
+    //                     {field.options.map((option) => (
+    //                         <MenuItem key={option.value} value={option.value}>
+    //                             {option.label}
+    //                         </MenuItem>
+    //                     ))}
+    //                 </Select>
+    //             </FormControl>
+    //         ) : field.type === "api" ? (
+    //             <FormControl fullWidth margin="normal" required={field.required}>
+    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+    //                 <Select
+    //                     value={studentData[field.key] || ""}
+    //                     onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+    //                 >
+    //                     <MenuItem value={0}>Không</MenuItem>
+    //                     {field.options.map((item) => (
+    //                         <MenuItem key={item.id} value={item.id}>
+    //                             {item[field.optionLabel]}
+    //                         </MenuItem>
+    //                     ))}
+    //                 </Select>
+    //             </FormControl>
+    //         ) : field.type === "date" ? ( // ✅ Xử lý trường ngày
+    //             <TextField
+    //                 label={field.label}
+    //                 type="date"
+    //                 value={studentData[field.key] || ""}
+    //                 onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+    //                 fullWidth
+    //                 margin="normal"
+    //                 InputLabelProps={{
+    //                     shrink: true, // ✅ Giúp label không che mất giá trị nhập vào
+    //                 }}
+    //             />
+    //         ) : (
+    //             <TextField
+    //                 label={field.label}
+    //                 value={studentData[field.key] || ""}
+    //                 onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+    //                 fullWidth
+    //                 margin="normal"
+    //             />
+    //         )}
+    //     </Grid>
+    // );
+
+
+
+
     const renderField = (field) => (
         <Grid item xs={12} sm={4} key={field.key}>
+            {/* Trường select (chọn từ danh sách có sẵn) */}
             {field.type === "select" ? (
                 <FormControl fullWidth margin="normal" required={field.required}>
                     <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
-                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                        onChange={(e) => setStudentData({
+                            ...studentData,
+                            [field.key]: e.target.value
+                        })}
                     >
                         {field.options.map((option) => (
                             <MenuItem key={option.value} value={option.value}>
@@ -408,12 +519,23 @@ const StudentManagement = () => {
                         ))}
                     </Select>
                 </FormControl>
-            ) : field.type === "api" ? (
+
+            ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
                 <FormControl fullWidth margin="normal" required={field.required}>
                     <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
-                        onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                        onChange={(e) => {
+                            const newValue = e.target.value;
+                            const updatedData = { ...studentData, [field.key]: newValue };
+
+                            // Nếu thay đổi lớp, cập nhật mã sinh viên tự động
+                            if (field.key === "lop_id") {
+                                updatedData.ma_sinh_vien = generateMaSinhVien(newValue);
+                            }
+
+                            setStudentData(updatedData);
+                        }}
                     >
                         <MenuItem value={0}>Không</MenuItem>
                         {field.options.map((item) => (
@@ -423,38 +545,35 @@ const StudentManagement = () => {
                         ))}
                     </Select>
                 </FormControl>
-            ) : field.type === "date" ? ( // ✅ Xử lý trường ngày
+
+            ) : field.type === "date" ? ( // Trường ngày tháng
                 <TextField
                     label={field.label}
                     type="date"
                     value={studentData[field.key] || ""}
-                    onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    onChange={(e) => setStudentData({
+                        ...studentData,
+                        [field.key]: e.target.value
+                    })}
                     fullWidth
                     margin="normal"
-                    InputLabelProps={{
-                        shrink: true, // ✅ Giúp label không che mất giá trị nhập vào
-                    }}
+                    InputLabelProps={{ shrink: true }}
                 />
-            ) : (
+
+            ) : ( // Trường nhập văn bản bình thường
                 <TextField
                     label={field.label}
                     value={studentData[field.key] || ""}
-                    onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
+                    onChange={(e) => setStudentData({
+                        ...studentData,
+                        [field.key]: e.target.value
+                    })}
                     fullWidth
                     margin="normal"
                 />
             )}
         </Grid>
     );
-
-
-
-
-
-
-
-
-
 
 
 
@@ -497,51 +616,67 @@ const StudentManagement = () => {
 
             {/* Bộ lọc */}
             {/* Bộ lọc */}
-            <Grid
-                sx={{ marginTop: "4px" }}
-                container spacing={2} alignItems="center" justifyContent="center">
+            <Grid container spacing={2} alignItems="center" sx={{ marginTop: "4px" }}>
+
+
+
+
+                {/* Chọn Hệ đào tạo */}
+                {/* <Grid item xs={4}>
+                    <FormControl fullWidth>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
+                        <Select
+                            value={filter.he_dao_tao}
+                            onChange={(e) => setFilter({ ...filter, he_dao_tao: e.target.value })}
+                        >
+                            {danhSachHeDaoTao.map(item => {
+                                return <MenuItem key={item.id} value={item.ma_he_dao_tao}>{item.ten_he_dao_tao}</MenuItem>;
+                            })}
+                        </Select>
+
+                    </FormControl>
+                </Grid> */}
+
+                {/* Chọn Khóa học */}
+                {/* <Grid item xs={4}>
+                    <FormControl fullWidth>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Khóa học</InputLabel>
+                        <Select
+                            value={filter.khoa_hoc}
+                            onChange={(e) => setFilter({ ...filter, khoa_hoc: e.target.value })}
+                        >
+                            {danhSachKhoa.map(item => {
+                                return <MenuItem key={item.id} value={item.ma_khoa}>{item.ma_khoa}</MenuItem>;
+                            })}
+                        </Select>
+                    </FormControl>
+                </Grid> */}
+
+                {/* Chọn Lớp */}
                 <Grid item xs={4}>
                     <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }} >Lớp</InputLabel>
+                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Lớp</InputLabel>
                         <Select
-                            value={filter.lop_id}
-                            onChange={(e) => setFilter({ ...filter, lop_id: e.target.value })}
+                            value={lop_tu_sinh.lop_id || ""}  // Tránh giá trị undefined
+                            onChange={(e) => {
+                                const selectedLop = e.target.value;
+                                setLop_ts({ ...lop_tu_sinh, lop_id: selectedLop });
+                                setStudentData({ ...studentData, lop_id: selectedLop });
+                            }}
+
                         >
-                            <MenuItem value="">Tất cả</MenuItem>
-                            <MenuItem value="101">Lớp 101</MenuItem>
-                            <MenuItem value="102">Lớp 102</MenuItem>
+                            {danhSachLop.map(item => (
+                                <MenuItem key={item.id} value={item.id}>
+                                    {item.ma_lop}
+                                </MenuItem>
+                            ))}
                         </Select>
+
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}  >Trạng thái</InputLabel>
-                        <Select
-                            value={filter.dang_hoc}
-                            onChange={(e) => setFilter({ ...filter, dang_hoc: e.target.value })}
-                        >
-                            <MenuItem value="">Tất cả</MenuItem>
-                            <MenuItem value="1">Đang học</MenuItem>
-                            <MenuItem value="0">Đã tốt nghiệp</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-
-                <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }} >Nội trú</InputLabel>
-                        <Select
-                            value={filter.noi_tru}
-                            onChange={(e) => setFilter({ ...filter, noi_tru: e.target.value })}
-                        >
-                            <MenuItem value="">Tất cả</MenuItem>
-                            <MenuItem value="1">Nội trú</MenuItem>
-                            <MenuItem value="0">Ngoại trú</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
             </Grid>
+
             <Button
                 sx={{ marginTop: "8px" }}
                 variant="contained" color="primary" onClick={() => handleOpen()}>
