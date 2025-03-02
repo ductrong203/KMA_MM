@@ -151,7 +151,7 @@ const StudentManagement = () => {
                 console.log(data2)
                 console.log("danh sach he dao tao", data3)
                 console.log("danh doi tuong quan ly", data4)
-                console.log("danh lop", data5)
+                console.log("danh sách lop", data5)
                 setMilitary(data2);
                 setStudents(data); // Cập nhật danh sách học viên
                 setDanhSachHeDaoTao(data3);
@@ -317,6 +317,26 @@ const StudentManagement = () => {
     };
 
 
+    // const doiTuongDaoTaoList = [
+    //     { id: 1, ten_doi_tuong: "Quân Đội" },
+    //     { id: 2, ten_doi_tuong: "Công An" },
+    //     { id: 3, ten_doi_tuong: "Đảng chính quyền" },
+    //     { id: 4, ten_doi_tuong: "Quốc tế - Lào" },
+    //     { id: 5, ten_doi_tuong: "Quốc tế - Campuchia" },
+    //     { id: 6, ten_doi_tuong: "Quốc tế - Cuba" }
+    // ];
+
+    const getDoiTuongName = (id) => {
+        const doiTuong = danhSachDoiTuongQL.find(item => item.id === Number(id)); // Ép kiểu về số
+        return doiTuong ? doiTuong.ten_doi_tuong : "Không xác định";
+    };
+
+
+    // Hàm lấy mã lớp từ danhSachLop
+    const getMaLop = (id) => {
+        const lop = danhSachLop.find(item => item.id === Number(id)); // Ép kiểu nếu cần
+        return lop ? lop.ma_lop : "Không xác định";
+    };
 
 
     useEffect(() => {
@@ -535,8 +555,8 @@ const StudentManagement = () => {
                                 <TableCell>{student.ho_dem} {student.ten}</TableCell>
                                 <TableCell>{student.ma_sinh_vien}</TableCell>
                                 <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
-                                <TableCell>{student.lop_id}</TableCell>
-                                <TableCell>{student.doi_tuong_dao_tao}</TableCell>
+                                <TableCell>{getMaLop(student.lop_id)}</TableCell>
+                                <TableCell>{getDoiTuongName(student.doi_tuong_dao_tao)}</TableCell>
                                 <TableCell>
                                     <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
                                     <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
@@ -576,8 +596,8 @@ const StudentManagement = () => {
                                 { label: "Ngày sinh", value: studentData.ngay_sinh },
                                 { label: "Giới tính", value: studentData.gioi_tinh ? "Nam" : "Nữ" },
                                 { label: "Quê quán", value: studentData.que_quan },
-                                { label: "Lớp ID", value: studentData.lop_id },
-                                { label: "Đối tượng ID", value: studentData.doi_tuong_id },
+                                { label: "Lớp ID", value: getMaLop(studentData.lop_id) },
+                                { label: "Đối tượng ID", value: getDoiTuongName(studentData.doi_tuong_id) },
                                 { label: "Đang học", value: studentData.dang_hoc ? "Có" : "Không" },
                                 { label: "Ghi chú", value: studentData.ghi_chu },
                                 { label: "Số tài khoản", value: studentData.so_tai_khoan },
@@ -800,22 +820,12 @@ const StudentManagement = () => {
 
 
 
-
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="secondary">Hủy</Button>
                     <Button onClick={handleSave} color="primary">Lưu</Button>
                 </DialogActions>
             </Dialog>
-
-
-
-
-
-
-
-
-
 
 
 
