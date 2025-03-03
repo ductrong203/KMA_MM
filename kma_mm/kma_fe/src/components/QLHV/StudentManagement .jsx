@@ -548,7 +548,7 @@ const StudentManagement = () => {
 
 
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                    <InputLabel>{field.label}</InputLabel>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] !== undefined ? studentData[field.key] : ""}
                         onChange={(e) => {
@@ -573,7 +573,7 @@ const StudentManagement = () => {
 
             ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                    <InputLabel>{field.label}</InputLabel>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
                         onChange={(e) => {
