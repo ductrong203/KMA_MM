@@ -19,6 +19,41 @@ class SinhVienController {
     }
   }
 
+  static async getAllPhanTrang(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await SinhVienService.getAllSinhVienPhanTrang(
+        parseInt(page),
+        parseInt(limit)
+      );
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getByLopId(req, res) {
+    try {
+      const { lop_id } = req.params;
+      const students = await SinhVienService.getStudentsByLopId(lop_id);
+      res.status(200).json({ success: true, data: students });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getByDoiTuongId(req, res) {
+    try {
+      const { doi_tuong_id } = req.params;
+      const students = await SinhVienService.getStudentsByDoiTuongId(doi_tuong_id);
+      res.status(200).json({ success: true, data: students });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
   static async getById(req, res) {
     try {
       const sinhVien = await SinhVienService.getSinhVienById(req.params.id);
