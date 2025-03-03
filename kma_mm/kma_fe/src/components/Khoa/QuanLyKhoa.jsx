@@ -237,10 +237,11 @@ const QuanLyKhoa = () => {
           <TableHead>
             <TableRow>
               <TableCell width="5%">STT</TableCell>
-              <TableCell width="30%">Tên khóa</TableCell>
-              <TableCell width="30%">Hệ đào tạo</TableCell>
-              <TableCell width="25%">Năm học</TableCell>
-              <TableCell width="25%">Thao tác</TableCell>
+              <TableCell width="20%">Mã khóa</TableCell>
+              <TableCell width="20%">Tên khóa</TableCell>
+              <TableCell width="20%">Hệ đào tạo</TableCell>
+              <TableCell width="20%">Năm học</TableCell>
+              <TableCell width="20%">Thao tác</TableCell>
 
             </TableRow>
           </TableHead>
@@ -258,6 +259,7 @@ const QuanLyKhoa = () => {
               currentKhoa.map((khoa, index) => (
                 <TableRow key={khoa.id}>
                   <TableCell>{indexOfFirstItem  + 1}</TableCell>
+                  <TableCell>{khoa.ma_khoa}</TableCell>
                   <TableCell>{khoa.ten_khoa}</TableCell>
                   <TableCell>{getHeDaoTaoName(khoa.he_dao_tao_id)}</TableCell>
                   <TableCell>{khoa.nam_hoc}</TableCell>
