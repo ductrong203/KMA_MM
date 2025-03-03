@@ -290,21 +290,7 @@ const StudentManagement = () => {
     const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
 
 
-    // const filteredStudents = students.filter(student => {
-    //     // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
-    //     const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
 
-    //     const matchesSearch = (
-    //         fullName.includes(searchTerm.toLowerCase()) ||  // Tìm kiếm theo full tên
-    //         student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo họ đệm
-    //         student.ten.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo tên
-    //         student.ma_sinh_vien.includes(searchTerm) // Tìm theo mã sinh viên
-    //     );
-
-    //     const matchesLop = lop_tu_sinh.lop_id ? student.lop_id === lop_tu_sinh.lop_id : true;
-
-    //     return matchesSearch && matchesLop;
-    // });
 
     const filteredStudents = students.filter(student => {
         // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
@@ -450,33 +436,7 @@ const StudentManagement = () => {
 
 
 
-    // const handleSaveMilitary = async () => {
-    //     try {
-    //         console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
 
-    //         // Chuyển đổi các trường ngày từ string sang định dạng phù hợp
-    //         const formattedData = {
-    //             ...militaryData,
-    //             ngay_nhap_ngu: militaryData.ngay_nhap_ngu ? new Date(militaryData.ngay_nhap_ngu).toISOString() : null,
-    //             ngay_nhan_luong: militaryData.ngay_nhan_luong ? new Date(militaryData.ngay_nhan_luong).toISOString() : null,
-    //         };
-
-    //         if (editIndex !== null) {
-    //             res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
-    //             if (!res) {
-    //                 await createMilitaryInfo(formattedData);
-    //             }
-    //             console.log("Cập nhật thông tin quân nhân thành công!");
-    //         } else {
-    //             await createMilitaryInfo(formattedData);
-    //             console.log("Thêm mới thông tin quân nhân thành công!");
-    //         }
-
-    //         setOpenMilitaryPopup(false);
-    //     } catch (error) {
-    //         console.error("Lỗi khi lưu thông tin quân nhân:", error);
-    //     }
-    // };
 
 
     const handleSaveMilitary = async () => {
