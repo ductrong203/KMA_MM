@@ -450,6 +450,35 @@ const StudentManagement = () => {
 
 
 
+    // const handleSaveMilitary = async () => {
+    //     try {
+    //         console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
+
+    //         // Chuyển đổi các trường ngày từ string sang định dạng phù hợp
+    //         const formattedData = {
+    //             ...militaryData,
+    //             ngay_nhap_ngu: militaryData.ngay_nhap_ngu ? new Date(militaryData.ngay_nhap_ngu).toISOString() : null,
+    //             ngay_nhan_luong: militaryData.ngay_nhan_luong ? new Date(militaryData.ngay_nhan_luong).toISOString() : null,
+    //         };
+
+    //         if (editIndex !== null) {
+    //             res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
+    //             if (!res) {
+    //                 await createMilitaryInfo(formattedData);
+    //             }
+    //             console.log("Cập nhật thông tin quân nhân thành công!");
+    //         } else {
+    //             await createMilitaryInfo(formattedData);
+    //             console.log("Thêm mới thông tin quân nhân thành công!");
+    //         }
+
+    //         setOpenMilitaryPopup(false);
+    //     } catch (error) {
+    //         console.error("Lỗi khi lưu thông tin quân nhân:", error);
+    //     }
+    // };
+
+
     const handleSaveMilitary = async () => {
         try {
             console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
@@ -462,23 +491,28 @@ const StudentManagement = () => {
             };
 
             if (editIndex !== null) {
-                await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
-                console.log("Cập nhật thông tin quân nhân thành công!");
+                // Sử dụng try-catch riêng cho phần cập nhật
+                try {
+                    const res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
+                    console.log("Cập nhật thông tin quân nhân thành công!", res);
+                } catch (updateError) {
+                    console.log("Lỗi khi cập nhật:", updateError);
+                    // Nếu cập nhật thất bại, tạo mới
+                    console.log("Thử tạo mới thông tin quân nhân...");
+                    await createMilitaryInfo(formattedData);
+                    console.log("Đã tạo mới thông tin quân nhân thành công!");
+                }
             } else {
+                // Trường hợp thêm mới
                 await createMilitaryInfo(formattedData);
                 console.log("Thêm mới thông tin quân nhân thành công!");
             }
 
             setOpenMilitaryPopup(false);
         } catch (error) {
-            console.error("Lỗi khi lưu thông tin quân nhân:", error);
+            console.error("Lỗi khi xử lý thông tin quân nhân:", error);
         }
     };
-
-
-
-
-
 
 
 
@@ -487,10 +521,36 @@ const StudentManagement = () => {
         <Grid item xs={12} sm={4} key={field.key}>
             {/* Trường select (chọn từ danh sách có sẵn) */}
             {field.type === "select" ? (
+                // <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
+                //     <InputLabel>{field.label}</InputLabel>
+                //     <Select
+                //         value={studentData[field.key] || ""}
+                //         onChange={(e) => {
+                //             setStudentData({
+                //                 ...studentData,
+                //                 [field.key]: e.target.value
+                //             });
+
+                //             // Xóa lỗi khi chọn lại giá trị
+                //             setErrors((prev) => ({ ...prev, [field.key]: "" }));
+                //         }}
+                //     >
+                //         {field.options.map((option) => (
+                //             <MenuItem key={option.value} value={option.value}>
+                //                 {option.label}
+                //             </MenuItem>
+                //         ))}
+                //     </Select>
+                //     {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
+                // </FormControl>
+
+
+
+
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
                     <InputLabel>{field.label}</InputLabel>
                     <Select
-                        value={studentData[field.key] || ""}
+                        value={studentData[field.key] !== undefined ? studentData[field.key] : ""}
                         onChange={(e) => {
                             setStudentData({
                                 ...studentData,
@@ -509,6 +569,7 @@ const StudentManagement = () => {
                     </Select>
                     {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
                 </FormControl>
+
 
             ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
