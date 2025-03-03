@@ -138,7 +138,7 @@ const StudentManagement = () => {
     const [danhSachDoiTuongQL, setDanhSachDoiTuongQL] = useState([]);
     const [danhSachLop, setDanhSachLop] = useState([]);
     const [danhSachKhoa, setDanhSachKhoa] = useState([]);
-
+    const [lop_filter, setLopFilter] = useState()
 
 
     useEffect(() => {
@@ -288,13 +288,40 @@ const StudentManagement = () => {
 
     const [searchTerm, setSearchTerm] = useState("");
     const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
+
+
+    // const filteredStudents = students.filter(student => {
+    //     // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
+    //     const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+
+    //     const matchesSearch = (
+    //         fullName.includes(searchTerm.toLowerCase()) ||  // Tìm kiếm theo full tên
+    //         student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo họ đệm
+    //         student.ten.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo tên
+    //         student.ma_sinh_vien.includes(searchTerm) // Tìm theo mã sinh viên
+    //     );
+
+    //     const matchesLop = lop_tu_sinh.lop_id ? student.lop_id === lop_tu_sinh.lop_id : true;
+
+    //     return matchesSearch && matchesLop;
+    // });
+
     const filteredStudents = students.filter(student => {
-        return (
-            (student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.ma_sinh_vien.includes(searchTerm))
-        );
+        // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
+        const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+
+        // Tách từ khóa tìm kiếm thành từng từ nhỏ hơn
+        const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+
+        // Kiểm tra tất cả các từ trong searchTerm có xuất hiện trong fullName hay không
+        const matchesSearch = searchWords.every(word => fullName.includes(word)) ||
+            student.ma_sinh_vien.includes(searchTerm);
+
+        const matchesLop = lop_tu_sinh.lop_id ? student.lop_id === lop_tu_sinh.lop_id : true;
+
+        return matchesSearch && matchesLop;
     });
+
 
     const handleGenderChange = (event) => {
         setStudentData((prev) => ({
@@ -390,16 +417,6 @@ const StudentManagement = () => {
 
 
 
-
-
-    // const doiTuongDaoTaoList = [
-    //     { id: 1, ten_doi_tuong: "Quân Đội" },
-    //     { id: 2, ten_doi_tuong: "Công An" },
-    //     { id: 3, ten_doi_tuong: "Đảng chính quyền" },
-    //     { id: 4, ten_doi_tuong: "Quốc tế - Lào" },
-    //     { id: 5, ten_doi_tuong: "Quốc tế - Campuchia" },
-    //     { id: 6, ten_doi_tuong: "Quốc tế - Cuba" }
-    // ];
 
     const getDoiTuongName = (id) => {
         const doiTuong = danhSachDoiTuongQL.find(item => item.id === Number(id)); // Ép kiểu về số
@@ -646,8 +663,10 @@ const StudentManagement = () => {
                             value={lop_tu_sinh.lop_id || ""}  // Tránh giá trị undefined
                             onChange={(e) => {
                                 const selectedLop = e.target.value;
+
                                 setLop_ts({ ...lop_tu_sinh, lop_id: selectedLop });
                                 setStudentData({ ...studentData, lop_id: selectedLop });
+                                setLopFilter({ ...lop_filter, lop_id: selectedLop })
                             }}
 
                         >
