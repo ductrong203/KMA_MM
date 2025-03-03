@@ -354,7 +354,7 @@ const StudentManagement = () => {
             const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
             const doiTuong = danhSachDoiTuongQL.find(item => item.id === res.doi_tuong_id);
 
-            if (doiTuong && quanNhanList.includes(doiTuong.chi_tiet_doi_tuong.toLowerCase())) {
+            if (doiTuong && quanNhanList.includes(doiTuong.ten_doi_tuong.toLowerCase())) {
                 setOpenMilitaryPopup(true);
                 setMilitaryData(prev => ({ ...prev, sinh_vien_id: res.id }));
             }
@@ -854,7 +854,7 @@ const StudentManagement = () => {
                         </Grid>
                         {[
                             { label: "Lớp", key: "lop_id", type: "api", options: danhSachLop, optionLabel: "ma_lop" },
-                            { label: "Đối tượng", key: "doi_tuong_id", type: "api", options: danhSachDoiTuongQL, optionLabel: "ten_doi_tuong" },
+                            { label: "Đối tượng", key: "doi_tuong_id", type: "api", options: danhSachDoiTuongQL, optionLabel: "chi_tiet_doi_tuong" },
                             { label: "Đang học", key: "dang_hoc", type: "select", options: [{ value: 1, label: "Có" }, { value: 0, label: "Không" }] },
                             { label: "Ghi chú", key: "ghi_chu" },
                             { label: "Kỳ nhập học", key: "ky_nhap_hoc" },
