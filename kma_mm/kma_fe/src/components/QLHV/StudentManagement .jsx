@@ -563,86 +563,6 @@ const StudentManagement = () => {
 
 
 
-
-
-    // const renderField = (field) => (
-    //     <Grid item xs={12} sm={4} key={field.key}>
-    //         {/* Trường select (chọn từ danh sách có sẵn) */}
-    //         {field.type === "select" ? (
-    //             <FormControl fullWidth margin="normal" required={field.required}>
-    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
-    //                 <Select
-    //                     value={studentData[field.key] || ""}
-    //                     onChange={(e) => setStudentData({
-    //                         ...studentData,
-    //                         [field.key]: e.target.value
-    //                     })}
-    //                 >
-    //                     {field.options.map((option) => (
-    //                         <MenuItem key={option.value} value={option.value}>
-    //                             {option.label}
-    //                         </MenuItem>
-    //                     ))}
-    //                 </Select>
-    //             </FormControl>
-
-    //         ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
-    //             <FormControl fullWidth margin="normal" required={field.required}>
-    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
-    //                 <Select
-    //                     value={studentData[field.key] || ""}
-    //                     onChange={(e) => {
-    //                         const newValue = e.target.value;
-    //                         const updatedData = { ...studentData, [field.key]: newValue };
-
-    //                         // Nếu thay đổi lớp, cập nhật mã sinh viên tự động
-    //                         if (field.key === "lop_id") {
-    //                             updatedData.ma_sinh_vien = generateMaSinhVien(newValue);
-    //                         }
-
-    //                         setStudentData(updatedData);
-    //                     }}
-    //                 >
-    //                     <MenuItem value={0}>Không</MenuItem>
-    //                     {field.options.map((item) => (
-    //                         <MenuItem key={item.id} value={item.id}>
-    //                             {item[field.optionLabel]}
-    //                         </MenuItem>
-    //                     ))}
-    //                 </Select>
-    //             </FormControl>
-
-    //         ) : field.type === "date" ? ( // Trường ngày tháng
-    //             <TextField
-    //                 label={field.label}
-    //                 type="date"
-    //                 value={studentData[field.key] || ""}
-    //                 onChange={(e) => setStudentData({
-    //                     ...studentData,
-    //                     [field.key]: e.target.value
-    //                 })}
-    //                 fullWidth
-    //                 margin="normal"
-    //                 InputLabelProps={{ shrink: true }}
-    //             />
-
-    //         ) : ( // Trường nhập văn bản bình thường
-    //             <TextField
-    //                 label={field.label}
-    //                 value={studentData[field.key] || ""}
-    //                 onChange={(e) => setStudentData({
-    //                     ...studentData,
-    //                     [field.key]: e.target.value
-    //                 })}
-    //                 fullWidth
-    //                 margin="normal"
-    //             />
-    //         )}
-    //     </Grid>
-    // );
-
-
-
     // Quản lý trạng thái phân trang
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10); // Số dòng mỗi trang
@@ -769,8 +689,8 @@ const StudentManagement = () => {
                                 <TableCell>{getMaLop(student.lop_id)}</TableCell>
                                 <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
                                 <TableCell>
-                                    <Button variant="outlined" onClick={() => handleOpenDetail(index)}>Xem chi tiết</Button>
-                                    <Button variant="outlined" onClick={() => handleOpen(index)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
+                                    <Button variant="outlined" onClick={() => handleOpenDetail(student?.id - 1)}>Xem chi tiết</Button>
+                                    <Button variant="outlined" onClick={() => handleOpen(student?.id - 1)} style={{ marginLeft: 10 }}>Chỉnh sửa</Button>
                                 </TableCell>
                             </TableRow>
                         ))}
