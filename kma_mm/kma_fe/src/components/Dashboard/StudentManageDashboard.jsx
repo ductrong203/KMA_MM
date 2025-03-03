@@ -1,5 +1,28 @@
 import React, { useState } from "react";
-import { Box, Tab, Tabs, Typography, AppBar, Container, Button, Grid, Paper, InputLabel, FormControl, Select, MenuItem, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel } from "@mui/material";
+import {
+    Box,
+    Tab,
+    Tabs,
+    Typography,
+    AppBar,
+    Container,
+    Button,
+    Grid,
+    Paper,
+    InputLabel,
+    FormControl,
+    Select,
+    MenuItem,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Switch,
+    FormControlLabel,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/Download";
@@ -27,8 +50,11 @@ const mockClasses = [
 // Component for each tab's content
 function SectionContent({ title, children }) {
     return (
-        <Box sx={{ p: 3, bgcolor: '#f5f5f5', borderRadius: '8px', boxShadow: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '1rem' }}>
+        <Box sx={{ p: 3, bgcolor: "#f5f5f5", borderRadius: "8px", boxShadow: 2 }}>
+            <Typography
+                variant="h6"
+                sx={{ fontWeight: "bold", marginBottom: "1rem" }}
+            >
                 {title}
             </Typography>
             {children}
