@@ -36,6 +36,12 @@ update:
     http://localhost:8000/student/1
 delete:
     http://localhost:8000/student/1
+getbylopid
+    http://localhost:8000/student/getbylopid/1
+getbydoituongid
+    http://localhost:8000/student/getbydoituongid/1
+getall phân trang
+    http://localhost:8000/student/all?page=1&limit=5
 
 CRUD thongtinquannhan
     http://localhost:8000/thongtinquannhan
