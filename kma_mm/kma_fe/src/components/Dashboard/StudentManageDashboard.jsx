@@ -35,7 +35,7 @@ import StatisticsReport from "../QLHV/StatisticsReport";
 import QuanLyKhoa from "../Khoa/QuanLyKhoa";
 import QuanLyLop from "../LOP/ClassManagement";
 import QuanLyDaoTao from "../Dao Tao/QuanLyDaoTao";
-
+import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat"
 // Mock data
 const mockTrainingTypes = [
     { id: 1, code: "HT001", name: "Hệ Đào Tạo A", active: true },
@@ -91,7 +91,7 @@ export default function StudentManagementDashboard() {
                     <Tab label="Quản lý lớp " />
                     <Tab label="Quản lý khóa  " />
                     <Tab label="Quản lý học viên" />
-
+                    <Tab label="Khen thưởng kỉ luật " />
                     <Tab label="Đơn từ sinh viên" />
                     <Tab label="Biểu mẫu & xuất dữ liệu" />
                     <Tab label="Quản lý điểm số" />
@@ -116,16 +116,21 @@ export default function StudentManagementDashboard() {
 
                 )}
                 {value === 4 && (
-                    <StudentRequests />
+
+                    <QuanLyKhenKyLuat />
                 )}
 
                 {value === 5 && (
+                    <StudentRequests />
+                )}
+
+                {value === 6 && (
                     <ReportForms />
                 )}
-                {value === 6 && (
+                {value === 7 && (
                     <ScoreManagement />
                 )}
-                {value === 7 && (
+                {value === 8 && (
                     <StatisticsReport />
                 )}
             </Box>
