@@ -14,3 +14,4 @@ export const updateLop = async (maLop, data) => {
     const response = await api.put(`lop/${maLop}`, data)
     return response.data
 }
+
