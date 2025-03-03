@@ -521,31 +521,6 @@ const StudentManagement = () => {
         <Grid item xs={12} sm={4} key={field.key}>
             {/* Trường select (chọn từ danh sách có sẵn) */}
             {field.type === "select" ? (
-                // <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                //     <InputLabel>{field.label}</InputLabel>
-                //     <Select
-                //         value={studentData[field.key] || ""}
-                //         onChange={(e) => {
-                //             setStudentData({
-                //                 ...studentData,
-                //                 [field.key]: e.target.value
-                //             });
-
-                //             // Xóa lỗi khi chọn lại giá trị
-                //             setErrors((prev) => ({ ...prev, [field.key]: "" }));
-                //         }}
-                //     >
-                //         {field.options.map((option) => (
-                //             <MenuItem key={option.value} value={option.value}>
-                //                 {option.label}
-                //             </MenuItem>
-                //         ))}
-                //     </Select>
-                //     {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
-                // </FormControl>
-
-
-
 
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
                     <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
@@ -685,36 +660,7 @@ const StudentManagement = () => {
 
 
 
-                {/* Chọn Hệ đào tạo */}
-                {/* <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
-                        <Select
-                            value={filter.he_dao_tao}
-                            onChange={(e) => setFilter({ ...filter, he_dao_tao: e.target.value })}
-                        >
-                            {danhSachHeDaoTao.map(item => {
-                                return <MenuItem key={item.id} value={item.ma_he_dao_tao}>{item.ten_he_dao_tao}</MenuItem>;
-                            })}
-                        </Select>
 
-                    </FormControl>
-                </Grid> */}
-
-                {/* Chọn Khóa học */}
-                {/* <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Khóa học</InputLabel>
-                        <Select
-                            value={filter.khoa_hoc}
-                            onChange={(e) => setFilter({ ...filter, khoa_hoc: e.target.value })}
-                        >
-                            {danhSachKhoa.map(item => {
-                                return <MenuItem key={item.id} value={item.ma_khoa}>{item.ma_khoa}</MenuItem>;
-                            })}
-                        </Select>
-                    </FormControl>
-                </Grid> */}
 
                 {/* Chọn Lớp */}
                 <Grid item xs={4}>
