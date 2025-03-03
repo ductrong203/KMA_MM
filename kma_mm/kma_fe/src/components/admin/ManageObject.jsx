@@ -35,32 +35,30 @@ const ManageObjects = () => {
   const handleBackToDashboard = () => {
     navigate("/admin/dashboard");
   };
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await getAllDoiTuongQuanLy();
-        if (response) {
-          setData(response);
-          console.log(response)
-        } else {
-          console.error("Failed to fetch data:", response.message);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+
+  const fetchData = async () => {
+    try {
+      const response = await getAllDoiTuongQuanLy();
+      if (response) {
+        setData(response);
+      } else {
+        console.error("Failed to fetch data:", response.message);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
-  }, []);  // <--- Dependency array rỗng, chỉ chạy 1 lần khi component mount
-
-
+  }, []);
   const handleDelete = async (Id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa đối tượng này?")) {
       try {
         const response = await deleteDoiTuongQuanLy(Id);
-        console.log(response);
+
         if (response.message === "Da xoa doi tuong quan ly") {
           setData((prevData) => {
             const updatedData = prevData.filter((item) => item.id !== Id);

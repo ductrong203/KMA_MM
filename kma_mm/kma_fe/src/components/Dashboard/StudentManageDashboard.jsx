@@ -1,5 +1,28 @@
 import React, { useState } from "react";
-import { Box, Tab, Tabs, Typography, AppBar, Container, Button, Grid, Paper, InputLabel, FormControl, Select, MenuItem, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel } from "@mui/material";
+import {
+    Box,
+    Tab,
+    Tabs,
+    Typography,
+    AppBar,
+    Container,
+    Button,
+    Grid,
+    Paper,
+    InputLabel,
+    FormControl,
+    Select,
+    MenuItem,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Switch,
+    FormControlLabel,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/Download";
@@ -12,7 +35,7 @@ import StatisticsReport from "../QLHV/StatisticsReport";
 import QuanLyKhoa from "../Khoa/QuanLyKhoa";
 import QuanLyLop from "../LOP/ClassManagement";
 import QuanLyDaoTao from "../Dao Tao/QuanLyDaoTao";
-
+import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat"
 // Mock data
 const mockTrainingTypes = [
     { id: 1, code: "HT001", name: "Hệ Đào Tạo A", active: true },
@@ -27,8 +50,11 @@ const mockClasses = [
 // Component for each tab's content
 function SectionContent({ title, children }) {
     return (
-        <Box sx={{ p: 3, bgcolor: '#f5f5f5', borderRadius: '8px', boxShadow: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '1rem' }}>
+        <Box sx={{ p: 3, bgcolor: "#f5f5f5", borderRadius: "8px", boxShadow: 2 }}>
+            <Typography
+                variant="h6"
+                sx={{ fontWeight: "bold", marginBottom: "1rem" }}
+            >
                 {title}
             </Typography>
             {children}
@@ -65,7 +91,7 @@ export default function StudentManagementDashboard() {
                     <Tab label="Quản lý lớp " />
                     <Tab label="Quản lý khóa  " />
                     <Tab label="Quản lý học viên" />
-
+                    <Tab label="Khen thưởng kỉ luật " />
                     <Tab label="Đơn từ sinh viên" />
                     <Tab label="Biểu mẫu & xuất dữ liệu" />
                     <Tab label="Quản lý điểm số" />
@@ -90,16 +116,21 @@ export default function StudentManagementDashboard() {
 
                 )}
                 {value === 4 && (
-                    <StudentRequests />
+
+                    <QuanLyKhenKyLuat />
                 )}
 
                 {value === 5 && (
+                    <StudentRequests />
+                )}
+
+                {value === 6 && (
                     <ReportForms />
                 )}
-                {value === 6 && (
+                {value === 7 && (
                     <ScoreManagement />
                 )}
-                {value === 7 && (
+                {value === 8 && (
                     <StatisticsReport />
                 )}
             </Box>
