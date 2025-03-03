@@ -11,6 +11,7 @@ import ScoreManagement from "../QLHV/ScoreManagement";
 import StatisticsReport from "../QLHV/StatisticsReport";
 import QuanLyKhoa from "../Khoa/QuanLyKhoa";
 import QuanLyLop from "../LOP/ClassManagement";
+import QuanLyDaoTao from "../Dao Tao/QuanLyDaoTao";
 
 // Mock data
 const mockTrainingTypes = [
@@ -74,7 +75,7 @@ export default function StudentManagementDashboard() {
 
             <Box sx={{ mt: 3 }}>
                 {value === 0 && (
-                    <ScoreManagement />
+                    <QuanLyDaoTao />
                 )}
 
                 {value === 1 && (
