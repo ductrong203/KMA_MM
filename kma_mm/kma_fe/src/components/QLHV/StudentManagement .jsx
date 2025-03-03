@@ -24,7 +24,8 @@ import {
     Select,
     MenuItem,
     Grid,
-    TablePagination
+    TablePagination,
+    FormHelperText
 } from "@mui/material";
 
 import { createMilitaryInfo, createNewStudent, getAllMiri, getAllStudent, getMilitaryInfoByStudentId, updateMilitaryInfoByStudentId, updateStudentById } from "../../Api_controller/Service/qlhvService";
@@ -301,11 +302,48 @@ const StudentManagement = () => {
             gioi_tinh: event.target.value === "Nam", // Chuyển đổi thành boolean
         }));
     };
+    const [errors, setErrors] = useState("");
+
     const handleSave = async () => {
         try {
-            let res;
+            let newErrors = {};
 
-            // Chuyển đổi dữ liệu ngày từ chuỗi thành định dạng YYYY-MM-DD
+            // 1️⃣ Kiểm tra lỗi dữ liệu trước khi lưu
+            if (!studentData.ho_dem) newErrors.ho_dem = "Họ đệm không được để trống";
+            if (!studentData.ten) newErrors.ten = "Tên không được để trống";
+            if (!studentData.ma_sinh_vien) newErrors.ma_sinh_vien = "Mã sinh viên không được để trống";
+            if (!studentData.ngay_sinh) newErrors.ngay_sinh = "Ngày sinh không được để trống";
+            if (!studentData.email) newErrors.email = "Email không được để trống";
+            if (!studentData.so_dien_thoai) newErrors.so_dien_thoai = "Số điện thoại không được để trống";
+            if (!studentData.lop_id) newErrors.lop_id = "Lớp không được để trống";
+            if (!studentData.gioi_tinh) newErrors.gioi_tinh = "Giới tính không được để trống";
+            if (!studentData.doi_tuong_id) newErrors.doi_tuong_id = "Đối tượng không được để trống";
+            if (!studentData.que_quan) newErrors.que_quan = "Quê quán không được để trống";
+            if (!studentData.dan_toc) newErrors.dan_toc = "Dân tộc không được để trống";
+            if (!studentData.CCCD) newErrors.CCCD = "CCCD không được để trống";
+            // 2️⃣ Kiểm tra email hợp lệ
+            if (studentData.email && !/^\S+@\S+\.\S+$/.test(studentData.email)) {
+                newErrors.email = "Email không hợp lệ";
+            }
+
+            // 3️⃣ Kiểm tra số điện thoại hợp lệ
+            if (studentData.so_dien_thoai && !/^\d{10,11}$/.test(studentData.so_dien_thoai)) {
+                newErrors.so_dien_thoai = "Số điện thoại phải có 10-11 chữ số";
+            }
+
+            // 4️⃣ Kiểm tra ngày tháng hợp lệ
+            ["ngay_sinh", "ngay_cap_CCCD", "ngay_vao_truong"].forEach(field => {
+                if (studentData[field] && isNaN(Date.parse(studentData[field]))) {
+                    newErrors[field] = "Ngày không hợp lệ";
+                }
+            });
+
+            // Nếu có lỗi, hiển thị thông báo lỗi và dừng lại
+            if (Object.keys(newErrors).length > 0) {
+                setErrors(newErrors);
+                return;
+            }
+
             const formattedStudentData = {
                 ...studentData,
                 ngay_sinh: studentData.ngay_sinh ? new Date(studentData.ngay_sinh).toISOString().split('T')[0] : null,
@@ -318,32 +356,14 @@ const StudentManagement = () => {
                 nam_tot_nghiep_PTTH: studentData.ngay_ra_truong ? new Date(studentData.ngay_ra_truong).toISOString().split('T')[0] : null
             };
 
+
             console.log("Dữ liệu gửi đi:", formattedStudentData);
 
+            // 6️⃣ Lưu sinh viên vào hệ thống
+            let res;
             if (editIndex === null) {
                 res = await createNewStudent(formattedStudentData);
                 setStudents([...students, res]);
-
-
-
-                // if (!studentData.lop_id) {
-                //     alert("Vui lòng chọn lớp trước khi thêm sinh viên!");
-                //     return;
-                // }
-
-                // // Lấy số lượng sinh viên hiện có trong lớp
-                // const soLuongSinhVien = students.filter(sv => sv.lop_id === studentData.lop_id).length;
-
-                // // Tạo mã sinh viên mới (số thứ tự luôn có 2 chữ số)
-                // formattedStudentData.ma_sinh_vien = `${studentData.lop_id}${String(soLuongSinhVien + 1).padStart(2, '0')}`;
-
-                // res = await createNewStudent(formattedStudentData);
-                // setStudents([...students, res]);
-
-
-
-
-
             } else {
                 res = await updateStudentById(formattedStudentData, formattedStudentData.id);
                 const updatedStudents = [...students];
@@ -351,6 +371,7 @@ const StudentManagement = () => {
                 setStudents(updatedStudents);
             }
 
+            // 7️⃣ Kiểm tra nếu đối tượng là quân nhân, mở popup nhập thông tin quân nhân
             const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
             const doiTuong = danhSachDoiTuongQL.find(item => item.id === res.doi_tuong_id);
 
@@ -364,6 +385,11 @@ const StudentManagement = () => {
             console.error("Lỗi khi cập nhật học viên:", error);
         }
     };
+
+
+
+
+
 
 
     // const doiTuongDaoTaoList = [
@@ -440,77 +466,23 @@ const StudentManagement = () => {
 
 
 
-
-    // const renderField = (field) => (
-    //     <Grid item xs={12} sm={4} key={field.key}>
-    //         {field.type === "select" ? (
-    //             <FormControl fullWidth margin="normal" required={field.required}>
-    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
-    //                 <Select
-    //                     value={studentData[field.key] || ""}
-    //                     onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-    //                 >
-    //                     {field.options.map((option) => (
-    //                         <MenuItem key={option.value} value={option.value}>
-    //                             {option.label}
-    //                         </MenuItem>
-    //                     ))}
-    //                 </Select>
-    //             </FormControl>
-    //         ) : field.type === "api" ? (
-    //             <FormControl fullWidth margin="normal" required={field.required}>
-    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
-    //                 <Select
-    //                     value={studentData[field.key] || ""}
-    //                     onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-    //                 >
-    //                     <MenuItem value={0}>Không</MenuItem>
-    //                     {field.options.map((item) => (
-    //                         <MenuItem key={item.id} value={item.id}>
-    //                             {item[field.optionLabel]}
-    //                         </MenuItem>
-    //                     ))}
-    //                 </Select>
-    //             </FormControl>
-    //         ) : field.type === "date" ? ( // ✅ Xử lý trường ngày
-    //             <TextField
-    //                 label={field.label}
-    //                 type="date"
-    //                 value={studentData[field.key] || ""}
-    //                 onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-    //                 fullWidth
-    //                 margin="normal"
-    //                 InputLabelProps={{
-    //                     shrink: true, // ✅ Giúp label không che mất giá trị nhập vào
-    //                 }}
-    //             />
-    //         ) : (
-    //             <TextField
-    //                 label={field.label}
-    //                 value={studentData[field.key] || ""}
-    //                 onChange={(e) => setStudentData({ ...studentData, [field.key]: e.target.value })}
-    //                 fullWidth
-    //                 margin="normal"
-    //             />
-    //         )}
-    //     </Grid>
-    // );
-
-
-
-
     const renderField = (field) => (
         <Grid item xs={12} sm={4} key={field.key}>
             {/* Trường select (chọn từ danh sách có sẵn) */}
             {field.type === "select" ? (
-                <FormControl fullWidth margin="normal" required={field.required}>
-                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+                <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
+                    <InputLabel>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
-                        onChange={(e) => setStudentData({
-                            ...studentData,
-                            [field.key]: e.target.value
-                        })}
+                        onChange={(e) => {
+                            setStudentData({
+                                ...studentData,
+                                [field.key]: e.target.value
+                            });
+
+                            // Xóa lỗi khi chọn lại giá trị
+                            setErrors((prev) => ({ ...prev, [field.key]: "" }));
+                        }}
                     >
                         {field.options.map((option) => (
                             <MenuItem key={option.value} value={option.value}>
@@ -518,11 +490,12 @@ const StudentManagement = () => {
                             </MenuItem>
                         ))}
                     </Select>
+                    {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
                 </FormControl>
 
             ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
-                <FormControl fullWidth margin="normal" required={field.required}>
-                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+                <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
+                    <InputLabel>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
                         onChange={(e) => {
@@ -535,15 +508,19 @@ const StudentManagement = () => {
                             }
 
                             setStudentData(updatedData);
+
+                            // Xóa lỗi khi chọn lại giá trị
+                            setErrors((prev) => ({ ...prev, [field.key]: "" }));
                         }}
                     >
-                        <MenuItem value={0}>Không</MenuItem>
+                        <MenuItem value="">Chọn...</MenuItem> {/* Mặc định */}
                         {field.options.map((item) => (
                             <MenuItem key={item.id} value={item.id}>
                                 {item[field.optionLabel]}
                             </MenuItem>
                         ))}
                     </Select>
+                    {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
                 </FormControl>
 
             ) : field.type === "date" ? ( // Trường ngày tháng
@@ -551,12 +528,16 @@ const StudentManagement = () => {
                     label={field.label}
                     type="date"
                     value={studentData[field.key] || ""}
-                    onChange={(e) => setStudentData({
-                        ...studentData,
-                        [field.key]: e.target.value
-                    })}
+                    onChange={(e) => {
+                        setStudentData({ ...studentData, [field.key]: e.target.value });
+
+                        // Xóa lỗi khi chọn ngày hợp lệ
+                        setErrors((prev) => ({ ...prev, [field.key]: "" }));
+                    }}
                     fullWidth
                     margin="normal"
+                    error={!!errors[field.key]}
+                    helperText={errors[field.key]}
                     InputLabelProps={{ shrink: true }}
                 />
 
@@ -564,16 +545,101 @@ const StudentManagement = () => {
                 <TextField
                     label={field.label}
                     value={studentData[field.key] || ""}
-                    onChange={(e) => setStudentData({
-                        ...studentData,
-                        [field.key]: e.target.value
-                    })}
+                    onChange={(e) => {
+                        setStudentData({ ...studentData, [field.key]: e.target.value });
+
+                        // Xóa lỗi khi nhập lại
+                        setErrors((prev) => ({ ...prev, [field.key]: "" }));
+                    }}
                     fullWidth
                     margin="normal"
+                    error={!!errors[field.key]}
+                    helperText={errors[field.key]}
                 />
             )}
         </Grid>
     );
+
+
+
+
+
+
+    // const renderField = (field) => (
+    //     <Grid item xs={12} sm={4} key={field.key}>
+    //         {/* Trường select (chọn từ danh sách có sẵn) */}
+    //         {field.type === "select" ? (
+    //             <FormControl fullWidth margin="normal" required={field.required}>
+    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+    //                 <Select
+    //                     value={studentData[field.key] || ""}
+    //                     onChange={(e) => setStudentData({
+    //                         ...studentData,
+    //                         [field.key]: e.target.value
+    //                     })}
+    //                 >
+    //                     {field.options.map((option) => (
+    //                         <MenuItem key={option.value} value={option.value}>
+    //                             {option.label}
+    //                         </MenuItem>
+    //                     ))}
+    //                 </Select>
+    //             </FormControl>
+
+    //         ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
+    //             <FormControl fullWidth margin="normal" required={field.required}>
+    //                 <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
+    //                 <Select
+    //                     value={studentData[field.key] || ""}
+    //                     onChange={(e) => {
+    //                         const newValue = e.target.value;
+    //                         const updatedData = { ...studentData, [field.key]: newValue };
+
+    //                         // Nếu thay đổi lớp, cập nhật mã sinh viên tự động
+    //                         if (field.key === "lop_id") {
+    //                             updatedData.ma_sinh_vien = generateMaSinhVien(newValue);
+    //                         }
+
+    //                         setStudentData(updatedData);
+    //                     }}
+    //                 >
+    //                     <MenuItem value={0}>Không</MenuItem>
+    //                     {field.options.map((item) => (
+    //                         <MenuItem key={item.id} value={item.id}>
+    //                             {item[field.optionLabel]}
+    //                         </MenuItem>
+    //                     ))}
+    //                 </Select>
+    //             </FormControl>
+
+    //         ) : field.type === "date" ? ( // Trường ngày tháng
+    //             <TextField
+    //                 label={field.label}
+    //                 type="date"
+    //                 value={studentData[field.key] || ""}
+    //                 onChange={(e) => setStudentData({
+    //                     ...studentData,
+    //                     [field.key]: e.target.value
+    //                 })}
+    //                 fullWidth
+    //                 margin="normal"
+    //                 InputLabelProps={{ shrink: true }}
+    //             />
+
+    //         ) : ( // Trường nhập văn bản bình thường
+    //             <TextField
+    //                 label={field.label}
+    //                 value={studentData[field.key] || ""}
+    //                 onChange={(e) => setStudentData({
+    //                     ...studentData,
+    //                     [field.key]: e.target.value
+    //                 })}
+    //                 fullWidth
+    //                 margin="normal"
+    //             />
+    //         )}
+    //     </Grid>
+    // );
 
 
 
