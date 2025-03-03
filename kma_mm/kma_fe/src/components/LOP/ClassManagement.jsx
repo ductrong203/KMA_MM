@@ -12,6 +12,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { createLop, getDanhSachLop, updateLop } from "../../Api_controller/Service/lopService";
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
 import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
+import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService";
 
 const QuanLyLop = () => {
     const [danhSachLop, setDanhSachLop] = useState([]);
@@ -76,8 +77,8 @@ const QuanLyLop = () => {
         try {
             // Trong thực tế, cần có API riêng để lấy sinh viên theo lớp
             // Đây là ví dụ gọi API, cần thay đổi theo API thực tế
-            const ketQua = await getDanhSachSinhVien();
-            setDanhSachSinhVien(ketQua || []);
+            const ketQua = await getDanhSachSinhVienTheoLop(lopId);
+            setDanhSachSinhVien(ketQua.data || []);
         } catch (error) {
             console.error("Lỗi khi lấy danh sách sinh viên:", error);
             // Sử dụng dữ liệu mẫu
@@ -91,6 +92,8 @@ const QuanLyLop = () => {
             setDangTaiSinhVien(false);
         }
     };
+
+    console.log(danhSachSinhVien)
 
     // Mở form (Thêm hoặc Chỉnh sửa)
     const moFormLop = (index = null) => {
@@ -434,15 +437,17 @@ const QuanLyLop = () => {
                                         <TableHead>
                                             <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
                                                 <TableCell>Mã SV</TableCell>
-                                                <TableCell>Họ tên</TableCell>
+                                                <TableCell>Họ đệm</TableCell>
+                                                <TableCell>Tên</TableCell>
                                                 <TableCell>Ngày sinh</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {danhSachSinhVien.map((sinhVien) => (
                                                 <TableRow key={sinhVien.id} hover>
-                                                    <TableCell>{sinhVien.ma_sv}</TableCell>
-                                                    <TableCell>{sinhVien.ho_ten}</TableCell>
+                                                    <TableCell>{sinhVien.ma_sinh_vien}</TableCell>
+                                                    <TableCell>{sinhVien.ho_dem}</TableCell>
+                                                    <TableCell>{sinhVien.ten}</TableCell>
                                                     <TableCell>
                                                         {new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN')}
                                                     </TableCell>

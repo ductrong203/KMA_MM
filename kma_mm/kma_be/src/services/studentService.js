@@ -38,6 +38,44 @@ class SinhVienService {
     });
   }
 
+  static async getAllSinhVienPhanTrang(page = 1, limit = 10) {
+    try {
+      const offset = (page - 1) * limit;
+      const { rows, count } = await sinh_vien.findAndCountAll({
+        offset,
+        limit,
+      });
+      if (!rows || rows.length === 0) {
+        return { message: "Không tìm thấy sinh viên", students: [], total: count };
+      }
+
+      return {
+        students: rows,
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      };
+    } catch (error) {
+      throw new Error("Lỗi khi lấy danh sách sinh viên");
+    }
+  }
+
+  static async getStudentsByLopId(lopId) {
+    try {
+      return await sinh_vien.findAll({ where: { lop_id: lopId } });
+    } catch (error) {
+      throw new Error("Lỗi khi lấy danh sách sinh viên theo lop_id");
+    }
+  }
+
+  static async getStudentsByDoiTuongId(doiTuongId) {
+    try {
+      return await sinh_vien.findAll({ where: { doi_tuong_id: doiTuongId } });
+    } catch (error) {
+      throw new Error("Lỗi khi lấy danh sách sinh viên theo doi_tuong_id");
+    }
+  }
+
   static async getSinhVienById(id) {
     return await sinh_vien.findByPk(id, {
       include: [

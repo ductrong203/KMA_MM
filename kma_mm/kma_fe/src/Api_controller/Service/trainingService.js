@@ -13,3 +13,4 @@ export const updateTraining = async (code, data) => {
   const response = await api.put(`training/${code}`, data)
   return response.data
 }
+
