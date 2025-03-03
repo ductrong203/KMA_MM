@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: "6",
 
     },
+      
+
+
+  }, {
+    tableName: "users", // Đặt tên bảng cụ thể
+    timestamps: false, // Không tự động tạo cột createdAt, updatedAt (nếu không cần)
   });
 
   User.associate = function (models) {

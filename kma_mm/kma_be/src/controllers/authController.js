@@ -16,7 +16,7 @@ const register = async (req, res) => {
         message: "The confirmPassword must match password",
       });
     }
-
+   
     // Giả sử UserService.register trả về dữ liệu người dùng mới đã được tạo
     const response = await UserService.register(req.body);
     return res.status(201).json(response); // Trả về status 201 cho yêu cầu thành công khi tạo người dùng
@@ -26,6 +26,7 @@ const register = async (req, res) => {
     });
   }
 };
+
 // Login User
 const loginUser = async (req, res) => {
   try {

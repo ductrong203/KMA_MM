@@ -1,9 +1,12 @@
 const { User } = require("../models");
+console.log(require("../models/user"))
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
+const user = require("../models/user");
 
 const register = async (newUser) => {
-  const { username, password, confirmPassword, role } = newUser;
+  const { username, password, confirmPassword, role} = newUser;
+  // console.log(username);
   if (password !== confirmPassword) {
     return {
       status: "ERR",
