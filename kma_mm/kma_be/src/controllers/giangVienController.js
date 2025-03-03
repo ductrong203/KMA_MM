@@ -40,31 +40,30 @@ const createGiangVien = async (req, res) => {
   }
 };
 
-  
+
 const getGiangVien = async (req, res) => {
   try {
-      const response = await giangVienService.getGiangVien();
-      return res.status(201).json(response); 
-    } catch (e) {
-      return res.status(500).json({
-        message: e.message || "Server error",
-      });
-    }
+    const response = await giangVienService.getGiangVien();
+    return res.status(201).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      message: e.message || "Server error",
+    });
   }
+}
 
-  const updateGiangVien = async (req, res) => {
-    try {
-        const response = await giangVienService.updateGiangVien(req.params.ma_giang_vien, req.body);
-        return res.status(201).json(response); 
-      } catch (e) {
-        return res.status(500).json({
-          message: e.message || "Server error",
-        });
-      }
-    }
+const updateGiangVien = async (req, res) => {
+  try {
+    const response = await giangVienService.updateGiangVien(req.params.ma_giang_vien, req.body);
+    return res.status(201).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
 module.exports = {
-    createGiangVien,
-    getGiangVien,
-    updateGiangVien
-  };
-  
+  createGiangVien,
+  getGiangVien,
+  updateGiangVien
+};

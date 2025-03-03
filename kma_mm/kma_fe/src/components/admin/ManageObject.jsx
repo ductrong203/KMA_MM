@@ -35,13 +35,13 @@ const ManageObjects = () => {
   const handleBackToDashboard = () => {
     navigate("/admin/dashboard");
   };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await getAllDoiTuongQuanLy();
         if (response) {
           setData(response);
+          console.log(response)
         } else {
           console.error("Failed to fetch data:", response.message);
         }
@@ -53,7 +53,8 @@ const ManageObjects = () => {
     };
 
     fetchData();
-  }, [data]);
+  }, []);  // <--- Dependency array rỗng, chỉ chạy 1 lần khi component mount
+
 
   const handleDelete = async (Id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa đối tượng này?")) {
@@ -147,29 +148,29 @@ const ManageObjects = () => {
           <TableBody>
             {currentData && currentData.length > 0
               ? currentData.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.ma_doi_tuong}</TableCell>
-                    <TableCell>{item.ten_doi_tuong}</TableCell>
-                    <TableCell>{item.chi_tiet_doi_tuong}</TableCell>
-                    <TableCell>{item.ghi_chu}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => handleEdit(item)}
-                      >
-                        Sửa
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        Xóa
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                <TableRow key={item.id}>
+                  <TableCell>{item.ma_doi_tuong}</TableCell>
+                  <TableCell>{item.ten_doi_tuong}</TableCell>
+                  <TableCell>{item.chi_tiet_doi_tuong}</TableCell>
+                  <TableCell>{item.ghi_chu}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => handleEdit(item)}
+                    >
+                      Sửa
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      Xóa
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
               : null}
           </TableBody>
         </Table>

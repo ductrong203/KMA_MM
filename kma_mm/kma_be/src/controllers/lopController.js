@@ -3,13 +3,13 @@ const LopService = require("../services/lopService");
 class LopController {
   static async create(req, res) {
     try {
-      const { danh_muc_dao_tao_id } = req.body;
+      const { khoa_dao_tao_id } = req.body;
   
-      if (!danh_muc_dao_tao_id) {
-        return res.status(400).json({ message: "danh_muc_dao_tao_id là bắt buộc" });
+      if (!khoa_dao_tao_id) {
+        return res.status(400).json({ message: "khoa_dao_tao_id là bắt buộc" });
       }
   
-      const newLop = await LopService.createLop(danh_muc_dao_tao_id);
+      const newLop = await LopService.createLop(khoa_dao_tao_id);
       return res.status(201).json(newLop);
     } catch (error) {
       return res.status(500).json({ message: error.message });
