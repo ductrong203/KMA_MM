@@ -70,7 +70,7 @@ const authQuanLyHocVienMiddleWare = (req, res, next) => {
         Message: "Authentication failed. Token is invalid.",
       });
     }
-    if (decoded.role === 4) {
+    if (decoded.role === 3) {
       next();
     } else {
       return res.status(403).json({
