@@ -209,7 +209,7 @@ const StudentManagement = () => {
 
                 ma_sinh_vien: newMaSinhVien,
                 ngay_sinh: "",
-                gioi_tinh: false,
+                gioi_tinh: 1,
                 que_quan: "",
                 lop_id: lop_tu_sinh.lop_id,
                 doi_tuong_id: "",
@@ -231,9 +231,9 @@ const StudentManagement = () => {
                 tinh_thanh: "",
                 quan_huyen: "",
                 phuong_xa_khoi: "",
-                dan_toc: "",
-                ton_giao: "",
-                quoc_tich: "",
+                dan_toc: "Kinh",
+                ton_giao: "Không",
+                quoc_tich: "Việt Nam",
                 trung_tuyen_theo_nguyen_vong: "",
                 nam_tot_nghiep_PTTH: "",
                 thanh_phan_gia_dinh: "",
@@ -290,21 +290,7 @@ const StudentManagement = () => {
     const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
 
 
-    // const filteredStudents = students.filter(student => {
-    //     // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
-    //     const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
 
-    //     const matchesSearch = (
-    //         fullName.includes(searchTerm.toLowerCase()) ||  // Tìm kiếm theo full tên
-    //         student.ho_dem.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo họ đệm
-    //         student.ten.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm theo tên
-    //         student.ma_sinh_vien.includes(searchTerm) // Tìm theo mã sinh viên
-    //     );
-
-    //     const matchesLop = lop_tu_sinh.lop_id ? student.lop_id === lop_tu_sinh.lop_id : true;
-
-    //     return matchesSearch && matchesLop;
-    // });
 
     const filteredStudents = students.filter(student => {
         // Ghép họ đệm và tên lại thành một chuỗi hoàn chỉnh
@@ -450,33 +436,7 @@ const StudentManagement = () => {
 
 
 
-    // const handleSaveMilitary = async () => {
-    //     try {
-    //         console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
 
-    //         // Chuyển đổi các trường ngày từ string sang định dạng phù hợp
-    //         const formattedData = {
-    //             ...militaryData,
-    //             ngay_nhap_ngu: militaryData.ngay_nhap_ngu ? new Date(militaryData.ngay_nhap_ngu).toISOString() : null,
-    //             ngay_nhan_luong: militaryData.ngay_nhan_luong ? new Date(militaryData.ngay_nhan_luong).toISOString() : null,
-    //         };
-
-    //         if (editIndex !== null) {
-    //             res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
-    //             if (!res) {
-    //                 await createMilitaryInfo(formattedData);
-    //             }
-    //             console.log("Cập nhật thông tin quân nhân thành công!");
-    //         } else {
-    //             await createMilitaryInfo(formattedData);
-    //             console.log("Thêm mới thông tin quân nhân thành công!");
-    //         }
-
-    //         setOpenMilitaryPopup(false);
-    //     } catch (error) {
-    //         console.error("Lỗi khi lưu thông tin quân nhân:", error);
-    //     }
-    // };
 
 
     const handleSaveMilitary = async () => {
@@ -521,34 +481,9 @@ const StudentManagement = () => {
         <Grid item xs={12} sm={4} key={field.key}>
             {/* Trường select (chọn từ danh sách có sẵn) */}
             {field.type === "select" ? (
-                // <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                //     <InputLabel>{field.label}</InputLabel>
-                //     <Select
-                //         value={studentData[field.key] || ""}
-                //         onChange={(e) => {
-                //             setStudentData({
-                //                 ...studentData,
-                //                 [field.key]: e.target.value
-                //             });
-
-                //             // Xóa lỗi khi chọn lại giá trị
-                //             setErrors((prev) => ({ ...prev, [field.key]: "" }));
-                //         }}
-                //     >
-                //         {field.options.map((option) => (
-                //             <MenuItem key={option.value} value={option.value}>
-                //                 {option.label}
-                //             </MenuItem>
-                //         ))}
-                //     </Select>
-                //     {errors[field.key] && <FormHelperText>{errors[field.key]}</FormHelperText>}
-                // </FormControl>
-
-
-
 
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                    <InputLabel>{field.label}</InputLabel>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] !== undefined ? studentData[field.key] : ""}
                         onChange={(e) => {
@@ -573,7 +508,7 @@ const StudentManagement = () => {
 
             ) : field.type === "api" ? ( // Trường lấy dữ liệu từ API
                 <FormControl fullWidth margin="normal" required={field.required} error={!!errors[field.key]}>
-                    <InputLabel>{field.label}</InputLabel>
+                    <InputLabel sx={{ backgroundColor: "white" }}>{field.label}</InputLabel>
                     <Select
                         value={studentData[field.key] || ""}
                         onChange={(e) => {
@@ -685,36 +620,7 @@ const StudentManagement = () => {
 
 
 
-                {/* Chọn Hệ đào tạo */}
-                {/* <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
-                        <Select
-                            value={filter.he_dao_tao}
-                            onChange={(e) => setFilter({ ...filter, he_dao_tao: e.target.value })}
-                        >
-                            {danhSachHeDaoTao.map(item => {
-                                return <MenuItem key={item.id} value={item.ma_he_dao_tao}>{item.ten_he_dao_tao}</MenuItem>;
-                            })}
-                        </Select>
 
-                    </FormControl>
-                </Grid> */}
-
-                {/* Chọn Khóa học */}
-                {/* <Grid item xs={4}>
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Khóa học</InputLabel>
-                        <Select
-                            value={filter.khoa_hoc}
-                            onChange={(e) => setFilter({ ...filter, khoa_hoc: e.target.value })}
-                        >
-                            {danhSachKhoa.map(item => {
-                                return <MenuItem key={item.id} value={item.ma_khoa}>{item.ma_khoa}</MenuItem>;
-                            })}
-                        </Select>
-                    </FormControl>
-                </Grid> */}
 
                 {/* Chọn Lớp */}
                 <Grid item xs={4}>
