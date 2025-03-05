@@ -52,6 +52,7 @@ import ClassManagement from '../LOP/ClassManagement';
 import QuanLyKhoa from '../Khoa/QuanLyKhoa';
 import QuanLyLop from '../LOP/ClassManagement';
 import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
+import ThoiKhoaBieu from '../ThoiKhoaBieu/ThoiKhoaBieu';
 
 // Mock data
 const trainerInfo = {
@@ -137,6 +138,7 @@ function TrainingDashboard() {
                         <Tab label="Xét tốt nghiệp" />
                         <Tab label="Quản lý bằng" />
                         <Tab label="Thống kê chi tiết" />
+                        <Tab label="Thời khóa biểu" />
                     </Tabs>
 
                     {/* Training Types Tab */}
@@ -376,7 +378,14 @@ function TrainingDashboard() {
                             </Grid>
                         </Box>
                     )}
+
+                    {currentTab === 8 && (
+                        <>
+                            <ThoiKhoaBieu />
+                        </>
+                    )}
                 </Paper>
+
 
                 {/* Add Student Dialog */}
                 <Dialog open={openAddStudent} onClose={() => setOpenAddStudent(false)} maxWidth="md" fullWidth>
