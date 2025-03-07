@@ -55,6 +55,8 @@ import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
 import QuanLyMonHoc from '../Mon Hoc/QuanLyMonHoc';
 import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
 import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
+import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
+import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
 
 // Mock data
 const trainerInfo = {
@@ -249,10 +251,12 @@ function TrainingDashboard() {
                 <Tab label="Danh sách sinh viên" />
                 <Tab label="Xét tốt nghiệp" />
                 <Tab label="Quản lý bằng cấp" />
+                <Tab label="Quản lý danh mục khen thưởng" />
               </Tabs>
               {subTab === 0 && <StudentManagement />}
               {subTab === 1 && <DieuKienTotNghiep />}
               {subTab === 2 && <QuanLyBangCap />}
+              {subTab === 3 && < QuanLyKhenKyLuat />}
             </Box>
           )}
 

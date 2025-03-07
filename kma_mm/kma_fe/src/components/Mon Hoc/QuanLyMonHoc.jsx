@@ -25,6 +25,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ThoiKhoaBieu from '../ThoiKhoaBieu/ThoiKhoaBieu';
 
 // Mock data cho demo
 const initialSubjects = [
@@ -86,18 +87,18 @@ const QuanLyMonHoc = () => {
   // Định nghĩa cột cho DataGrid ánh xạ môn học với chương trình đào tạo
   const mappingColumns = [
     { field: 'id', headerName: 'ID', width: 70 },
-    { 
-      field: 'subjectId', 
-      headerName: 'Môn học', 
+    {
+      field: 'subjectId',
+      headerName: 'Môn học',
       width: 200,
       valueGetter: (params) => {
         const subject = subjects.find(s => s.id === params.value);
         return subject ? subject.subjectName : '';
       }
     },
-    { 
-      field: 'curriculumId', 
-      headerName: 'Chương trình đào tạo', 
+    {
+      field: 'curriculumId',
+      headerName: 'Chương trình đào tạo',
       width: 200,
       valueGetter: (params) => {
         const curriculum = curriculums.find(c => c.id === params.value);
@@ -189,14 +190,14 @@ const QuanLyMonHoc = () => {
     // Kiểm tra xem môn học có đang được sử dụng trong mapping không
     const isUsed = subjectMappings.some(mapping => mapping.subjectId === id);
     if (isUsed) {
-      setNotification({ 
-        open: true, 
-        message: 'Không thể xóa môn học này vì đang được sử dụng trong chương trình đào tạo!', 
-        severity: 'error' 
+      setNotification({
+        open: true,
+        message: 'Không thể xóa môn học này vì đang được sử dụng trong chương trình đào tạo!',
+        severity: 'error'
       });
       return;
     }
-    
+
     setSubjects(subjects.filter(s => s.id !== id));
     setNotification({ open: true, message: 'Xóa môn học thành công!', severity: 'success' });
   };
@@ -245,6 +246,7 @@ const QuanLyMonHoc = () => {
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="Danh sách môn học" />
           <Tab label="Phân bổ môn học theo CTĐT" />
+          <Tab label="Thời khóa biểu " />
         </Tabs>
       </Box>
 
@@ -252,9 +254,9 @@ const QuanLyMonHoc = () => {
         <Paper sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6">Danh sách môn học</Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
+            <Button
+              variant="contained"
+              color="primary"
               startIcon={<AddIcon />}
               onClick={handleOpenDialog}
             >
@@ -278,9 +280,9 @@ const QuanLyMonHoc = () => {
         <Paper sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6">Phân bổ môn học theo chương trình đào tạo</Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
+            <Button
+              variant="contained"
+              color="primary"
               startIcon={<AddIcon />}
               onClick={handleOpenMappingDialog}
             >
@@ -299,6 +301,11 @@ const QuanLyMonHoc = () => {
           </Box>
         </Paper>
       )}
+      {tabValue === 2 && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <ThoiKhoaBieu />
+        </Paper>
+      )}
 
       {/* Dialog thêm/sửa môn học */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -310,14 +317,14 @@ const QuanLyMonHoc = () => {
               label="Mã môn học"
               fullWidth
               value={currentSubject ? currentSubject.subjectCode : ''}
-              onChange={(e) => setCurrentSubject({...currentSubject, subjectCode: e.target.value})}
+              onChange={(e) => setCurrentSubject({ ...currentSubject, subjectCode: e.target.value })}
             />
             <TextField
               margin="dense"
               label="Tên môn học"
               fullWidth
               value={currentSubject ? currentSubject.subjectName : ''}
-              onChange={(e) => setCurrentSubject({...currentSubject, subjectName: e.target.value})}
+              onChange={(e) => setCurrentSubject({ ...currentSubject, subjectName: e.target.value })}
             />
             <TextField
               margin="dense"
@@ -325,7 +332,7 @@ const QuanLyMonHoc = () => {
               type="number"
               fullWidth
               value={currentSubject ? currentSubject.credits : 0}
-              onChange={(e) => setCurrentSubject({...currentSubject, credits: parseInt(e.target.value)})}
+              onChange={(e) => setCurrentSubject({ ...currentSubject, credits: parseInt(e.target.value) })}
             />
             <TextField
               margin="dense"
@@ -334,13 +341,13 @@ const QuanLyMonHoc = () => {
               multiline
               rows={2}
               value={currentSubject ? currentSubject.note : ''}
-              onChange={(e) => setCurrentSubject({...currentSubject, note: e.target.value})}
+              onChange={(e) => setCurrentSubject({ ...currentSubject, note: e.target.value })}
             />
             <FormControlLabel
               control={
                 <Checkbox
                   checked={currentSubject ? currentSubject.countInGPA : true}
-                  onChange={(e) => setCurrentSubject({...currentSubject, countInGPA: e.target.checked})}
+                  onChange={(e) => setCurrentSubject({ ...currentSubject, countInGPA: e.target.checked })}
                 />
               }
               label="Tính vào điểm trung bình chung"
@@ -365,7 +372,7 @@ const QuanLyMonHoc = () => {
               <Select
                 value={currentMapping ? currentMapping.subjectId : ''}
                 label="Môn học"
-                onChange={(e) => setCurrentMapping({...currentMapping, subjectId: e.target.value})}
+                onChange={(e) => setCurrentMapping({ ...currentMapping, subjectId: e.target.value })}
               >
                 {subjects.map((subject) => (
                   <MenuItem key={subject.id} value={subject.id}>
@@ -379,7 +386,7 @@ const QuanLyMonHoc = () => {
               <Select
                 value={currentMapping ? currentMapping.curriculumId : ''}
                 label="Chương trình đào tạo"
-                onChange={(e) => setCurrentMapping({...currentMapping, curriculumId: e.target.value})}
+                onChange={(e) => setCurrentMapping({ ...currentMapping, curriculumId: e.target.value })}
               >
                 {curriculums.map((curriculum) => (
                   <MenuItem key={curriculum.id} value={curriculum.id}>
@@ -394,7 +401,7 @@ const QuanLyMonHoc = () => {
               type="number"
               fullWidth
               value={currentMapping ? currentMapping.semester : 1}
-              onChange={(e) => setCurrentMapping({...currentMapping, semester: parseInt(e.target.value)})}
+              onChange={(e) => setCurrentMapping({ ...currentMapping, semester: parseInt(e.target.value) })}
             />
           </Box>
         </DialogContent>
@@ -407,9 +414,9 @@ const QuanLyMonHoc = () => {
       </Dialog>
 
       {/* Snackbar thông báo */}
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
         onClose={handleCloseNotification}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
