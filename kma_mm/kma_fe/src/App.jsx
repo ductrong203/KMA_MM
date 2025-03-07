@@ -167,17 +167,6 @@ const App = () => {
             </PrivateRoute>
           }
         />
-
-<Route
-          path="/admin/quan-ly-mon-hoc"
-          element={
-            <PrivateRoute role={role} allowedRoles={["admin"]}>
-              <Layout Info={info} title="Admin Dashboard">
-                <QuanLyMonHoc />
-              </Layout>
-            </PrivateRoute>
-          }
-        />
         <Route
           path="/admin/delete-account"
           element={
