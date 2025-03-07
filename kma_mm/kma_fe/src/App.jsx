@@ -32,6 +32,7 @@ import ManageObjects from "./components/admin/ManageObject";
 import ManageDepartments from "./components/admin/ManageDepartment";
 import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
+import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 
 
 const App = () => {
@@ -162,6 +163,17 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["admin"]}>
               <Layout Info={info} title="Admin Dashboard">
                 <QuanLyGiangViens />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+<Route
+          path="/admin/quan-ly-mon-hoc"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Admin Dashboard">
+                <QuanLyMonHoc />
               </Layout>
             </PrivateRoute>
           }

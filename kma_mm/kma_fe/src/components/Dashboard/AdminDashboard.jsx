@@ -74,6 +74,13 @@ const menuItems = [
     icon: <BusinessIcon sx={{ fontSize: 40 }} />,
     href: '/admin/manage-objects',
     color: 'info.main'
+  },
+  {
+    title: 'Quản lý môn học',
+    description: 'Create, edit, and manage object',
+    icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+    href: '/admin/quan-ly-mon-hoc',
+    color: 'info.main'
   }
 ];
 
