@@ -53,6 +53,7 @@ import QuanLyKhoa from "../Khoa/QuanLyKhoa";
 import QuanLyLop from "../LOP/ClassManagement";
 import QuanLyDaoTao from "../Dao Tao/QuanLyDaoTao";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
+import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 
 // Mock data
 const trainerInfo = {
@@ -135,6 +136,7 @@ function TrainingDashboard() {
             <Tab label="Quản lý lớp" />
             <Tab label="Học viên" />
             <Tab label="Khen thưởng/kỷ luật" />
+            <Tab label="Quản lý thời khóa biểu" />
             <Tab label="Quản lý bằng" />
             <Tab label="Xét tốt nghiệp" />
             <Tab label="Thống kê" />
@@ -159,8 +161,10 @@ function TrainingDashboard() {
           {/* Student Management Tab */}
           {currentTab === 4 && <QuanLyKhenKyLuat />}
 
+          {/* Student Management Tab */}
+          {currentTab === 5 && <ThoiKhoaBieu />}
           {/* Degree Management Tab */}
-          {currentTab === 5 && (
+          {currentTab === 6 && (
             <Box>
               <Grid container spacing={3}>
                 <Grid item xs={12}>
@@ -216,7 +220,7 @@ function TrainingDashboard() {
           )}
 
           {/* Graduation Eligibility Tab */}
-          {currentTab === 6 && (
+          {currentTab === 7 && (
             <Box>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
@@ -327,7 +331,7 @@ function TrainingDashboard() {
           )}
 
           {/* Statistics Tab */}
-          {currentTab === 7 && (
+          {currentTab === 8 && (
             <Box>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
@@ -355,7 +359,7 @@ function TrainingDashboard() {
           )}
 
           {/* Detailed Statistics Tab */}
-          {currentTab === 8 && (
+          {currentTab === 9 && (
             <Box>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
