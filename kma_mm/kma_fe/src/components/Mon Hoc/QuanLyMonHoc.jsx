@@ -1,71 +1,71 @@
-import React, { useState } from 'react';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import {
-  Paper,
-  Typography,
+  Alert,
   Box,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Checkbox,
   IconButton,
+  Paper,
   Snackbar,
-  Alert,
+  Tab,
   Tabs,
-  Tab
+  Typography
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import ThoiKhoaBieu from '../ThoiKhoaBieu/ThoiKhoaBieu';
-
-// Mock data cho demo
-const initialSubjects = [
-  { id: 1, subjectCode: 'ITEC101', subjectName: 'Nhập môn lập trình', credits: 3, note: 'Môn cơ sở', countInGPA: true },
-  { id: 2, subjectCode: 'ITEC201', subjectName: 'Cấu trúc dữ liệu', credits: 4, note: 'Môn nâng cao', countInGPA: true },
-  { id: 3, subjectCode: 'PHED101', subjectName: 'Thể dục', credits: 1, note: 'Môn bắt buộc', countInGPA: false },
-];
-
-const initialCurriculums = [
-  { id: 1, name: 'Đại học chính quy' },
-  { id: 2, name: 'Cao đẳng' },
-  { id: 3, name: 'Liên thông' },
-];
-
-const initialSubjectMapping = [
-  { id: 1, subjectId: 1, curriculumId: 1, semester: 1 },
-  { id: 2, subjectId: 1, curriculumId: 2, semester: 1 },
-  { id: 3, subjectId: 2, curriculumId: 1, semester: 3 },
-  { id: 4, subjectId: 3, curriculumId: 1, semester: 1 },
-];
+import MonHocForm from './MonHocForm';
+import MonHocTheoHeDaoTao from './MonHocTheoHeDaoTao';
+import { createMonHoc, getMonHoc, updateMonHoc } from '../../Api_controller/Service/monHocService';
 
 const QuanLyMonHoc = () => {
-  const [subjects, setSubjects] = useState(initialSubjects);
-  const [curriculums, setCurriculums] = useState(initialCurriculums);
-  const [subjectMappings, setSubjectMappings] = useState(initialSubjectMapping);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [openMappingDialog, setOpenMappingDialog] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [curriculums, setCurriculums] = useState([]);
+  const [subjectMappings, setSubjectMappings] = useState([]);
+  const [openSubjectForm, setOpenSubjectForm] = useState(false);
+  const [openMappingForm, setOpenMappingForm] = useState(false);
   const [currentSubject, setCurrentSubject] = useState(null);
   const [currentMapping, setCurrentMapping] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [tabValue, setTabValue] = useState(0);
+  const [loading, setLoading] = useState(false);
 
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [subjectsRes, curriculumsRes, mappingsRes] = await Promise.all([
+        getMonHoc(),
+      ]);
+
+      setSubjects(subjectsRes);
+      // setCurriculums(curriculumsRes);
+      // setSubjectMappings(mappingsRes);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setNotification({
+        open: true,
+        message: 'Lỗi khi tải dữ liệu: ' + error.message,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  console.log(subjects)
   // Định nghĩa cột cho DataGrid môn học
   const subjectColumns = [
-    { field: 'id', headerName: 'ID', width: 70 },
-    { field: 'subjectCode', headerName: 'Mã môn học', width: 130 },
-    { field: 'subjectName', headerName: 'Tên môn học', width: 200 },
-    { field: 'credits', headerName: 'Số tín chỉ', width: 120 },
-    { field: 'countInGPA', headerName: 'Tính điểm TBT', width: 140, renderCell: (params) => params.value ? 'Có' : 'Không' },
-    { field: 'note', headerName: 'Ghi chú', width: 150 },
+    { field: 'ma_mon_hoc', headerName: 'Mã môn học', width: 130 },
+    { field: 'ten_mon_hoc', headerName: 'Tên môn học', width: 260 },
+    { field: 'so_tin_chi', headerName: 'Số tín chỉ', width: 120 },
+    { field: 'tinh_diem', headerName: 'Tính điểm TBC', width: 140, renderCell: (params) => params.value ? 'Có' : 'Không' },
+    { field: 'ghi_chu', headerName: 'Ghi chú', width: 250 },
     {
       field: 'actions',
       headerName: 'Thao tác',
@@ -76,9 +76,6 @@ const QuanLyMonHoc = () => {
           <IconButton onClick={() => handleEditSubject(params.row)} color="primary">
             <EditIcon />
           </IconButton>
-          <IconButton onClick={() => handleDeleteSubject(params.row.id)} color="error">
-            <DeleteIcon />
-          </IconButton>
         </Box>
       ),
     },
@@ -86,14 +83,13 @@ const QuanLyMonHoc = () => {
 
   // Định nghĩa cột cho DataGrid ánh xạ môn học với chương trình đào tạo
   const mappingColumns = [
-    { field: 'id', headerName: 'ID', width: 70 },
     {
-      field: 'subjectId',
+      field: 'ma_mon_hoc',
       headerName: 'Môn học',
       width: 200,
       valueGetter: (params) => {
         const subject = subjects.find(s => s.id === params.value);
-        return subject ? subject.subjectName : '';
+        return subject ? subject.ten_mon_hoc : '';
       }
     },
     {
@@ -129,107 +125,149 @@ const QuanLyMonHoc = () => {
     setTabValue(newValue);
   };
 
-  // Xử lý đóng/mở dialog môn học
-  const handleOpenDialog = () => {
+  // Xử lý đóng/mở form môn học
+  const handleOpenSubjectForm = () => {
     setCurrentSubject({
-      id: null,
-      subjectCode: '',
-      subjectName: '',
-      credits: 0,
-      note: '',
-      countInGPA: true
+      ma_mon_hoc: '',
+      ten_mon_hoc: '',
+      so_tin_chi: 0,
+      ghi_chu: '',
+      tinh_diem: true
     });
-    setOpenDialog(true);
+    setOpenSubjectForm(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleCloseSubjectForm = () => {
+    setOpenSubjectForm(false);
   };
 
-  // Xử lý đóng/mở dialog ánh xạ
-  const handleOpenMappingDialog = () => {
+  // Xử lý đóng/mở form ánh xạ
+  const handleOpenMappingForm = () => {
     setCurrentMapping({
-      id: null,
       subjectId: '',
       curriculumId: '',
       semester: 1
     });
-    setOpenMappingDialog(true);
+    setOpenMappingForm(true);
   };
 
-  const handleCloseMappingDialog = () => {
-    setOpenMappingDialog(false);
+  const handleCloseMappingForm = () => {
+    setOpenMappingForm(false);
   };
 
   // Các hàm xử lý cho môn học
-  const handleAddSubject = () => {
-    const newId = subjects.length > 0 ? Math.max(...subjects.map(s => s.id)) + 1 : 1;
-    const newSubject = {
-      ...currentSubject,
-      id: currentSubject.id || newId
-    };
-
-    if (currentSubject.id) {
-      // Cập nhật
-      setSubjects(subjects.map(s => s.id === currentSubject.id ? newSubject : s));
-      setNotification({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });
-    } else {
-      // Thêm mới
-      setSubjects([...subjects, newSubject]);
-      setNotification({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });
-    }
-    handleCloseDialog();
-  };
-
   const handleEditSubject = (subject) => {
     setCurrentSubject(subject);
-    setOpenDialog(true);
+    setOpenSubjectForm(true);
   };
 
-  const handleDeleteSubject = (id) => {
-    // Kiểm tra xem môn học có đang được sử dụng trong mapping không
-    const isUsed = subjectMappings.some(mapping => mapping.subjectId === id);
-    if (isUsed) {
+  const handleDeleteSubject = async (id) => {
+    try {
+      // Kiểm tra xem môn học có đang được sử dụng trong mapping không
+      const isUsed = subjectMappings.some(mapping => mapping.subjectId === id);
+      if (isUsed) {
+        setNotification({
+          open: true,
+          message: 'Không thể xóa môn học này vì đang được sử dụng trong chương trình đào tạo!',
+          severity: 'error'
+        });
+        return;
+      }
+
+      await axios.delete(`/api/subjects/${id}`);
+      setSubjects(subjects.filter(s => s.id !== id));
+      setNotification({ open: true, message: 'Xóa môn học thành công!', severity: 'success' });
+    } catch (error) {
+      console.error('Error deleting subject:', error);
       setNotification({
         open: true,
-        message: 'Không thể xóa môn học này vì đang được sử dụng trong chương trình đào tạo!',
+        message: 'Lỗi khi xóa môn học: ' + error.message,
         severity: 'error'
       });
-      return;
     }
-
-    setSubjects(subjects.filter(s => s.id !== id));
-    setNotification({ open: true, message: 'Xóa môn học thành công!', severity: 'success' });
   };
 
   // Các hàm xử lý cho ánh xạ môn học
-  const handleAddMapping = () => {
-    const newId = subjectMappings.length > 0 ? Math.max(...subjectMappings.map(m => m.id)) + 1 : 1;
-    const newMapping = {
-      ...currentMapping,
-      id: currentMapping.id || newId
-    };
-
-    if (currentMapping.id) {
-      // Cập nhật
-      setSubjectMappings(subjectMappings.map(m => m.id === currentMapping.id ? newMapping : m));
-      setNotification({ open: true, message: 'Cập nhật ánh xạ thành công!', severity: 'success' });
-    } else {
-      // Thêm mới
-      setSubjectMappings([...subjectMappings, newMapping]);
-      setNotification({ open: true, message: 'Thêm ánh xạ thành công!', severity: 'success' });
-    }
-    handleCloseMappingDialog();
-  };
-
   const handleEditMapping = (mapping) => {
     setCurrentMapping(mapping);
-    setOpenMappingDialog(true);
+    setOpenMappingForm(true);
   };
 
-  const handleDeleteMapping = (id) => {
-    setSubjectMappings(subjectMappings.filter(m => m.id !== id));
-    setNotification({ open: true, message: 'Xóa ánh xạ thành công!', severity: 'success' });
+  const handleDeleteMapping = async (id) => {
+    try {
+      await axios.delete(`/api/subject-mappings/${id}`);
+      setSubjectMappings(subjectMappings.filter(m => m.id !== id));
+      setNotification({ open: true, message: 'Xóa ánh xạ thành công!', severity: 'success' });
+    } catch (error) {
+      console.error('Error deleting mapping:', error);
+      setNotification({
+        open: true,
+        message: 'Lỗi khi xóa ánh xạ: ' + error.message,
+        severity: 'error'
+      });
+    }
+  };
+
+  // Xử lý thêm/cập nhật môn học từ component con
+  const handleSubjectSubmit = async (subject) => {
+    try {
+      console.log(subject);
+      let response;
+
+      if (subject.id) {
+        // Cập nhật
+        response = await updateMonHoc(subject.id,subject)
+        setSubjects(subjects.map(s => s.id === subject.id ? response.data : s));
+        setNotification({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });
+      } else {
+        // Thêm mới
+        response = await createMonHoc(subject); // Add await here
+
+        // Make sure the response data has an id
+        const newSubject = {
+          ...response.data,
+          id: response.data.id
+        };
+
+        setSubjects([...subjects, newSubject]);
+        setNotification({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });
+      }
+
+      handleCloseSubjectForm();
+    } catch (error) {
+      console.error('Error saving subject:', error);
+      setNotification({
+        open: true,
+        message: 'Lỗi khi lưu môn học: ' + (error.response?.data?.message || error.message),
+        severity: 'error'
+      });
+    }
+  };
+
+  // Xử lý thêm/cập nhật ánh xạ từ component con
+  const handleMappingSubmit = async (mapping) => {
+    try {
+      let response;
+      if (mapping.id) {
+        // Cập nhật
+        response = await axios.put(`/api/subject-mappings/${mapping.id}`, mapping);
+        setSubjectMappings(subjectMappings.map(m => m.id === mapping.id ? response.data : m));
+        setNotification({ open: true, message: 'Cập nhật ánh xạ thành công!', severity: 'success' });
+      } else {
+        // Thêm mới
+        response = await axios.post('/api/subject-mappings', mapping);
+        setSubjectMappings([...subjectMappings, response.data]);
+        setNotification({ open: true, message: 'Thêm ánh xạ thành công!', severity: 'success' });
+      }
+      handleCloseMappingForm();
+    } catch (error) {
+      console.error('Error saving mapping:', error);
+      setNotification({
+        open: true,
+        message: 'Lỗi khi lưu ánh xạ: ' + error.message,
+        severity: 'error'
+      });
+    }
   };
 
   // Xử lý đóng thông báo
@@ -258,19 +296,20 @@ const QuanLyMonHoc = () => {
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={handleOpenDialog}
+              onClick={handleOpenSubjectForm}
             >
               Thêm môn học
             </Button>
           </Box>
-          <Box sx={{ height: 400, width: '100%' }}>
+          <Box sx={{ height: 600, width: '100%' }}>
             <DataGrid
               rows={subjects}
+              getRowId={(row) => row.id}
               columns={subjectColumns}
               pageSize={5}
               rowsPerPageOptions={[5]}
-              checkboxSelection
               disableSelectionOnClick
+              loading={loading}
             />
           </Box>
         </Paper>
@@ -284,7 +323,7 @@ const QuanLyMonHoc = () => {
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={handleOpenMappingDialog}
+              onClick={handleOpenMappingForm}
             >
               Thêm ánh xạ
             </Button>
@@ -297,6 +336,7 @@ const QuanLyMonHoc = () => {
               rowsPerPageOptions={[5]}
               checkboxSelection
               disableSelectionOnClick
+              loading={loading}
             />
           </Box>
         </Paper>
@@ -307,111 +347,23 @@ const QuanLyMonHoc = () => {
         </Paper>
       )}
 
-      {/* Dialog thêm/sửa môn học */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{currentSubject && currentSubject.id ? 'Cập nhật môn học' : 'Thêm môn học mới'}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              margin="dense"
-              label="Mã môn học"
-              fullWidth
-              value={currentSubject ? currentSubject.subjectCode : ''}
-              onChange={(e) => setCurrentSubject({ ...currentSubject, subjectCode: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="Tên môn học"
-              fullWidth
-              value={currentSubject ? currentSubject.subjectName : ''}
-              onChange={(e) => setCurrentSubject({ ...currentSubject, subjectName: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="Số tín chỉ"
-              type="number"
-              fullWidth
-              value={currentSubject ? currentSubject.credits : 0}
-              onChange={(e) => setCurrentSubject({ ...currentSubject, credits: parseInt(e.target.value) })}
-            />
-            <TextField
-              margin="dense"
-              label="Ghi chú"
-              fullWidth
-              multiline
-              rows={2}
-              value={currentSubject ? currentSubject.note : ''}
-              onChange={(e) => setCurrentSubject({ ...currentSubject, note: e.target.value })}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={currentSubject ? currentSubject.countInGPA : true}
-                  onChange={(e) => setCurrentSubject({ ...currentSubject, countInGPA: e.target.checked })}
-                />
-              }
-              label="Tính vào điểm trung bình chung"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Hủy</Button>
-          <Button onClick={handleAddSubject} variant="contained" color="primary">
-            {currentSubject && currentSubject.id ? 'Cập nhật' : 'Thêm mới'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Component Form thêm/sửa môn học */}
+      <MonHocForm
+        open={openSubjectForm}
+        onClose={handleCloseSubjectForm}
+        subject={currentSubject}
+        onSubmit={handleSubjectSubmit}
+      />
 
-      {/* Dialog thêm/sửa ánh xạ */}
-      <Dialog open={openMappingDialog} onClose={handleCloseMappingDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{currentMapping && currentMapping.id ? 'Cập nhật ánh xạ' : 'Thêm ánh xạ mới'}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <FormControl fullWidth margin="dense">
-              <InputLabel>Môn học</InputLabel>
-              <Select
-                value={currentMapping ? currentMapping.subjectId : ''}
-                label="Môn học"
-                onChange={(e) => setCurrentMapping({ ...currentMapping, subjectId: e.target.value })}
-              >
-                {subjects.map((subject) => (
-                  <MenuItem key={subject.id} value={subject.id}>
-                    {subject.subjectCode} - {subject.subjectName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth margin="dense">
-              <InputLabel>Chương trình đào tạo</InputLabel>
-              <Select
-                value={currentMapping ? currentMapping.curriculumId : ''}
-                label="Chương trình đào tạo"
-                onChange={(e) => setCurrentMapping({ ...currentMapping, curriculumId: e.target.value })}
-              >
-                {curriculums.map((curriculum) => (
-                  <MenuItem key={curriculum.id} value={curriculum.id}>
-                    {curriculum.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              margin="dense"
-              label="Học kỳ"
-              type="number"
-              fullWidth
-              value={currentMapping ? currentMapping.semester : 1}
-              onChange={(e) => setCurrentMapping({ ...currentMapping, semester: parseInt(e.target.value) })}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMappingDialog}>Hủy</Button>
-          <Button onClick={handleAddMapping} variant="contained" color="primary">
-            {currentMapping && currentMapping.id ? 'Cập nhật' : 'Thêm mới'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Component Form thêm/sửa ánh xạ */}
+      <MonHocTheoHeDaoTao
+        open={openMappingForm}
+        onClose={handleCloseMappingForm}
+        mapping={currentMapping}
+        subjects={subjects}
+        curriculums={curriculums}
+        onSubmit={handleMappingSubmit}
+      />
 
       {/* Snackbar thông báo */}
       <Snackbar
