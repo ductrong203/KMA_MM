@@ -16,7 +16,8 @@ const khenThuongKyLuatRouter = require("./khenThuongKyLuat");
 const phongBanRouter = require("./phongBan");
 const giangVienRouter = require("./giangVien");
 const khoaDaoTaoRouter = require("./khoaDaoTao");
-
+const keHoachMonHocRouter = require("./keHoachMonHoc");
+const thoiKhoaBieuRoute = require('./thoiKhoaBieu');
 
 const routes = (app) => {
   app.use("/auth", authRouter);
@@ -33,7 +34,8 @@ const routes = (app) => {
   app.use("/phong-ban", phongBanRouter);
   app.use("/giang-vien", giangVienRouter);
   app.use("/khoadaotao", khoaDaoTaoRouter);
-
+  app.use("/kehoachmonhoc",keHoachMonHocRouter);
+  app.use("/thoikhoabieu",thoiKhoaBieuRoute);
   //   app.use("student", studentRouter);
 
   //   app.use("teacher", teacherRouter);
