@@ -27,6 +27,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TINYINT,
       allowNull: true,
       defaultValue: 1
+    },
+    ghi_chu: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     sequelize,
