@@ -14,7 +14,7 @@ import {
 
 const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
   const [formData, setFormData] = useState({
-    id:null,
+    id: null,
     ma_mon_hoc: '',
     ten_mon_hoc: '',
     so_tin_chi: 0,
@@ -38,7 +38,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    
+ 
     // Clear error when field is edited
     if (errors[name]) {
       setErrors({
@@ -51,19 +51,19 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
   // Validate form before submission
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.ma_mon_hoc.trim()) {
       newErrors.ma_mon_hoc = 'Mã môn học không được để trống';
     }
-    
+
     if (!formData.ten_mon_hoc.trim()) {
       newErrors.ten_mon_hoc = 'Tên môn học không được để trống';
     }
-    
+
     if (formData.so_tin_chi <= 0) {
       newErrors.so_tin_chi = 'Số tín chỉ phải lớn hơn 0';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -73,7 +73,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
     try {
       await onSubmit(formData);
@@ -156,9 +156,9 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>Hủy</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           color="primary"
           disabled={loading}
         >
