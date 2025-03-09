@@ -42,6 +42,10 @@ module.exports = function(sequelize, DataTypes) {
     trang_thai: {
       type: DataTypes.TINYINT,
       allowNull: true
+    },
+    ky_hoc: {
+      type: DataTypes.STRING(20),
+      allowNull: true
     }
   }, {
     sequelize,
