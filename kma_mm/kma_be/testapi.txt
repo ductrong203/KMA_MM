@@ -86,3 +86,7 @@ thời khoá biểu: "lop_id","mon_hoc_id","giang_vien_id" bắt buộc
         "phong_hoc": "103 TA1"
         }
     http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
+
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&lop_id=1&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?lop_id=1&page=1&pageSize=5

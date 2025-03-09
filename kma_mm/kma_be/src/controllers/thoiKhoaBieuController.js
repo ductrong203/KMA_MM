@@ -31,6 +31,19 @@ class ThoiKhoaBieuController {
     }
   }
 
+  static async filter(req, res) {
+    try {
+      const { ky_hoc, lop_id } = req.query;
+      const page = parseInt(req.query.page) || 1;
+      const pageSize = parseInt(req.query.pageSize) || 10;
+      
+      const data = await ThoiKhoaBieuService.filter({ ky_hoc, lop_id, page, pageSize });
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async create(req, res) {
     try {
       const data = await ThoiKhoaBieuService.create(req.body);
