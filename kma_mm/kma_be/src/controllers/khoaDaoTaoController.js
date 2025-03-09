@@ -3,8 +3,7 @@ const KhoaDaoTaoService = require("../services/khoaDaoTaoService");
 class KhoaDaoTaoController {
   static async create(req, res) {
     try {
-      const { he_dao_tao_id, ten_khoa, nam_hoc } = req.body;
-      const khoaDaoTao = await KhoaDaoTaoService.createKhoaDaoTao(he_dao_tao_id, ten_khoa, nam_hoc);
+      const khoaDaoTao = await KhoaDaoTaoService.createKhoaDaoTao(req.body);
       res.status(201).json(khoaDaoTao);
     } catch (error) {
       res.status(400).json({ error: error.message });

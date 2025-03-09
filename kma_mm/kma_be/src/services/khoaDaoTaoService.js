@@ -1,8 +1,10 @@
 const { khoa_dao_tao, danh_muc_dao_tao } = require("../models");
 
 class KhoaDaoTaoService {
-  static async createKhoaDaoTao(he_dao_tao_id, ten_khoa, nam_hoc) {
+  static async createKhoaDaoTao(data) {
     try {
+      const {he_dao_tao_id, ma_khoa, ten_khoa, nam_hoc} = data
+      
       const danhMuc = await danh_muc_dao_tao.findByPk(he_dao_tao_id);
       if (!danhMuc) {
         throw new Error("Danh mục đào tạo không tồn tại");
@@ -11,11 +13,11 @@ class KhoaDaoTaoService {
         throw new Error("Mã hệ đào tạo không tồn tại");
       }
 
-      const count = await khoa_dao_tao.count({ where: { he_dao_tao_id } });
-      const maKhoa = `${danhMuc.ma_he_dao_tao}${String(count + 1).padStart(2, "0")}`;
+      // const count = await khoa_dao_tao.count({ where: { he_dao_tao_id } });
+      // const maKhoa = `${danhMuc.ma_he_dao_tao}${String(count + 1).padStart(2, "0")}`;
 
       const newKhoa = await khoa_dao_tao.create({
-        ma_khoa: maKhoa,
+        ma_khoa,
         ten_khoa,
         nam_hoc,
         he_dao_tao_id,
