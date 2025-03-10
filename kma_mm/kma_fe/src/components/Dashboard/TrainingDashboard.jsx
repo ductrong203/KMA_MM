@@ -161,7 +161,7 @@ function TrainingDashboard() {
           >
             <Tab label="Quản lý đào tạo" />
             <Tab label="Thống kê và báo cáo" />
-            <Tab label="Quản lý sinh viên" />
+            <Tab label="Quản lý học viên" />
             <Tab label="Quản lý môn học" />
           </Tabs>
 
@@ -248,7 +248,7 @@ function TrainingDashboard() {
           {currentTab === 2 && (
             <Box>
               <Tabs value={subTab} onChange={handleSubTabChange}>
-                <Tab label="Danh sách sinh viên" />
+                <Tab label="Danh sách học viên" />
                 <Tab label="Xét tốt nghiệp" />
                 <Tab label="Quản lý bằng cấp" />
                 <Tab label="Quản lý danh mục khen thưởng" />
@@ -272,7 +272,7 @@ function TrainingDashboard() {
           maxWidth="md"
           fullWidth
         >
-          <DialogTitle>Thêm sinh viên mới</DialogTitle>
+          <DialogTitle>Thêm Học viên mới</DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
