@@ -26,6 +26,29 @@ class ThoiKhoaBieuService {
     };
   }
 
+  static async filter({ ky_hoc, lop_id, page = 1, pageSize = 10 }) {
+    const offset = (page - 1) * pageSize;
+    const whereClause = {}; // Nếu không truyền thì lấy tất cả
+
+    if (ky_hoc) whereClause.ky_hoc = ky_hoc;
+    if (lop_id) whereClause.lop_id = lop_id;
+
+    const { count, rows } = await thoi_khoa_bieu.findAndCountAll({
+      where: whereClause,  // Nếu không truyền gì, whereClause sẽ rỗng -> lấy tất cả dữ liệu
+      limit: pageSize,
+      offset: offset,
+      order: [['id', 'DESC']]
+    });
+
+    return {
+      totalItems: count,
+      totalPages: Math.ceil(count / pageSize),
+      currentPage: page,
+      pageSize: pageSize,
+      data: rows
+    };
+  }
+
   static async create(data) {
     const { lop_id, mon_hoc_id, giang_vien_id, phong_hoc, tiet_hoc, trang_thai, ky_hoc } = data;
 

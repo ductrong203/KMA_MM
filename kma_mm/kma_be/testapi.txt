@@ -57,7 +57,8 @@ CRUD khoadaotao
     json mẫu:
         {
             "he_dao_tao_id": 1,
-            "ten_khoa": "CT6",
+            "ma_khoa": "AT18",
+            "ten_khoa": "An toan 18",
             "nam_hoc": "2024-2025"
         }
 Lớp: 
@@ -86,3 +87,7 @@ thời khoá biểu: "lop_id","mon_hoc_id","giang_vien_id" bắt buộc
         "phong_hoc": "103 TA1"
         }
     http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
+
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&lop_id=1&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?lop_id=1&page=1&pageSize=5
