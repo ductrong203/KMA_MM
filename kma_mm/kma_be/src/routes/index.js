@@ -16,7 +16,6 @@ const khenThuongKyLuatRouter = require("./khenThuongKyLuat");
 const phongBanRouter = require("./phongBan");
 const giangVienRouter = require("./giangVien");
 const khoaDaoTaoRouter = require("./khoaDaoTao");
-const monHocRouter = require("./monHoc");
 
 
 const routes = (app) => {
@@ -34,7 +33,6 @@ const routes = (app) => {
   app.use("/phong-ban", phongBanRouter);
   app.use("/giang-vien", giangVienRouter);
   app.use("/khoadaotao", khoaDaoTaoRouter);
-  app.use("/mon-hoc", monHocRouter);
 
   //   app.use("student", studentRouter);
 

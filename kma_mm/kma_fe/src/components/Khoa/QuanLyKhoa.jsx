@@ -10,8 +10,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
   Table,
   TableBody,
@@ -58,10 +62,10 @@ const QuanLyKhoa = () => {
   });
   const [page, setPage] = useState(1); // Trang hiện tại
   const [rowsPerPage, setRowsPerPage] = useState(5); // Số dòng mỗi trang
-  const indexOfLastItem = page * rowsPerPage;
-  const indexOfFirstItem = indexOfLastItem - rowsPerPage;
-  const currentKhoa = danhSachKhoa.slice(indexOfFirstItem, indexOfLastItem);
 
+
+  // State cho bộ lọc
+  const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
   // Fetch dữ liệu khi component mount
   useEffect(() => {
     getDanhSachKhoa();
@@ -163,7 +167,7 @@ const QuanLyKhoa = () => {
   // Xử lý thêm khóa mới thông qua API
   const handleSubmit = async () => {
     // Kiểm tra dữ liệu
-    if (!formData.ten_khoa || !formData.he_dao_tao_id || !formData.nam_hoc) {
+    if (!formData.ten_khoa || !formData.he_dao_tao_id || !formData.nam_hoc || !formData.ma_khoa) {
       showSnackbar("Vui lòng điền đầy đủ thông tin!", "error");
       return;
     }
@@ -221,6 +225,28 @@ const QuanLyKhoa = () => {
 
     setOpenForm(true);
   };
+  // Xử lý thay đổi bộ lọc hệ đào tạo
+  const handleFilterChange = (event) => {
+    setFilterHeDaoTao(event.target.value);
+    setPage(1); // Reset về trang đầu tiên khi thay đổi bộ lọc
+  };
+
+  // Lọc danh sách khóa theo hệ đào tạo
+  const filteredKhoa = danhSachKhoa.filter((khoa) => {
+    if (!filterHeDaoTao) return true; // Nếu không có bộ lọc, hiển thị tất cả
+    return khoa.he_dao_tao_id === filterHeDaoTao;
+  });
+  console.log("filteredKhoa:", filteredKhoa)
+  const indexOfLastItem = page * rowsPerPage;
+  const indexOfFirstItem = indexOfLastItem - rowsPerPage;
+  const currentKhoa = filteredKhoa.slice(indexOfFirstItem, indexOfLastItem);
+  // Reset lại trang khi số lượng item thay đổi do lọc
+  useEffect(() => {
+    if (page > 1 && indexOfFirstItem >= filteredKhoa.length) {
+      setPage(Math.max(1, Math.ceil(filteredKhoa.length / rowsPerPage)));
+    }
+  }, [filteredKhoa, page, rowsPerPage, indexOfFirstItem]);
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -241,6 +267,29 @@ const QuanLyKhoa = () => {
         >
           Thêm khóa
         </Button>
+      </Box>
+
+      {/* Bộ lọc hệ đào tạo */}
+      <Box mb={3}>
+        <FormControl variant="outlined" sx={{ minWidth: 300 }}>
+          <InputLabel id="filter-he-dao-tao-label">Lọc theo hệ đào tạo</InputLabel>
+          <Select
+            labelId="filter-he-dao-tao-label"
+            id="filter-he-dao-tao"
+            value={filterHeDaoTao}
+            onChange={handleFilterChange}
+            label="Lọc theo hệ đào tạo"
+          >
+            <MenuItem value="">
+              <em>Tất cả</em>
+            </MenuItem>
+            {danhSachHeDaoTao.map((heDaoTao) => (
+              <MenuItem key={heDaoTao.id} value={heDaoTao.id}>
+                {heDaoTao.ten_he_dao_tao}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       {/* Bảng hiển thị danh sách khóa */}
@@ -269,7 +318,7 @@ const QuanLyKhoa = () => {
             ) : currentKhoa.length > 0 ? (
               currentKhoa.map((khoa, index) => (
                 <TableRow key={khoa.id}>
-                  <TableCell>{indexOfFirstItem + 1}</TableCell>
+                  <TableCell>{indexOfFirstItem + index + 1}</TableCell>
                   <TableCell>{khoa.ma_khoa}</TableCell>
                   <TableCell>{khoa.ten_khoa}</TableCell>
                   <TableCell>{getHeDaoTaoName(khoa.he_dao_tao_id)}</TableCell>
@@ -296,7 +345,7 @@ const QuanLyKhoa = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 15]}
           component="div"
-          count={danhSachKhoa.length} // Tổng số khóa
+          count={filteredKhoa.length} // Tổng số khóa
           rowsPerPage={rowsPerPage}
           page={page - 1} // MUI bắt đầu từ 0
           labelRowsPerPage="Số dòng mỗi trang"
@@ -316,16 +365,6 @@ const QuanLyKhoa = () => {
 
         <DialogContent>
           <Box py={2}>
-            <TextField
-              fullWidth
-              label="Tên khóa"
-              name="ten_khoa"
-              value={formData.ten_khoa}
-              onChange={handleInputChange}
-              margin="normal"
-              variant="outlined"
-            />
-
             <Autocomplete
               options={danhSachHeDaoTao}
               getOptionLabel={(option) => option.ten_he_dao_tao}
@@ -340,6 +379,24 @@ const QuanLyKhoa = () => {
                   fullWidth
                 />
               )}
+            />
+            <TextField
+              fullWidth
+              label="Mã khóa"
+              name="ma_khoa"
+              value={formData.ma_khoa}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="Tên khóa"
+              name="ten_khoa"
+              value={formData.ten_khoa}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
             />
 
             <TextField
