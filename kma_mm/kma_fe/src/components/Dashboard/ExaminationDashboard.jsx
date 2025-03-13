@@ -1,675 +1,1009 @@
 import React, { useState } from 'react';
 import {
-    AppBar,
     Box,
-    Button,
-    Card,
-    CardContent,
-    Container,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Grid,
+    Typography,
     Paper,
-    Snackbar,
-    Tab,
+    Grid,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Button,
+    Checkbox,
+    FormControlLabel,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
     TableRow,
-    Tabs,
     TextField,
-    Typography,
-    Alert,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Chip,
-    List,
-    ListItem,
-    ListItemText,
+    Tabs,
+    Tab,
     Divider,
-    InputAdornment,
 } from '@mui/material';
-import {
-    Assessment,
-    Class,
-    CloudUpload,
-    Download,
-    Person,
-    School,
-    Search,
-    Visibility,
-} from '@mui/icons-material';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import SaveIcon from '@mui/icons-material/Save';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { styled } from '@mui/material/styles';
 
-// Mock data
-const mockClasses = [
-    { id: "CNTT1", name: "Công nghệ thông tin 1" },
-    { id: "CNTT2", name: "Công nghệ thông tin 2" },
-    { id: "KTPM1", name: "Kỹ thuật phần mềm 1" }
+// Styled component for file upload
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
+
+// Sample data for demonstration
+const sampleStudents = [
+    { id: 'SV001', name: 'Lê Hoài Nam', class: 'CT6', status: 'Học lần 1', scores: { TP1: 7, TP2: 8, CK1: 3, CK2: 2 } },
+    { id: 'SV002', name: 'Nguyễn Văn Trọng', class: 'CT6', status: 'Học lần 1', scores: { TP1: 5, TP2: 6, CK1: 2, CK2: null } },
+    { id: 'SV003', name: 'Trần Thị Hương', class: 'CT6', status: 'Học lần 2', scores: { TP1: 7, TP2: 8, CK1: 1, CK2: 6 } },
 ];
 
-const mockSubjects = [
-    { id: "MATH101", name: "Toán cao cấp" },
-    { id: "PROG101", name: "Lập trình cơ bản" },
-    { id: "ENG101", name: "Tiếng Anh" },
-];
+const GradeImportSystem = () => {
+    const [year, setYear] = useState('');
+    const [semester, setSemester] = useState('');
+    const [examPeriod, setExamPeriod] = useState('');
+    const [course, setCourse] = useState('');
+    const [examType, setExamType] = useState('');
+    const [classGroup, setClassGroup] = useState('');
+    const [tabValue, setTabValue] = useState(0);
+    const [students, setStudents] = useState(sampleStudents);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [batch, setBatch] = useState('');
+    const [major, setMajor] = useState('');
+    const [examNumber, setExamNumber] = useState('');
+    const [educationType, setEducationType] = useState('');
+    const [viewFilter, setViewFilter] = useState({
+        year: '',
+        semester: '',
+        examPeriod: '',
+        batch: '',
+        major: '',
+        course: '',
+        classGroup: '',
+        examNumber: '',
+        educationType: ''
+    });
+    const [reportType, setReportType] = useState('summary');
 
-const mockStudentGrades = {
-    "SV001": {
-        info: { name: "Nguyễn Văn A", class: "CNTT1" },
-        grades: [
-            { subject: "MATH101", midterm: 7.5, final: 4.0, average: 5.25 },
-            { subject: "PROG101", midterm: 8.0, final: 7.5, average: 7.7 },
-            { subject: "ENG101", midterm: 6.5, final: 7.0, average: 6.8 },
-        ]
-    }
-};
-
-const mockGrades = [
-    {
-        studentId: "SV001",
-        name: "Nguyễn Văn A",
-        midterm: 7.5,
-        final: 4.0,
-        average: 5.25,
-        status: "failed"
-    },
-    {
-        studentId: "SV002",
-        name: "Trần Thị B",
-        midterm: 8.5,
-        final: 8.0,
-        average: 8.2,
-        status: "passed"
-    },
-    {
-        studentId: "SV003",
-        name: "Lê Văn C",
-        midterm: 0,
-        final: 0,
-        average: 0,
-        status: "banned"
-    }
-];
-const mockStudents = [
-    {
-        id: "SV001",
-        name: "Nguyễn Văn A",
-        class: "CNTT1",
-        grades: {
-            semester: "HK1 2023-2024",
-            subjects: [
-                { code: "MATH101", name: "Toán cao cấp", credits: 3, midterm: 8.5, final: 7.5, average: 8.0 },
-                { code: "PRG101", name: "Lập trình cơ bản", credits: 4, midterm: 7.0, final: 8.0, average: 7.5 },
-                { code: "ENG101", name: "Tiếng Anh", credits: 3, midterm: 8.0, final: 8.5, average: 8.25 }
-            ]
-        }
-    },
-    {
-        id: "SV002",
-        name: "Trần Thị B",
-        class: "CNTT2",
-        grades: {
-            semester: "HK1 2023-2024",
-            subjects: [
-                { code: "MATH101", name: "Toán cao cấp", credits: 3, midterm: 9.0, final: 8.5, average: 8.75 },
-                { code: "PRG101", name: "Lập trình cơ bản", credits: 4, midterm: 8.5, final: 8.0, average: 8.25 },
-                { code: "ENG101", name: "Tiếng Anh", credits: 3, midterm: 7.5, final: 8.0, average: 7.75 }
-            ]
-        }
-    }
-];
-
-function TabPanel(props) {
-    const { children, value, index, ...other } = props;
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            {...other}
-        >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
-                </Box>
-            )}
-        </div>
-    );
-}
-
-function ExamDashboard() {
-    const [currentTab, setCurrentTab] = useState(0);
-    const [openImportDialog, setOpenImportDialog] = useState(false);
-    const [showSnackbar, setShowSnackbar] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [openStudentDialog, setOpenStudentDialog] = useState(false);
-    const [selectedClass, setSelectedClass] = useState('');
-    const [selectedSubjects, setSelectedSubjects] = useState([]);
-    const [currentStudent, setCurrentStudent] = useState(null);
-    const [selectedStudent, setSelectedStudent] = useState(null);
-    const [openDialog, setOpenDialog] = useState(false);
-
-    const handleSearch = (event) => {
-        setSearchTerm(event.target.value);
+    // Add these handler functions
+    const handleGenerateReport = () => {
+      // Logic to generate the selected report type
+      alert('Đang tạo báo cáo...');
+    };
+    
+    const handleExportReport = () => {
+      // Logic to export the generated report
+      alert('Xuất báo cáo thành công!');
     };
 
-    const handleViewDetails = (student) => {
-        setSelectedStudent(student);
-        setOpenDialog(true);
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
     };
 
-    const handleExportGrades = (student) => {
-        console.log(`Exporting grades for student: ${student.id}`);
-        // Add export logic here
-    };
-
-    const filteredStudents = mockStudents.filter(student =>
-        student.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.class.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-
-    const handleViewStudent = (studentId) => {
-        setCurrentStudent(mockStudentGrades[studentId]);
-        setOpenStudentDialog(true);
-    };
-
-    const handleExportClass = () => {
-        // Logic to export class grades
-        console.log(`Exporting grades for class ${selectedClass} and subjects:`, selectedSubjects);
-    };
-
-    const handleExportStudent = (studentId) => {
-        // Logic to export student grades
-        console.log(`Exporting grades for student:`, studentId);
-    };
     const handleTabChange = (event, newValue) => {
-        setCurrentTab(newValue);
+        setTabValue(newValue);
     };
 
     const handleImport = () => {
-        setShowSnackbar(true);
-        setOpenImportDialog(false);
+        // Logic to import grades would go here
+        alert('Điểm đã được import thành công!');
     };
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'failed':
-                return { backgroundColor: '#ffebee', color: '#d32f2f' };
-            case 'banned':
-                return { backgroundColor: '#f5f5f5', color: '#757575' };
-            default:
-                return {};
+    const handleSearch = () => {
+        // Create a sample database of students (in a real app, this would come from an API or database)
+        const allStudents = [
+          { 
+            id: 'SV001', 
+            name: 'Lê Hoài Nam', 
+            class: 'CT6', 
+            batch: 'K15', 
+            major: 'CNTT', 
+            educationType: 'CQ',
+            status: 'Thi lần 1', 
+            examNumber: '1',
+            scores: { TP1: 7, TP2: 8, CK1: 3, CK2: null }
+          },
+          { 
+            id: 'SV002', 
+            name: 'Nguyễn Văn Trọng', 
+            class: 'CT6', 
+            batch: 'K15', 
+            major: 'CNTT', 
+            educationType: 'CQ',
+            status: 'Thi lần 1', 
+            examNumber: '1',
+            scores: { TP1: 5, TP2: 6, CK1: 2, CK2: null }
+          },
+          { 
+            id: 'SV003', 
+            name: 'Trần Thị Hương', 
+            class: 'CT6', 
+            batch: 'K15', 
+            major: 'HTTT', 
+            educationType: 'CQ',
+            status: 'Thi lần 2', 
+            examNumber: '2',
+            scores: { TP1: 7, TP2: 8, CK1: 1, CK2: 6 }
+          },
+          { 
+            id: 'SV004', 
+            name: 'Phạm Minh Tuấn', 
+            class: 'CT7', 
+            batch: 'K15', 
+            major: 'KTPM', 
+            educationType: 'CQ',
+            status: 'Thi lần 1', 
+            examNumber: '1',
+            scores: { TP1: 8, TP2: 9, CK1: 7, CK2: null }
+          },
+          { 
+            id: 'SV005', 
+            name: 'Hoàng Thị Mai', 
+            class: 'CT8', 
+            batch: 'K16', 
+            major: 'MMT', 
+            educationType: 'LT',
+            status: 'Thi lần 1', 
+            examNumber: '1',
+            scores: { TP1: 6, TP2: 7, CK1: 4, CK2: null }
+          },
+          { 
+            id: 'SV006', 
+            name: 'Vũ Đức Anh', 
+            class: 'CT7', 
+            batch: 'K16', 
+            major: 'CNTT', 
+            educationType: 'VLVH',
+            status: 'Thi lần 2', 
+            examNumber: '2',
+            scores: { TP1: 4, TP2: 5, CK1: 2, CK2: 5 }
+          }
+        ];
+      
+        // Filter students based on selected criteria
+        let filteredStudents = [...allStudents];
+      
+        // Apply filters only if they have been selected
+        if (year) {
+          // In a real application, you would filter by year
+          // Since our sample data doesn't have year info, we'll skip this filter
+          console.log(`Filtering by academic year: ${year}`);
         }
+      
+        if (semester) {
+          // In a real application, you would filter by semester
+          console.log(`Filtering by semester: ${semester}`);
+        }
+      
+        if (examPeriod) {
+          // In a real application, you would filter by exam period
+          console.log(`Filtering by exam period: ${examPeriod}`);
+        }
+      
+        if (batch) {
+          filteredStudents = filteredStudents.filter(student => student.batch === batch);
+        }
+      
+        if (major) {
+          filteredStudents = filteredStudents.filter(student => student.major === major);
+        }
+      
+        if (course) {
+          // In a real application, you would filter by course
+          // Since our sample data doesn't have course info, we'll skip this filter
+          console.log(`Filtering by course: ${course}`);
+        }
+      
+        if (classGroup && classGroup !== 'ALL') {
+          filteredStudents = filteredStudents.filter(student => student.class === classGroup);
+        }
+      
+        if (examNumber) {
+          filteredStudents = filteredStudents.filter(student => student.examNumber === examNumber);
+        }
+      
+        if (educationType) {
+          filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
+        }
+      
+        // Update the students state with filtered results
+        setStudents(filteredStudents);
+      
+        // Provide feedback to the user
+        if (filteredStudents.length > 0) {
+          alert(`Đã tìm thấy ${filteredStudents.length} sinh viên phù hợp với các tiêu chí.`);
+        } else {
+          alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+        }
+      
+        // Log the filter criteria for debugging
+        console.log('Search criteria:', { 
+          year, 
+          semester, 
+          examPeriod, 
+          batch, 
+          major, 
+          course, 
+          classGroup, 
+          examNumber, 
+          educationType 
+        });
+      };
+
+    const handleViewSearch = () => {
+        // Logic to search students for viewing
+        alert('Đã tìm danh sách điểm theo các bộ lọc đã chọn');
+    };
+
+    const handleScoreChange = (studentId, scoreType, value) => {
+        const updatedStudents = students.map(student =>
+            student.id === studentId
+                ? { ...student, scores: { ...student.scores, [scoreType]: value === '' ? null : Number(value) } }
+                : student
+        );
+        setStudents(updatedStudents);
+    };
+
+    const handleSave = () => {
+        // Logic to save grades would go here
+        alert('Đã lưu thành công!');
+    };
+
+    const handleExportData = () => {
+        // Logic to export data
+        alert('Đã xuất dữ liệu thành công!');
+    };
+
+    const handleRetakeRegistration = (studentId, checked) => {
+        const updatedStudents = students.map(student =>
+            student.id === studentId
+                ? { ...student, retakeRegistered: checked }
+                : student
+        );
+        setStudents(updatedStudents);
+    };
+
+    // Handle view filter changes
+    const handleViewFilterChange = (field, value) => {
+        setViewFilter({
+            ...viewFilter,
+            [field]: value
+        });
     };
 
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
-            <Container maxWidth="xl">
-                <Paper sx={{ mb: 2, p: 2 }}>
-                    <Tabs
-                        value={currentTab}
-                        onChange={handleTabChange}
-                        sx={{ borderBottom: 1, borderColor: 'divider' }}
-                    >
-                        <Tab
-                            icon={<Assessment />}
-                            label="Quản lý điểm"
-                            iconPosition="start"
-                        />
-                        <Tab
-                            icon={<Assessment />}
-                            label="Tra cứu điểm"
-                            iconPosition="start"
-                        />
-                        <Tab
-                            icon={<Assessment />}
-                            label="Thống kê"
-                            iconPosition="start"
-                        />
-                    </Tabs>
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+            <Typography variant="h4" gutterBottom component="div">
+                Hệ thống Quản lý Điểm
+            </Typography>
 
-                    <TabPanel value={currentTab} index={0}>
-                        <Box sx={{ bgcolor: '', minHeight: '100vh', py: 4 }}>
-                            <Container maxWidth="xl">
-                                    <Grid container spacing={2} sx={{ mb: 2 }}>
-                                        <Grid item xs={12} md={3}>
-                                            <FormControl fullWidth size="small">
-                                                <InputLabel>Lớp</InputLabel>
-                                                <Select
-                                                    value={selectedClass}
-                                                    label="Lớp"
-                                                    onChange={(e) => setSelectedClass(e.target.value)}
-                                                >
-                                                    {mockClasses.map(cls => (
-                                                        <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} md={5}>
-                                            <FormControl fullWidth size="small">
-                                                <InputLabel>Môn học</InputLabel>
-                                                <Select
-                                                    multiple
-                                                    value={selectedSubjects}
-                                                    label="Môn học"
-                                                    onChange={(e) => setSelectedSubjects(e.target.value)}
-                                                    renderValue={(selected) => (
-                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                            {selected.map((value) => (
-                                                                <Chip
-                                                                    key={value}
-                                                                    label={mockSubjects.find(s => s.id === value)?.name}
-                                                                    size="small"
-                                                                />
-                                                            ))}
-                                                        </Box>
-                                                    )}
-                                                >
-                                                    {mockSubjects.map(subject => (
-                                                        <MenuItem key={subject.id} value={subject.id}>
-                                                            {subject.name}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <Button
-                                                    variant="outlined"
-                                                    startIcon={<CloudUpload />}
-                                                    onClick={() => setOpenImportDialog(true)}
-                                                    disabled={!selectedClass || !selectedSubjects.length}
-                                                >
-                                                    Import điểm
-                                                </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    startIcon={<Download />}
-                                                    onClick={handleExportClass}
-                                                    disabled={!selectedClass || !selectedSubjects.length}
-                                                >
-                                                    Xuất điểm lớp
-                                                </Button>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
+            <Tabs value={tabValue} onChange={handleTabChange} aria-label="grade management tabs">
+                <Tab label="Import Điểm" />
+                <Tab label="Quản lý Điểm" />
+                <Tab label="Xem Danh Sách Điểm" />
+                <Tab label="Báo cáo" />
+            </Tabs>
 
-                                    <TableContainer>
-                                        <Table>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>MSSV</TableCell>
-                                                    <TableCell>Họ và tên</TableCell>
-                                                    {selectedSubjects.map(subjectId => (
-                                                        <React.Fragment key={subjectId}>
-                                                            <TableCell align="center">{mockSubjects.find(s => s.id === subjectId)?.name} (GK)</TableCell>
-                                                            <TableCell align="center">{mockSubjects.find(s => s.id === subjectId)?.name} (CK)</TableCell>
-                                                        </React.Fragment>
-                                                    ))}
-                                                    <TableCell align="center">Thao tác</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {Object.entries(mockStudentGrades).map(([studentId, data]) => (
-                                                    <TableRow key={studentId}>
-                                                        <TableCell>{studentId}</TableCell>
-                                                        <TableCell>{data.info.name}</TableCell>
-                                                        {selectedSubjects.map(subjectId => {
-                                                            const grade = data.grades.find(g => g.subject === subjectId);
-                                                            return (
-                                                                <React.Fragment key={subjectId}>
-                                                                    <TableCell align="center">{grade?.midterm || '-'}</TableCell>
-                                                                    <TableCell align="center">{grade?.final || '-'}</TableCell>
-                                                                </React.Fragment>
-                                                            );
-                                                        })}
-                                                        <TableCell align="center">
-                                                            <Button
-                                                                size="small"
-                                                                startIcon={<Visibility />}
-                                                                onClick={() => handleViewStudent(studentId)}
-                                                            >
-                                                                Xem chi tiết
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+            <Box sx={{ mt: 2 }}>
+                {tabValue === 0 && (
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Import Điểm
+                        </Typography>
 
-                                {/* Import Dialog */}
-                                <Dialog
-                                    open={openImportDialog}
-                                    onClose={() => setOpenImportDialog(false)}
-                                    maxWidth="sm"
-                                    fullWidth
-                                >
-                                    <DialogTitle>Import điểm - {mockClasses.find(c => c.id === selectedClass)?.name}</DialogTitle>
-                                    <DialogContent>
-                                        <Box sx={{ mt: 2 }}>
-                                            <Typography variant="subtitle2" gutterBottom>
-                                                Môn học: {selectedSubjects.map(s => mockSubjects.find(sub => sub.id === s)?.name).join(', ')}
-                                            </Typography>
-                                            <Button
-                                                variant="outlined"
-                                                component="label"
-                                                startIcon={<CloudUpload />}
-                                                sx={{ mt: 2 }}
-                                            >
-                                                Chọn file Excel
-                                                <input
-                                                    type="file"
-                                                    hidden
-                                                    accept=".xlsx,.xls"
-                                                    onChange={(e) => console.log(e.target.files[0])}
-                                                />
-                                            </Button>
-                                        </Box>
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button onClick={() => setOpenImportDialog(false)}>
-                                            Hủy
-                                        </Button>
-                                        <Button onClick={handleImport} variant="contained">
-                                            Import
-                                        </Button>
-                                    </DialogActions>
-                                </Dialog>
-
-                                {/* Student Detail Dialog */}
-                                <Dialog
-                                    open={openStudentDialog}
-                                    onClose={() => setOpenStudentDialog(false)}
-                                    maxWidth="md"
-                                    fullWidth
-                                >
-                                    <DialogTitle>
-                                        Thông tin điểm - {currentStudent?.info.name}
-                                    </DialogTitle>
-                                    <DialogContent>
-                                        <List>
-                                            {currentStudent?.grades.map((grade, index) => (
-                                                <React.Fragment key={grade.subject}>
-                                                    <ListItem>
-                                                        <ListItemText
-                                                            primary={mockSubjects.find(s => s.id === grade.subject)?.name}
-                                                            secondary={
-                                                                <Typography component="span" variant="body2">
-                                                                    Giữa kỳ: {grade.midterm} | Cuối kỳ: {grade.final} | Trung bình: {grade.average}
-                                                                </Typography>
-                                                            }
-                                                        />
-                                                    </ListItem>
-                                                    {index < currentStudent.grades.length - 1 && <Divider />}
-                                                </React.Fragment>
-                                            ))}
-                                        </List>
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button
-                                            onClick={() => handleExportStudent(currentStudent?.studentId)}
-                                            startIcon={<Download />}
-                                        >
-                                            Xuất điểm
-                                        </Button>
-                                        <Button onClick={() => setOpenStudentDialog(false)}>
-                                            Đóng
-                                        </Button>
-                                    </DialogActions>
-                                </Dialog>
-
-                                <Snackbar
-                                    open={showSnackbar}
-                                    autoHideDuration={3000}
-                                    onClose={() => setShowSnackbar(false)}
-                                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                                >
-                                    <Alert severity="success" onClose={() => setShowSnackbar(false)}>
-                                        Import điểm thành công!
-                                    </Alert>
-                                </Snackbar>
-                            </Container>
-                        </Box>
-
-                    </TabPanel>
-
-                    <TabPanel value={currentTab} index={1}>
-                                <TextField
-                                    fullWidth
-                                    variant="outlined"
-                                    placeholder="Tìm kiếm theo MSSV, Họ tên, hoặc Lớp..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    sx={{ mb: 3 }}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <Search />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                />
-
-                                {filteredStudents.map((student) => (
-                                    <Card key={student.id} sx={{ mb: 2 }}>
-                                        <CardContent>
-                                            <Grid container spacing={2} alignItems="center">
-                                                <Grid item xs={12} md={4}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Person sx={{ mr: 1 }} />
-                                                        <Box>
-                                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                                                {student.name}
-                                                            </Typography>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                MSSV: {student.id}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Box>
-                                                </Grid>
-                                                <Grid item xs={12} md={4}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Class sx={{ mr: 1 }} />
-                                                        <Typography>Lớp: {student.class}</Typography>
-                                                    </Box>
-                                                </Grid>
-                                                <Grid item xs={12} md={4}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                                        <Button
-                                                            variant="outlined"
-                                                            onClick={() => handleViewDetails(student)}
-                                                        >
-                                                            Xem điểm
-                                                        </Button>
-                                                        <Button
-                                                            variant="contained"
-                                                            startIcon={<Download />}
-                                                            onClick={() => handleExportGrades(student)}
-                                                        >
-                                                            Xuất điểm
-                                                        </Button>
-                                                    </Box>
-                                                </Grid>
-                                            </Grid>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-
-                                {filteredStudents.length === 0 && (
-                                    <Typography textAlign="center" color="text.secondary" sx={{ py: 4 }}>
-                                        Không tìm thấy sinh viên phù hợp
-                                    </Typography>
-                                )}
-
-                                <Dialog
-                                    open={openDialog}
-                                    onClose={() => setOpenDialog(false)}
-                                    maxWidth="md"
-                                    fullWidth
-                                >
-                                    <DialogTitle>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <School />
-                                            <Typography variant="h6">
-                                                Bảng điểm - {selectedStudent?.name}
-                                            </Typography>
-                                        </Box>
-                                    </DialogTitle>
-                                    <DialogContent>
-                                        {selectedStudent && (
-                                            <>
-                                                <Box sx={{ mb: 3, mt: 2 }}>
-                                                    <Typography variant="body1" gutterBottom>
-                                                        MSSV: {selectedStudent.id}
-                                                    </Typography>
-                                                    <Typography variant="body1" gutterBottom>
-                                                        Lớp: {selectedStudent.class}
-                                                    </Typography>
-                                                    <Typography variant="body1" gutterBottom>
-                                                        Học kỳ: {selectedStudent.grades.semester}
-                                                    </Typography>
-                                                </Box>
-                                                <TableContainer>
-                                                    <Table>
-                                                        <TableHead>
-                                                            <TableRow>
-                                                                <TableCell>Mã môn</TableCell>
-                                                                <TableCell>Tên môn học</TableCell>
-                                                                <TableCell align="center">Số tín chỉ</TableCell>
-                                                                <TableCell align="center">Điểm GK</TableCell>
-                                                                <TableCell align="center">Điểm CK</TableCell>
-                                                                <TableCell align="center">Trung bình</TableCell>
-                                                            </TableRow>
-                                                        </TableHead>
-                                                        <TableBody>
-                                                            {selectedStudent.grades.subjects.map((subject) => (
-                                                                <TableRow key={subject.code}>
-                                                                    <TableCell>{subject.code}</TableCell>
-                                                                    <TableCell>{subject.name}</TableCell>
-                                                                    <TableCell align="center">{subject.credits}</TableCell>
-                                                                    <TableCell align="center">{subject.midterm}</TableCell>
-                                                                    <TableCell align="center">{subject.final}</TableCell>
-                                                                    <TableCell align="center">{subject.average}</TableCell>
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </TableContainer>
-                                            </>
-                                        )}
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button
-                                            onClick={() => handleExportGrades(selectedStudent)}
-                                            startIcon={<Download />}
-                                        >
-                                            Xuất điểm
-                                        </Button>
-                                        <Button onClick={() => setOpenDialog(false)}>
-                                            Đóng
-                                        </Button>
-                                    </DialogActions>
-                                </Dialog>
-                    </TabPanel>
-                    <TabPanel value={currentTab} index={2}>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={4}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography color="textSecondary" gutterBottom>
-                                            Tổng số sinh viên
-                                        </Typography>
-                                        <Typography variant="h3">
-                                            150
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
+                        <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Năm học</InputLabel>
+                                    <Select
+                                        value={year}
+                                        label="Năm học"
+                                        onChange={(e) => setYear(e.target.value)}
+                                    >
+                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
+                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
+                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
+                                    </Select>
+                                </FormControl>
                             </Grid>
-                            <Grid item xs={12} md={4}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography color="textSecondary" gutterBottom>
-                                            Tỷ lệ đạt
-                                        </Typography>
-                                        <Typography variant="h3" sx={{ color: 'success.main' }}>
-                                            85%
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học kỳ</InputLabel>
+                                    <Select
+                                        value={semester}
+                                        label="Học kỳ"
+                                        onChange={(e) => setSemester(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Học kỳ 1</MenuItem>
+                                        <MenuItem value="2">Học kỳ 2</MenuItem>
+                                    </Select>
+                                </FormControl>
                             </Grid>
-                            <Grid item xs={12} md={4}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography color="textSecondary" gutterBottom>
-                                            Sinh viên cấm thi
-                                        </Typography>
-                                        <Typography variant="h3" sx={{ color: 'error.main' }}>
-                                            5
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Đợt thi</InputLabel>
+                                    <Select
+                                        value={examPeriod}
+                                        label="Đợt thi"
+                                        onChange={(e) => setExamPeriod(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Đợt 1</MenuItem>
+                                        <MenuItem value="2">Đợt 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Môn học</InputLabel>
+                                    <Select
+                                        value={course}
+                                        label="Môn học"
+                                        onChange={(e) => setCourse(e.target.value)}
+                                    >
+                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
+                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
+                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Loại điểm</InputLabel>
+                                    <Select
+                                        value={examType}
+                                        label="Loại điểm"
+                                        onChange={(e) => setExamType(e.target.value)}
+                                    >
+                                        <MenuItem value="TP1">Thành phần 1</MenuItem>
+                                        <MenuItem value="TP2">Thành phần 2</MenuItem>
+                                        <MenuItem value="CK1">Cuối kỳ (lần 1)</MenuItem>
+                                        <MenuItem value="CK2">Cuối kỳ (thi lại)</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Lớp</InputLabel>
+                                    <Select
+                                        value={classGroup}
+                                        label="Lớp"
+                                        onChange={(e) => setClassGroup(e.target.value)}
+                                    >
+                                        <MenuItem value="ALL">Toàn khóa</MenuItem>
+                                        <MenuItem value="CT6">CT6</MenuItem>
+                                        <MenuItem value="CT7">CT7</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    component="label"
+                                    variant="contained"
+                                    startIcon={<CloudUploadIcon />}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Chọn file Excel
+                                    <VisuallyHiddenInput type="file" onChange={handleFileChange} />
+                                </Button>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<FileUploadIcon />}
+                                    onClick={handleImport}
+                                    disabled={!selectedFile || !year || !semester || !examPeriod || !course || !examType}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Import Điểm
+                                </Button>
                             </Grid>
                         </Grid>
-                    </TabPanel>
-                </Paper>
 
-                {/* Import Dialog */}
-                <Dialog
-                    open={openImportDialog}
-                    onClose={() => setOpenImportDialog(false)}
-                >
-                    <DialogTitle>Import điểm</DialogTitle>
-                    <DialogContent>
-                        <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            {selectedFile ? `File đã chọn: ${selectedFile.name}` : 'Chưa chọn file nào'}
+                        </Typography>
+                    </Paper>
+                )}
+
+                {tabValue === 1 && (
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Quản lý Điểm
+                        </Typography>
+
+                        <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Năm học</InputLabel>
+                                    <Select
+                                        value={year}
+                                        label="Năm học"
+                                        onChange={(e) => setYear(e.target.value)}
+                                    >
+                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
+                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
+                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học kỳ</InputLabel>
+                                    <Select
+                                        value={semester}
+                                        label="Học kỳ"
+                                        onChange={(e) => setSemester(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Học kỳ 1</MenuItem>
+                                        <MenuItem value="2">Học kỳ 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Đợt học</InputLabel>
+                                    <Select
+                                        value={examPeriod}
+                                        label="Đợt học"
+                                        onChange={(e) => setExamPeriod(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Đợt 1</MenuItem>
+                                        <MenuItem value="2">Đợt 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Khóa</InputLabel>
+                                    <Select
+                                        value={batch}
+                                        label="Khóa"
+                                        onChange={(e) => setBatch(e.target.value)}
+                                    >
+                                        <MenuItem value="K14">K14</MenuItem>
+                                        <MenuItem value="K15">K15</MenuItem>
+                                        <MenuItem value="K16">K16</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Chuyên ngành</InputLabel>
+                                    <Select
+                                        value={major}
+                                        label="Chuyên ngành"
+                                        onChange={(e) => setMajor(e.target.value)}
+                                    >
+                                        <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
+                                        <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
+                                        <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
+                                        <MenuItem value="MMT">Mạng máy tính</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học phần</InputLabel>
+                                    <Select
+                                        value={course}
+                                        label="Học phần"
+                                        onChange={(e) => setCourse(e.target.value)}
+                                    >
+                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
+                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
+                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
+                                        <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
+                                        <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Lớp</InputLabel>
+                                    <Select
+                                        value={classGroup}
+                                        label="Lớp"
+                                        onChange={(e) => setClassGroup(e.target.value)}
+                                    >
+                                        <MenuItem value="ALL">Tất cả</MenuItem>
+                                        <MenuItem value="CT6">CT6</MenuItem>
+                                        <MenuItem value="CT7">CT7</MenuItem>
+                                        <MenuItem value="CT8">CT8</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Lần thi</InputLabel>
+                                    <Select
+                                        value={examNumber}
+                                        label="Lần thi"
+                                        onChange={(e) => setExamNumber(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Lần 1</MenuItem>
+                                        <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Hệ đào tạo</InputLabel>
+                                    <Select
+                                        value={educationType}
+                                        label="Hệ đào tạo"
+                                        onChange={(e) => setEducationType(e.target.value)}
+                                    >
+                                        <MenuItem value="CQ">Chính quy</MenuItem>
+                                        <MenuItem value="LT">Liên thông</MenuItem>
+                                        <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SearchIcon />}
+                                    onClick={handleSearch}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Tìm kiếm
+                                </Button>
+                            </Grid>
+                        </Grid>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <TableContainer component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label="grade table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Mã SV</TableCell>
+                                        <TableCell>Họ và tên</TableCell>
+                                        <TableCell>Lớp</TableCell>
+                                        <TableCell>Trạng thái</TableCell>
+                                        <TableCell>TP1</TableCell>
+                                        <TableCell>TP2</TableCell>
+                                        <TableCell>CK lần 1</TableCell>
+                                        <TableCell>CK lần 2</TableCell>
+                                        <TableCell>Đăng ký học lại</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {students.map((student) => (
+                                        <TableRow key={student.id}>
+                                            <TableCell>{student.id}</TableCell>
+                                            <TableCell>{student.name}</TableCell>
+                                            <TableCell>{student.class}</TableCell>
+                                            <TableCell>{student.status}</TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.scores.TP1 === null ? '' : student.scores.TP1}
+                                                    onChange={(e) => handleScoreChange(student.id, 'TP1', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.scores.TP2 === null ? '' : student.scores.TP2}
+                                                    onChange={(e) => handleScoreChange(student.id, 'TP2', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.scores.CK1 === null ? '' : student.scores.CK1}
+                                                    onChange={(e) => handleScoreChange(student.id, 'CK1', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.scores.CK2 === null ? '' : student.scores.CK2}
+                                                    onChange={(e) => handleScoreChange(student.id, 'CK2', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox
+                                                            checked={student.retakeRegistered || false}
+                                                            onChange={(e) => handleRetakeRegistration(student.id, e.target.checked)}
+                                                        />
+                                                    }
+                                                    label=""
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                             <Button
-                                variant="outlined"
-                                component="label"
-                                startIcon={<CloudUpload />}
+                                variant="contained"
+                                color="primary"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSave}
                             >
-                                Chọn file Excel
-                                <input
-                                    type="file"
-                                    hidden
-                                    accept=".xlsx,.xls"
-                                    onChange={(e) => console.log(e.target.files[0])}
-                                />
+                                Lưu Điểm
                             </Button>
                         </Box>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setOpenImportDialog(false)}>
-                            Hủy
-                        </Button>
-                        <Button onClick={handleImport} variant="contained">
-                            Import
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    </Paper>
+                )}
 
-                {/* Success Snackbar */}
-                <Snackbar
-                    open={showSnackbar}
-                    autoHideDuration={3000}
-                    onClose={() => setShowSnackbar(false)}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                >
-                    <Alert severity="success" onClose={() => setShowSnackbar(false)}>
-                        Import điểm thành công!
-                    </Alert>
-                </Snackbar>
-            </Container>
+                {tabValue === 2 && (
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Xem Danh Sách Điểm
+                        </Typography>
+
+                        <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Năm học</InputLabel>
+                                    <Select
+                                        value={viewFilter.year}
+                                        label="Năm học"
+                                        onChange={(e) => handleViewFilterChange('year', e.target.value)}
+                                    >
+                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
+                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
+                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học kỳ</InputLabel>
+                                    <Select
+                                        value={viewFilter.semester}
+                                        label="Học kỳ"
+                                        onChange={(e) => handleViewFilterChange('semester', e.target.value)}
+                                    >
+                                        <MenuItem value="1">Học kỳ 1</MenuItem>
+                                        <MenuItem value="2">Học kỳ 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Đợt học</InputLabel>
+                                    <Select
+                                        value={viewFilter.examPeriod}
+                                        label="Đợt học"
+                                        onChange={(e) => handleViewFilterChange('examPeriod', e.target.value)}
+                                    >
+                                        <MenuItem value="1">Đợt 1</MenuItem>
+                                        <MenuItem value="2">Đợt 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Khóa</InputLabel>
+                                    <Select
+                                        value={viewFilter.batch}
+                                        label="Khóa"
+                                        onChange={(e) => handleViewFilterChange('batch', e.target.value)}
+                                    >
+                                        <MenuItem value="K14">K14</MenuItem>
+                                        <MenuItem value="K15">K15</MenuItem>
+                                        <MenuItem value="K16">K16</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Chuyên ngành</InputLabel>
+                                    <Select
+                                        value={viewFilter.major}
+                                        label="Chuyên ngành"
+                                        onChange={(e) => handleViewFilterChange('major', e.target.value)}
+                                    >
+                                        <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
+                                        <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
+                                        <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
+                                        <MenuItem value="MMT">Mạng máy tính</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học phần</InputLabel>
+                                    <Select
+                                        value={viewFilter.course}
+                                        label="Học phần"
+                                        onChange={(e) => handleViewFilterChange('course', e.target.value)}
+                                    >
+                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
+                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
+                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
+                                        <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
+                                        <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Lớp</InputLabel>
+                                    <Select
+                                        value={viewFilter.classGroup}
+                                        label="Lớp"
+                                        onChange={(e) => handleViewFilterChange('classGroup', e.target.value)}
+                                    >
+                                        <MenuItem value="ALL">Tất cả</MenuItem>
+                                        <MenuItem value="CT6">CT6</MenuItem>
+                                        <MenuItem value="CT7">CT7</MenuItem>
+                                        <MenuItem value="CT8">CT8</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Lần thi</InputLabel>
+                                    <Select
+                                        value={viewFilter.examNumber}
+                                        label="Lần thi"
+                                        onChange={(e) => handleViewFilterChange('examNumber', e.target.value)}
+                                    >
+                                        <MenuItem value="1">Lần 1</MenuItem>
+                                        <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Hệ đào tạo</InputLabel>
+                                    <Select
+                                        value={viewFilter.educationType}
+                                        label="Hệ đào tạo"
+                                        onChange={(e) => handleViewFilterChange('educationType', e.target.value)}
+                                    >
+                                        <MenuItem value="CQ">Chính quy</MenuItem>
+                                        <MenuItem value="LT">Liên thông</MenuItem>
+                                        <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<VisibilityIcon />}
+                                    onClick={handleViewSearch}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Xem điểm
+                                </Button>
+                            </Grid>
+                        </Grid>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <TableContainer component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label="view grades table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Mã SV</TableCell>
+                                        <TableCell>Họ và tên</TableCell>
+                                        <TableCell>Lớp</TableCell>
+                                        <TableCell>Trạng thái</TableCell>
+                                        <TableCell>TP1</TableCell>
+                                        <TableCell>TP2</TableCell>
+                                        <TableCell>CK lần 1</TableCell>
+                                        <TableCell>CK lần 2</TableCell>
+                                        <TableCell>Điểm TK</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {students.map((student) => {
+                                        // Tính điểm tổng kết (giả sử công thức: TP1*0.2 + TP2*0.2 + CK*0.6)
+                                        // Ưu tiên lấy điểm CK lần 2 nếu có, nếu không thì lấy điểm CK lần 1
+                                        const finalExamScore = student.scores.CK2 !== null ? student.scores.CK2 : student.scores.CK1;
+                                        const totalScore = student.scores.TP1 * 0.2 + student.scores.TP2 * 0.2 + finalExamScore * 0.6;
+
+                                        return (
+                                            <TableRow key={student.id}>
+                                                <TableCell>{student.id}</TableCell>
+                                                <TableCell>{student.name}</TableCell>
+                                                <TableCell>{student.class}</TableCell>
+                                                <TableCell>{student.status}</TableCell>
+                                                <TableCell>{student.scores.TP1}</TableCell>
+                                                <TableCell>{student.scores.TP2}</TableCell>
+                                                <TableCell>{student.scores.CK1}</TableCell>
+                                                <TableCell>{student.scores.CK2 !== null ? student.scores.CK2 : '-'}</TableCell>
+                                                <TableCell>{totalScore.toFixed(1)}</TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                startIcon={<DownloadIcon />}
+                                onClick={handleExportData}
+                                sx={{ mr: 2 }}
+                            >
+                                Xuất Excel
+                            </Button>
+                        </Box>
+                    </Paper>
+                )}
+
+                {tabValue === 3 && (
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Báo cáo
+                        </Typography>
+
+                        <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Năm học</InputLabel>
+                                    <Select
+                                        value={year}
+                                        label="Năm học"
+                                        onChange={(e) => setYear(e.target.value)}
+                                    >
+                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
+                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
+                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Học kỳ</InputLabel>
+                                    <Select
+                                        value={semester}
+                                        label="Học kỳ"
+                                        onChange={(e) => setSemester(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Học kỳ 1</MenuItem>
+                                        <MenuItem value="2">Học kỳ 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Đợt học</InputLabel>
+                                    <Select
+                                        value={examPeriod}
+                                        label="Đợt học"
+                                        onChange={(e) => setExamPeriod(e.target.value)}
+                                    >
+                                        <MenuItem value="1">Đợt 1</MenuItem>
+                                        <MenuItem value="2">Đợt 2</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Loại báo cáo</InputLabel>
+                                    <Select
+                                        value={reportType}
+                                        label="Loại báo cáo"
+                                        onChange={(e) => setReportType(e.target.value)}
+                                    >
+                                        <MenuItem value="summary">Tổng kết điểm</MenuItem>
+                                        <MenuItem value="distribution">Phân bố điểm</MenuItem>
+                                        <MenuItem value="retake">Danh sách thi lại</MenuItem>
+                                        <MenuItem value="failRate">Tỷ lệ trượt theo lớp</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SearchIcon />}
+                                    onClick={handleGenerateReport}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Tạo báo cáo
+                                </Button>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<DownloadIcon />}
+                                    onClick={handleExportReport}
+                                    sx={{ height: '56px' }}
+                                >
+                                    Xuất báo cáo
+                                </Button>
+                            </Grid>
+                        </Grid>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Box sx={{ mt: 3 }}>
+                            <Typography variant="subtitle1" gutterBottom>
+                                Kết quả báo cáo sẽ hiển thị ở đây
+                            </Typography>
+
+                            {/* Placeholder for report visualization - would be replaced with actual charts */}
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2,
+                                    backgroundColor: '#f5f5f5',
+                                    height: '400px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Typography color="text.secondary">
+                                    Chọn các tiêu chí và nhấn "Tạo báo cáo" để xem kết quả
+                                </Typography>
+                            </Paper>
+                        </Box>
+                    </Paper>
+                )}
+            </Box>
         </Box>
     );
 }
 
-export default ExamDashboard;
+
+export default GradeImportSystem;
