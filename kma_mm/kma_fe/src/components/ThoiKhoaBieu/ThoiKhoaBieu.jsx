@@ -27,6 +27,8 @@ import {
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FilterListIcon from "@mui/icons-material/FilterList";
+import TuneIcon from '@mui/icons-material/Tune';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import { getMonHoc, getThoiKhoaBieu, themThoiKhoaBieu, updateThoiKhoaBieu, xoaThoiKhoaBieu } from "../../Api_controller/Service/monHocService";
@@ -75,7 +77,7 @@ const ThoiKhoaBieu = () => {
     const [monHocFilList, setMonHocFilList] = useState([]);
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
-
+    const [showFilter, setShowFilter] = useState(false);
     // Fetch initial data
     useEffect(() => {
         fetchLopList();
@@ -128,11 +130,13 @@ const ThoiKhoaBieu = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [kyHoc, setKyHoc] = useState("");
     const [itemsPerPage, setItemsPerPage] = useState(5);
-
+    const [lopListView, setLopListView] = useState([]);
 
     const fetchThoiKhoaBieu = async () => {
         let res = await getMonHoc();
-        console.log(res)
+        let res2 = await getDanhSachLop();
+        // console.log(res2)
+        setLopListView(res2)
         setMonHocFilList(res);
         let url = `http://localhost:8000/thoikhoabieu/getbypage?page=${page}&pageSize=${pageSize}`;
 
@@ -319,31 +323,95 @@ const ThoiKhoaBieu = () => {
                         </Button>
                     </Box>
 
-                    {/* Bộ lọc: Kỳ học + Lớp + Nút lọc */}
-                    <Box display="flex" justifyContent="center" alignItems="center" gap={2} my={2}>
-                        <FormControl sx={{ minWidth: 150 }}>
-                            <InputLabel>Kỳ học</InputLabel>
-                            <Select value={kyHoc} onChange={(e) => setKyHoc(e.target.value)}>
-                                <MenuItem value="">Tất cả</MenuItem>
-                                <MenuItem value="2025">2025</MenuItem>
-                                <MenuItem value="2024">2024</MenuItem>
-                            </Select>
-                        </FormControl>
+                    <Box position="relative">
+                        {/* Nút mở bộ lọc */}
+                        <IconButton
+                            onClick={() => setShowFilter(!showFilter)}
+                            sx={{
+                                position: "absolute",
+                                top: -50,
+                                right: 10,
+                                width: "30px",
+                                height: "30px",
+                                backgroundColor: "#1976d2",
+                                color: "white",
+                                "&:hover": { backgroundColor: "#115293" }
+                            }}
+                        >
+                            <TuneIcon />
+                        </IconButton>
 
-                        <FormControl sx={{ minWidth: 150 }}>
-                            <InputLabel>Lớp</InputLabel>
-                            <Select value={lopId} onChange={(e) => setLopId(e.target.value)}>
-                                <MenuItem value="">Tất cả</MenuItem>
-                                <MenuItem value="1">Lớp 1</MenuItem>
-                                <MenuItem value="2">Lớp 2</MenuItem>
-                            </Select>
-                        </FormControl>
+                        {/* Bộ lọc (ẩn/hiện dựa vào showFilter) */}
+                        {showFilter && (
+                            <Box
+                                sx={{
+                                    backgroundColor: "#f5f5f5",
+                                    p: 2,
+                                    borderRadius: 1,
+                                    boxShadow: 1,
+                                    maxWidth: 500,
+                                    mx: "auto",
+                                    mt: 5
+                                }}
+                            >
+                                <Typography variant="subtitle1" fontWeight="bold" textAlign="center" mb={1}>
+                                    Bộ lọc
+                                </Typography>
 
-                        <Button variant="contained" color="primary" onClick={fetchThoiKhoaBieu}>
-                            Lọc
-                        </Button>
+                                <Grid container spacing={1} alignItems="center">
+                                    {/* Kỳ học */}
+                                    <Grid item xs={5}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Kỳ học</InputLabel>
+                                            <Select value={kyHoc} onChange={(e) => setKyHoc(e.target.value)}>
+                                                <MenuItem value="">Tất cả</MenuItem>
+                                                <MenuItem value="2025">2025</MenuItem>
+                                                <MenuItem value="2024">2024</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Lớp */}
+                                    <Grid item xs={5}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Lớp</InputLabel>
+                                            <Select value={lopId} onChange={(e) => setLopId(e.target.value)}>
+                                                {lopListView.map((item) => (
+                                                    <MenuItem key={item.id} value={item.id}>
+                                                        {item.ma_lop}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Nút lọc / hủy lọc */}
+                                    <Grid item xs={2}>
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            sx={{
+                                                minWidth: 80,
+                                                backgroundColor: kyHoc || lopId ? "#d32f2f" : "#1976d2",
+                                                "&:hover": { backgroundColor: kyHoc || lopId ? "#b71c1c" : "#115293" }
+                                            }}
+                                            onClick={() => {
+                                                if (kyHoc || lopId) {
+                                                    setKyHoc("");
+                                                    setLopId("");
+                                                    fetchThoiKhoaBieu();
+                                                } else {
+                                                    fetchThoiKhoaBieu();
+                                                }
+                                            }}
+                                        >
+                                            {kyHoc || lopId ? "Hủy" : "Lọc"}
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
                     </Box>
-
                     {/* Danh sách thời khóa biểu */}
                     {thoiKhoaBieuList.length === 0 ? (
                         <Typography
