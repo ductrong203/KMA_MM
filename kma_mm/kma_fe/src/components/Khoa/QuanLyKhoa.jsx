@@ -1,7 +1,4 @@
-import {
-  Add as AddIcon,
-  Edit as EditIcon
-} from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon } from "@mui/icons-material";
 import {
   Alert,
   Autocomplete,
@@ -13,8 +10,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
   Table,
   TableBody,
@@ -23,16 +24,19 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography
-} from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { createKhoa, fetchDanhSachKhoa, updateKhoa } from '../../Api_controller/Service/khoaService';
-import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
-import { TablePagination } from '@mui/material';
-
+  Typography,
+} from "@mui/material";
+import React, { useEffect, useState } from "react";
+import {
+  createKhoa,
+  fetchDanhSachKhoa,
+  updateKhoa,
+} from "../../Api_controller/Service/khoaService";
+import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
+import { TablePagination } from "@mui/material";
 
 // URL API (thay thế bằng URL thực của bạn)
-const API_URL = 'https://api.example.com';
+const API_URL = "https://api.example.com";
 
 // Component chính quản lý danh sách khóa
 const QuanLyKhoa = () => {
@@ -40,11 +44,11 @@ const QuanLyKhoa = () => {
   const [danhSachKhoa, setDanhSachKhoa] = useState([]);
   const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
   const [openForm, setOpenForm] = useState(false);
-  const [selectedKhoa, setSelectedKhoa] = useState(null)
+  const [selectedKhoa, setSelectedKhoa] = useState(null);
   const [formData, setFormData] = useState({
-    ten_khoa: '',
+    ten_khoa: "",
     he_dao_tao_id: null,
-    nam_hoc: '',
+    nam_hoc: "",
   });
   const [selectedHeDaoTao, setSelectedHeDaoTao] = useState(null);
 
@@ -53,15 +57,15 @@ const QuanLyKhoa = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success",
   });
   const [page, setPage] = useState(1); // Trang hiện tại
   const [rowsPerPage, setRowsPerPage] = useState(5); // Số dòng mỗi trang
-  const indexOfLastItem = page * rowsPerPage;
-  const indexOfFirstItem = indexOfLastItem - rowsPerPage;
-  const currentKhoa = danhSachKhoa.slice(indexOfFirstItem, indexOfLastItem);
 
+
+  // State cho bộ lọc
+  const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
   // Fetch dữ liệu khi component mount
   useEffect(() => {
     getDanhSachKhoa();
@@ -74,11 +78,14 @@ const QuanLyKhoa = () => {
   const getDanhSachKhoa = async () => {
     setLoadingData(true);
     try {
-      const response = await fetchDanhSachKhoa()
+      const response = await fetchDanhSachKhoa();
       setDanhSachKhoa(response);
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách khóa:', error);
-      showSnackbar('Không thể lấy danh sách khóa. Vui lòng thử lại sau.', 'error');
+      console.error("Lỗi khi lấy danh sách khóa:", error);
+      showSnackbar(
+        "Không thể lấy danh sách khóa. Vui lòng thử lại sau.",
+        "error"
+      );
     } finally {
       setLoadingData(false);
     }
@@ -87,20 +94,23 @@ const QuanLyKhoa = () => {
   // Hàm lấy danh sách hệ đào tạo từ API
   const getDanhSachHeDaoTao = async () => {
     try {
-      const response = await fetchDanhSachHeDaoTao()
+      const response = await fetchDanhSachHeDaoTao();
       setDanhSachHeDaoTao(response);
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách hệ đào tạo:', error);
-      showSnackbar('Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.', 'error');
+      console.error("Lỗi khi lấy danh sách hệ đào tạo:", error);
+      showSnackbar(
+        "Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.",
+        "error"
+      );
     }
   };
 
   // Hiển thị thông báo
-  const showSnackbar = (message, severity = 'success') => {
+  const showSnackbar = (message, severity = "success") => {
     setSnackbar({
       open: true,
       message,
-      severity
+      severity,
     });
   };
 
@@ -108,7 +118,7 @@ const QuanLyKhoa = () => {
   const handleCloseSnackbar = () => {
     setSnackbar({
       ...snackbar,
-      open: false
+      open: false,
     });
   };
 
@@ -116,16 +126,16 @@ const QuanLyKhoa = () => {
   const handleOpenForm = () => {
     setOpenForm(true);
     setFormData({
-      ten_khoa: '',
+      ten_khoa: "",
       he_dao_tao_id: null,
-      nam_hoc: '',
+      nam_hoc: "",
     });
     setSelectedHeDaoTao(null);
   };
 
   // Xử lý đóng form
   const handleCloseForm = () => {
-    setSelectedKhoa(null)
+    setSelectedKhoa(null);
     setOpenForm(false);
   };
 
@@ -157,8 +167,8 @@ const QuanLyKhoa = () => {
   // Xử lý thêm khóa mới thông qua API
   const handleSubmit = async () => {
     // Kiểm tra dữ liệu
-    if (!formData.ten_khoa || !formData.he_dao_tao_id || !formData.nam_hoc) {
-      showSnackbar('Vui lòng điền đầy đủ thông tin!', 'error');
+    if (!formData.ten_khoa || !formData.he_dao_tao_id || !formData.nam_hoc || !formData.ma_khoa) {
+      showSnackbar("Vui lòng điền đầy đủ thông tin!", "error");
       return;
     }
 
@@ -167,11 +177,11 @@ const QuanLyKhoa = () => {
       if (selectedKhoa) {
         // Chỉnh sửa khóa
         await updateKhoa(selectedKhoa.id, formData);
-        showSnackbar('Cập nhật khóa thành công!');
+        showSnackbar("Cập nhật khóa thành công!");
       } else {
         // Thêm mới khóa
         await createKhoa(formData);
-        showSnackbar('Thêm khóa mới thành công!');
+        showSnackbar("Thêm khóa mới thành công!");
       }
 
       // Cập nhật danh sách khóa
@@ -182,42 +192,70 @@ const QuanLyKhoa = () => {
       setSelectedKhoa(null);
       handleCloseForm();
     } catch (error) {
-      console.error('Lỗi khi xử lý dữ liệu khóa:', error);
-      showSnackbar('Không thể lưu dữ liệu. Vui lòng thử lại sau.', 'error');
+      console.error("Lỗi khi xử lý dữ liệu khóa:", error);
+      showSnackbar("Không thể lưu dữ liệu. Vui lòng thử lại sau.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-
   const getHeDaoTaoName = (id) => {
     if (!id || !danhSachHeDaoTao || danhSachHeDaoTao.length === 0) {
-      return 'Không xác định';
+      return "Không xác định";
     }
-    console.log('Tìm hệ đào tạo với ID:', id);
-    console.log('Danh sách hệ đào tạo:', danhSachHeDaoTao);
+    console.log("Tìm hệ đào tạo với ID:", id);
+    console.log("Danh sách hệ đào tạo:", danhSachHeDaoTao);
 
-    const heDaoTao = danhSachHeDaoTao.find(item => item.id === id);
-    return heDaoTao ? heDaoTao.ten_he_dao_tao : 'Không xác định';
+    const heDaoTao = danhSachHeDaoTao.find((item) => item.id === id);
+    return heDaoTao ? heDaoTao.ten_he_dao_tao : "Không xác định";
   };
 
   const handleEdit = (khoa) => {
     setSelectedKhoa(khoa);
     setFormData({
-      ten_khoa: khoa.ten_khoa || '',
+      ten_khoa: khoa.ten_khoa || "",
       he_dao_tao_id: khoa.he_dao_tao_id || null,
-      nam_hoc: khoa.nam_hoc || '',
+      nam_hoc: khoa.nam_hoc || "",
     });
 
-    const heDaoTao = danhSachHeDaoTao.find(item => item.id === khoa.he_dao_tao_id);
+    const heDaoTao = danhSachHeDaoTao.find(
+      (item) => item.id === khoa.he_dao_tao_id
+    );
     setSelectedHeDaoTao(heDaoTao || null);
 
     setOpenForm(true);
   };
+  // Xử lý thay đổi bộ lọc hệ đào tạo
+  const handleFilterChange = (event) => {
+    setFilterHeDaoTao(event.target.value);
+    setPage(1); // Reset về trang đầu tiên khi thay đổi bộ lọc
+  };
+
+  // Lọc danh sách khóa theo hệ đào tạo
+  const filteredKhoa = danhSachKhoa.filter((khoa) => {
+    if (!filterHeDaoTao) return true; // Nếu không có bộ lọc, hiển thị tất cả
+    return khoa.he_dao_tao_id === filterHeDaoTao;
+  });
+  console.log("filteredKhoa:", filteredKhoa)
+  const indexOfLastItem = page * rowsPerPage;
+  const indexOfFirstItem = indexOfLastItem - rowsPerPage;
+  const currentKhoa = filteredKhoa.slice(indexOfFirstItem, indexOfLastItem);
+  // Reset lại trang khi số lượng item thay đổi do lọc
+  useEffect(() => {
+    if (page > 1 && indexOfFirstItem >= filteredKhoa.length) {
+      setPage(Math.max(1, Math.ceil(filteredKhoa.length / rowsPerPage)));
+    }
+  }, [filteredKhoa, page, rowsPerPage, indexOfFirstItem]);
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" component="h1">
           Danh sách khóa
         </Typography>
@@ -231,6 +269,29 @@ const QuanLyKhoa = () => {
         </Button>
       </Box>
 
+      {/* Bộ lọc hệ đào tạo */}
+      <Box mb={3}>
+        <FormControl variant="outlined" sx={{ minWidth: 300 }}>
+          <InputLabel id="filter-he-dao-tao-label">Lọc theo hệ đào tạo</InputLabel>
+          <Select
+            labelId="filter-he-dao-tao-label"
+            id="filter-he-dao-tao"
+            value={filterHeDaoTao}
+            onChange={handleFilterChange}
+            label="Lọc theo hệ đào tạo"
+          >
+            <MenuItem value="">
+              <em>Tất cả</em>
+            </MenuItem>
+            {danhSachHeDaoTao.map((heDaoTao) => (
+              <MenuItem key={heDaoTao.id} value={heDaoTao.id}>
+                {heDaoTao.ten_he_dao_tao}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       {/* Bảng hiển thị danh sách khóa */}
       <TableContainer component={Paper}>
         <Table>
@@ -240,9 +301,8 @@ const QuanLyKhoa = () => {
               <TableCell width="20%">Mã khóa</TableCell>
               <TableCell width="20%">Tên khóa</TableCell>
               <TableCell width="20%">Hệ đào tạo</TableCell>
-              <TableCell width="20%">Năm học</TableCell>
+              <TableCell width="20%">Niên khóa</TableCell>
               <TableCell width="20%">Thao tác</TableCell>
-
             </TableRow>
           </TableHead>
           <TableBody>
@@ -258,13 +318,16 @@ const QuanLyKhoa = () => {
             ) : currentKhoa.length > 0 ? (
               currentKhoa.map((khoa, index) => (
                 <TableRow key={khoa.id}>
-                  <TableCell>{indexOfFirstItem  + 1}</TableCell>
+                  <TableCell>{indexOfFirstItem + index + 1}</TableCell>
                   <TableCell>{khoa.ma_khoa}</TableCell>
                   <TableCell>{khoa.ten_khoa}</TableCell>
                   <TableCell>{getHeDaoTaoName(khoa.he_dao_tao_id)}</TableCell>
                   <TableCell>{khoa.nam_hoc}</TableCell>
-                  <TableCell >
-                    <IconButton color="primary" onClick={() => handleEdit(khoa)}>
+                  <TableCell>
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEdit(khoa)}
+                    >
                       <EditIcon />
                     </IconButton>
                   </TableCell>
@@ -282,34 +345,26 @@ const QuanLyKhoa = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 15]}
           component="div"
-          count={danhSachKhoa.length} // Tổng số khóa
+          count={filteredKhoa.length} // Tổng số khóa
           rowsPerPage={rowsPerPage}
           page={page - 1} // MUI bắt đầu từ 0
+          labelRowsPerPage="Số dòng mỗi trang"
           onPageChange={(event, newPage) => setPage(newPage + 1)}
           onRowsPerPageChange={(event) => {
             setRowsPerPage(parseInt(event.target.value, 10));
             setPage(1); // Quay lại trang đầu khi đổi số dòng
           }}
         />
-
       </TableContainer>
 
       {/* Form thêm khóa mới */}
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedKhoa ? 'Chỉnh sửa khóa' : 'Thêm khóa mới'}</DialogTitle>
+        <DialogTitle>
+          {selectedKhoa ? "Chỉnh sửa khóa" : "Thêm khóa mới"}
+        </DialogTitle>
 
         <DialogContent>
           <Box py={2}>
-            <TextField
-              fullWidth
-              label="Tên khóa"
-              name="ten_khoa"
-              value={formData.ten_khoa}
-              onChange={handleInputChange}
-              margin="normal"
-              variant="outlined"
-            />
-
             <Autocomplete
               options={danhSachHeDaoTao}
               getOptionLabel={(option) => option.ten_he_dao_tao}
@@ -325,10 +380,28 @@ const QuanLyKhoa = () => {
                 />
               )}
             />
+            <TextField
+              fullWidth
+              label="Mã khóa"
+              name="ma_khoa"
+              value={formData.ma_khoa}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="Tên khóa"
+              name="ten_khoa"
+              value={formData.ten_khoa}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+            />
 
             <TextField
               fullWidth
-              label="Năm học"
+              label="Niên khóa"
               name="nam_hoc"
               value={formData.nam_hoc}
               onChange={handleInputChange}
@@ -348,7 +421,7 @@ const QuanLyKhoa = () => {
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}
           >
-            {loading ? 'Đang lưu...' : (selectedKhoa ? 'Cập nhật' : 'Lưu')}
+            {loading ? "Đang lưu..." : selectedKhoa ? "Cập nhật" : "Lưu"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -358,9 +431,13 @@ const QuanLyKhoa = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

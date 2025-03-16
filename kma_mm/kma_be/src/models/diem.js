@@ -29,10 +29,6 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      lan_thi: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
       diem_tp1: {
         type: DataTypes.FLOAT,
         allowNull: true,
@@ -45,15 +41,15 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_ck: {
+      diem_ck_1: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_he_4: {
+      diem_he_4_1: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_chu: {
+      diem_chu_1: {
         type: DataTypes.STRING(2),
         allowNull: true,
       },
@@ -65,8 +61,24 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(50),
         allowNull: true,
       },
-      diem_hp: {
+      diem_hp_1: {
         type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      diem_ck_2: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      diem_hp_2: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      diem_he_4_2: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      diem_chu_2: {
+        type: DataTypes.STRING(2),
         allowNull: true,
       },
     },

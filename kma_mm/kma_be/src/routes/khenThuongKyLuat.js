@@ -1,6 +1,6 @@
 const express = require("express");
 const KhenThuongKyLuatController = require("../controllers/khenThuongKyLuatController");
-const { authQuanLyHocVienMiddleWare } = require("../middelWare/authMiddelWare");
+// const { authQuanLyHocVienMiddleWare } = require("../middelWare/authMiddelWare");
 const router = express.Router();
 
 router.post(
@@ -8,7 +8,11 @@ router.post(
 
   KhenThuongKyLuatController.create
 );
-router.get("/", authQuanLyHocVienMiddleWare, KhenThuongKyLuatController.getAll);
+router.get(
+  "/",
+  // authQuanLyHocVienMiddleWare,
+  KhenThuongKyLuatController.getAll
+);
 router.get(
   "/:id",
 

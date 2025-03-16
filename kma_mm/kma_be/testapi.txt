@@ -57,7 +57,8 @@ CRUD khoadaotao
     json mẫu:
         {
             "he_dao_tao_id": 1,
-            "ten_khoa": "CT6",
+            "ma_khoa": "AT18",
+            "ten_khoa": "An toan 18",
             "nam_hoc": "2024-2025"
         }
 Lớp: 
@@ -67,3 +68,25 @@ CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
         {
         "khoa_dao_tao_id": "1"
         }
+kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
+    http://localhost:8000/kehoachmonhoc
+    json mẫu:
+        {
+        "danh_muc_id": 1,
+        "mon_hoc_id": 1,
+        "ky_hoc": 3,
+        "bat_buoc": 1
+        }
+thời khoá biểu: "lop_id","mon_hoc_id","giang_vien_id" bắt buộc
+    http://localhost:8000/thoikhoabieu
+    json mẫu:
+        {
+        "lop_id": 1,
+        "mon_hoc_id": 1,
+        "giang_vien_id": 1,
+        "phong_hoc": "103 TA1"
+        }
+    http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&lop_id=1&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&page=1&pageSize=5
+    http://localhost:8000/thoikhoabieu/filter?lop_id=1&page=1&pageSize=5

@@ -32,6 +32,7 @@ import ManageObjects from "./components/admin/ManageObject";
 import ManageDepartments from "./components/admin/ManageDepartment";
 import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
+import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 
 
 const App = () => {

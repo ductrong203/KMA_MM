@@ -68,9 +68,9 @@ const QuanLyGiangViens = () => {
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">QUẢN LÝ GIẢNG VIÊN</Typography>
+                <Typography variant="h4">QUẢN LÝ GIẢNG VIÊN/NHÂN VIÊN</Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenForm(true)}>
-                    Thêm giảng viên
+                    Thêm giảng viên/nhân viên
                 </Button>
             </Box>
 
@@ -78,9 +78,9 @@ const QuanLyGiangViens = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Mã Giảng Viên</TableCell>
-                            <TableCell>Tên Giảng Viên</TableCell>
-                            <TableCell>Giảng Viên</TableCell>
+                            <TableCell>Mã Giảng Viên/Nhân viên</TableCell>
+                            <TableCell>Tên Giảng Viên/Nhân viên</TableCell>
+                            <TableCell>Giảng Viên/Nhân viên</TableCell>
                             <TableCell align="right">Hành động</TableCell>
                         </TableRow>
                     </TableHead>
@@ -89,7 +89,12 @@ const QuanLyGiangViens = () => {
                             <TableRow key={giangVien.ma_giang_vien}>
                                 <TableCell>{giangVien.ma_giang_vien}</TableCell>
                                 <TableCell>{giangVien.ho_ten}</TableCell>
-                                <TableCell>{!giangVien.la_giang_vien_moi?"Cơ hữu":"Thỉnh giảng"}</TableCell>
+                                <TableCell> {giangVien.la_giang_vien_moi
+                                    ? "Thỉnh giảng"
+                                    : giangVien.thuoc_khoa
+                                        ? "Cơ hữu"
+                                        : "Nhân viên"}
+                                </TableCell>
                                 <TableCell align="right">
                                     <IconButton color="primary" onClick={() => handleEdit(giangVien)}>
                                         <EditIcon />
