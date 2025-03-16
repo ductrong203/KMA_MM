@@ -10,11 +10,11 @@ module.exports = {
           primaryKey: true,
           autoIncrement: true, // Thêm autoIncrement cho cột id
         },
-        danh_muc_id: {
+        khoa_dao_tao_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
           references: {
-            model: "danh_muc_dao_tao", // Bảng này phải tồn tại trong cơ sở dữ liệu
+            model: "khoa_dao_tao", // Bảng này phải tồn tại trong cơ sở dữ liệu
             key: "id",
           },
         },
@@ -44,9 +44,9 @@ module.exports = {
             fields: [{ name: "id" }],
           },
           {
-            name: "danh_muc_id",
+            name: "khoa_dao_tao",
             using: "BTREE",
-            fields: [{ name: "danh_muc_id" }],
+            fields: [{ name: "khoa_dao_tao_id" }],
           },
           {
             name: "mon_hoc_id",

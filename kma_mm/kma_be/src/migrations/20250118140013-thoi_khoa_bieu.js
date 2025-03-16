@@ -8,9 +8,18 @@ module.exports = {
         primaryKey: true,
         autoIncrement: true,
       },
-      lop_id: {
+      ky_hoc: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      dot_hoc: {
         type: Sequelize.INTEGER,
         allowNull: true,
+        defaultValue: 1,
+      },
+      lop_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
           model: "lop",
           key: "id",
@@ -18,19 +27,15 @@ module.exports = {
       },
       mon_hoc_id: {
         type: Sequelize.INTEGER,
-        allowNull: true,
+        allowNull: false,
         references: {
           model: "mon_hoc",
           key: "id",
         },
       },
-      giang_vien_id: {
-        type: Sequelize.INTEGER,
+      giang_vien: {
+        type: Sequelize.STRING(100),
         allowNull: true,
-        references: {
-          model: "giang_vien",
-          key: "id",
-        },
       },
       phong_hoc: {
         type: Sequelize.STRING(50),

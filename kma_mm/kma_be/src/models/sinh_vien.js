@@ -11,6 +11,11 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING(50),
       allowNull: true
     },
+    password: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      defaultValue: "1"
+    },
     ngay_sinh: {
       type: DataTypes.DATEONLY,
       allowNull: true
@@ -174,11 +179,6 @@ module.exports = function(sequelize, DataTypes) {
     username: {
       type: DataTypes.STRING(50),
       allowNull: true
-    },
-    password: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-      defaultValue: "1"
     }
   }, {
     sequelize,
