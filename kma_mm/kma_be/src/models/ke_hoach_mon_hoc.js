@@ -7,11 +7,11 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       primaryKey: true
     },
-    danh_muc_id: {
+    khoa_dao_tao_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'danh_muc_dao_tao',
+        model: 'khoa_dao_tao',
         key: 'id'
       }
     },
@@ -45,10 +45,10 @@ module.exports = function(sequelize, DataTypes) {
         ]
       },
       {
-        name: "danh_muc_id",
+        name: "khoa_dao_tao_id",
         using: "BTREE",
         fields: [
-          { name: "danh_muc_id" },
+          { name: "khoa_dao_tao_id" },
         ]
       },
       {
