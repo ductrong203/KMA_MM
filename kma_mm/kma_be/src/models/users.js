@@ -52,10 +52,6 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TINYINT,
       allowNull: false,
       defaultValue: 1
-    },
-    sub_role: {
-      type: DataTypes.STRING(20),
-      allowNull: true
     }
   }, {
     sequelize,

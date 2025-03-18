@@ -32,6 +32,14 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: "1"
     },
+    role: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    sub_role: {
+      type: DataTypes.TINYINT,
+      allowNull: true
+    },
     la_giang_vien_moi: {
       type: DataTypes.TINYINT,
       allowNull: true
