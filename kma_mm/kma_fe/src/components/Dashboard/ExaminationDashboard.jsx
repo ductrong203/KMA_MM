@@ -29,6 +29,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { styled } from '@mui/material/styles';
+import QuanLyDiem from '../Diem/QuanLyDiem';
+import TaoBangDiem from '../Diem/TaoBangDiem';
 
 // Styled component for file upload
 const VisuallyHiddenInput = styled('input')({
@@ -79,13 +81,13 @@ const GradeImportSystem = () => {
 
     // Add these handler functions
     const handleGenerateReport = () => {
-      // Logic to generate the selected report type
-      alert('Đang tạo báo cáo...');
+        // Logic to generate the selected report type
+        alert('Đang tạo báo cáo...');
     };
-    
+
     const handleExportReport = () => {
-      // Logic to export the generated report
-      alert('Xuất báo cáo thành công!');
+        // Logic to export the generated report
+        alert('Xuất báo cáo thành công!');
     };
 
     const handleFileChange = (event) => {
@@ -104,143 +106,143 @@ const GradeImportSystem = () => {
     const handleSearch = () => {
         // Create a sample database of students (in a real app, this would come from an API or database)
         const allStudents = [
-          { 
-            id: 'SV001', 
-            name: 'Lê Hoài Nam', 
-            class: 'CT6', 
-            batch: 'K15', 
-            major: 'CNTT', 
-            educationType: 'CQ',
-            status: 'Thi lần 1', 
-            examNumber: '1',
-            scores: { TP1: 7, TP2: 8, CK1: 3, CK2: null }
-          },
-          { 
-            id: 'SV002', 
-            name: 'Nguyễn Văn Trọng', 
-            class: 'CT6', 
-            batch: 'K15', 
-            major: 'CNTT', 
-            educationType: 'CQ',
-            status: 'Thi lần 1', 
-            examNumber: '1',
-            scores: { TP1: 5, TP2: 6, CK1: 2, CK2: null }
-          },
-          { 
-            id: 'SV003', 
-            name: 'Trần Thị Hương', 
-            class: 'CT6', 
-            batch: 'K15', 
-            major: 'HTTT', 
-            educationType: 'CQ',
-            status: 'Thi lần 2', 
-            examNumber: '2',
-            scores: { TP1: 7, TP2: 8, CK1: 1, CK2: 6 }
-          },
-          { 
-            id: 'SV004', 
-            name: 'Phạm Minh Tuấn', 
-            class: 'CT7', 
-            batch: 'K15', 
-            major: 'KTPM', 
-            educationType: 'CQ',
-            status: 'Thi lần 1', 
-            examNumber: '1',
-            scores: { TP1: 8, TP2: 9, CK1: 7, CK2: null }
-          },
-          { 
-            id: 'SV005', 
-            name: 'Hoàng Thị Mai', 
-            class: 'CT8', 
-            batch: 'K16', 
-            major: 'MMT', 
-            educationType: 'LT',
-            status: 'Thi lần 1', 
-            examNumber: '1',
-            scores: { TP1: 6, TP2: 7, CK1: 4, CK2: null }
-          },
-          { 
-            id: 'SV006', 
-            name: 'Vũ Đức Anh', 
-            class: 'CT7', 
-            batch: 'K16', 
-            major: 'CNTT', 
-            educationType: 'VLVH',
-            status: 'Thi lần 2', 
-            examNumber: '2',
-            scores: { TP1: 4, TP2: 5, CK1: 2, CK2: 5 }
-          }
+            {
+                id: 'SV001',
+                name: 'Lê Hoài Nam',
+                class: 'CT6',
+                batch: 'K15',
+                major: 'CNTT',
+                educationType: 'CQ',
+                status: 'Thi lần 1',
+                examNumber: '1',
+                scores: { TP1: 7, TP2: 8, CK1: 3, CK2: null }
+            },
+            {
+                id: 'SV002',
+                name: 'Nguyễn Văn Trọng',
+                class: 'CT6',
+                batch: 'K15',
+                major: 'CNTT',
+                educationType: 'CQ',
+                status: 'Thi lần 1',
+                examNumber: '1',
+                scores: { TP1: 5, TP2: 6, CK1: 2, CK2: null }
+            },
+            {
+                id: 'SV003',
+                name: 'Trần Thị Hương',
+                class: 'CT6',
+                batch: 'K15',
+                major: 'HTTT',
+                educationType: 'CQ',
+                status: 'Thi lần 2',
+                examNumber: '2',
+                scores: { TP1: 7, TP2: 8, CK1: 1, CK2: 6 }
+            },
+            {
+                id: 'SV004',
+                name: 'Phạm Minh Tuấn',
+                class: 'CT7',
+                batch: 'K15',
+                major: 'KTPM',
+                educationType: 'CQ',
+                status: 'Thi lần 1',
+                examNumber: '1',
+                scores: { TP1: 8, TP2: 9, CK1: 7, CK2: null }
+            },
+            {
+                id: 'SV005',
+                name: 'Hoàng Thị Mai',
+                class: 'CT8',
+                batch: 'K16',
+                major: 'MMT',
+                educationType: 'LT',
+                status: 'Thi lần 1',
+                examNumber: '1',
+                scores: { TP1: 6, TP2: 7, CK1: 4, CK2: null }
+            },
+            {
+                id: 'SV006',
+                name: 'Vũ Đức Anh',
+                class: 'CT7',
+                batch: 'K16',
+                major: 'CNTT',
+                educationType: 'VLVH',
+                status: 'Thi lần 2',
+                examNumber: '2',
+                scores: { TP1: 4, TP2: 5, CK1: 2, CK2: 5 }
+            }
         ];
-      
+
         // Filter students based on selected criteria
         let filteredStudents = [...allStudents];
-      
+
         // Apply filters only if they have been selected
         if (year) {
-          // In a real application, you would filter by year
-          // Since our sample data doesn't have year info, we'll skip this filter
-          console.log(`Filtering by academic year: ${year}`);
+            // In a real application, you would filter by year
+            // Since our sample data doesn't have year info, we'll skip this filter
+            console.log(`Filtering by academic year: ${year}`);
         }
-      
+
         if (semester) {
-          // In a real application, you would filter by semester
-          console.log(`Filtering by semester: ${semester}`);
+            // In a real application, you would filter by semester
+            console.log(`Filtering by semester: ${semester}`);
         }
-      
+
         if (examPeriod) {
-          // In a real application, you would filter by exam period
-          console.log(`Filtering by exam period: ${examPeriod}`);
+            // In a real application, you would filter by exam period
+            console.log(`Filtering by exam period: ${examPeriod}`);
         }
-      
+
         if (batch) {
-          filteredStudents = filteredStudents.filter(student => student.batch === batch);
+            filteredStudents = filteredStudents.filter(student => student.batch === batch);
         }
-      
+
         if (major) {
-          filteredStudents = filteredStudents.filter(student => student.major === major);
+            filteredStudents = filteredStudents.filter(student => student.major === major);
         }
-      
+
         if (course) {
-          // In a real application, you would filter by course
-          // Since our sample data doesn't have course info, we'll skip this filter
-          console.log(`Filtering by course: ${course}`);
+            // In a real application, you would filter by course
+            // Since our sample data doesn't have course info, we'll skip this filter
+            console.log(`Filtering by course: ${course}`);
         }
-      
+
         if (classGroup && classGroup !== 'ALL') {
-          filteredStudents = filteredStudents.filter(student => student.class === classGroup);
+            filteredStudents = filteredStudents.filter(student => student.class === classGroup);
         }
-      
+
         if (examNumber) {
-          filteredStudents = filteredStudents.filter(student => student.examNumber === examNumber);
+            filteredStudents = filteredStudents.filter(student => student.examNumber === examNumber);
         }
-      
+
         if (educationType) {
-          filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
+            filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
         }
-      
+
         // Update the students state with filtered results
         setStudents(filteredStudents);
-      
+
         // Provide feedback to the user
         if (filteredStudents.length > 0) {
-          alert(`Đã tìm thấy ${filteredStudents.length} sinh viên phù hợp với các tiêu chí.`);
+            alert(`Đã tìm thấy ${filteredStudents.length} sinh viên phù hợp với các tiêu chí.`);
         } else {
-          alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
         }
-      
+
         // Log the filter criteria for debugging
-        console.log('Search criteria:', { 
-          year, 
-          semester, 
-          examPeriod, 
-          batch, 
-          major, 
-          course, 
-          classGroup, 
-          examNumber, 
-          educationType 
+        console.log('Search criteria:', {
+            year,
+            semester,
+            examPeriod,
+            batch,
+            major,
+            course,
+            classGroup,
+            examNumber,
+            educationType
         });
-      };
+    };
 
     const handleViewSearch = () => {
         // Logic to search students for viewing
@@ -291,6 +293,7 @@ const GradeImportSystem = () => {
 
             <Tabs value={tabValue} onChange={handleTabChange} aria-label="grade management tabs">
                 <Tab label="Import Điểm" />
+                <Tab label="Tạo Bảng Điểm" />
                 <Tab label="Quản lý Điểm" />
                 <Tab label="Xem Danh Sách Điểm" />
                 <Tab label="Báo cáo" />
@@ -424,254 +427,14 @@ const GradeImportSystem = () => {
                         </Typography>
                     </Paper>
                 )}
-
-                {tabValue === 1 && (
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Quản lý Điểm
-                        </Typography>
-
-                        <Grid container spacing={2} sx={{ mb: 3 }}>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Năm học</InputLabel>
-                                    <Select
-                                        value={year}
-                                        label="Năm học"
-                                        onChange={(e) => setYear(e.target.value)}
-                                    >
-                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
-                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
-                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học kỳ</InputLabel>
-                                    <Select
-                                        value={semester}
-                                        label="Học kỳ"
-                                        onChange={(e) => setSemester(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Học kỳ 1</MenuItem>
-                                        <MenuItem value="2">Học kỳ 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Đợt học</InputLabel>
-                                    <Select
-                                        value={examPeriod}
-                                        label="Đợt học"
-                                        onChange={(e) => setExamPeriod(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Đợt 1</MenuItem>
-                                        <MenuItem value="2">Đợt 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Khóa</InputLabel>
-                                    <Select
-                                        value={batch}
-                                        label="Khóa"
-                                        onChange={(e) => setBatch(e.target.value)}
-                                    >
-                                        <MenuItem value="K14">K14</MenuItem>
-                                        <MenuItem value="K15">K15</MenuItem>
-                                        <MenuItem value="K16">K16</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Chuyên ngành</InputLabel>
-                                    <Select
-                                        value={major}
-                                        label="Chuyên ngành"
-                                        onChange={(e) => setMajor(e.target.value)}
-                                    >
-                                        <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
-                                        <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
-                                        <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
-                                        <MenuItem value="MMT">Mạng máy tính</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học phần</InputLabel>
-                                    <Select
-                                        value={course}
-                                        label="Học phần"
-                                        onChange={(e) => setCourse(e.target.value)}
-                                    >
-                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
-                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
-                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
-                                        <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
-                                        <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Lớp</InputLabel>
-                                    <Select
-                                        value={classGroup}
-                                        label="Lớp"
-                                        onChange={(e) => setClassGroup(e.target.value)}
-                                    >
-                                        <MenuItem value="ALL">Tất cả</MenuItem>
-                                        <MenuItem value="CT6">CT6</MenuItem>
-                                        <MenuItem value="CT7">CT7</MenuItem>
-                                        <MenuItem value="CT8">CT8</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Lần thi</InputLabel>
-                                    <Select
-                                        value={examNumber}
-                                        label="Lần thi"
-                                        onChange={(e) => setExamNumber(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Lần 1</MenuItem>
-                                        <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Hệ đào tạo</InputLabel>
-                                    <Select
-                                        value={educationType}
-                                        label="Hệ đào tạo"
-                                        onChange={(e) => setEducationType(e.target.value)}
-                                    >
-                                        <MenuItem value="CQ">Chính quy</MenuItem>
-                                        <MenuItem value="LT">Liên thông</MenuItem>
-                                        <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<SearchIcon />}
-                                    onClick={handleSearch}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Tìm kiếm
-                                </Button>
-                            </Grid>
-                        </Grid>
-
-                        <Divider sx={{ my: 2 }} />
-
-                        <TableContainer component={Paper}>
-                            <Table sx={{ minWidth: 650 }} aria-label="grade table">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Mã SV</TableCell>
-                                        <TableCell>Họ và tên</TableCell>
-                                        <TableCell>Lớp</TableCell>
-                                        <TableCell>Trạng thái</TableCell>
-                                        <TableCell>TP1</TableCell>
-                                        <TableCell>TP2</TableCell>
-                                        <TableCell>CK lần 1</TableCell>
-                                        <TableCell>CK lần 2</TableCell>
-                                        <TableCell>Đăng ký học lại</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {students.map((student) => (
-                                        <TableRow key={student.id}>
-                                            <TableCell>{student.id}</TableCell>
-                                            <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.class}</TableCell>
-                                            <TableCell>{student.status}</TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    type="number"
-                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                    value={student.scores.TP1 === null ? '' : student.scores.TP1}
-                                                    onChange={(e) => handleScoreChange(student.id, 'TP1', e.target.value)}
-                                                    sx={{ width: '70px' }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    type="number"
-                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                    value={student.scores.TP2 === null ? '' : student.scores.TP2}
-                                                    onChange={(e) => handleScoreChange(student.id, 'TP2', e.target.value)}
-                                                    sx={{ width: '70px' }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    type="number"
-                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                    value={student.scores.CK1 === null ? '' : student.scores.CK1}
-                                                    onChange={(e) => handleScoreChange(student.id, 'CK1', e.target.value)}
-                                                    sx={{ width: '70px' }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    type="number"
-                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                    value={student.scores.CK2 === null ? '' : student.scores.CK2}
-                                                    onChange={(e) => handleScoreChange(student.id, 'CK2', e.target.value)}
-                                                    sx={{ width: '70px' }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            checked={student.retakeRegistered || false}
-                                                            onChange={(e) => handleRetakeRegistration(student.id, e.target.checked)}
-                                                        />
-                                                    }
-                                                    label=""
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<SaveIcon />}
-                                onClick={handleSave}
-                            >
-                                Lưu Điểm
-                            </Button>
-                        </Box>
-                    </Paper>
+                {tabValue == 1 && (
+                    <TaoBangDiem />
+                )}
+                {tabValue === 2 && (
+                    <QuanLyDiem onSave={handleSave} sampleStudents={sampleStudents} />
                 )}
 
-                {tabValue === 2 && (
+                {tabValue === 3 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Xem Danh Sách Điểm
@@ -883,7 +646,7 @@ const GradeImportSystem = () => {
                     </Paper>
                 )}
 
-                {tabValue === 3 && (
+                {tabValue === 4 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Báo cáo
