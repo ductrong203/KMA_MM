@@ -1,116 +1,85 @@
-const { initModels } = require("../models/init-models");
-const { sequelize } = require("../models");
-const models = initModels(sequelize);
-const { diem, sinh_vien, mon_hoc } = models;
+const { diem, sinh_vien, thoi_khoa_bieu } = require('../models');
 
 class DiemService {
-    static async getAll({ page = 1, pageSize = 10, ma_sinh_vien, ma_mon_hoc }) {
-        const offset = (page - 1) * pageSize;
-        const whereClause = {};
-    
-        // Kiểm tra sinh viên nếu có ma_sinh_vien
-        if (ma_sinh_vien) {
-            const sinhVien = await sinh_vien.findOne({ where: { ma_sinh_vien } });
-            if (sinhVien) {
-                whereClause.sinh_vien_id = sinhVien.id;
-            } else {
-                return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
-            }
-        }
-    
-        // Kiểm tra môn học nếu có ma_mon_hoc
-        if (ma_mon_hoc) {
-            const monHoc = await mon_hoc.findOne({ where: { ma_mon_hoc } });
-            if (monHoc) {
-                whereClause.mon_hoc_id = monHoc.id;
-            } else {
-                return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
-            }
-        }
-    
-        const { count, rows } = await diem.findAndCountAll({
-            where: whereClause,
-            limit: pageSize,
-            offset: offset,
-            order: [['id', 'DESC']],
-            include: [
-                { model: sinh_vien, as: 'sinh_vien', attributes: ['id', 'ma_sinh_vien', 'ten'] },
-                { model: mon_hoc, as: 'mon_hoc', attributes: ['id', 'ma_mon_hoc', 'ten_mon_hoc'] }
-            ]
-        });
-    
-        return {
-            totalItems: count,
-            totalPages: Math.ceil(count / pageSize),
-            currentPage: page,
-            pageSize: pageSize,
-            data: rows
-        };
-    } 
-    
-    static async getByPage({ page = 1, pageSize = 10 }) {
-        page = parseInt(page) || 1;
-        pageSize = parseInt(pageSize) || 10;
-        const offset = (page - 1) * pageSize;
-    
-        try {
-            const { count, rows } = await diem.findAndCountAll({
-                limit: pageSize,
-                offset: offset,
-                order: [['id', 'DESC']],
-                include: [
-                    { model: sinh_vien, as: 'sinh_vien', attributes: ['id', 'ma_sinh_vien', 'ten'] },
-                    { model: mon_hoc, as: 'mon_hoc', attributes: ['id', 'ma_mon_hoc', 'ten_mon_hoc'] }
-                ]
-            });
-    
-            return {
-                totalItems: count,
-                totalPages: Math.ceil(count / pageSize),
-                currentPage: page,
-                pageSize: pageSize,
-                data: rows
-            };
-        } catch (error) {
-            console.error("Lỗi truy vấn điểm:", error);
-            return { error: "Đã xảy ra lỗi khi truy vấn dữ liệu" };
-        }
+  static async filter({ sinh_vien_id, thoi_khoa_bieu_id, page = 1, pageSize = 10 }) {
+    page = parseInt(page) || 1;
+    pageSize = parseInt(pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    const whereClause = {};
+
+    if (sinh_vien_id) {
+      const foundSinhVien = await sinh_vien.findByPk(sinh_vien_id);
+      if (foundSinhVien) {
+        whereClause.sinh_vien_id = sinh_vien_id;
+      } else {
+        return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
+      }
     }
-    
+
+    if (thoi_khoa_bieu_id) {
+      const foundTKB = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+      if (foundTKB) {
+        whereClause.thoi_khoa_bieu_id = thoi_khoa_bieu_id;
+      } else {
+        return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
+      }
+    }
+
+    const { count, rows } = await diem.findAndCountAll({
+      where: whereClause,
+      limit: pageSize,
+      offset: offset,
+      order: [['id', 'DESC']]
+    });
+
+    return {
+      totalItems: count,
+      totalPages: Math.ceil(count / pageSize),
+      currentPage: page,
+      pageSize: pageSize,
+      data: rows
+    };
+  }
 
   static async getById(id) {
-    return await diem.findByPk(id, {
-      include: [
-        { model: sinh_vien, attributes: ['ma_sinh_vien', 'ten_sinh_vien'] },
-        { model: mon_hoc, attributes: ['ma_mon_hoc', 'ten_mon_hoc'] }
-      ]
-    });
+    return await diem.findByPk(id);
   }
 
   static async create(data) {
-    const { sinh_vien_id, mon_hoc_id } = data;
+    const { sinh_vien_id, thoi_khoa_bieu_id } = data;
 
-    const sinhVienExists = await sinh_vien.findByPk(sinh_vien_id);
-    const monHocExists = await mon_hoc.findByPk(mon_hoc_id);
+    const sinhVienExist = await sinh_vien.findByPk(sinh_vien_id);
+    if (!sinhVienExist) throw new Error('Sinh viên không tồn tại.');
 
-    if (!sinhVienExists || !monHocExists) {
-      throw new Error('Sinh viên hoặc Môn học không tồn tại!');
-    }
+    const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+    if (!tkbExist) throw new Error('Thời khóa biểu không tồn tại.');
 
     return await diem.create(data);
   }
 
   static async update(id, data) {
-    const diemData = await diem.findByPk(id);
-    if (!diemData) throw new Error('Không tìm thấy điểm!');
+    const record = await diem.findByPk(id);
+    if (!record) throw new Error('Điểm không tồn tại.');
 
-    await diem.update(data, { where: { id } });
-    return await diem.findByPk(id);
+    const { sinh_vien_id, thoi_khoa_bieu_id } = data;
+
+    if (sinh_vien_id) {
+      const sinhVienExist = await sinh_vien.findByPk(sinh_vien_id);
+      if (!sinhVienExist) throw new Error('Sinh viên không tồn tại.');
+    }
+
+    if (thoi_khoa_bieu_id) {
+      const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+      if (!tkbExist) throw new Error('Thời khóa biểu không tồn tại.');
+    }
+
+    return await record.update(data);
   }
 
   static async delete(id) {
-    const deleted = await diem.destroy({ where: { id } });
-    if (!deleted) throw new Error('Không tìm thấy điểm!');
+    const record = await diem.findByPk(id);
+    if (!record) throw new Error('Điểm không tồn tại.');
+    await record.destroy();
     return { message: 'Xóa thành công!' };
   }
 }

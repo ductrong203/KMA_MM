@@ -1,4 +1,4 @@
-const { thoi_khoa_bieu, lop, mon_hoc, giang_vien } = require('../models');
+const { thoi_khoa_bieu, lop, mon_hoc } = require('../models');
 
 class ThoiKhoaBieuService {
   static async getAll() {
@@ -9,7 +9,9 @@ class ThoiKhoaBieuService {
     return await thoi_khoa_bieu.findByPk(id);
   }
 
-  static async getByPage(page = 1, pageSize = 10) {
+  static async getByPage({page = 1, pageSize = 10}) {
+    page = parseInt(page) || 1;
+    pageSize = parseInt(pageSize) || 10;
     const offset = (page - 1) * pageSize;
     const { count, rows } = await thoi_khoa_bieu.findAndCountAll({
       limit: pageSize,
@@ -26,31 +28,52 @@ class ThoiKhoaBieuService {
     };
   }
 
-  static async filter({ ky_hoc, lop_id, page = 1, pageSize = 10 }) {
+  static async filter({ ky_hoc, ma_mon_hoc, ma_lop, page = 1, pageSize = 10 }) {
+    page = parseInt(page) || 1;
+    pageSize = parseInt(pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const whereClause = {}; // Nếu không truyền thì lấy tất cả
+    const whereClause = {};  
 
-    if (ky_hoc) whereClause.ky_hoc = ky_hoc;
-    if (lop_id) whereClause.lop_id = lop_id;
+    if (ma_lop) {
+      const foundLop = await lop.findOne({ where: { ma_lop } });
+      if (foundLop) {
+          whereClause.lop_id = foundLop.id;
+      } else {
+          return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
+      }
+  }
+
+    if (ma_mon_hoc) {
+        const monHoc = await mon_hoc.findOne({ where: { ma_mon_hoc } });
+        if (monHoc) {
+            whereClause.mon_hoc_id = monHoc.id; 
+        } else {
+            return { totalItems: 0, totalPages: 0, currentPage: page, pageSize, data: [] };
+        }
+    }
+
+    if (ky_hoc) {
+        whereClause.ky_hoc = ky_hoc; 
+    }
 
     const { count, rows } = await thoi_khoa_bieu.findAndCountAll({
-      where: whereClause,  // Nếu không truyền gì, whereClause sẽ rỗng -> lấy tất cả dữ liệu
-      limit: pageSize,
-      offset: offset,
-      order: [['id', 'DESC']]
+        where: whereClause, 
+        limit: pageSize,
+        offset: offset,
+        order: [['id', 'DESC']]
     });
 
     return {
-      totalItems: count,
-      totalPages: Math.ceil(count / pageSize),
-      currentPage: page,
-      pageSize: pageSize,
-      data: rows
+        totalItems: count,
+        totalPages: Math.ceil(count / pageSize),
+        currentPage: page,
+        pageSize: pageSize,
+        data: rows
     };
-  }
+}
 
   static async create(data) {
-    const { lop_id, mon_hoc_id, giang_vien_id, phong_hoc, tiet_hoc, trang_thai, ky_hoc } = data;
+    const { lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc } = data;
 
     const lopExist = await lop.findByPk(lop_id);
     if (!lopExist) throw new Error('Lớp không tồn tại.');
@@ -58,10 +81,7 @@ class ThoiKhoaBieuService {
     const monHocExist = await mon_hoc.findByPk(mon_hoc_id);
     if (!monHocExist) throw new Error('Môn học không tồn tại.');
 
-    const giangVienExist = await giang_vien.findByPk(giang_vien_id);
-    if (!giangVienExist) throw new Error('Giảng viên không tồn tại.');
-
-    return await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien_id, phong_hoc, tiet_hoc, trang_thai, ky_hoc });
+    return await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc });
   }
 
   static async update(id, data) {
