@@ -18,7 +18,7 @@ const giangVienRouter = require("./giangVien");
 const khoaDaoTaoRouter = require("./khoaDaoTao");
 const monHocRouter = require("./monHoc");
 
-const monHocRouter = require("./monHoc");
+//const monHocRouter = require("./monHoc");
 
 
 const keHoachMonHocRouter = require("./keHoachMonHoc");
