@@ -149,3 +149,11 @@ http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&mon_hoc_id=1&lop_id=
 lấy danh sách điểm và sinh viên theo thoi_khoa_bieu_id (chỉ include mã sinh viên, họ đệm, tên)
 get
 http://localhost:8000/diem/filter?page=1&pageSize=10&thoi_khoa_bieu_id=1
+
+tạo bảng điểm cho sinh viên lớp biên chế 
+post
+http://localhost:8000/diem/createDiemForClass
+json
+{
+  "thoi_khoa_bieu_id": 2
+}

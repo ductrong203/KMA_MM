@@ -67,6 +67,50 @@ class DiemService {
     return await diem.create(data);
   }
 
+  static async createDiemForClass(thoi_khoa_bieu_id) {
+    try {
+      // Tìm thông tin thời khóa biểu
+      const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+      if (!tkb) {
+        throw new Error("Không tìm thấy thời khóa biểu!");
+      }
+
+      // Lấy danh sách sinh viên thuộc lớp của thời khóa biểu
+      const sinhViens = await sinh_vien.findAll({
+        where: { lop_id: tkb.lop_id },
+        attributes: ['id'] // Chỉ lấy ID sinh viên
+      });
+
+      if (!sinhViens.length) {
+        throw new Error("Không có sinh viên nào trong lớp này!");
+      }
+
+      // Tạo danh sách điểm cho sinh viên
+      const diemList = sinhViens.map(sv => ({
+        sinh_vien_id: sv.id,
+        thoi_khoa_bieu_id: thoi_khoa_bieu_id,
+        lan_hoc: null,
+        lan_thi: null,
+        diem_tp1: null,
+        diem_tp2: null,
+        diem_gk: null,
+        diem_ck: null,
+        diem_he_4: null,
+        diem_chu: null,
+        ngay_cap_nhat: null,
+        trang_thai: null,
+        diem_hp: null
+      }));
+
+      // Bulk insert vào bảng điểm
+      const createdDiem = await diem.bulkCreate(diemList);
+
+      return { message: "Tạo bảng điểm thành công!", data: createdDiem };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async update(id, data) {
     const record = await diem.findByPk(id);
     if (!record) throw new Error('Điểm không tồn tại.');

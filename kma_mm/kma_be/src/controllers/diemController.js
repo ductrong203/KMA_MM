@@ -29,6 +29,20 @@ class DiemController {
     }
   }
 
+  static async createDiemForClass(req, res) {
+    try {
+      const { thoi_khoa_bieu_id } = req.body;
+      if (!thoi_khoa_bieu_id) {
+        return res.status(400).json({ message: "Thiếu thoi_khoa_bieu_id!" });
+      }
+
+      const result = await DiemService.createDiemForClass(thoi_khoa_bieu_id);
+      return res.status(201).json(result);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+
   static async update(req, res) {
     try {
       const data = await DiemService.update(req.params.id, req.body);
