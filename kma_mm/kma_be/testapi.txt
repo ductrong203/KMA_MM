@@ -77,16 +77,40 @@ kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
         "ky_hoc": 3,
         "bat_buoc": 1
         }
-thời khoá biểu: "lop_id","mon_hoc_id","giang_vien_id" bắt buộc
+thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
     http://localhost:8000/thoikhoabieu
     json mẫu:
-        {
-        "lop_id": 1,
-        "mon_hoc_id": 1,
-        "giang_vien_id": 1,
-        "phong_hoc": "103 TA1"
-        }
+{
+  "ky_hoc": 2025,
+  "dot_hoc": 1,
+  "lop_id": 1,
+  "mon_hoc_id": 1,
+  "giang_vien": "Nguyễn Văn A",
+  "phong_hoc": "101",
+  "tiet_hoc": "2-4",
+  "trang_thai": 1
+}
     http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&lop_id=1&page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?lop_id=1&page=1&pageSize=5
+
+    http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&ma_mon_hoc=mh1&ma_lop=l1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+
+Điểm: "sinh_vien_id", "thoi_khoa_bieu_id" bắt buộc
+GET
+http://localhost:8000/diem/filter?page=1&pageSize=10?sinh_vien_id=1&thoi_khoa_bieu_id=1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+POST
+http://localhost:8000/diem
+{
+  "sinh_vien_id": 1,
+  "thoi_khoa_bieu_id": 1,
+  "lan_hoc": 1,
+  "lan_thi": 1,
+  "diem_tp1": 8.5,
+  "diem_tp2": 7.0,
+  "diem_gk": 7.5,
+  "diem_ck": 9.0,
+  "diem_he_4": 3.5,
+  "diem_chu": "B+",
+  "ngay_cap_nhat": "2025-03-18",
+  "trang_thai": "Hoàn thành",
+  "diem_hp": 3.7
+}
