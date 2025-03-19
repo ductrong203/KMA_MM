@@ -38,6 +38,15 @@ class ThoiKhoaBieuController {
     }
   }
 
+  static async filterbyid(req, res) {
+    try {
+      const data = await ThoiKhoaBieuService.filterbyid(req.query);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async create(req, res) {
     try {
       const data = await ThoiKhoaBieuService.create(req.body);

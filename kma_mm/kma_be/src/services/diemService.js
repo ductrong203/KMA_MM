@@ -1,4 +1,7 @@
-const { diem, sinh_vien, thoi_khoa_bieu } = require('../models');
+const { initModels } = require("../models/init-models");
+const { sequelize } = require("../models");
+const models = initModels(sequelize);
+const { diem, sinh_vien, thoi_khoa_bieu } = models;
 
 class DiemService {
   static async filter({ sinh_vien_id, thoi_khoa_bieu_id, page = 1, pageSize = 10 }) {
@@ -29,7 +32,14 @@ class DiemService {
       where: whereClause,
       limit: pageSize,
       offset: offset,
-      order: [['id', 'DESC']]
+      order: [['id', 'DESC']],
+      include: [
+        {
+            model: sinh_vien,
+            as: 'sinh_vien',
+            attributes: ['ma_sinh_vien', 'ho_dem', 'ten'] 
+        }
+      ]
     });
 
     return {
