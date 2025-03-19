@@ -12,6 +12,11 @@ module.exports = {
         type: Sequelize.STRING(50),
         allowNull: true,
       },
+      password: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+        defaultValue: "1",
+      },
       ngay_sinh: {
         type: Sequelize.DATEONLY,
         allowNull: true,

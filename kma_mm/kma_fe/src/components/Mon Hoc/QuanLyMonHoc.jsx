@@ -955,7 +955,7 @@ const QuanLyMonHoc = () => {
           </Box>
           <Box sx={{ height: 600, width: '100%' }}>
             <DataGrid
-              rows={subjects.length > 0 ? subjects : subjectsMock} // Use mock data if API fails
+              rows={subjects}
               getRowId={(row) => row.id}
               columns={subjectColumns}
               pageSize={10}
