@@ -701,7 +701,7 @@ import {
     createTheme,
     ThemeProvider,
     TextField,
-    InputAdornment,
+    InputAdornment, Autocomplete
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -1253,30 +1253,35 @@ const ThoiKhoaBieu = () => {
                         </Grid>
                     </Grid>
 
-                    {/* Môn học selection with inline search */}
+
+
+
+
+
+
                     <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
                         <Grid item xs={12} sm={8}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Môn học</InputLabel>
-                                <Select
-                                    value={monHocId}
-                                    onChange={handleMonHocChange}
-                                    label="Môn học"
-                                    MenuProps={{
-                                        PaperProps: {
-                                            style: {
-                                                maxHeight: 300,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    {filteredMonHocList.map((monHoc) => (
-                                        <MenuItem key={monHoc.id} value={monHoc.id}>
-                                            {monHoc.ten_mon_hoc}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <Autocomplete
+                                freeSolo
+                                options={filteredMonHocList}
+                                getOptionLabel={(option) => (typeof option === "string" ? option : option.ten_mon_hoc)}
+                                value={filteredMonHocList.find((m) => m.id === monHocId) || monHocId || null}
+                                onChange={(event, newValue) => {
+                                    if (typeof newValue === "string") {
+                                        // Nếu nhập tay, giữ nguyên giá trị chuỗi
+                                        handleMonHocChange({ target: { value: newValue } });
+                                    } else if (newValue) {
+                                        // Nếu chọn từ danh sách, lấy ID của môn học
+                                        handleMonHocChange({ target: { value: newValue.id } });
+                                    } else {
+                                        // Nếu xóa giá trị, đặt thành null
+                                        handleMonHocChange({ target: { value: null } });
+                                    }
+                                }}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Môn học" fullWidth size="small" />
+                                )}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={4}>
                             <TextField
@@ -1296,30 +1301,33 @@ const ThoiKhoaBieu = () => {
                         </Grid>
                     </Grid>
 
-                    {/* Giảng viên selection with inline search */}
+
+
+
+
+
+
+
+
+
                     <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
                         <Grid item xs={12} sm={8}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Giảng viên</InputLabel>
-                                <Select
-                                    value={giangVienId}
-                                    onChange={handleGiangVienChange}
-                                    label="Giảng viên"
-                                    MenuProps={{
-                                        PaperProps: {
-                                            style: {
-                                                maxHeight: 300,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    {filteredGiangVienList.map((giangVien) => (
-                                        <MenuItem key={giangVien.id} value={giangVien.id}>
-                                            {giangVien.ho_ten}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <Autocomplete
+                                freeSolo
+                                options={filteredGiangVienList}
+                                getOptionLabel={(option) => option.ho_ten}
+                                value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
+
+
+                                onChange={(event, newValue) => {
+                                    handleGiangVienChange({ target: { value: newValue ? newValue.id : null } });
+                                }}
+
+
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Giảng viên" fullWidth size="small" />
+                                )}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={4}>
                             <TextField
@@ -1338,6 +1346,7 @@ const ThoiKhoaBieu = () => {
                             />
                         </Grid>
                     </Grid>
+
 
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         {/* Phòng học */}
