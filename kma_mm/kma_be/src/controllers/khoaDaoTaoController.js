@@ -30,6 +30,19 @@ class KhoaDaoTaoController {
     }
   }
 
+  static async getKhoaDaoTaoByDanhMuc(req, res) {
+    const { danhmucdaotaoid } = req.params;
+    try {
+      const khoaDaoTaoList = await KhoaDaoTaoService.getKhoaDaoTaoByDanhMucId(danhmucdaotaoid);
+      if (khoaDaoTaoList.length === 0) {
+        return res.status(404).json({ message: 'Không có khóa đào tạo nào cho danh mục này' });
+      }
+      res.status(200).json(khoaDaoTaoList);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
   static async update(req, res) {
     try {
       const { id } = req.params;

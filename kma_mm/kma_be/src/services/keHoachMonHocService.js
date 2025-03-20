@@ -1,4 +1,4 @@
-const { ke_hoach_mon_hoc, danh_muc_dao_tao, mon_hoc } = require('../models');
+const { ke_hoach_mon_hoc, khoa_dao_tao, mon_hoc } = require('../models');
 
 class KeHoachMonHocService {
   static async getAll() {
@@ -9,16 +9,49 @@ class KeHoachMonHocService {
     return await ke_hoach_mon_hoc.findByPk(id);
   }
 
-  static async create(data) {
-    const { danh_muc_id, mon_hoc_id, ky_hoc, bat_buoc } = data;
+  static async getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+    try {
+      const data = await ke_hoach_mon_hoc.findAll({
+        where: { khoa_dao_tao_id, ky_hoc },
+      });
+      return data;
+    } catch (error) {
+      throw new Error("Lỗi khi lấy dữ liệu kế hoạch môn học");
+    }
+  }
 
-    const danhMuc = await danh_muc_dao_tao.findByPk(danh_muc_id);
-    if (!danhMuc) throw new Error('Danh mục đào tạo không tồn tại.');
+  static async getMonHocByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+    try {
+      const keHoachMonHocList = await ke_hoach_mon_hoc.findAll({
+        where: { khoa_dao_tao_id, ky_hoc },
+        attributes: ["mon_hoc_id"],
+      });
+
+      const monHocIds = keHoachMonHocList.map(kh => kh.mon_hoc_id);
+
+      if (monHocIds.length === 0) return [];
+
+      const danhSachMonHoc = await mon_hoc.findAll({
+        where: { id: monHocIds },
+        attributes: ["id", "ma_mon_hoc", "ten_mon_hoc", "so_tin_chi"],
+      });
+
+      return danhSachMonHoc;
+    } catch (error) {
+      throw new Error("Lỗi khi lấy danh sách môn học");
+    }
+  }
+
+  static async create(data) {
+    const { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc } = data;
+
+    const khoa = await khoa_dao_tao.findByPk(khoa_dao_tao_id);
+    if (!khoa) throw new Error('Khoá đào tạo không tồn tại.');
 
     const monHoc = await mon_hoc.findByPk(mon_hoc_id);
     if (!monHoc) throw new Error('Môn học không tồn tại.');
 
-    return await ke_hoach_mon_hoc.create({ danh_muc_id, mon_hoc_id, ky_hoc, bat_buoc });
+    return await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
   }
 
   static async update(id, data) {

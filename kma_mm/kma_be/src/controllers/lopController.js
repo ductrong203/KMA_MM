@@ -35,6 +35,20 @@ class LopController {
     }
   }
 
+  static async getByKhoaDaoTaoId(req, res) {
+    try {
+        const { khoa_dao_tao_id } = req.query;
+        if (!khoa_dao_tao_id) {
+            return res.status(400).json({ message: "Thiếu khoa_dao_tao_id" });
+        }
+
+        const danhSachLop = await LopService.getByKhoaDaoTaoId(khoa_dao_tao_id);
+        return res.json(danhSachLop);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+  }
+
   static async update(req, res) {
     try {
       const updatedLop = await LopService.updateLop(req.params.id, req.body);

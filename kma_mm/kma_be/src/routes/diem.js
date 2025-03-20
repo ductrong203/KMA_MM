@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const DiemController = require('../controllers/diemController');
 
+router.post('/createDiemForClass', DiemController.createDiemForClass);
 router.get('/filter', DiemController.filter);
 router.get('/:id', DiemController.getById);
 router.post('/', DiemController.create);
