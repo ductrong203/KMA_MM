@@ -626,7 +626,7 @@ const ThoiKhoaBieu = () => {
                         {/* chon khoa hoc  */}
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Kỳ học</InputLabel>
+                                <InputLabel sx={{ backgroundColor: "white" }}>Kỳ học</InputLabel>
                                 <Select value={kyHoc} onChange={handleKyHocChange}>
                                     {kyHocOptions.map((option) => (
                                         <MenuItem key={option} value={option}>
@@ -640,7 +640,7 @@ const ThoiKhoaBieu = () => {
                         {/* Đợt học */}
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Đợt học</InputLabel>
+                                <InputLabel sx={{ backgroundColor: "white" }}>Đợt học</InputLabel>
                                 <Select value={dotHoc} onChange={handleDotHocChange}>
                                     {dotHocOptions.map((option) => (
                                         <MenuItem key={option} value={option}>
@@ -818,7 +818,7 @@ const ThoiKhoaBieu = () => {
 
                     {/* Trạng thái */}
                     <FormControl fullWidth margin="dense">
-                        <InputLabel>Trạng thái</InputLabel>
+                        <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
                         <Select value={trangThai} onChange={handleTrangThaiChange}>
                             {trangThaiOptions.map((option) => (
                                 <MenuItem key={option.value} value={option.value}>
