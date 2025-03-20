@@ -191,7 +191,7 @@ const ThoiKhoaBieu = () => {
         let url = `http://localhost:8000/thoikhoabieu/getbypage?page=${page}&pageSize=${pageSize}`;
 
         if (kyHocFilter || lopIdFilter) {
-            url = `http://localhost:8000/thoikhoabieu/filter?page=${page}&pageSize=${pageSize}`;
+            url = `http://localhost:8000/thoikhoabieu/filterbyid?page=${page}&pageSize=${pageSize}`;
             if (kyHocFilter) url += `&ky_hoc=${kyHocFilter}`;
             if (lopIdFilter) url += `&lop_id=${lopIdFilter}`;
         }
