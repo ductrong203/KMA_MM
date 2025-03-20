@@ -144,7 +144,7 @@ http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=1
 
 lấy danh sách tkb theo lop_id, mon_hoc_id, (ky_hoc)
 get
-http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&mon_hoc_id=1&lop_id=1&ky_hoc=3
+http://localhost:8000/thoikhoabieu/filterbyid?page=1&pageSize=5&mon_hoc_id=1&lop_id=1&ky_hoc=3
 
 lấy danh sách điểm và sinh viên theo thoi_khoa_bieu_id (chỉ include mã sinh viên, họ đệm, tên)
 get
@@ -157,3 +157,12 @@ json
 {
   "thoi_khoa_bieu_id": 2
 }
+
+import file excel điểm giữa kì
+http://localhost:8000/diem/importdiemgk
+post 
+from-data
+key: file ; value: file excel
+
+import file excel điểm cuối kì : tương tự giữa kì, khác link api
+http://localhost:8000/diem/importdiemck
