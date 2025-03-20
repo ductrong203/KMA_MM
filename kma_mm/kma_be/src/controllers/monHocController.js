@@ -46,6 +46,26 @@ const getMonHoc = async (req, res) => {
     }
 }
 
+const getMonHocByIds = async (req, res) => {
+    try {
+        const { ids } = req.query; // Lấy param 'ids' từ query string
+        if (!ids) {
+            return res.status(400).json({
+                status: "ERROR",
+                message: "Vui lòng cung cấp danh sách ID"
+            });
+        }
+
+        const result = await monHocService.getMonHocByIds(ids);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(404).json({
+            status: "ERROR",
+            message: error.message
+        });
+    }
+}
+
 const updateMonHoc = async (req, res) => {
     try {
         const response = await monHocService.updateMonHoc(req.params.ma_mon_hoc, req.body);
@@ -59,5 +79,6 @@ const updateMonHoc = async (req, res) => {
 module.exports = {
     createMonHoc,
     getMonHoc,
-    updateMonHoc
+    updateMonHoc,
+    getMonHocByIds
 };

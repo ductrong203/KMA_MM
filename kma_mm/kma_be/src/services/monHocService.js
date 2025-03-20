@@ -85,9 +85,36 @@ const updateMonHoc = async (id, monHoc) => {
     }
 };
 
+const getMonHocByIds = async (ids) => {
+    try {
+        // Chuyển chuỗi ids thành mảng (nếu được gửi dưới dạng "1,2,3")
+        const idArray = ids.split(',').map(id => id.trim());
+
+        // Tìm các môn học theo danh sách ID
+        const monHocList = await mon_hoc.findAll({
+            where: {
+                id: idArray // Sequelize sẽ tự động hiểu đây là điều kiện IN
+            }
+        });
+
+        // Kiểm tra nếu không tìm thấy môn học nào
+        if (!monHocList || monHocList.length === 0) {
+            throw new Error("Không tìm thấy môn học nào với các ID đã cung cấp");
+        }
+
+        return {
+            status: "OK",
+            message: "Success!",
+            data: monHocList,
+        };
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
 module.exports = {
     createMonHoc,
     getMonHoc,
-    updateMonHoc
+    updateMonHoc,
+    getMonHocByIds
 };
 
