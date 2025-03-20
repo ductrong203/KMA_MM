@@ -3,6 +3,7 @@ const router = express.Router();
 const ThoiKhoaBieuController = require('../controllers/thoiKhoaBieuController');
 
 router.get('/filter', ThoiKhoaBieuController.filter);
+router.get('/filterbyid', ThoiKhoaBieuController.filterbyid);
 router.get('/getbypage', ThoiKhoaBieuController.getByPage);
 router.get('/', ThoiKhoaBieuController.getAll);
 router.get('/:id', ThoiKhoaBieuController.getById);

@@ -36,6 +36,16 @@ class KhoaDaoTaoService {
     return await khoa_dao_tao.findByPk(id);
   }
 
+  static async getKhoaDaoTaoByDanhMucId(danhMucId) {
+    try {
+      return await khoa_dao_tao.findAll({
+        where: { he_dao_tao_id: danhMucId },
+      });
+    } catch (error) {
+      throw new Error('Lỗi khi lấy danh sách khóa đào tạo theo danh mục đào tạo');
+    }
+  }
+
   static async updateKhoaDaoTao(id, updateData) {
     try {
       const khoa = await khoa_dao_tao.findByPk(id);

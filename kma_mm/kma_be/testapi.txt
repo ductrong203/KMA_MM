@@ -114,3 +114,46 @@ http://localhost:8000/diem
   "trang_thai": "Hoàn thành",
   "diem_hp": 3.7
 }
+
+--------
+lấy danh sách điểm của lớp học phần
+-------
+lấy danh sách khoá theo id hệ 
+get
+http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/1
+
+lấy danh sách kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/getbykhoavaky
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách môn học thuộc kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/monhoc
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách lớp theo id khoá đào tạo
+get
+http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=1
+
+lấy danh sách tkb theo lop_id, mon_hoc_id, (ky_hoc)
+get
+http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&mon_hoc_id=1&lop_id=1&ky_hoc=3
+
+lấy danh sách điểm và sinh viên theo thoi_khoa_bieu_id (chỉ include mã sinh viên, họ đệm, tên)
+get
+http://localhost:8000/diem/filter?page=1&pageSize=10&thoi_khoa_bieu_id=1
+
+tạo bảng điểm cho sinh viên lớp biên chế 
+post
+http://localhost:8000/diem/createDiemForClass
+json
+{
+  "thoi_khoa_bieu_id": 2
+}
