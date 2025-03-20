@@ -74,7 +74,7 @@ const ThoiKhoaBieu = () => {
 
 
     // Options for dropdowns
-    const kyHocOptions = [2024, 2025, 2026];
+    const [kyHocOptions, setKyHocOptions] = useState([]);
     const dotHocOptions = [1, 2, 3];
     const trangThaiOptions = [
         { value: 1, label: "Hoạt động" },
@@ -116,22 +116,28 @@ const ThoiKhoaBieu = () => {
 
     }, []);
 
+
+
+
+    //fetch khoa dao tao list
+    const fetchKhoaDaoTaoList = async (heDaoTaoId) => {
+        try {
+            const response = await getDanhSachKhoaDaoTaobyId(heDaoTaoId);
+            setKhoaDaoTao(response);
+
+
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+        }
+    };
+
+
     useEffect(() => {
         if (heDaoTaoId) {
             fetchKhoaDaoTaoList(heDaoTaoId);
         }
     }, [heDaoTaoId]); // Gọi lại khi heDaoTaoId thay đổi
 
-
-    //fetch khoa dao tao 
-    const fetchKhoaDaoTaoList = async (id) => {
-        try {
-            const response = await getDanhSachKhoaDaoTaobyId(id);
-            setKhoaDaoTao(response);
-        } catch (error) {
-            console.error("err fetching dao tao list", error)
-        }
-    }
 
 
 
@@ -209,9 +215,39 @@ const ThoiKhoaBieu = () => {
 
 
     const handlekhoaChange = (event) => {
-        setKhoaDaoTaoId(event.target.value);
-        console.log(khoaDaoTaoId)
+        const selectedKhoaId = event.target.value;
+        setKhoaDaoTaoId(selectedKhoaId);
+
+        // Tìm khóa đào tạo được chọn từ danh sách
+        const selectedKhoa = khoaDaoTao.find(khoa => khoa.id === selectedKhoaId);
+
+        if (selectedKhoa) {
+            let years = [];
+            if (selectedKhoa.nam_hoc.includes("-")) {
+                // Nếu năm học là khoảng thời gian (VD: "2025-2029")
+                const [start, end] = selectedKhoa.nam_hoc.trim().split("-").map(Number);
+                years = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+            } else {
+                // Nếu chỉ có một năm duy nhất
+                years = [Number(selectedKhoa.nam_hoc.trim())];
+            }
+
+            setKyHocOptions(years); // Cập nhật danh sách năm học
+            console.log("Danh sách năm học:", years);
+        } else {
+            setKyHocOptions([]); // Nếu không có khóa đào tạo hợp lệ
+        }
     };
+
+
+
+
+
+
+
+
+
+
 
     const handleKyHocChange = (event) => {
         setKyHoc(event.target.value);
@@ -588,7 +624,7 @@ const ThoiKhoaBieu = () => {
 
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         {/*hệ đào tạo  */}
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={4}>
                             <FormControl fullWidth margin="dense">
                                 <InputLabel sx={{ backgroundColor: "white" }} >Hệ đào tạo</InputLabel>
                                 <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
@@ -602,13 +638,13 @@ const ThoiKhoaBieu = () => {
                         </Grid>
 
                         {/* Đợt học */}
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={8}>
                             <FormControl fullWidth margin="dense">
                                 <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo </InputLabel>
                                 <Select value={khoaDaoTaoId} onChange={handlekhoaChange}>
                                     {khoaDaoTao.map((option) => (
                                         <MenuItem key={option.id} value={option.id}>
-                                            {option.ten_khoa} - {option.nam_hoc}
+                                            {option.ten_khoa} nk {option.nam_hoc}
                                         </MenuItem>
                                     ))}
                                 </Select>
