@@ -590,7 +590,7 @@ const ThoiKhoaBieu = () => {
                         {/*hệ đào tạo  */}
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Hệ đào tạo</InputLabel>
+                                <InputLabel sx={{ backgroundColor: "white" }} >Hệ đào tạo</InputLabel>
                                 <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
                                     {HeDaoTao?.map((option) => (
                                         <MenuItem key={option.id} value={option.id}>
@@ -604,7 +604,7 @@ const ThoiKhoaBieu = () => {
                         {/* Đợt học */}
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Khóa đào tạo </InputLabel>
+                                <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo </InputLabel>
                                 <Select value={khoaDaoTaoId} onChange={handlekhoaChange}>
                                     {khoaDaoTao.map((option) => (
                                         <MenuItem key={option.id} value={option.id}>
