@@ -33,6 +33,15 @@ module.exports = {
         password: {
           type: Sequelize.STRING(100),
           allowNull: true,
+          defaultValue: "1",
+        },
+        role: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        sub_role: {
+          type: Sequelize.TINYINT,
+          allowNull: true,
         },
         la_giang_vien_moi: {
           type: Sequelize.TINYINT,
@@ -45,6 +54,38 @@ module.exports = {
             model: "phong_ban", // Bảng này phải tồn tại trong cơ sở dữ liệu
             key: "id",
           },
+        },
+        hoc_ham: {
+          type: Sequelize.STRING(50),
+          allowNull: true,
+        },
+        hoc_vi: {
+          type: Sequelize.STRING(50),
+          allowNull: true,
+        },
+        chuyen_mon: {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+        },
+        trang_thai: {
+          type: Sequelize.TINYINT, // Sử dụng TINYINT để lưu trạng thái (0 = đã nghỉ, 1 = còn hoạt động)
+          allowNull: true,
+        },
+        thuoc_khoa: {
+          type: Sequelize.TINYINT,
+          allowNull: true,
+        },
+        gioi_tinh: {
+          type: Sequelize.STRING(10),
+          allowNull: true,
+        },
+        ngay_sinh: {
+          type: Sequelize.DATE,
+          allowNull: true,
+        },
+        email: {
+          type: Sequelize.STRING(50),
+          allowNull: true,
         },
       },
       {

@@ -2,9 +2,9 @@ const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('diem', {
     id: {
+      autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
-      autoIncrement: true,
       primaryKey: true
     },
     sinh_vien_id: {
@@ -15,11 +15,11 @@ module.exports = function(sequelize, DataTypes) {
         key: 'id'
       }
     },
-    mon_hoc_id: {
+    thoi_khoa_bieu_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'mon_hoc',
+        model: 'thoi_khoa_bieu',
         key: 'id'
       }
     },
@@ -88,10 +88,10 @@ module.exports = function(sequelize, DataTypes) {
         ]
       },
       {
-        name: "mon_hoc_id",
+        name: "thoi_khoa_bieu_id",
         using: "BTREE",
         fields: [
-          { name: "mon_hoc_id" },
+          { name: "thoi_khoa_bieu_id" },
         ]
       },
     ]

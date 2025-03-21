@@ -12,6 +12,11 @@ module.exports = {
         type: Sequelize.STRING(50),
         allowNull: true,
       },
+      password: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+        defaultValue: "1",
+      },
       ngay_sinh: {
         type: Sequelize.DATEONLY,
         allowNull: true,
@@ -171,6 +176,15 @@ module.exports = {
       ngoai_tru: {
         type: Sequelize.TINYINT,
         allowNull: true,
+      },
+      username: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      },
+      password: {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+        defaultValue: "1",
       },
     });
   },

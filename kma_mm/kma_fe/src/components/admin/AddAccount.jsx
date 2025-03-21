@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Button, TextField, Grid, Typography, MenuItem } from '@mui/material';
+import { Button, TextField, Grid, Typography, MenuItem, IconButton } from '@mui/material';
 import { AdminRegister } from '../../Api_controller/Service/authService';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
+import { useNavigate } from 'react-router-dom';
 
 const AddAccount = () => {
+    const navigate = useNavigate(); // Hook điều hướng
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [ho_ten, setHoten] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [role, setRole] = useState(6); // Default to 'sv'
 
@@ -19,13 +23,14 @@ const AddAccount = () => {
     };
 
     const handleSubmit = async () => {
+        console.log(password, confirmPassword, ho_ten)
         if (password !== confirmPassword) {
             alert('Passwords do not match!');
             return;
         }
 
         try {
-            const res = await AdminRegister(username, password, confirmPassword, role); // Truyền từng tham số
+            const res = await AdminRegister(username, ho_ten, password, confirmPassword, role); // Truyền từng tham số
             console.log('Adding new account:', { username, password, confirmPassword, role });
             alert(res); // Hiển thị thông báo từ server
         } catch (error) {
@@ -33,11 +38,21 @@ const AddAccount = () => {
         }
     };
 
+    const handleBackToDashboard = () => {
+        navigate('/admin/dashboard'); // Điều hướng về trang Admin Dashboard
+    };
 
     return (
         <div>
             <Typography variant="h5" gutterBottom>
-                Add New Account
+                <IconButton
+                    color="primary"
+                    onClick={handleBackToDashboard}
+                    sx={{ mr: 1, mb: 1 }} // Khoảng cách giữa icon và tiêu đề
+                >
+                    <ArrowBackIcon />
+                </IconButton>
+                Thêm tài khoản
             </Typography>
             <Grid container spacing={3}>
                 {/* Username */}
@@ -51,6 +66,16 @@ const AddAccount = () => {
                     />
                 </Grid>
 
+                {/* Username */}
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Họ tên"
+                        variant="outlined"
+                        fullWidth
+                        value={ho_ten}
+                        onChange={(e) => setHoten(e.target.value)}
+                    />
+                </Grid>
                 {/* Password */}
                 <Grid item xs={12} sm={6}>
                     <TextField
@@ -96,7 +121,7 @@ const AddAccount = () => {
                 {/* Submit Button */}
                 <Grid item xs={12}>
                     <Button variant="contained" color="primary" onClick={handleSubmit}>
-                        Add Account
+                        Thêm tài khoản
                     </Button>
                 </Grid>
             </Grid>

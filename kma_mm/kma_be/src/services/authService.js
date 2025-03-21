@@ -1,12 +1,20 @@
+<<<<<<< HEAD
 const { User } = require("../models");
 console.log(require("../models/user"))
+=======
+const { users } = require("../models");
+>>>>>>> ea621ed487c7e2b3798747fd560dc920f83c2dee
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
 const user = require("../models/user");
 
 const register = async (newUser) => {
+<<<<<<< HEAD
   const { username, password, confirmPassword, role} = newUser;
   // console.log(username);
+=======
+  const { username, password, confirmPassword, role, ho_ten } = newUser;
+>>>>>>> ea621ed487c7e2b3798747fd560dc920f83c2dee
   if (password !== confirmPassword) {
     return {
       status: "ERR",
@@ -14,7 +22,7 @@ const register = async (newUser) => {
     };
   }
   try {
-    const checkUser = await User.findOne({ where: { username } });
+    const checkUser = await users.findOne({ where: { username } });
     if (checkUser) {
       return {
         status: "ERR",
@@ -23,10 +31,11 @@ const register = async (newUser) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const createdUser = await User.create({
+    const createdUser = await users.create({
       username,
       password: hash,
       role,
+      ho_ten,
     });
 
     return {
@@ -42,7 +51,7 @@ const register = async (newUser) => {
 const loginUser = async (user) => {
   const { username, password } = user;
   try {
-    const checkUser = await User.findOne({ where: { username } });
+    const checkUser = await users.findOne({ where: { username } });
     if (!checkUser) {
       return {
         status: "ERR",
@@ -66,7 +75,6 @@ const loginUser = async (user) => {
       id: checkUser.id,
       role: checkUser.role,
     });
-
     return {
       status: "OK",
       message: "Login successful!",
@@ -81,7 +89,7 @@ const loginUser = async (user) => {
 
 const deleteUser = async (id) => {
   try {
-    const checkUser = await User.findOne({ where: { id } });
+    const checkUser = await users.findOne({ where: { id } });
     if (!checkUser) {
       return {
         status: "ERR",
@@ -89,7 +97,7 @@ const deleteUser = async (id) => {
       };
     }
 
-    await User.destroy({ where: { id } });
+    await users.destroy({ where: { id } });
     return {
       status: "OK",
       message: "Deleted user successfully!",
@@ -100,7 +108,7 @@ const deleteUser = async (id) => {
 };
 const getAllUser = async () => {
   try {
-    const allUsers = await User.findAll();
+    const allUsers = await users.findAll();
     return {
       status: "OK",
       message: "Users information:",
@@ -112,7 +120,7 @@ const getAllUser = async () => {
 };
 const getDetailUser = async (id) => {
   try {
-    const checkUser = await User.findOne({ where: { id } });
+    const checkUser = await users.findOne({ where: { id } });
 
     if (!checkUser) {
       return {
@@ -133,14 +141,14 @@ const getDetailUser = async (id) => {
 };
 const updateUser = async (id, data) => {
   try {
-    const checkUser = await User.findOne({ where: { id } });
+    const checkUser = await users.findOne({ where: { id } });
     if (!checkUser) {
       return {
         status: "ERR",
         message: "User is not defined!",
       };
     }
-    const rowsUpdated = await User.update(data, {
+    const rowsUpdated = await users.update(data, {
       where: { id },
     });
     if (rowsUpdated[0] === 0) {
@@ -149,7 +157,7 @@ const updateUser = async (id, data) => {
         message: "Failed to update user!",
       };
     }
-    const updatedUser = await User.findOne({ where: { id } });
+    const updatedUser = await users.findOne({ where: { id } });
 
     return {
       status: "OK",
@@ -163,7 +171,7 @@ const updateUser = async (id, data) => {
 
 const changePassword = async (id, oldPassword, newPassword) => {
   try {
-    const user = await User.findOne({ where: { id } });
+    const user = await users.findOne({ where: { id } });
     if (!user) {
       return {
         status: "ERR",
@@ -179,7 +187,7 @@ const changePassword = async (id, oldPassword, newPassword) => {
     }
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-    await User.update({ password: hashedPassword }, { where: { id } });
+    await users.update({ password: hashedPassword }, { where: { id } });
     return {
       status: "OK",
       message: "Password has been changed successfully!",

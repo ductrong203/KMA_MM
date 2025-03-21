@@ -27,7 +27,31 @@ try {
   }
 }
 
+const fetchDanhSachHeDaoTao = async (req, res) => {
+  try {
+    const response = await trainingService.fetchDanhSachHeDaoTao();
+    return res.status(201).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
+
+const updateTraining = async (req, res) => {
+    try {
+        const response = await trainingService.updateTraining(req.params.code, req.body);
+        return res.status(201).json(response); 
+      } catch (e) {
+        return res.status(500).json({
+          message: e.message || "Server error",
+        });
+      }
+    }
+
 module.exports = {
-    createTraining
+    createTraining,
+    fetchDanhSachHeDaoTao,
+    updateTraining
   };
   

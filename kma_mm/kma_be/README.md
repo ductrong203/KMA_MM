@@ -24,7 +24,11 @@ A Node.js-based backend for managing data using Express, MySQL, and Sequelize.
    "
 5. open terminal -> "cd src"
 6. execute migration: "npx sequelize-cli db:migrate"
-7. run : "npm start"
+
+7. tao models
+   npx sequelize-auto -o "./models" -d quan_ly_dao_tao -h localhost -u root -p 3306 -x trong123 -e mysql
+
+8. run : "npm start"
 
 ## User role
 

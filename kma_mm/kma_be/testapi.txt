@@ -14,3 +14,146 @@ api : update user
     {
     "role":6
     }
+    
+Sinh viên
+CRUD sinhvien: lop_id là bắt buộc, và phải tồn tại
+json mẫu:
+{
+  "ho_dem": "Nguyen",
+  "ten": "Van C",
+  "ngay_sinh": "2002-05-11",
+  "gioi_tinh": 1,
+  "que_quan": "Ha Noi",
+  "lop_id": 1
+}
+getall:
+    http://localhost:8000/student
+getbyid:
+    http://localhost:8000/student/1
+post: tạo
+    http://localhost:8000/student
+update:
+    http://localhost:8000/student/1
+delete:
+    http://localhost:8000/student/1
+getbylopid
+    http://localhost:8000/student/getbylopid/1
+getbydoituongid
+    http://localhost:8000/student/getbydoituongid/1
+getall phân trang
+    http://localhost:8000/student/all?page=1&limit=5
+
+CRUD thongtinquannhan
+    http://localhost:8000/thongtinquannhan
+    http://localhost:8000/thongtinquannhan/1
+
+CRUD doituongquanly
+    http://localhost:8000/doituongquanly
+    http://localhost:8000/doituongquanly/1
+
+Khoá đào tạo : he_dao_tao_id là bắt buộc, và phải tồn tại
+CRUD khoadaotao
+    http://localhost:8000/khoadaotao
+    json mẫu:
+        {
+            "he_dao_tao_id": 1,
+            "ma_khoa": "AT18",
+            "ten_khoa": "An toan 18",
+            "nam_hoc": "2024-2025"
+        }
+Lớp: 
+CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
+    http://localhost:8000/lop
+    json mẫu:
+        {
+        "khoa_dao_tao_id": "1"
+        }
+kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
+    http://localhost:8000/kehoachmonhoc
+    json mẫu:
+        {
+        "danh_muc_id": 1,
+        "mon_hoc_id": 1,
+        "ky_hoc": 3,
+        "bat_buoc": 1
+        }
+thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
+    http://localhost:8000/thoikhoabieu
+    json mẫu:
+{
+  "ky_hoc": 2025,
+  "dot_hoc": 1,
+  "lop_id": 1,
+  "mon_hoc_id": 1,
+  "giang_vien": "Nguyễn Văn A",
+  "phong_hoc": "101",
+  "tiet_hoc": "2-4",
+  "trang_thai": 1
+}
+    http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
+
+    http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&ma_mon_hoc=mh1&ma_lop=l1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+
+Điểm: "sinh_vien_id", "thoi_khoa_bieu_id" bắt buộc
+GET
+http://localhost:8000/diem/filter?page=1&pageSize=10?sinh_vien_id=1&thoi_khoa_bieu_id=1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+POST
+http://localhost:8000/diem
+{
+  "sinh_vien_id": 1,
+  "thoi_khoa_bieu_id": 1,
+  "lan_hoc": 1,
+  "lan_thi": 1,
+  "diem_tp1": 8.5,
+  "diem_tp2": 7.0,
+  "diem_gk": 7.5,
+  "diem_ck": 9.0,
+  "diem_he_4": 3.5,
+  "diem_chu": "B+",
+  "ngay_cap_nhat": "2025-03-18",
+  "trang_thai": "Hoàn thành",
+  "diem_hp": 3.7
+}
+
+--------
+lấy danh sách điểm của lớp học phần
+-------
+lấy danh sách khoá theo id hệ 
+get
+http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/1
+
+lấy danh sách kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/getbykhoavaky
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách môn học thuộc kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/monhoc
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách lớp theo id khoá đào tạo
+get
+http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=1
+
+lấy danh sách tkb theo lop_id, mon_hoc_id, (ky_hoc)
+get
+http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&mon_hoc_id=1&lop_id=1&ky_hoc=3
+
+lấy danh sách điểm và sinh viên theo thoi_khoa_bieu_id (chỉ include mã sinh viên, họ đệm, tên)
+get
+http://localhost:8000/diem/filter?page=1&pageSize=10&thoi_khoa_bieu_id=1
+
+tạo bảng điểm cho sinh viên lớp biên chế 
+post
+http://localhost:8000/diem/createDiemForClass
+json
+{
+  "thoi_khoa_bieu_id": 2
+}
