@@ -14,3 +14,10 @@ export const updateMonHoc = async (maMonHoc, data) => {
     const response = await api.put(`mon-hoc/${maMonHoc}`, data)
     return response.data
 }
+
+export const getDanhSachMonHocTheoKhoaVaKi = async (data) => {
+    console.log(data)
+    const response = await api.post(`kehoachmonhoc/getbykhoavaky`,data)
+    return response.data
+}
+
