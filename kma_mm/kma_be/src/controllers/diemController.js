@@ -45,12 +45,13 @@ class DiemController {
 
   static async update(req, res) {
     try {
-      const data = await DiemService.update(req.params.id, req.body);
+      const data = await DiemService.update(req.body);
       res.json(data);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
   }
+
 
   static async delete(req, res) {
     try {
