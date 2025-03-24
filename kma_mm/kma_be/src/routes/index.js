@@ -19,7 +19,7 @@ const khoaDaoTaoRouter = require("./khoaDaoTao");
 const monHocRouter = require("./monHoc");
 
 //const monHocRouter = require("./monHoc");
-
+const excelRoute = require('./excel');
 
 const keHoachMonHocRouter = require("./keHoachMonHoc");
 const thoiKhoaBieuRoute = require('./thoiKhoaBieu');
