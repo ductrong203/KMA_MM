@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   return sequelize.define('mon_hoc', {
     id: {
       autoIncrement: true,
@@ -28,9 +28,18 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: 1
     },
+
     ghi_chu: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    he_dao_tao_id: {  // Tách riêng ra khỏi ghi_chu
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'danh_muc_dao_tao',
+        key: 'id'
+      }
     }
   }, {
     sequelize,
@@ -43,6 +52,13 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "id" },
+        ]
+      },
+      {
+        name: "mon_hoc_he_dao_tao_id_foreign_idx",
+        using: "BTREE",
+        fields: [
+          { name: "he_dao_tao_id" },
         ]
       },
     ]
