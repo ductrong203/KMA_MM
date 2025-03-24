@@ -92,11 +92,13 @@ const ThoiKhoaBieu = () => {
     const [giangVienList, setGiangVienList] = useState([]);
     const [thoiKhoaBieuList, setThoiKhoaBieuList] = useState([]);
     const [monHocFilList, setMonHocFilList] = useState([]);
-
+    const [khoaDaoTaoList, setKhoaDaoTaoList] = useState([]);
+    //const [heDaoTaoList, setHeDaoTaoList] = useState([]);
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
-
+    const [heDaoTaoFilter, setHeDaoTaoFilter] = useState("");
+    const [khoaDaoTaoFilter, setKhoaDaoTaoFilter] = useState("");
     // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(6);
@@ -112,7 +114,7 @@ const ThoiKhoaBieu = () => {
         fetchThoiKhoaBieu();
         fetchMonHocList();
         fetchGiangVienList();
-        //fetchKhoaDaoTaoList();
+        fetchAllKhoaDaoTaoList();
 
     }, []);
 
@@ -120,10 +122,25 @@ const ThoiKhoaBieu = () => {
 
 
     //fetch khoa dao tao list
+    const fetchAllKhoaDaoTaoList = async () => {
+        try {
+            const response = await getDanhSachKhoaDaoTao();
+            setKhoaDaoTaoList(response);
+            console.log(response)
+
+
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+        }
+    };
+
+
+    //fetch khoa dao tao list
     const fetchKhoaDaoTaoList = async (heDaoTaoId) => {
         try {
             const response = await getDanhSachKhoaDaoTaobyId(heDaoTaoId);
             setKhoaDaoTao(response);
+            console.log(response)
 
 
         } catch (error) {
@@ -448,7 +465,7 @@ const ThoiKhoaBieu = () => {
                                     p: 2,
                                     borderRadius: 1,
                                     boxShadow: 1,
-                                    maxWidth: 500,
+                                    maxWidth: 600,
                                     mx: "auto",
                                     mt: 5
                                 }}
@@ -459,7 +476,7 @@ const ThoiKhoaBieu = () => {
 
                                 <Grid container spacing={1} alignItems="center">
                                     {/* Kỳ học */}
-                                    <Grid item xs={5}>
+                                    <Grid item xs={6}>
                                         <FormControl fullWidth size="small">
                                             <InputLabel>Kỳ học</InputLabel>
                                             <Select value={kyHocFilter} onChange={(e) => setKyHocFilter(e.target.value)}>
@@ -471,7 +488,7 @@ const ThoiKhoaBieu = () => {
                                     </Grid>
 
                                     {/* Lớp */}
-                                    <Grid item xs={5}>
+                                    <Grid item xs={6}>
                                         <FormControl fullWidth size="small">
                                             <InputLabel>Lớp</InputLabel>
                                             <Select value={lopIdFilter} onChange={(e) => setLopIdFilter(e.target.value)}>
@@ -485,27 +502,65 @@ const ThoiKhoaBieu = () => {
                                         </FormControl>
                                     </Grid>
 
+                                    {/* Hệ đào tạo */}
+                                    <Grid item xs={6}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Hệ đào tạo</InputLabel>
+                                            <Select value={heDaoTaoFilter} onChange={(e) => setHeDaoTaoFilter(e.target.value)}>
+                                                <MenuItem value="">Tất cả</MenuItem>
+                                                {HeDaoTao.map((item) => (
+                                                    <MenuItem key={item.id} value={item.id}>
+                                                        {item.ten_he_dao_tao}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Khóa đào tạo */}
+                                    <Grid item xs={6}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Khóa đào tạo</InputLabel>
+                                            <Select value={khoaDaoTaoFilter} onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}>
+                                                <MenuItem value="">Tất cả</MenuItem>
+                                                {khoaDaoTaoList.map((item) => (
+                                                    <MenuItem key={item.id} value={item.id}>
+                                                        {item.ten_khoa}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
                                     {/* Nút lọc / hủy lọc */}
-                                    <Grid item xs={2}>
+                                    <Grid item xs={12} textAlign="center">
                                         <Button
                                             variant="contained"
                                             size="small"
                                             sx={{
-                                                minWidth: 80,
-                                                backgroundColor: kyHocFilter || lopIdFilter ? "#d32f2f" : "#1976d2",
-                                                "&:hover": { backgroundColor: kyHocFilter || lopIdFilter ? "#b71c1c" : "#115293" }
+                                                minWidth: 100,
+                                                backgroundColor: kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter
+                                                    ? "#d32f2f"
+                                                    : "#1976d2",
+                                                "&:hover": {
+                                                    backgroundColor: kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter
+                                                        ? "#b71c1c"
+                                                        : "#115293"
+                                                }
                                             }}
                                             onClick={() => {
-                                                if (kyHocFilter || lopIdFilter) {
+                                                if (kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter) {
                                                     setKyHocFilter("");
                                                     setLopIdFilter("");
+                                                    setHeDaoTaoFilter("");
+                                                    setKhoaDaoTaoFilter("");
                                                     fetchThoiKhoaBieu();
                                                 } else {
                                                     fetchThoiKhoaBieu();
                                                 }
                                             }}
                                         >
-                                            {kyHocFilter || lopIdFilter ? "Hủy" : "Lọc"}
+                                            {kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter ? "Hủy" : "Lọc"}
                                         </Button>
                                     </Grid>
                                 </Grid>
