@@ -54,6 +54,7 @@ const routes = (app) => {
   app.use("/kehoachmonhoc", keHoachMonHocRouter);
   app.use("/thoikhoabieu", thoiKhoaBieuRoute);
   app.use('/diem', diemRoute);
+  app.use('/excel', excelRoute);
 
   //   app.use("student", studentRouter);
 
