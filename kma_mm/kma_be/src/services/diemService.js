@@ -114,6 +114,74 @@ class DiemService {
     }
   }
 
+  static async themSinhVienHocLaiVaoLop(thoi_khoa_bieu_id, ma_sinh_vien) {
+    try {
+      // Tìm thông tin thời khóa biểu
+      const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id, {
+        attributes: ['id', 'mon_hoc_id'],
+      });
+      if (!tkb) {
+        throw new Error("Không tìm thấy thời khóa biểu!");
+      }
+
+      if (!tkb.mon_hoc_id) {
+        throw new Error("Thời khóa biểu không có thông tin môn học!");
+      }
+
+      // Kiểm tra sinh viên học lại tồn tại dựa trên ma_sinh_vien
+      const sinhVienHocLai = await sinh_vien.findOne({
+        where: { ma_sinh_vien },
+      });
+      if (!sinhVienHocLai) {
+        throw new Error("Sinh viên học lại không tồn tại!");
+      }
+
+      const sinh_vien_id = sinhVienHocLai.id;
+      const mon_hoc_id = tkb.mon_hoc_id;
+
+      // Đếm số lần học lại của sinh viên với môn học này
+      const soLanHoc = await diem.count({
+        include: [
+          {
+            model: thoi_khoa_bieu,
+            as: 'thoi_khoa_bieu', // Giả định alias trong quan hệ
+            where: { mon_hoc_id: mon_hoc_id },
+          },
+        ],
+        where: {
+          sinh_vien_id: sinh_vien_id,
+        },
+      });
+
+      // Tính lan_hoc mới, bắt đầu từ 2
+      const newLanHoc = soLanHoc + 1;
+
+      // Tạo bản ghi điểm mới cho sinh viên học lại
+      const newDiem = await diem.create({
+        sinh_vien_id: sinh_vien_id,
+        thoi_khoa_bieu_id: thoi_khoa_bieu_id,
+        lan_hoc: newLanHoc,
+        lan_thi: null,
+        diem_tp1: null,
+        diem_tp2: null,
+        diem_gk: null,
+        diem_ck: null,
+        diem_he_4: null,
+        diem_chu: null,
+        ngay_cap_nhat: null,
+        trang_thai: 'hoc_lai', // Luôn là học lại vì bắt đầu từ 2
+        diem_hp: null,
+      });
+
+      return { 
+        message: `Thêm sinh viên học lại môn này lần ${newLanHoc} thành công!`, 
+        data: newDiem 
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async update(id, data) {
     const record = await diem.findByPk(id);
     if (!record) throw new Error('Điểm không tồn tại.');

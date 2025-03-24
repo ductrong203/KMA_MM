@@ -7,6 +7,7 @@ const upload = multer({ dest: "uploads/" });
 router.post("/importdiemgk", upload.single("file"), DiemController.importExcel);
 router.post("/importdiemck", upload.single("file"), DiemController.importExcelCuoiKy);
 router.post('/createDiemForClass', DiemController.createDiemForClass);
+router.post('/them-sinh-vien-hoc-lai', DiemController.themSinhVienHocLaiVaoLop);
 router.get('/filter', DiemController.filter);
 router.get('/:id', DiemController.getById);
 router.post('/', DiemController.create);
