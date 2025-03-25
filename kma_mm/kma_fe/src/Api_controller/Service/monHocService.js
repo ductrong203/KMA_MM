@@ -1,6 +1,8 @@
 import api from "../Api_setup/axiosConfig"
 
 export const createMonHoc = async (data) => {
+    console.log(data)
+
     const response = await api.post(`mon-hoc`, data)
     return response.data
 }
