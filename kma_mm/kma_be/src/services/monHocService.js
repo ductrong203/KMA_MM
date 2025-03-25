@@ -153,17 +153,12 @@ const fetchSubjectsByTrainingId = async (id) => {
       }
   
       // Lấy danh sách môn học theo mã hệ đào tạo
-      const subjects = await mon_hoc.findAll({
+      return await mon_hoc.findAll({
         where: { 
           he_dao_tao_id: id 
         }
       });
   
-      return {
-        status: "OK",
-        message: "Success!",
-        data: subjects
-      };
   
     } catch (error) {
       throw new Error(error.message);
