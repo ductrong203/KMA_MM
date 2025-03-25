@@ -28,8 +28,16 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: 1
     },
+    he_dao_tao_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'danh_muc_dao_tao',
+        key: 'id'
+      }
+    },
     ghi_chu: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING(100),
       allowNull: true
     }
   }, {
@@ -43,6 +51,13 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "id" },
+        ]
+      },
+      {
+        name: "mon_hoc_he_dao_tao_id_foreign_idx",
+        using: "BTREE",
+        fields: [
+          { name: "he_dao_tao_id" },
         ]
       },
     ]

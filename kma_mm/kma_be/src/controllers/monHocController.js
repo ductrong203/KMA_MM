@@ -68,6 +68,7 @@ const getMonHocByIds = async (req, res) => {
 
 const updateMonHoc = async (req, res) => {
     try {
+        console.log(req.params.ma_mon_hoc)
         const response = await monHocService.updateMonHoc(req.params.ma_mon_hoc, req.body);
         return res.status(201).json(response);
     } catch (e) {
@@ -76,9 +77,46 @@ const updateMonHoc = async (req, res) => {
         });
     }
 }
+
+const getTrainingById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Kiểm tra input
+        if (!id) {
+            return res.status(400).json({
+                status: "ERR",
+                message: "Training id is required",
+            });
+        }
+
+        // Giả sử service có hàm findById hoặc dùng findOne
+        const training = await monHocService.fetchSubjectsByTrainingId(id);
+
+        // Kiểm tra nếu không tìm thấy
+        if (!training) {
+            return res.status(404).json({
+                status: "ERR",
+                message: "Training system not found",
+            });
+        }
+
+        return res.status(200).json({
+            status: "OK",
+            message: "Success",
+            data: training
+        }); // 200: OK cho việc lấy dữ liệu
+    } catch (e) {
+        return res.status(500).json({
+            status: "ERR",
+            message: e.message || "Internal server error",
+        });
+    }
+}
 module.exports = {
     createMonHoc,
     getMonHoc,
     updateMonHoc,
-    getMonHocByIds
+    getMonHocByIds,
+    getTrainingById
 };
