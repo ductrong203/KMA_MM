@@ -792,7 +792,7 @@ import { useState, useEffect } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
     DialogTitle, DialogContent, DialogActions, Card, CardContent, CardActions, IconButton, createTheme,
-    ThemeProvider, TextField, InputAdornment, Autocomplete
+    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -981,7 +981,9 @@ const ThoiKhoaBieu = () => {
             return [];
         }
     };
-
+    const handlePageChange = (event, value) => {
+        setPage(value);
+    };
     useEffect(() => {
         if (heDaoTaoFilter) {
             fetchKhoaDaoTaoList(heDaoTaoFilter).then((response) => {
@@ -1370,6 +1372,16 @@ const ThoiKhoaBieu = () => {
                         </Grid>
                     )}
                 </Paper>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+                    <MuiPagination
+                        color="primary"
+                        count={totalPages}
+                        page={page}
+                        onChange={handlePageChange}
+                        variant="outlined"
+                        shape="rounded"
+                    />
+                </Box>
             </Container>
 
             {/* Dialog form */}
