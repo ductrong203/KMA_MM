@@ -38,7 +38,7 @@ import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controlle
 import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import api from '../../Api_controller/Api_setup/axiosConfig';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
-import { layDanhSachSinhVienTheoTKB, taoBangDiemChoSinhVien, themSinhVienHocLai, timSinhVienTheoMaHoacFilter } from '../../Api_controller/Service/diemService';
+import { kiemTraBangDiemTonTai, layDanhSachSinhVienTheoTKB, taoBangDiemChoSinhVien, themSinhVienHocLai, timSinhVienTheoMaHoacFilter } from '../../Api_controller/Service/diemService';
 
 // Assuming you have an API base URL
 const API_BASE_URL = 'https://your-api-base-url.com/api';
@@ -297,53 +297,167 @@ function TaoBangDiem({ sampleStudents }) {
     console.log("scheduleId:", scheduleId)
 
 
+    // const handleCreateGradeSheet = async () => {
+    //     if (!scheduleId) {
+    //         alert('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
+    //         return;
+    //     }
+    //     setLoadingStudents(true);
+    //     try {
+    //         // Gọi hàm tạo bảng điểm với scheduleId
+    //         const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
+    //         console.log('Grade sheet response:', gradeSheetResponse); // Debug response
+
+    //         // const newGradeSheetId = gradeSheetResponse.data[0];
+    //         // if (!newGradeSheetId) {
+    //         //     throw new Error('Không nhận được ID bảng điểm từ server');
+    //         // }
+    //         // setGradeSheetId(newGradeSheetId);
+
+    //         // Lấy danh sách sinh viên cho bảng điểm
+    //         const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId)
+    //         console.log("studentsResponse:", studentsResponse)
+
+    //         // Chuyển đổi dữ liệu sinh viên
+    //         const formattedStudents = await Promise.all(
+    //             studentsResponse.data.map(async (student) => {
+    //                 // Gọi API để lấy thông tin lớp dựa trên lop_id
+    //                 const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+    //                 const maLop = lopInfo?.ma_lop || student.lop_id;
+
+    //                 return {
+    //                     ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+    //                     ho_dem: student.sinh_vien.ho_dem,
+    //                     ten: student.sinh_vien.ten,
+    //                     lop: maLop, // Gán mã lớp thay vì lop_id
+    //                     lan_hoc: student.lan_hoc || 'Học lần 1',
+    //                     diem: {
+    //                         TP1: student.diem_tp1 || null,
+    //                         TP2: student.diem_tp2 || null,
+    //                         CK1: student.diem_ck || null,
+    //                         CK2: student.diem_ck2 || null
+    //                     },
+    //                     retakeRegistered: student.retakeRegistered || false
+    //                 };
+    //             })
+    //         );
+    //         console.log(formattedStudents)
+    //         setStudents(formattedStudents);
+
+    //         if (formattedStudents.length > 0) {
+    //             alert(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
+    //         } else {
+    //             alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+    //         }
+    //     } catch (error) {
+    //         console.error('Error creating grade sheet:', error);
+    //         alert('Có lỗi xảy ra khi tạo bảng điểm. Vui lòng thử lại sau.');
+
+    //         // Fallback to sample data
+    //         const allStudents = [
+    //             {
+    //                 id: 'SV001',
+    //                 name: 'Lê Hoài Nam',
+    //                 class: 'CT6',
+    //                 batch: 'K15',
+    //                 major: 'CNTT',
+    //                 educationType: 'CQ',
+    //                 status: 'Thi lần 1',
+    //                 examNumber: '1',
+    //                 diem: { TP1: null, TP2: null, CK1: null, CK2: null }
+    //             },
+    //             // ... other sample students
+    //         ];
+
+    //         let filteredStudents = [...allStudents];
+    //         if (classGroup && classGroup !== 'ALL') {
+    //             filteredStudents = filteredStudents.filter(student => student.class === classGroup);
+    //         }
+    //         if (batch) {
+    //             filteredStudents = filteredStudents.filter(student => student.batch === batch);
+    //         }
+    //         if (educationType) {
+    //             filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
+    //         }
+
+    //         setStudents(filteredStudents);
+    //     } finally {
+    //         setLoadingStudents(false);
+    //     }
+    // };
     const handleCreateGradeSheet = async () => {
         if (!scheduleId) {
             alert('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
             return;
         }
+    
         setLoadingStudents(true);
         try {
-            // Gọi hàm tạo bảng điểm với scheduleId
-            const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
-            console.log('Grade sheet response:', gradeSheetResponse); // Debug response
-
-            const newGradeSheetId = gradeSheetResponse.data[0].id;
-            if (!newGradeSheetId) {
-                throw new Error('Không nhận được ID bảng điểm từ server');
+            // Kiểm tra xem bảng điểm đã tồn tại chưa
+            const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
+            console.log(existingGradeSheet)
+            if (existingGradeSheet ) {
+                alert('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
+                // Tùy chọn: Lấy dữ liệu bảng điểm hiện có
+                const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+                const formattedStudents = await Promise.all(
+                    studentsResponse.data.map(async (student) => {
+                        const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                        const maLop = lopInfo?.ma_lop || student.lop_id;
+    
+                        return {
+                            ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                            ho_dem: student.sinh_vien.ho_dem,
+                            ten: student.sinh_vien.ten,
+                            lop: maLop,
+                            lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
+                            diem: {
+                                TP1: student.diem_tp1 || null,
+                                TP2: student.diem_tp2 || null,
+                                CK1: student.diem_ck || null,
+                                CK2: student.diem_ck2 || null
+                            },
+                            retakeRegistered: student.retakeRegistered || false
+                        };
+                    })
+                );
+                setStudents(formattedStudents);
+                return; // Dừng hàm nếu bảng điểm đã tồn tại
             }
-            setGradeSheetId(newGradeSheetId);
-
+    
+            // Nếu chưa tồn tại, tiến hành tạo bảng điểm
+            const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
+            console.log('Grade sheet response:', gradeSheetResponse);
+    
             // Lấy danh sách sinh viên cho bảng điểm
-            const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId)
-            console.log("studentsResponse:", studentsResponse)
-
+            const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+            console.log("studentsResponse:", studentsResponse);
+    
             // Chuyển đổi dữ liệu sinh viên
             const formattedStudents = await Promise.all(
                 studentsResponse.data.map(async (student) => {
-                    // Gọi API để lấy thông tin lớp dựa trên lop_id
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                     const maLop = lopInfo?.ma_lop || student.lop_id;
-
+    
                     return {
                         ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
                         ho_dem: student.sinh_vien.ho_dem,
                         ten: student.sinh_vien.ten,
-                        lop: maLop, // Gán mã lớp thay vì lop_id
-                        lan_hoc: student.lan_hoc || 'Học lần 1',
+                        lop: maLop,
+                        lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
                         diem: {
-                            TP1: student.diem?.TP1 || null,
-                            TP2: student.diem?.TP2 || null,
-                            CK1: student.diem?.CK1 || null,
-                            CK2: student.diem?.CK2 || null
+                            TP1: student.diem_tp1 || null,
+                            TP2: student.diem_tp2 || null,
+                            CK1: student.diem_ck || null,
+                            CK2: student.diem_ck2 || null
                         },
                         retakeRegistered: student.retakeRegistered || false
                     };
                 })
             );
-            console.log(formattedStudents)
+            console.log(formattedStudents);
             setStudents(formattedStudents);
-
+    
             if (formattedStudents.length > 0) {
                 alert(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
             } else {
@@ -352,7 +466,7 @@ function TaoBangDiem({ sampleStudents }) {
         } catch (error) {
             console.error('Error creating grade sheet:', error);
             alert('Có lỗi xảy ra khi tạo bảng điểm. Vui lòng thử lại sau.');
-
+    
             // Fallback to sample data
             const allStudents = [
                 {
@@ -368,7 +482,7 @@ function TaoBangDiem({ sampleStudents }) {
                 },
                 // ... other sample students
             ];
-
+    
             let filteredStudents = [...allStudents];
             if (classGroup && classGroup !== 'ALL') {
                 filteredStudents = filteredStudents.filter(student => student.class === classGroup);
@@ -379,7 +493,7 @@ function TaoBangDiem({ sampleStudents }) {
             if (educationType) {
                 filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
             }
-
+    
             setStudents(filteredStudents);
         } finally {
             setLoadingStudents(false);
@@ -478,38 +592,107 @@ function TaoBangDiem({ sampleStudents }) {
         setFilterClass('');
     };
 
+    // const handleAddRetakeStudent = async () => {
+    //     if (!studentId) {
+    //         alert('Vui lòng chọn sinh viên');
+    //         return;
+    //     }
+
+    //     console.log('studentId:', studentId);
+
+    //     try {
+    //         // Gọi API thêm sinh viên học lại
+    //         const response = await themSinhVienHocLai({
+    //             thoi_khoa_bieu_id: scheduleId, // scheduleId từ context hoặc props
+    //             ma_sinh_vien: studentId,       // studentId là mã sinh viên (VD: CT060110)
+    //         });
+
+    //         console.log('API Response:', response);
+
+    //         if (response.success) {
+    //             const retakeData = response.data; // Bản ghi điểm mới từ API
+
+    //             // Gọi timSinhVienTheoMaHoacFilter để lấy thông tin sinh viên
+    //             const sinhVienData = await timSinhVienTheoMaHoacFilter({
+    //                 'ma_sinh_vien': studentId, // Truyền ma_sinh_vien làm tham số lọc
+    //             });
+
+    //             const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
+    //             console.log(sinhVienInfo)
+    //             if (!sinhVienInfo) {
+    //                 throw new Error('Không tìm thấy thông tin sinh viên');
+    //             }
+
+
+    //             // Format dữ liệu sinh viên mới theo định dạng của formattedStudents
+    //             const newStudent = {
+    //                 ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
+    //                 ho_dem: sinhVienInfo.ho_dem,
+    //                 ten: sinhVienInfo.ten,
+    //                 lop: sinhVienInfo.lop,
+    //                 lan_hoc: retakeData.lan_hoc, // Lấy từ API (bắt đầu từ 2)
+    //                 diem: {
+    //                     TP1: null,
+    //                     TP2: null,
+    //                     CK1: null,
+    //                     CK2: null,
+    //                 },
+    //                 retakeRegistered: true,
+    //             };
+
+    //             // Thêm sinh viên vào danh sách cục bộ
+    //             setStudents(prevStudents => [...prevStudents, newStudent]);
+    //             alert(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
+    //         } else {
+    //             alert(`Không thể thêm sinh viên: ${response.message || 'Lỗi không xác định'}`);
+    //         }
+    //     } catch (error) {
+    //         console.error('Error adding retake student:', error);
+    //         alert(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
+    //     }
+
+    //     handleCloseDialog();
+    // };
     const handleAddRetakeStudent = async () => {
         if (!studentId) {
             alert('Vui lòng chọn sinh viên');
             return;
         }
-
+    
         console.log('studentId:', studentId);
-
+    
         try {
+            // Kiểm tra xem sinh viên đã có trong bảng điểm hiện tại chưa
+            const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
+            if (isStudentExist) {
+                const existingStudent = students.find(student => student.ma_sinh_vien === studentId);
+                alert(`Sinh viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
+                handleCloseDialog();
+                return;
+            }
+    
             // Gọi API thêm sinh viên học lại
             const response = await themSinhVienHocLai({
                 thoi_khoa_bieu_id: scheduleId, // scheduleId từ context hoặc props
                 ma_sinh_vien: studentId,       // studentId là mã sinh viên (VD: CT060110)
             });
-
+    
             console.log('API Response:', response);
-
+    
             if (response.success) {
                 const retakeData = response.data; // Bản ghi điểm mới từ API
-
+    
                 // Gọi timSinhVienTheoMaHoacFilter để lấy thông tin sinh viên
                 const sinhVienData = await timSinhVienTheoMaHoacFilter({
                     'ma_sinh_vien': studentId, // Truyền ma_sinh_vien làm tham số lọc
                 });
-
+    
                 const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
-                console.log(sinhVienInfo)
+                console.log(sinhVienInfo);
                 if (!sinhVienInfo) {
                     throw new Error('Không tìm thấy thông tin sinh viên');
                 }
-
-
+    
                 // Format dữ liệu sinh viên mới theo định dạng của formattedStudents
                 const newStudent = {
                     ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
@@ -525,7 +708,7 @@ function TaoBangDiem({ sampleStudents }) {
                     },
                     retakeRegistered: true,
                 };
-
+    
                 // Thêm sinh viên vào danh sách cục bộ
                 setStudents(prevStudents => [...prevStudents, newStudent]);
                 alert(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
@@ -536,7 +719,7 @@ function TaoBangDiem({ sampleStudents }) {
             console.error('Error adding retake student:', error);
             alert(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
         }
-
+    
         handleCloseDialog();
     };
 
@@ -772,7 +955,7 @@ function TaoBangDiem({ sampleStudents }) {
                             <TableCell>Họ đệm</TableCell>
                             <TableCell>Tên</TableCell>
                             <TableCell>Lớp</TableCell>
-                            <TableCell>Trạng thái</TableCell>
+                            <TableCell>Lần học</TableCell>
                             <TableCell>TP1</TableCell>
                             <TableCell>TP2</TableCell>
                             <TableCell>CK lần 1</TableCell>

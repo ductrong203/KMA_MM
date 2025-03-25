@@ -234,95 +234,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     console.log("scheduleId:", scheduleId)
 
 
-    // const handleSearch = () => {
-    //     const allStudents = [
-    //         {
-    //             id: 'SV001',
-    //             name: 'Lê Hoài Nam',
-    //             class: 'CT6',
-    //             batch: 'K15',
-    //             major: 'CNTT',
-    //             educationType: 'CQ',
-    //             status: 'Thi lần 1',
-    //             examNumber: '1',
-    //             diem: { TP1: 7, TP2: 8, CK1: 3, CK2: null }
-    //         },
-    //         {
-    //             id: 'SV002',
-    //             name: 'Nguyễn Văn Trọng',
-    //             class: 'CT6',
-    //             batch: 'K15',
-    //             major: 'CNTT',
-    //             educationType: 'CQ',
-    //             status: 'Thi lần 1',
-    //             examNumber: '1',
-    //             diem: { TP1: 5, TP2: 6, CK1: 2, CK2: null }
-    //         },
-    //         {
-    //             id: 'SV003',
-    //             name: 'Trần Thị Hương',
-    //             class: 'CT6',
-    //             batch: 'K15',
-    //             major: 'HTTT',
-    //             educationType: 'CQ',
-    //             status: 'Thi lần 2',
-    //             examNumber: '2',
-    //             diem: { TP1: 7, TP2: 8, CK1: 1, CK2: 6 }
-    //         },
-    //         {
-    //             id: 'SV004',
-    //             name: 'Phạm Minh Tuấn',
-    //             class: 'CT7',
-    //             batch: 'K15',
-    //             major: 'KTPM',
-    //             educationType: 'CQ',
-    //             status: 'Thi lần 1',
-    //             examNumber: '1',
-    //             diem: { TP1: 8, TP2: 9, CK1: 7, CK2: null }
-    //         },
-    //         {
-    //             id: 'SV005',
-    //             name: 'Hoàng Thị Mai',
-    //             class: 'CT8',
-    //             batch: 'K16',
-    //             major: 'MMT',
-    //             educationType: 'LT',
-    //             status: 'Thi lần 1',
-    //             examNumber: '1',
-    //             diem: { TP1: 6, TP2: 7, CK1: 4, CK2: null }
-    //         },
-    //         {
-    //             id: 'SV006',
-    //             name: 'Vũ Đức Anh',
-    //             class: 'CT7',
-    //             batch: 'K16',
-    //             major: 'CNTT',
-    //             educationType: 'VLVH',
-    //             status: 'Thi lần 2',
-    //             examNumber: '2',
-    //             diem: { TP1: 4, TP2: 5, CK1: 2, CK2: 5 }
-    //         }
-    //     ];
-
-    //     let filteredStudents = [...allStudents];
-    //     if (year) console.log(`Filtering by academic year: ${year}`);
-    //     if (semester) console.log(`Filtering by semester: ${semester}`);
-    //     if (examPeriod) console.log(`Filtering by exam period: ${examPeriod}`);
-    //     if (batch) filteredStudents = filteredStudents.filter(student => student.batch === batch);
-    //     if (major) filteredStudents = filteredStudents.filter(student => student.major === major);
-    //     if (course) console.log(`Filtering by course: ${course}`);
-    //     if (classGroup && classGroup !== 'ALL') filteredStudents = filteredStudents.filter(student => student.class === classGroup);
-    //     if (examNumber) filteredStudents = filteredStudents.filter(student => student.examNumber === examNumber);
-    //     if (educationType) filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
-
-    //     setStudents(filteredStudents);
-    //     alert(filteredStudents.length > 0
-    //         ? `Đã tìm thấy ${filteredStudents.length} sinh viên phù hợp với các tiêu chí.`
-    //         : 'Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
-    //     setActiveTab(0);
-    //     setActiveGradeTab(0);
-    // };
-
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearch = async () => {
         if (!batch || !classGroup || !semester || !course) {
@@ -343,17 +254,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     const maLop = lopInfo?.ma_lop || student.lop_id;
 
                     return {
+                        id: student.id,
                         sinh_vien_id: student.sinh_vien_id,
                         ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
                         ho_dem: student.sinh_vien.ho_dem,
                         ten: student.sinh_vien.ten,
                         lop: maLop,
-                        lan_hoc: student.lan_hoc || 'Học lần 1',
+                        lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
                         diem: {
-                            TP1: student.diem?.TP1 || null,
-                            TP2: student.diem?.TP2 || null,
-                            CK1: student.diem?.CK1 || null,
-                            CK2: student.diem?.CK2 || null
+                            TP1: student.diem_tp1 || null,
+                            TP2: student.diem_tp2 || null,
+                            CK1: student.diem_ck || null,
+                            CK2: student.diem_ck2 || null
                         },
                         retakeRegistered: student.retakeRegistered || false
                     };
@@ -432,21 +344,22 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         try {
             // Chuẩn bị dữ liệu để gửi lên API
             const dataToSave = students.map(student => ({
+                id:student.id,
                 sinh_vien_id: student.sinh_vien_id,
-                TP1: student.diem.TP1,
-                TP2: student.diem.TP2,
-                CK1: student.diem.CK1,
-                CK2: student.diem.CK2,
-                scheduleId: scheduleId // Thêm scheduleId nếu API yêu cầu
+                diem_tp1: student.diem.TP1,
+                diem_tp2: student.diem.TP2,
+                diem_ck: student.diem.CK1,
+                diem_ck2: student.diem.CK2,
+                thoi_khoa_bieu_id: scheduleId // Thêm scheduleId nếu API yêu cầu
             }));
 
             // Gọi API để lưu điểm
             const response = await nhapDiem(dataToSave)
-
+console.log(response)
             // Xử lý phản hồi từ API
-            if (response.data.success) {
+            if (response.data) {
                 alert('Đã lưu điểm thành công!');
-                if (onSave) onSave(students); // Gọi callback nếu có
+                // if (onSave) onSave(students); // Gọi callback nếu có
             } else {
                 alert('Lưu điểm thất bại: ' + response.data.message);
             }

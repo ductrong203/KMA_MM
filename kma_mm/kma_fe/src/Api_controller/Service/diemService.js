@@ -12,7 +12,7 @@ export const layDanhSachSinhVienTheoTKB = async (id) => {
 
 export const nhapDiem = async (data) => {
   console.log(data)
-  const response = await api.post(`/diem`, data);
+  const response = await api.put(`/diem`, data);
   return response.data;
 };
 
@@ -38,4 +38,9 @@ export const themSinhVienHocLai = async (data) => {
       console.error('Error in themSinhVienHocLai:', error);
       throw error;
   }
+};
+
+export const kiemTraBangDiemTonTai = async (id) => {
+  const response = await api.get(`/diem/filter?thoi_khoa_bieu_id=${id}`);
+  return response.data;
 };
