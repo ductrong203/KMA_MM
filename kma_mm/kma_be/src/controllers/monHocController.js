@@ -46,8 +46,29 @@ const getMonHoc = async (req, res) => {
     }
 }
 
+const getMonHocByIds = async (req, res) => {
+    try {
+        const { ids } = req.query; // Lấy param 'ids' từ query string
+        if (!ids) {
+            return res.status(400).json({
+                status: "ERROR",
+                message: "Vui lòng cung cấp danh sách ID"
+            });
+        }
+
+        const result = await monHocService.getMonHocByIds(ids);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(404).json({
+            status: "ERROR",
+            message: error.message
+        });
+    }
+}
+
 const updateMonHoc = async (req, res) => {
     try {
+        console.log(req.params.ma_mon_hoc)
         const response = await monHocService.updateMonHoc(req.params.ma_mon_hoc, req.body);
         return res.status(201).json(response);
     } catch (e) {
@@ -56,8 +77,46 @@ const updateMonHoc = async (req, res) => {
         });
     }
 }
+
+const getTrainingById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Kiểm tra input
+        if (!id) {
+            return res.status(400).json({
+                status: "ERR",
+                message: "Training id is required",
+            });
+        }
+
+        // Giả sử service có hàm findById hoặc dùng findOne
+        const training = await monHocService.fetchSubjectsByTrainingId(id);
+
+        // Kiểm tra nếu không tìm thấy
+        if (!training) {
+            return res.status(404).json({
+                status: "ERR",
+                message: "Training system not found",
+            });
+        }
+
+        return res.status(200).json({
+            status: "OK",
+            message: "Success",
+            data: training
+        }); // 200: OK cho việc lấy dữ liệu
+    } catch (e) {
+        return res.status(500).json({
+            status: "ERR",
+            message: e.message || "Internal server error",
+        });
+    }
+}
 module.exports = {
     createMonHoc,
     getMonHoc,
-    updateMonHoc
+    updateMonHoc,
+    getMonHocByIds,
+    getTrainingById
 };
