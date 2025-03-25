@@ -75,7 +75,6 @@ const ThoiKhoaBieu = () => {
         fetchThoiKhoaBieu();
         fetchGiangVienList();
         fetchAllKhoaDaoTaoList();
-        // Không gọi fetchLopList ở đây nữa, sẽ gọi khi có khoaDaoTaoId hoặc khi cần toàn bộ danh sách
     }, []);
 
     const fetchAllKhoaDaoTaoList = async () => {
@@ -163,13 +162,13 @@ const ThoiKhoaBieu = () => {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
                 setKyHocOptionsFilter(kyHocArray);
-                fetchLopByKhoaDaoTao(khoaDaoTaoFilter); // Cập nhật danh sách lớp khi thay đổi bộ lọc khóa đào tạo
+                fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
             } else {
                 setKyHocOptionsFilter([]);
             }
         } else {
             setKyHocOptionsFilter([]);
-            fetchLopList(); // Lấy toàn bộ danh sách lớp nếu không có bộ lọc
+            fetchLopList();
         }
     }, [khoaDaoTaoFilter, khoaDaoTao]);
 
@@ -180,13 +179,13 @@ const ThoiKhoaBieu = () => {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
                 setKyHocOptionsForm(kyHocArray);
-                fetchLopByKhoaDaoTao(khoaDaoTaoId); // Cập nhật danh sách lớp khi thay đổi khóa đào tạo trong form
+                fetchLopByKhoaDaoTao(khoaDaoTaoId);
             } else {
                 setKyHocOptionsForm([]);
             }
         } else {
             setKyHocOptionsForm([]);
-            fetchLopList(); // Lấy toàn bộ danh sách lớp nếu không có khóa đào tạo
+            fetchLopList();
         }
     }, [khoaDaoTaoId, khoaDaoTao]);
 
@@ -290,16 +289,11 @@ const ThoiKhoaBieu = () => {
     };
 
     const resetForm = () => {
-        //  setKyHoc("");
-        //  setLopId("");
-        // setMonHocId("");
         setGiangVienId("");
         setGiangVien("");
         setPhongHoc("");
         setTietHoc("");
         setTrangThai(1);
-        // setHeDaoTaoId("");
-        //  setKhoaDaoTaoId("");
         setKyHocOptionsForm([]);
         setLopSearch("");
         setMonHocSearch("");
@@ -317,7 +311,7 @@ const ThoiKhoaBieu = () => {
         setLopId(lopIdFilter || "");
         setMonHocId(monHocIdFilter || "");
         if (khoaDaoTaoFilter) {
-            fetchLopByKhoaDaoTao(khoaDaoTaoFilter); // Cập nhật danh sách lớp theo bộ lọc
+            fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
             const selectedKhoa = khoaDaoTao.find(khoa => khoa.id === khoaDaoTaoFilter);
             if (selectedKhoa) {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
@@ -345,7 +339,7 @@ const ThoiKhoaBieu = () => {
         if (selectedKhoa) {
             setHeDaoTaoId(selectedKhoa.he_dao_tao_id);
             setKhoaDaoTaoId(selectedKhoa.id);
-            fetchLopByKhoaDaoTao(selectedKhoa.id); // Cập nhật danh sách lớp khi chỉnh sửa
+            fetchLopByKhoaDaoTao(selectedKhoa.id);
             const kyHocCount = selectedKhoa.so_ky_hoc;
             const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
             setKyHocOptionsForm(kyHocArray);
@@ -362,8 +356,9 @@ const ThoiKhoaBieu = () => {
     };
 
     const findLopName = (id) => lopList.find(item => item.id === id)?.ma_lop || id;
-    const findMonHocName = (id) => monHocList.find(item => item.id === id)?.ten_mon_hoc || id;
+    const findMonHoc = (id) => monHocList.find(item => item.id === id) || {};
     const findGiangVienName = (id) => giangVienList.find(item => item.id === id)?.ho_ten || id;
+    const findHeDaoTaoName = (id) => HeDaoTao.find(item => item.id === id)?.ten_he_dao_tao || "N/A";
 
     return (
         <ThemeProvider theme={theme}>
@@ -517,47 +512,65 @@ const ThoiKhoaBieu = () => {
                         </Typography>
                     ) : (
                         <Grid container spacing={3} sx={{ mt: 2 }}>
-                            {thoiKhoaBieuList.map((tkb, index) => (
-                                <Grid item xs={12} sm={6} md={4} key={tkb.id || index}>
-                                    <Card variant="outlined">
-                                        <CardContent>
-                                            <Typography variant="h6" color="primary" gutterBottom>
-                                                {findMonHocName(tkb.mon_hoc_id)}
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                <strong>Lớp:</strong> {findLopName(tkb.lop_id)}
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                <strong>Kỳ học:</strong> {tkb.ky_hoc || "N/A"}
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                <strong>Giảng viên:</strong> {tkb.giang_vien || findGiangVienName(tkb.giang_vien_id)}
-                                            </Typography>
-                                            {tkb.phong_hoc && (
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Phòng học:</strong> {tkb.phong_hoc}
+                            {thoiKhoaBieuList.map((tkb, index) => {
+                                const monHoc = findMonHoc(tkb.mon_hoc_id); // Lấy thông tin môn học
+                                return (
+                                    <Grid item xs={12} sm={6} md={4} key={tkb.id || index}>
+                                        <Card variant="outlined">
+                                            <CardContent>
+                                                <Typography variant="h6" color="primary" gutterBottom>
+                                                    {monHoc.ten_mon_hoc || "N/A"}
                                                 </Typography>
-                                            )}
-                                            {tkb.tiet_hoc && (
                                                 <Typography variant="body2" color="textSecondary">
-                                                    <strong>Tiết học:</strong> {tkb.tiet_hoc}
+                                                    <strong>Mã môn học:</strong> {monHoc.ma_mon_hoc || "N/A"}
                                                 </Typography>
-                                            )}
-                                            <Typography variant="body2" color="textSecondary">
-                                                <strong>Trạng thái:</strong> {tkb.trang_thai === 1 ? "Hoạt động" : "Không hoạt động"}
-                                            </Typography>
-                                        </CardContent>
-                                        <CardActions sx={{ justifyContent: "center" }}>
-                                            <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
-                                                <EditIcon />
-                                            </IconButton>
-                                            <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </CardActions>
-                                    </Card>
-                                </Grid>
-                            ))}
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Số tín chỉ:</strong> {monHoc.so_tin_chi || "N/A"}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Tính điểm:</strong> {monHoc.tinh_diem === 1 ? "Có" : "Không"}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Hệ đào tạo:</strong> {findHeDaoTaoName(monHoc.he_dao_tao_id)}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Ghi chú:</strong> {monHoc.ghi_chu || "Không có"}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Lớp:</strong> {findLopName(tkb.lop_id)}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Kỳ học:</strong> {tkb.ky_hoc || "N/A"}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Giảng viên:</strong> {tkb.giang_vien || findGiangVienName(tkb.giang_vien_id)}
+                                                </Typography>
+                                                {tkb.phong_hoc && (
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        <strong>Phòng học:</strong> {tkb.phong_hoc}
+                                                    </Typography>
+                                                )}
+                                                {tkb.tiet_hoc && (
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        <strong>Tiết học:</strong> {tkb.tiet_hoc}
+                                                    </Typography>
+                                                )}
+                                                <Typography variant="body2" color="textSecondary">
+                                                    <strong>Trạng thái:</strong> {tkb.trang_thai === 1 ? "Hoạt động" : "Không hoạt động"}
+                                                </Typography>
+                                            </CardContent>
+                                            <CardActions sx={{ justifyContent: "center" }}>
+                                                <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
+                                                    <EditIcon />
+                                                </IconButton>
+                                                <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </CardActions>
+                                        </Card>
+                                    </Grid>
+                                );
+                            })}
                         </Grid>
                     )}
 
@@ -595,7 +608,7 @@ const ThoiKhoaBieu = () => {
                                 <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
                                     <MenuItem value="">Chọn khóa đào tạo</MenuItem>
                                     {khoaDaoTao.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa} nk {option.nam_hoc}</MenuItem>
+                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa}  | niên khóa  {option.nam_hoc}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
