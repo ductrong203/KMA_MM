@@ -37,7 +37,7 @@ module.exports = function(sequelize, DataTypes) {
       }
     },
     ghi_chu: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.TEXT,
       allowNull: true
     }
   }, {
