@@ -115,6 +115,28 @@ http://localhost:8000/diem
   "diem_hp": 3.7
 }
 
+cập nhật danh sách Điểm
+PUT
+http://localhost:8000/diem
+[
+    {
+        "id": 1,
+        "sinh_vien_id": 1,
+        "thoi_khoa_bieu_id": 1,
+        "diem_tp1": 8.5,
+        "diem_tp2": 7.0,
+        "diem_gk": 7.5
+    },
+    {
+        "id": 2,
+        "sinh_vien_id": 3,
+        "thoi_khoa_bieu_id": 2,
+        "diem_tp1": 9.0,
+        "diem_tp2": 8.0,
+        "diem_gk": 8.5
+    }
+]
+
 --------
 lấy danh sách điểm của lớp học phần
 -------
