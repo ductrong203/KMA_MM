@@ -81,8 +81,8 @@ class DiemService {
         {
           model: sinh_vien,
           as: 'sinh_vien',
-          attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
-            model: sinh_vien,
+          attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id'],
+          model: sinh_vien,
           as: 'sinh_vien',
           attributes: ['ma_sinh_vien', 'ho_dem', 'ten']
         }
