@@ -22,12 +22,12 @@ class KeHoachMonHocController {
 
   static async getByKhoaDaoTaoAndKyHoc(req, res) {
     try {
-      const { khoa_dao_tao_id, ky_hoc } = req.body;
+      const { khoa_dao_tao_id, ky_hoc } = req.params;
 
-      if (!khoa_dao_tao_id || !ky_hoc) {
-        return res.status(400).json({ message: "Thiếu khoa_dao_tao_id hoặc ky_hoc" });
+      if (!khoa_dao_tao_id) {
+        return res.status(400).json({ message: "Thiếu khoa_dao_tao_id" });
       }
-
+      
       const data = await KeHoachMonHocService.getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc);
       return res.json(data);
     } catch (error) {

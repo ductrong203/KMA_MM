@@ -68,15 +68,22 @@ CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
         {
         "khoa_dao_tao_id": "1"
         }
-kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
+kế hoạch môn học: "khoa_dao_tao_id","mon_hoc_id" bắt buộc
     http://localhost:8000/kehoachmonhoc
     json mẫu:
         {
-        "danh_muc_id": 1,
+        "khoa_dao_tao_id": 1,
         "mon_hoc_id": 1,
         "ky_hoc": 3,
         "bat_buoc": 1
         }
+
+lấy ds theo khoá, kì (1 là id, 9 là kì)
+get
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1/9
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1
+    
+
 thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
     http://localhost:8000/thoikhoabieu
     json mẫu:
