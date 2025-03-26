@@ -36,6 +36,8 @@ function initModels(sequelize) {
 
   khoa_dao_tao.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
   danh_muc_dao_tao.hasMany(khoa_dao_tao, { as: "khoa_dao_taos", foreignKey: "he_dao_tao_id"});
+  mon_hoc.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
+  danh_muc_dao_tao.hasMany(mon_hoc, { as: "mon_hocs", foreignKey: "he_dao_tao_id"});
   khen_thuong_ky_luat.belongsTo(danh_muc_khen_ky_luat, { as: "danh_muc", foreignKey: "danh_muc_id"});
   danh_muc_khen_ky_luat.hasMany(khen_thuong_ky_luat, { as: "khen_thuong_ky_luats", foreignKey: "danh_muc_id"});
   sinh_vien.belongsTo(doi_tuong_quan_ly, { as: "doi_tuong", foreignKey: "doi_tuong_id"});
