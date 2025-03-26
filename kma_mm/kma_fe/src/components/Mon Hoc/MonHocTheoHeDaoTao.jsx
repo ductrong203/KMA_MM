@@ -947,22 +947,1199 @@
 
 
 
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Box,
+//   Typography,
+//   Grid,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   IconButton,
+//   FormControl,
+//   InputLabel,
+//   Select,
+//   MenuItem,
+//   Paper,
+//   Chip,
+//   Divider
+// } from '@mui/material';
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import axios from 'axios';
+
+// const MonHocTheoHeDaoTao = () => {
+//   const [selectedCurriculum, setSelectedCurriculum] = useState('');
+//   const [selectedBatch, setSelectedBatch] = useState('');
+//   const [selectedSemester, setSelectedSemester] = useState(''); // Kỳ học được chọn
+//   const [curriculums, setCurriculums] = useState([]);
+//   const [batches, setBatches] = useState([]);
+//   const [subjectsBySemester, setSubjectsBySemester] = useState({}); // Lưu môn học theo kỳ
+//   const [maxSemesters, setMaxSemesters] = useState(0); // Số kỳ tối đa của khóa
+
+//   // Lấy danh sách hệ đào tạo
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/training')
+//       .then(response => {
+//         setCurriculums(Array.isArray(response.data) ? response.data : []);
+//       })
+//       .catch(error => {
+//         console.error('Lỗi khi lấy hệ đào tạo:', error);
+//         setCurriculums([]);
+//       });
+//   }, []);
+
+//   // Lấy danh sách khóa đào tạo theo hệ đào tạo
+//   useEffect(() => {
+//     if (selectedCurriculum) {
+//       axios.get(`http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/${selectedCurriculum}`)
+//         .then(response => {
+//           setBatches(Array.isArray(response.data) ? response.data : []);
+//           setSelectedBatch('');
+//           setSelectedSemester('');
+//           setSubjectsBySemester({});
+//         })
+//         .catch(error => {
+//           console.error('Lỗi khi lấy khóa đào tạo:', error);
+//           setBatches([]);
+//         });
+//     }
+//   }, [selectedCurriculum]);
+
+//   // Lấy toàn bộ kế hoạch môn học cho tất cả các kỳ khi chọn khóa đào tạo
+//   useEffect(() => {
+//     if (selectedBatch) {
+//       const selectedBatchData = batches.find(batch => batch.id === selectedBatch);
+//       const numSemesters = selectedBatchData?.so_ky_hoc || 9; // Lấy số kỳ học từ API
+//       setMaxSemesters(numSemesters);
+
+//       // Gọi API cho từng kỳ học
+//       const fetchAllSemesters = async () => {
+//         const subjectsPerSemester = {};
+//         for (let ky = 1; ky <= numSemesters; ky++) {
+//           try {
+//             const response = await axios.post('http://localhost:8000/kehoachmonhoc/monhoc', {
+//               khoa_dao_tao_id: selectedBatch,
+//               ky_hoc: ky
+//             });
+//             subjectsPerSemester[ky] = Array.isArray(response.data) ? response.data : [];
+//           } catch (error) {
+//             console.error(`Lỗi khi lấy kế hoạch môn học kỳ ${ky}:`, error);
+//             subjectsPerSemester[ky] = []; // Nếu lỗi, gán mảng rỗng cho kỳ đó
+//           }
+//         }
+//         setSubjectsBySemester(subjectsPerSemester);
+//       };
+
+//       fetchAllSemesters();
+//     }
+//   }, [selectedBatch, batches]);
+
+//   const handleCurriculumChange = (event) => {
+//     setSelectedCurriculum(event.target.value);
+//   };
+
+//   const handleBatchChange = (event) => {
+//     setSelectedBatch(event.target.value);
+//     setSelectedSemester(''); // Reset kỳ học khi thay đổi khóa
+//   };
+
+//   const handleSemesterChange = (event) => {
+//     setSelectedSemester(event.target.value);
+//   };
+
+//   const handleRemoveSubject = (semester, subjectId) => {
+//     setSubjectsBySemester(prev => ({
+//       ...prev,
+//       [semester]: prev[semester].filter(subject => subject.id !== subjectId)
+//     }));
+//   };
+
+//   return (
+//     <Box sx={{ p: 2 }}>
+//       <Grid container spacing={2}>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth>
+//             <InputLabel>Hệ đào tạo</InputLabel>
+//             <Select
+//               value={selectedCurriculum}
+//               label="Hệ đào tạo"
+//               onChange={handleCurriculumChange}
+//             >
+//               {curriculums.map((curriculum) => (
+//                 <MenuItem key={curriculum.id} value={curriculum.id}>
+//                   {curriculum.ten_he_dao_tao}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedCurriculum}>
+//             <InputLabel>Khóa đào tạo</InputLabel>
+//             <Select
+//               value={selectedBatch}
+//               label="Khóa đào tạo"
+//               onChange={handleBatchChange}
+//             >
+//               {batches.map((batch) => (
+//                 <MenuItem key={batch.id} value={batch.id}>
+//                   {batch.ten_khoa}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedBatch}>
+//             <InputLabel>Kỳ học</InputLabel>
+//             <Select
+//               value={selectedSemester}
+//               label="Kỳ học"
+//               onChange={handleSemesterChange}
+//             >
+//               {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
+//                 <MenuItem key={ky} value={ky}>
+//                   Học kỳ {ky}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//       </Grid>
+
+//       {selectedBatch && (
+//         <Box sx={{ mt: 2 }}>
+//           <Typography variant="h6" gutterBottom>
+//             Danh sách môn học theo kỳ
+//           </Typography>
+//           <Grid container spacing={2}>
+//             {selectedSemester ? (
+//               <Grid item xs={12} sm={6} md={4} lg={3}>
+//                 <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                   <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                     Học kỳ {selectedSemester}
+//                   </Typography>
+//                   <Divider sx={{ mb: 2 }} />
+//                   {subjectsBySemester[selectedSemester]?.length > 0 ? (
+//                     <List>
+//                       {subjectsBySemester[selectedSemester].map((subject) => (
+//                         <ListItem
+//                           key={subject.id}
+//                           secondaryAction={
+//                             <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
+//                               <DeleteIcon />
+//                             </IconButton>
+//                           }
+//                         >
+//                           <ListItemText
+//                             primary={subject.ten_mon_hoc || 'Không xác định'}
+//                             primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
+//                             secondary={
+//                               <Chip
+//                                 label={`${subject.so_tin_chi || 0} tín chỉ`}
+//                                 size="small"
+//                                 color="primary"
+//                                 variant="outlined"
+//                                 sx={{ mt: 0.5 }}
+//                               />
+//                             }
+//                           />
+//                         </ListItem>
+//                       ))}
+//                     </List>
+//                   ) : (
+//                     <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                       Chưa có môn học
+//                     </Typography>
+//                   )}
+//                 </Paper>
+//               </Grid>
+//             ) : (
+//               Object.keys(subjectsBySemester).map((semester) => (
+//                 <Grid item xs={12} sm={6} md={4} lg={3} key={semester}>
+//                   <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                     <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                       Học kỳ {semester}
+//                     </Typography>
+//                     <Divider sx={{ mb: 2 }} />
+//                     {subjectsBySemester[semester].length > 0 ? (
+//                       <List>
+//                         {subjectsBySemester[semester].map((subject) => (
+//                           <ListItem
+//                             key={subject.id}
+//                             secondaryAction={
+//                               <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(semester, subject.id)}>
+//                                 <DeleteIcon />
+//                               </IconButton>
+//                             }
+//                           >
+//                             <ListItemText
+//                               primary={subject.ten_mon_hoc || 'Không xác định'}
+//                               primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
+//                               secondary={
+//                                 <Chip
+//                                   label={`${subject.so_tin_chi || 0} tín chỉ`}
+//                                   size="small"
+//                                   color="primary"
+//                                   variant="outlined"
+//                                   sx={{ mt: 0.5 }}
+//                                 />
+//                               }
+//                             />
+//                           </ListItem>
+//                         ))}
+//                       </List>
+//                     ) : (
+//                       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                         Chưa có môn học
+//                       </Typography>
+//                     )}
+//                   </Paper>
+//                 </Grid>
+//               ))
+//             )}
+//           </Grid>
+//         </Box>
+//       )}
+//     </Box>
+//   );
+// };
+
+// export default MonHocTheoHeDaoTao;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Box,
+//   Typography,
+//   Grid,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   IconButton,
+//   FormControl,
+//   InputLabel,
+//   Select,
+//   MenuItem,
+//   Paper,
+//   Chip,
+//   Divider
+// } from '@mui/material';
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import axios from 'axios';
+
+// const MonHocTheoHeDaoTao = () => {
+//   const [selectedCurriculum, setSelectedCurriculum] = useState('');
+//   const [selectedBatch, setSelectedBatch] = useState('');
+//   const [selectedSemester, setSelectedSemester] = useState('');
+//   const [curriculums, setCurriculums] = useState([]);
+//   const [batches, setBatches] = useState([]);
+//   const [subjectsBySemester, setSubjectsBySemester] = useState({});
+//   const [maxSemesters, setMaxSemesters] = useState(0);
+
+//   // Lấy danh sách hệ đào tạo
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/training')
+//       .then(response => {
+//         setCurriculums(Array.isArray(response.data) ? response.data : []);
+//       })
+//       .catch(error => {
+//         console.error('Lỗi khi lấy hệ đào tạo:', error);
+//         setCurriculums([]);
+//       });
+//   }, []);
+
+//   // Lấy danh sách khóa đào tạo theo hệ đào tạo
+//   useEffect(() => {
+//     if (selectedCurriculum) {
+//       axios.get(`http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/${selectedCurriculum}`)
+//         .then(response => {
+//           setBatches(Array.isArray(response.data) ? response.data : []);
+//           setSelectedBatch('');
+//           setSelectedSemester('');
+//           setSubjectsBySemester({});
+//         })
+//         .catch(error => {
+//           console.error('Lỗi khi lấy khóa đào tạo:', error);
+//           setBatches([]);
+//         });
+//     }
+//   }, [selectedCurriculum]);
+
+//   // Lấy kế hoạch môn học khi chọn khóa đào tạo
+//   useEffect(() => {
+//     if (selectedBatch) {
+//       const selectedBatchData = batches.find(batch => batch.id === selectedBatch);
+//       const numSemesters = selectedBatchData?.so_ky_hoc || 9;
+//       setMaxSemesters(numSemesters);
+
+//       // Gọi API để lấy toàn bộ môn học theo khóa
+//       axios.get(`http://localhost:8000/kehoachmonhoc/getbykhoavaky/${selectedBatch}`)
+//         .then(response => {
+//           const subjects = Array.isArray(response.data) ? response.data : [];
+//           // Phân loại môn học theo kỳ
+//           const subjectsPerSemester = {};
+//           for (let ky = 1; ky <= numSemesters; ky++) {
+//             subjectsPerSemester[ky] = subjects.filter(subject => subject.ky_hoc === ky);
+//           }
+//           setSubjectsBySemester(subjectsPerSemester);
+//         })
+//         .catch(error => {
+//           console.error('Lỗi khi lấy kế hoạch môn học:', error);
+//           setSubjectsBySemester({});
+//         });
+//     }
+//   }, [selectedBatch, batches]);
+
+//   const handleCurriculumChange = (event) => {
+//     setSelectedCurriculum(event.target.value);
+//   };
+
+//   const handleBatchChange = (event) => {
+//     setSelectedBatch(event.target.value);
+//     setSelectedSemester('');
+//   };
+
+//   const handleSemesterChange = (event) => {
+//     setSelectedSemester(event.target.value);
+//   };
+
+//   const handleRemoveSubject = (semester, subjectId) => {
+//     setSubjectsBySemester(prev => ({
+//       ...prev,
+//       [semester]: prev[semester].filter(subject => subject.id !== subjectId)
+//     }));
+//   };
+
+//   return (
+//     <Box sx={{ p: 2 }}>
+//       <Grid container spacing={2}>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth>
+//             <InputLabel>Hệ đào tạo</InputLabel>
+//             <Select
+//               value={selectedCurriculum}
+//               label="Hệ đào tạo"
+//               onChange={handleCurriculumChange}
+//             >
+//               {curriculums.map((curriculum) => (
+//                 <MenuItem key={curriculum.id} value={curriculum.id}>
+//                   {curriculum.ten_he_dao_tao}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedCurriculum}>
+//             <InputLabel>Khóa đào tạo</InputLabel>
+//             <Select
+//               value={selectedBatch}
+//               label="Khóa đào tạo"
+//               onChange={handleBatchChange}
+//             >
+//               {batches.map((batch) => (
+//                 <MenuItem key={batch.id} value={batch.id}>
+//                   {batch.ten_khoa}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedBatch}>
+//             <InputLabel>Kỳ học</InputLabel>
+//             <Select
+//               value={selectedSemester}
+//               label="Kỳ học"
+//               onChange={handleSemesterChange}
+//             >
+//               {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
+//                 <MenuItem key={ky} value={ky}>
+//                   Học kỳ {ky}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//       </Grid>
+
+//       {selectedBatch && (
+//         <Box sx={{ mt: 2 }}>
+//           <Typography variant="h6" gutterBottom>
+//             Danh sách môn học theo kỳ
+//           </Typography>
+//           <Grid container spacing={2}>
+//             {selectedSemester ? (
+//               <Grid item xs={12} sm={6} md={4} lg={3}>
+//                 <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                   <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                     Học kỳ {selectedSemester}
+//                   </Typography>
+//                   <Divider sx={{ mb: 2 }} />
+//                   {subjectsBySemester[selectedSemester]?.length > 0 ? (
+//                     <List>
+//                       {subjectsBySemester[selectedSemester].map((subject) => (
+//                         <ListItem
+//                           key={subject.id}
+//                           secondaryAction={
+//                             <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
+//                               <DeleteIcon />
+//                             </IconButton>
+//                           }
+//                         >
+//                           <ListItemText
+//                             primary={subject.ten_mon_hoc || 'Không xác định'}
+//                             primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
+//                             secondary={
+//                               <Chip
+//                                 label={`${subject.so_tin_chi || 0} tín chỉ`}
+//                                 size="small"
+//                                 color="primary"
+//                                 variant="outlined"
+//                                 sx={{ mt: 0.5 }}
+//                               />
+//                             }
+//                           />
+//                         </ListItem>
+//                       ))}
+//                     </List>
+//                   ) : (
+//                     <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                       Chưa có môn học
+//                     </Typography>
+//                   )}
+//                 </Paper>
+//               </Grid>
+//             ) : (
+//               Object.keys(subjectsBySemester).map((semester) => (
+//                 <Grid item xs={12} sm={6} md={4} lg={3} key={semester}>
+//                   <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                     <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                       Học kỳ {semester}
+//                     </Typography>
+//                     <Divider sx={{ mb: 2 }} />
+//                     {subjectsBySemester[semester].length > 0 ? (
+//                       <List>
+//                         {subjectsBySemester[semester].map((subject) => (
+//                           <ListItem
+//                             key={subject.id}
+//                             secondaryAction={
+//                               <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(semester, subject.id)}>
+//                                 <DeleteIcon />
+//                               </IconButton>
+//                             }
+//                           >
+//                             <ListItemText
+//                               primary={subject.ten_mon_hoc || 'Không xác định'}
+//                               primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
+//                               secondary={
+//                                 <Chip
+//                                   label={`${subject.so_tin_chi || 0} tín chỉ`}
+//                                   size="small"
+//                                   color="primary"
+//                                   variant="outlined"
+//                                   sx={{ mt: 0.5 }}
+//                                 />
+//                               }
+//                             />
+//                           </ListItem>
+//                         ))}
+//                       </List>
+//                     ) : (
+//                       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                         Chưa có môn học
+//                       </Typography>
+//                     )}
+//                   </Paper>
+//                 </Grid>
+//               ))
+//             )}
+//           </Grid>
+//         </Box>
+//       )}
+//     </Box>
+//   );
+// };
+
+// export default MonHocTheoHeDaoTao;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Box, Typography, Grid, List, ListItem, ListItemText, IconButton,
+//   FormControl, InputLabel, Select, MenuItem, Paper, Chip, Divider,
+//   Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
+// } from '@mui/material';
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import axios from 'axios';
+
+// const MonHocTheoHeDaoTao = () => {
+//   const [selectedCurriculum, setSelectedCurriculum] = useState('');
+//   const [selectedBatch, setSelectedBatch] = useState('');
+//   const [selectedSemester, setSelectedSemester] = useState('');
+//   const [curriculums, setCurriculums] = useState([]);
+//   const [batches, setBatches] = useState([]);
+//   const [subjectsBySemester, setSubjectsBySemester] = useState({});
+//   const [maxSemesters, setMaxSemesters] = useState(0);
+
+//   // State cho form thêm kế hoạch
+//   const [openForm, setOpenForm] = useState(false);
+//   const [subjects, setSubjects] = useState([]);
+//   const [formData, setFormData] = useState({
+//     khoa_dao_tao_id: '',
+//     mon_hoc_id: '',
+//     ky_hoc: '',
+//     bat_buoc: 0
+//   });
+
+//   // Lấy danh sách hệ đào tạo
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/training')
+//       .then(response => setCurriculums(Array.isArray(response.data) ? response.data : []))
+//       .catch(error => {
+//         console.error('Lỗi khi lấy hệ đào tạo:', error);
+//         setCurriculums([]);
+//       });
+//   }, []);
+
+//   // Lấy danh sách khóa đào tạo theo hệ đào tạo
+//   useEffect(() => {
+//     if (selectedCurriculum) {
+//       axios.get(`http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/${selectedCurriculum}`)
+//         .then(response => {
+//           setBatches(Array.isArray(response.data) ? response.data : []);
+//           setSelectedBatch('');
+//           setSelectedSemester('');
+//           setSubjectsBySemester({});
+//         })
+//         .catch(error => {
+//           console.error('Lỗi khi lấy khóa đào tạo:', error);
+//           setBatches([]);
+//         });
+//     }
+//   }, [selectedCurriculum]);
+
+//   // Lấy tất cả môn học
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/mon-hoc') // Giả sử đây là API lấy tất cả môn học
+//       .then(response => setSubjects(Array.isArray(response.data) ? response.data : []))
+//       .catch(error => console.error('Lỗi khi lấy môn học:', error));
+//   }, []);
+
+//   // Lấy kế hoạch môn học khi chọn khóa đào tạo
+//   useEffect(() => {
+//     if (selectedBatch) {
+//       const selectedBatchData = batches.find(batch => batch.id === selectedBatch);
+//       const numSemesters = selectedBatchData?.so_ky_hoc || 9;
+//       setMaxSemesters(numSemesters);
+//       setFormData(prev => ({ ...prev, khoa_dao_tao_id: selectedBatch }));
+
+//       axios.get(`http://localhost:8000/kehoachmonhoc/getbykhoavaky/${selectedBatch}`)
+//         .then(response => {
+//           const subjects = Array.isArray(response.data) ? response.data : [];
+//           const subjectsPerSemester = {};
+//           for (let ky = 1; ky <= numSemesters; ky++) {
+//             subjectsPerSemester[ky] = subjects.filter(subject => subject.ky_hoc === ky);
+//           }
+//           setSubjectsBySemester(subjectsPerSemester);
+//         })
+//         .catch(error => {
+//           console.error('Lỗi khi lấy kế hoạch môn học:', error);
+//           setSubjectsBySemester({});
+//         });
+//     }
+//   }, [selectedBatch, batches]);
+
+//   const handleCurriculumChange = (event) => {
+//     setSelectedCurriculum(event.target.value);
+//   };
+
+//   const handleBatchChange = (event) => {
+//     setSelectedBatch(event.target.value);
+//     setSelectedSemester('');
+//   };
+
+//   const handleSemesterChange = (event) => {
+//     setSelectedSemester(event.target.value);
+//   };
+
+//   const handleRemoveSubject = (semester, subjectId) => {
+//     setSubjectsBySemester(prev => ({
+//       ...prev,
+//       [semester]: prev[semester].filter(subject => subject.id !== subjectId)
+//     }));
+//   };
+
+//   // Xử lý form
+//   const handleOpenForm = () => setOpenForm(true);
+//   const handleCloseForm = () => {
+//     setOpenForm(false);
+//     setFormData({
+//       khoa_dao_tao_id: selectedBatch,
+//       mon_hoc_id: '',
+//       ky_hoc: '',
+//       bat_buoc: 0
+//     });
+//   };
+
+//   const handleFormChange = (event) => {
+//     const { name, value, type, checked } = event.target;
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: type === 'checkbox' ? (checked ? 1 : 0) : value
+//     }));
+//   };
+
+//   const handleSubmit = (event) => {
+//     event.preventDefault();
+//     axios.post('http://localhost:8000/kehoachmonhoc', formData)
+//       .then(response => {
+//         // Cập nhật lại danh sách môn học sau khi thêm thành công
+//         const newSubject = {
+//           ...response.data,
+//           ten_mon_hoc: subjects.find(s => s.id === formData.mon_hoc_id)?.ten_mon_hoc
+//         };
+//         setSubjectsBySemester(prev => ({
+//           ...prev,
+//           [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), newSubject]
+//         }));
+//         handleCloseForm();
+//       })
+//       .catch(error => console.error('Lỗi khi thêm kế hoạch:', error));
+//   };
+
+//   return (
+//     <Box sx={{ p: 2 }}>
+//       <Grid container spacing={2} alignItems="center">
+//         <Grid item xs={4}>
+//           <FormControl fullWidth>
+//             <InputLabel>Hệ đào tạo</InputLabel>
+//             <Select value={selectedCurriculum} label="Hệ đào tạo" onChange={handleCurriculumChange}>
+//               {curriculums.map((curriculum) => (
+//                 <MenuItem key={curriculum.id} value={curriculum.id}>
+//                   {curriculum.ten_he_dao_tao}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedCurriculum}>
+//             <InputLabel>Khóa đào tạo</InputLabel>
+//             <Select value={selectedBatch} label="Khóa đào tạo" onChange={handleBatchChange}>
+//               {batches.map((batch) => (
+//                 <MenuItem key={batch.id} value={batch.id}>
+//                   {batch.ten_khoa}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={2}>
+//           <FormControl fullWidth disabled={!selectedBatch}>
+//             <InputLabel>Kỳ học</InputLabel>
+//             <Select value={selectedSemester} label="Kỳ học" onChange={handleSemesterChange}>
+//               {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
+//                 <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={2}>
+//           <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
+//             Tạo kế hoạch
+//           </Button>
+//         </Grid>
+//       </Grid>
+
+//       {/* Form thêm kế hoạch môn học */}
+//       <Dialog open={openForm} onClose={handleCloseForm}>
+//         <DialogTitle>Thêm kế hoạch môn học</DialogTitle>
+//         <DialogContent>
+//           <form onSubmit={handleSubmit}>
+//             <FormControl fullWidth sx={{ mt: 2 }}>
+//               <InputLabel>Môn học</InputLabel>
+//               <Select
+//                 name="mon_hoc_id"
+//                 value={formData.mon_hoc_id}
+//                 onChange={handleFormChange}
+//                 required
+//               >
+//                 <MenuItem value="">Chọn môn học</MenuItem>
+//                 {subjects.map(subject => (
+//                   <MenuItem key={subject.id} value={subject.id}>
+//                     {subject.ten_mon_hoc}
+//                   </MenuItem>
+//                 ))}
+//               </Select>
+//             </FormControl>
+
+//             <FormControl fullWidth sx={{ mt: 2 }}>
+//               <InputLabel>Kỳ học</InputLabel>
+//               <Select
+//                 name="ky_hoc"
+//                 value={formData.ky_hoc}
+//                 onChange={handleFormChange}
+//                 required
+//               >
+//                 <MenuItem value="">Chọn kỳ học</MenuItem>
+//                 {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
+//                   <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+//                 ))}
+//               </Select>
+//             </FormControl>
+
+//             <Box sx={{ mt: 2 }}>
+//               <Checkbox
+//                 name="bat_buoc"
+//                 checked={formData.bat_buoc === 1}
+//                 onChange={handleFormChange}
+//               />
+//               <Typography component="span">Bắt buộc</Typography>
+//             </Box>
+//           </form>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={handleCloseForm}>Hủy</Button>
+//           <Button onClick={handleSubmit} variant="contained">Thêm</Button>
+//         </DialogActions>
+//       </Dialog>
+
+//       {/* Hiển thị danh sách môn học */}
+//       {selectedBatch && (
+//         <Box sx={{ mt: 2 }}>
+//           <Typography variant="h6" gutterBottom>
+//             Danh sách môn học theo kỳ
+//           </Typography>
+//           <Grid container spacing={2}>
+//             {selectedSemester ? (
+//               // Hiển thị kỳ đã chọn
+//               <Grid item xs={12} sm={6} md={4} lg={3}>
+//                 <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                   <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                     Học kỳ {selectedSemester}
+//                   </Typography>
+//                   <Divider sx={{ mb: 2 }} />
+//                   {subjectsBySemester[selectedSemester]?.length > 0 ? (
+//                     <List>
+//                       {subjectsBySemester[selectedSemester].map((subject) => (
+//                         <ListItem
+//                           key={subject.id}
+//                           secondaryAction={
+//                             <IconButton edge="end" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
+//                               <DeleteIcon />
+//                             </IconButton>
+//                           }
+//                         >
+//                           <ListItemText
+//                             primary={subject.ten_mon_hoc || 'Không xác định'}
+//                             secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+//                           />
+//                         </ListItem>
+//                       ))}
+//                     </List>
+//                   ) : (
+//                     <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                       Chưa có môn học
+//                     </Typography>
+//                   )}
+//                 </Paper>
+//               </Grid>
+//             ) : (
+//               // Hiển thị tất cả các kỳ
+//               Object.keys(subjectsBySemester).map((semester) => (
+//                 <Grid item xs={12} sm={6} md={4} lg={3} key={semester}>
+//                   <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                     <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                       Học kỳ {semester}
+//                     </Typography>
+//                     <Divider sx={{ mb: 2 }} />
+//                     {subjectsBySemester[semester].length > 0 ? (
+//                       <List>
+//                         {subjectsBySemester[semester].map((subject) => (
+//                           <ListItem
+//                             key={subject.id}
+//                             secondaryAction={
+//                               <IconButton edge="end" onClick={() => handleRemoveSubject(semester, subject.id)}>
+//                                 <DeleteIcon />
+//                               </IconButton>
+//                             }
+//                           >
+//                             <ListItemText
+//                               primary={subject.ten_mon_hoc || 'Không xác định'}
+//                               secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+//                             />
+//                           </ListItem>
+//                         ))}
+//                       </List>
+//                     ) : (
+//                       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                         Chưa có môn học
+//                       </Typography>
+//                     )}
+//                   </Paper>
+//                 </Grid>
+//               ))
+//             )}
+//           </Grid>
+//         </Box>
+//       )}
+//     </Box>
+//   );
+// };
+
+// export default MonHocTheoHeDaoTao;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Box, Typography, Grid, List, ListItem, ListItemText, IconButton,
+//   FormControl, InputLabel, Select, MenuItem, Paper, Chip, Divider,
+//   Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
+// } from '@mui/material';
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import axios from 'axios';
+
+// const MonHocTheoHeDaoTao = () => {
+//   const [selectedCurriculum, setSelectedCurriculum] = useState('');
+//   const [selectedBatch, setSelectedBatch] = useState('');
+//   const [selectedSemester, setSelectedSemester] = useState('');
+//   const [curriculums, setCurriculums] = useState([]);
+//   const [batches, setBatches] = useState([]);
+//   const [subjectsBySemester, setSubjectsBySemester] = useState({});
+//   const [maxSemesters, setMaxSemesters] = useState(0);
+//   const [subjects, setSubjects] = useState([]); // Danh sách tất cả môn học
+//   const [openForm, setOpenForm] = useState(false);
+//   const [formData, setFormData] = useState({
+//     khoa_dao_tao_id: '',
+//     mon_hoc_id: '',
+//     ky_hoc: '',
+//     bat_buoc: 0
+//   });
+
+//   // Lấy danh sách hệ đào tạo
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/training')
+//       .then(response => setCurriculums(Array.isArray(response.data) ? response.data : []))
+//       .catch(error => console.error('Lỗi khi lấy hệ đào tạo:', error));
+//   }, []);
+
+//   // Lấy danh sách khóa đào tạo theo hệ đào tạo
+//   useEffect(() => {
+//     if (selectedCurriculum) {
+//       axios.get(`http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/${selectedCurriculum}`)
+//         .then(response => {
+//           setBatches(Array.isArray(response.data) ? response.data : []);
+//           setSelectedBatch('');
+//           setSelectedSemester('');
+//           setSubjectsBySemester({});
+//         })
+//         .catch(error => console.error('Lỗi khi lấy khóa đào tạo:', error));
+//     }
+//   }, [selectedCurriculum]);
+
+//   // Lấy tất cả môn học
+//   useEffect(() => {
+//     axios.get('http://localhost:8000/mon-hoc')
+//       .then(response => setSubjects(Array.isArray(response.data) ? response.data : []))
+//       .catch(error => console.error('Lỗi khi lấy môn học:', error));
+//   }, []);
+
+//   // Lấy kế hoạch môn học khi chọn khóa đào tạo
+//   useEffect(() => {
+//     if (selectedBatch) {
+//       const selectedBatchData = batches.find(batch => batch.id === selectedBatch);
+//       const numSemesters = selectedBatchData?.so_ky_hoc || 9;
+//       setMaxSemesters(numSemesters);
+//       setFormData(prev => ({ ...prev, khoa_dao_tao_id: selectedBatch }));
+
+//       axios.get(`http://localhost:8000/kehoachmonhoc/getbykhoavaky/${selectedBatch}`)
+//         .then(response => {
+//           const plans = Array.isArray(response.data) ? response.data : [];
+//           // Kết hợp với danh sách môn học để thêm ten_mon_hoc
+//           const enrichedPlans = plans.map(plan => ({
+//             ...plan,
+//             ten_mon_hoc: subjects.find(subject => subject.id === plan.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+//           }));
+//           // Phân loại theo kỳ học
+//           const subjectsPerSemester = {};
+//           for (let ky = 1; ky <= numSemesters; ky++) {
+//             subjectsPerSemester[ky] = enrichedPlans.filter(subject => subject.ky_hoc === ky);
+//           }
+//           setSubjectsBySemester(subjectsPerSemester);
+//         })
+//         .catch(error => console.error('Lỗi khi lấy kế hoạch môn học:', error));
+//     }
+//   }, [selectedBatch, batches, subjects]); // Thêm subjects vào dependency
+
+//   const handleCurriculumChange = (event) => setSelectedCurriculum(event.target.value);
+//   const handleBatchChange = (event) => {
+//     setSelectedBatch(event.target.value);
+//     setSelectedSemester('');
+//   };
+//   const handleSemesterChange = (event) => setSelectedSemester(event.target.value);
+
+//   const handleRemoveSubject = (semester, subjectId) => {
+//     setSubjectsBySemester(prev => ({
+//       ...prev,
+//       [semester]: prev[semester].filter(subject => subject.id !== subjectId)
+//     }));
+//   };
+
+//   const handleOpenForm = () => setOpenForm(true);
+//   const handleCloseForm = () => {
+//     setOpenForm(false);
+//     setFormData({ khoa_dao_tao_id: selectedBatch, mon_hoc_id: '', ky_hoc: '', bat_buoc: 0 });
+//   };
+
+//   const handleFormChange = (event) => {
+//     const { name, value, type, checked } = event.target;
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: type === 'checkbox' ? (checked ? 1 : 0) : value
+//     }));
+//   };
+
+//   const handleSubmit = (event) => {
+//     event.preventDefault();
+//     axios.post('http://localhost:8000/kehoachmonhoc', formData)
+//       .then(response => {
+//         const newSubject = {
+//           ...response.data,
+//           ten_mon_hoc: subjects.find(s => s.id === formData.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+//         };
+//         setSubjectsBySemester(prev => ({
+//           ...prev,
+//           [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), newSubject]
+//         }));
+//         handleCloseForm();
+//       })
+//       .catch(error => console.error('Lỗi khi thêm kế hoạch:', error));
+//   };
+
+//   return (
+//     <Box sx={{ p: 2 }}>
+//       <Grid container spacing={2} alignItems="center">
+//         <Grid item xs={4}>
+//           <FormControl fullWidth>
+//             <InputLabel>Hệ đào tạo</InputLabel>
+//             <Select value={selectedCurriculum} label="Hệ đào tạo" onChange={handleCurriculumChange}>
+//               {curriculums.map((curriculum) => (
+//                 <MenuItem key={curriculum.id} value={curriculum.id}>
+//                   {curriculum.ten_he_dao_tao}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={4}>
+//           <FormControl fullWidth disabled={!selectedCurriculum}>
+//             <InputLabel>Khóa đào tạo</InputLabel>
+//             <Select value={selectedBatch} label="Khóa đào tạo" onChange={handleBatchChange}>
+//               {batches.map((batch) => (
+//                 <MenuItem key={batch.id} value={batch.id}>
+//                   {batch.ten_khoa}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={2}>
+//           <FormControl fullWidth disabled={!selectedBatch}>
+//             <InputLabel>Kỳ học</InputLabel>
+//             <Select value={selectedSemester} label="Kỳ học" onChange={handleSemesterChange}>
+//               {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
+//                 <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+//         </Grid>
+//         <Grid item xs={2}>
+//           <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
+//             Tạo kế hoạch
+//           </Button>
+//         </Grid>
+//       </Grid>
+
+//       <Dialog open={openForm} onClose={handleCloseForm}>
+//         <DialogTitle>Thêm kế hoạch môn học</DialogTitle>
+//         <DialogContent>
+//           <form onSubmit={handleSubmit}>
+//             <FormControl fullWidth sx={{ mt: 2 }}>
+//               <InputLabel>Môn học</InputLabel>
+//               <Select name="mon_hoc_id" value={formData.mon_hoc_id} onChange={handleFormChange} required>
+//                 <MenuItem value="">Chọn môn học</MenuItem>
+//                 {subjects.map(subject => (
+//                   <MenuItem key={subject.id} value={subject.id}>
+//                     {subject.ten_mon_hoc}
+//                   </MenuItem>
+//                 ))}
+//               </Select>
+//             </FormControl>
+//             <FormControl fullWidth sx={{ mt: 2 }}>
+//               <InputLabel>Kỳ học</InputLabel>
+//               <Select name="ky_hoc" value={formData.ky_hoc} onChange={handleFormChange} required>
+//                 <MenuItem value="">Chọn kỳ học</MenuItem>
+//                 {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
+//                   <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+//                 ))}
+//               </Select>
+//             </FormControl>
+//             <Box sx={{ mt: 2 }}>
+//               <Checkbox name="bat_buoc" checked={formData.bat_buoc === 1} onChange={handleFormChange} />
+//               <Typography component="span">Bắt buộc</Typography>
+//             </Box>
+//           </form>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={handleCloseForm}>Hủy</Button>
+//           <Button onClick={handleSubmit} variant="contained">Thêm</Button>
+//         </DialogActions>
+//       </Dialog>
+
+//       {selectedBatch && (
+//         <Box sx={{ mt: 2 }}>
+//           <Typography variant="h6" gutterBottom>Danh sách môn học theo kỳ</Typography>
+//           <Grid container spacing={2}>
+//             {selectedSemester ? (
+//               <Grid item xs={12} sm={6} md={4} lg={3}>
+//                 <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                   <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                     Học kỳ {selectedSemester}
+//                   </Typography>
+//                   <Divider sx={{ mb: 2 }} />
+//                   {subjectsBySemester[selectedSemester]?.length > 0 ? (
+//                     <List>
+//                       {subjectsBySemester[selectedSemester].map((subject) => (
+//                         <ListItem
+//                           key={subject.id}
+//                           secondaryAction={
+//                             <IconButton edge="end" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
+//                               <DeleteIcon />
+//                             </IconButton>
+//                           }
+//                         >
+//                           <ListItemText
+//                             primary={subject.ten_mon_hoc}
+//                             secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+//                           />
+//                         </ListItem>
+//                       ))}
+//                     </List>
+//                   ) : (
+//                     <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                       Chưa có môn học
+//                     </Typography>
+//                   )}
+//                 </Paper>
+//               </Grid>
+//             ) : (
+//               Object.keys(subjectsBySemester).map((semester) => (
+//                 <Grid item xs={12} sm={6} md={4} lg={3} key={semester}>
+//                   <Paper sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
+//                     <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+//                       Học kỳ {semester}
+//                     </Typography>
+//                     <Divider sx={{ mb: 2 }} />
+//                     {subjectsBySemester[semester].length > 0 ? (
+//                       <List>
+//                         {subjectsBySemester[semester].map((subject) => (
+//                           <ListItem
+//                             key={subject.id}
+//                             secondaryAction={
+//                               <IconButton edge="end" onClick={() => handleRemoveSubject(semester, subject.id)}>
+//                                 <DeleteIcon />
+//                               </IconButton>
+//                             }
+//                           >
+//                             <ListItemText
+//                               primary={subject.ten_mon_hoc}
+//                               secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+//                             />
+//                           </ListItem>
+//                         ))}
+//                       </List>
+//                     ) : (
+//                       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+//                         Chưa có môn học
+//                       </Typography>
+//                     )}
+//                   </Paper>
+//                 </Grid>
+//               ))
+//             )}
+//           </Grid>
+//         </Box>
+//       )}
+//     </Box>
+//   );
+// };
+
+// export default MonHocTheoHeDaoTao;
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
-  Chip,
-  Divider
+  Box, Typography, Grid, List, ListItem, ListItemText, IconButton,
+  FormControl, InputLabel, Select, MenuItem, Paper, Chip, Divider,
+  Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
@@ -970,22 +2147,25 @@ import axios from 'axios';
 const MonHocTheoHeDaoTao = () => {
   const [selectedCurriculum, setSelectedCurriculum] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState(''); // Kỳ học được chọn
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [curriculums, setCurriculums] = useState([]);
   const [batches, setBatches] = useState([]);
-  const [subjectsBySemester, setSubjectsBySemester] = useState({}); // Lưu môn học theo kỳ
-  const [maxSemesters, setMaxSemesters] = useState(0); // Số kỳ tối đa của khóa
+  const [subjectsBySemester, setSubjectsBySemester] = useState({});
+  const [maxSemesters, setMaxSemesters] = useState(0);
+  const [subjects, setSubjects] = useState([]);
+  const [openForm, setOpenForm] = useState(false);
+  const [formData, setFormData] = useState({
+    khoa_dao_tao_id: '',
+    mon_hoc_id: '',
+    ky_hoc: '',
+    bat_buoc: 0
+  });
 
   // Lấy danh sách hệ đào tạo
   useEffect(() => {
     axios.get('http://localhost:8000/training')
-      .then(response => {
-        setCurriculums(Array.isArray(response.data) ? response.data : []);
-      })
-      .catch(error => {
-        console.error('Lỗi khi lấy hệ đào tạo:', error);
-        setCurriculums([]);
-      });
+      .then(response => setCurriculums(Array.isArray(response.data) ? response.data : []))
+      .catch(error => console.error('Lỗi khi lấy hệ đào tạo:', error));
   }, []);
 
   // Lấy danh sách khóa đào tạo theo hệ đào tạo
@@ -998,54 +2178,48 @@ const MonHocTheoHeDaoTao = () => {
           setSelectedSemester('');
           setSubjectsBySemester({});
         })
-        .catch(error => {
-          console.error('Lỗi khi lấy khóa đào tạo:', error);
-          setBatches([]);
-        });
+        .catch(error => console.error('Lỗi khi lấy khóa đào tạo:', error));
     }
   }, [selectedCurriculum]);
 
-  // Lấy toàn bộ kế hoạch môn học cho tất cả các kỳ khi chọn khóa đào tạo
+  // Lấy tất cả môn học
+  useEffect(() => {
+    axios.get('http://localhost:8000/mon-hoc')
+      .then(response => setSubjects(Array.isArray(response.data) ? response.data : []))
+      .catch(error => console.error('Lỗi khi lấy môn học:', error));
+  }, []);
+
+  // Lấy kế hoạch môn học khi chọn khóa đào tạo
   useEffect(() => {
     if (selectedBatch) {
       const selectedBatchData = batches.find(batch => batch.id === selectedBatch);
-      const numSemesters = selectedBatchData?.so_ky_hoc || 9; // Lấy số kỳ học từ API
+      const numSemesters = selectedBatchData?.so_ky_hoc || 9;
       setMaxSemesters(numSemesters);
+      setFormData(prev => ({ ...prev, khoa_dao_tao_id: selectedBatch }));
 
-      // Gọi API cho từng kỳ học
-      const fetchAllSemesters = async () => {
-        const subjectsPerSemester = {};
-        for (let ky = 1; ky <= numSemesters; ky++) {
-          try {
-            const response = await axios.post('http://localhost:8000/kehoachmonhoc/monhoc', {
-              khoa_dao_tao_id: selectedBatch,
-              ky_hoc: ky
-            });
-            subjectsPerSemester[ky] = Array.isArray(response.data) ? response.data : [];
-          } catch (error) {
-            console.error(`Lỗi khi lấy kế hoạch môn học kỳ ${ky}:`, error);
-            subjectsPerSemester[ky] = []; // Nếu lỗi, gán mảng rỗng cho kỳ đó
+      axios.get(`http://localhost:8000/kehoachmonhoc/getbykhoavaky/${selectedBatch}`)
+        .then(response => {
+          const plans = Array.isArray(response.data) ? response.data : [];
+          const enrichedPlans = plans.map(plan => ({
+            ...plan,
+            ten_mon_hoc: subjects.find(subject => subject.id === plan.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+          }));
+          const subjectsPerSemester = {};
+          for (let ky = 1; ky <= numSemesters; ky++) {
+            subjectsPerSemester[ky] = enrichedPlans.filter(subject => subject.ky_hoc === ky);
           }
-        }
-        setSubjectsBySemester(subjectsPerSemester);
-      };
-
-      fetchAllSemesters();
+          setSubjectsBySemester(subjectsPerSemester);
+        })
+        .catch(error => console.error('Lỗi khi lấy kế hoạch môn học:', error));
     }
-  }, [selectedBatch, batches]);
+  }, [selectedBatch, batches, subjects]);
 
-  const handleCurriculumChange = (event) => {
-    setSelectedCurriculum(event.target.value);
-  };
-
+  const handleCurriculumChange = (event) => setSelectedCurriculum(event.target.value);
   const handleBatchChange = (event) => {
     setSelectedBatch(event.target.value);
-    setSelectedSemester(''); // Reset kỳ học khi thay đổi khóa
+    setSelectedSemester('');
   };
-
-  const handleSemesterChange = (event) => {
-    setSelectedSemester(event.target.value);
-  };
+  const handleSemesterChange = (event) => setSelectedSemester(event.target.value);
 
   const handleRemoveSubject = (semester, subjectId) => {
     setSubjectsBySemester(prev => ({
@@ -1054,17 +2228,49 @@ const MonHocTheoHeDaoTao = () => {
     }));
   };
 
+  const handleOpenForm = () => setOpenForm(true);
+  const handleCloseForm = () => {
+    setOpenForm(false);
+    setFormData({ khoa_dao_tao_id: selectedBatch, mon_hoc_id: '', ky_hoc: '', bat_buoc: 0 });
+  };
+
+  const handleFormChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    axios.post('http://localhost:8000/kehoachmonhoc', formData)
+      .then(response => {
+        const newSubject = {
+          ...response.data,
+          ten_mon_hoc: subjects.find(s => s.id === formData.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+        };
+        setSubjectsBySemester(prev => ({
+          ...prev,
+          [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), newSubject]
+        }));
+        handleCloseForm();
+      })
+      .catch(error => console.error('Lỗi khi thêm kế hoạch:', error));
+  };
+
+  // Hàm reset về trạng thái hiển thị tất cả kỳ
+  const handleResetSemester = () => {
+    setSelectedSemester('');
+  };
+
   return (
     <Box sx={{ p: 2 }}>
-      <Grid container spacing={2}>
+      <Grid container spacing={2} alignItems="center">
         <Grid item xs={4}>
           <FormControl fullWidth>
             <InputLabel>Hệ đào tạo</InputLabel>
-            <Select
-              value={selectedCurriculum}
-              label="Hệ đào tạo"
-              onChange={handleCurriculumChange}
-            >
+            <Select value={selectedCurriculum} label="Hệ đào tạo" onChange={handleCurriculumChange}>
               {curriculums.map((curriculum) => (
                 <MenuItem key={curriculum.id} value={curriculum.id}>
                   {curriculum.ten_he_dao_tao}
@@ -1076,11 +2282,7 @@ const MonHocTheoHeDaoTao = () => {
         <Grid item xs={4}>
           <FormControl fullWidth disabled={!selectedCurriculum}>
             <InputLabel>Khóa đào tạo</InputLabel>
-            <Select
-              value={selectedBatch}
-              label="Khóa đào tạo"
-              onChange={handleBatchChange}
-            >
+            <Select value={selectedBatch} label="Khóa đào tạo" onChange={handleBatchChange}>
               {batches.map((batch) => (
                 <MenuItem key={batch.id} value={batch.id}>
                   {batch.ten_khoa}
@@ -1089,29 +2291,71 @@ const MonHocTheoHeDaoTao = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={2}>
           <FormControl fullWidth disabled={!selectedBatch}>
             <InputLabel>Kỳ học</InputLabel>
-            <Select
-              value={selectedSemester}
-              label="Kỳ học"
-              onChange={handleSemesterChange}
-            >
+            <Select value={selectedSemester} label="Kỳ học" onChange={handleSemesterChange}>
               {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
-                <MenuItem key={ky} value={ky}>
-                  Học kỳ {ky}
-                </MenuItem>
+                <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={2}>
+          <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
+            Tạo kế hoạch
+          </Button>
+        </Grid>
       </Grid>
+
+      <Dialog open={openForm} onClose={handleCloseForm}>
+        <DialogTitle>Thêm kế hoạch môn học</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleSubmit}>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Môn học</InputLabel>
+              <Select name="mon_hoc_id" value={formData.mon_hoc_id} onChange={handleFormChange} required>
+                <MenuItem value="">Chọn môn học</MenuItem>
+                {subjects.map(subject => (
+                  <MenuItem key={subject.id} value={subject.id}>
+                    {subject.ten_mon_hoc}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Kỳ học</InputLabel>
+              <Select name="ky_hoc" value={formData.ky_hoc} onChange={handleFormChange} required>
+                <MenuItem value="">Chọn kỳ học</MenuItem>
+                {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
+                  <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box sx={{ mt: 2 }}>
+              <Checkbox name="bat_buoc" checked={formData.bat_buoc === 1} onChange={handleFormChange} />
+              <Typography component="span">Bắt buộc</Typography>
+            </Box>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseForm}>Hủy</Button>
+          <Button onClick={handleSubmit} variant="contained">Thêm</Button>
+        </DialogActions>
+      </Dialog>
 
       {selectedBatch && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Danh sách môn học theo kỳ
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Danh sách môn học theo kỳ
+            </Typography>
+            {selectedSemester && (
+              <Button variant="outlined" onClick={handleResetSemester}>
+                Trở về trạng thái bình thường
+              </Button>
+            )}
+          </Box>
           <Grid container spacing={2}>
             {selectedSemester ? (
               <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -1126,23 +2370,14 @@ const MonHocTheoHeDaoTao = () => {
                         <ListItem
                           key={subject.id}
                           secondaryAction={
-                            <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
+                            <IconButton edge="end" onClick={() => handleRemoveSubject(selectedSemester, subject.id)}>
                               <DeleteIcon />
                             </IconButton>
                           }
                         >
                           <ListItemText
-                            primary={subject.ten_mon_hoc || 'Không xác định'}
-                            primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
-                            secondary={
-                              <Chip
-                                label={`${subject.so_tin_chi || 0} tín chỉ`}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{ mt: 0.5 }}
-                              />
-                            }
+                            primary={subject.ten_mon_hoc}
+                            secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
                           />
                         </ListItem>
                       ))}
@@ -1168,23 +2403,14 @@ const MonHocTheoHeDaoTao = () => {
                           <ListItem
                             key={subject.id}
                             secondaryAction={
-                              <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveSubject(semester, subject.id)}>
+                              <IconButton edge="end" onClick={() => handleRemoveSubject(semester, subject.id)}>
                                 <DeleteIcon />
                               </IconButton>
                             }
                           >
                             <ListItemText
-                              primary={subject.ten_mon_hoc || 'Không xác định'}
-                              primaryTypographyProps={{ fontSize: 16, fontWeight: 500 }}
-                              secondary={
-                                <Chip
-                                  label={`${subject.so_tin_chi || 0} tín chỉ`}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                  sx={{ mt: 0.5 }}
-                                />
-                              }
+                              primary={subject.ten_mon_hoc}
+                              secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
                             />
                           </ListItem>
                         ))}
