@@ -56,6 +56,15 @@ class ThoiKhoaBieuController {
     }
   }
 
+  static async createAll(req, res) {
+    try {
+      const data = await ThoiKhoaBieuService.createAll(req.body);
+      res.status(201).json(data);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   static async update(req, res) {
     try {
       const data = await ThoiKhoaBieuService.update(req.params.id, req.body);
