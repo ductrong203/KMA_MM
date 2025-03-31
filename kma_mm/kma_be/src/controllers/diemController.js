@@ -45,12 +45,13 @@ class DiemController {
 
   static async update(req, res) {
     try {
-      const data = await DiemService.update(req.params.id, req.body);
+      const data = await DiemService.update(req.body);
       res.json(data);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
   }
+
 
   static async delete(req, res) {
     try {
@@ -58,6 +59,30 @@ class DiemController {
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
+    }
+  }
+
+  static async importExcel(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
+      }
+      const result = await DiemService.importExcel(req.file.path);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  static async importExcelCuoiKy(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
+      }
+      const result = await DiemService.importExcelCuoiKy(req.file.path);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
   }
 }

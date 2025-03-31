@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const KeHoachMonHocController = require('../controllers/keHoachMonHocController');
 
-router.post("/getbykhoavaky", KeHoachMonHocController.getByKhoaDaoTaoAndKyHoc);
+router.get("/getbykhoavaky/:khoa_dao_tao_id/:ky_hoc?", KeHoachMonHocController.getByKhoaDaoTaoAndKyHoc);
 router.post("/monhoc", KeHoachMonHocController.getMonHocByKhoaDaoTaoAndKyHoc);
 router.get('/', KeHoachMonHocController.getAll);
 router.get('/:id', KeHoachMonHocController.getById);

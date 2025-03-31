@@ -1,4 +1,5 @@
 const { thoi_khoa_bieu, lop, mon_hoc } = require('../models');
+const KeHoachMonHocService = require('./keHoachMonHocService');
 
 class ThoiKhoaBieuService {
   static async getAll() {
@@ -116,6 +117,36 @@ class ThoiKhoaBieuService {
     if (!monHocExist) throw new Error('Môn học không tồn tại.');
 
     return await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc });
+  }
+
+  static async createAll({ lop_id, giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc, khoa_dao_tao_id }) {
+    try {
+      // Lấy danh sách môn học từ kế hoạch môn học
+      const danhSachMonHoc = await KeHoachMonHocService.getMonHocByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc);
+
+      if (!danhSachMonHoc.length) throw new Error('Không tìm thấy môn học phù hợp với kế hoạch.');
+
+      // Kiểm tra lớp tồn tại
+      const lopExist = await lop.findByPk(lop_id);
+      if (!lopExist) throw new Error('Lớp không tồn tại.');
+
+      // Tạo thời khóa biểu cho từng môn
+      const results = await Promise.all(danhSachMonHoc.map(mon => {
+        return thoi_khoa_bieu.create({
+          lop_id,
+          mon_hoc_id: mon.id,
+          giang_vien,
+          phong_hoc,
+          tiet_hoc,
+          trang_thai,
+          ky_hoc,
+        });
+      }));
+
+      return results;
+    } catch (error) {
+      throw new Error('Lỗi khi tạo thời khóa biểu hàng loạt: ' + error.message);
+    }
   }
 
   static async update(id, data) {
