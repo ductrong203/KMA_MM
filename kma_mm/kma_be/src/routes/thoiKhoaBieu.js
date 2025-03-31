@@ -5,6 +5,7 @@ const ThoiKhoaBieuController = require('../controllers/thoiKhoaBieuController');
 router.get('/filter', ThoiKhoaBieuController.filter);
 router.get('/filterbyid', ThoiKhoaBieuController.filterbyid);
 router.get('/getbypage', ThoiKhoaBieuController.getByPage);
+router.post('/createall',ThoiKhoaBieuController.createAll);
 router.get('/', ThoiKhoaBieuController.getAll);
 router.get('/:id', ThoiKhoaBieuController.getById);
 router.post('/', ThoiKhoaBieuController.create);
