@@ -784,10 +784,6 @@
 
 
 
-
-
-
-
 import { useState, useEffect } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
@@ -876,6 +872,7 @@ const ThoiKhoaBieu = () => {
                 setOriginalLopList(lop);
                 setLopList(lop);
                 setLopListView(lop);
+                setMonHocList(monHoc);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu ban đầu:", error);
             } finally {
@@ -951,6 +948,17 @@ const ThoiKhoaBieu = () => {
         }
     };
 
+    const fetchMonHocByHeDaoTao = async (heDaoTaoId) => {
+        try {
+            const response = await fetch(`http://localhost:8000/mon-hoc/getByHeDaoTaoId/${heDaoTaoId}`);
+            const data = await response.json();
+            return data.data || [];
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách môn học theo hệ đào tạo:", error);
+            return [];
+        }
+    };
+
     const fetchGiangVienList = async () => {
         try {
             const response = await getGiangVien();
@@ -981,31 +989,43 @@ const ThoiKhoaBieu = () => {
             return [];
         }
     };
+
     const handlePageChange = (event, value) => {
         setPage(value);
     };
+
     useEffect(() => {
         if (heDaoTaoFilter) {
-            fetchKhoaDaoTaoList(heDaoTaoFilter).then((response) => {
-                setKhoaDaoTao(response);
+            Promise.all([
+                fetchKhoaDaoTaoList(heDaoTaoFilter),
+                fetchMonHocByHeDaoTao(heDaoTaoFilter)
+            ]).then(([khoaResponse, monHocResponse]) => {
+                setKhoaDaoTao(khoaResponse);
+                setMonHocList(monHocResponse);
             });
         } else {
             setKhoaDaoTao([]);
             setKyHocOptionsFilter([]);
             setLopList(originalLopList);
             setLopListView(originalLopList);
+            fetchMonHocList().then(setMonHocList);
         }
     }, [heDaoTaoFilter, originalLopList]);
 
     useEffect(() => {
         if (heDaoTaoId) {
-            fetchKhoaDaoTaoList(heDaoTaoId).then((response) => {
-                setKhoaDaoTao(response);
+            Promise.all([
+                fetchKhoaDaoTaoList(heDaoTaoId),
+                fetchMonHocByHeDaoTao(heDaoTaoId)
+            ]).then(([khoaResponse, monHocResponse]) => {
+                setKhoaDaoTao(khoaResponse);
+                setMonHocList(monHocResponse);
             });
         } else {
             setKhoaDaoTao([]);
             setKyHocOptionsForm([]);
             setLopList(originalLopList);
+            fetchMonHocList().then(setMonHocList);
         }
     }, [heDaoTaoId, originalLopList]);
 
@@ -1099,8 +1119,8 @@ const ThoiKhoaBieu = () => {
         setKyHoc("");
         setLopId("");
         setMonHocId("");
-        setKhoaDaoTaoId("");
-        setHeDaoTaoId("");
+        // setKhoaDaoTaoId("");   // không reset để k ảnh hưởng đến bộ lọc bên ngoài 
+        // setHeDaoTaoId("");// không reset để k ảnh hưởng đến bộ lọc bên ngoài 
         setKyHocOptionsForm([]);
         setLopSearch("");
         setMonHocSearch("");
@@ -1118,6 +1138,10 @@ const ThoiKhoaBieu = () => {
         setKyHoc(kyHocFilter || "");
         setLopId(lopIdFilter || "");
         setMonHocId(monHocIdFilter || "");
+
+        if (heDaoTaoFilter) {
+            fetchMonHocByHeDaoTao(heDaoTaoFilter).then(setMonHocList);
+        }
         if (khoaDaoTaoFilter) {
             fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
             const selectedKhoa = khoaDaoTao.find(khoa => khoa.id === khoaDaoTaoFilter);
@@ -1148,6 +1172,7 @@ const ThoiKhoaBieu = () => {
             setHeDaoTaoId(selectedKhoa.he_dao_tao_id);
             setKhoaDaoTaoId(selectedKhoa.id);
             fetchLopByKhoaDaoTao(selectedKhoa.id);
+            fetchMonHocByHeDaoTao(selectedKhoa.he_dao_tao_id).then(setMonHocList);
             const kyHocCount = selectedKhoa.so_ky_hoc;
             const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
             setKyHocOptionsForm(kyHocArray);
