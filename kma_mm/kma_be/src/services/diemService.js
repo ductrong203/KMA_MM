@@ -55,7 +55,7 @@ class DiemService {
   // }
   static async filter({ sinh_vien_id, thoi_khoa_bieu_id }) {
     const whereClause = {};
-  
+
     if (sinh_vien_id) {
       const foundSinhVien = await sinh_vien.findByPk(sinh_vien_id);
       if (foundSinhVien) {
@@ -64,7 +64,7 @@ class DiemService {
         return { data: [] };
       }
     }
-  
+
     if (thoi_khoa_bieu_id) {
       const foundTKB = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
       if (foundTKB) {
@@ -73,7 +73,7 @@ class DiemService {
         return { data: [] };
       }
     }
-  
+
     const rows = await diem.findAll({
       where: whereClause,
       order: [['id', 'DESC']],
@@ -85,7 +85,7 @@ class DiemService {
         }
       ]
     });
-  
+
     return {
       data: rows
     };
@@ -109,59 +109,59 @@ class DiemService {
 
   static async createDiemForClass(thoi_khoa_bieu_id) {
     try {
-        // Tìm thông tin thời khóa biểu
-        const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
-        if (!tkb) {
-            throw new Error("Không tìm thấy thời khóa biểu!");
-        }
+      // Tìm thông tin thời khóa biểu
+      const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+      if (!tkb) {
+        throw new Error("Không tìm thấy thời khóa biểu!");
+      }
 
-        // Lấy danh sách sinh viên thuộc lớp của thời khóa biểu
-        const sinhViens = await sinh_vien.findAll({
-            where: { lop_id: tkb.lop_id },
-            attributes: ['id'] // Chỉ lấy ID sinh viên
-        });
+      // Lấy danh sách sinh viên thuộc lớp của thời khóa biểu
+      const sinhViens = await sinh_vien.findAll({
+        where: { lop_id: tkb.lop_id },
+        attributes: ['id'] // Chỉ lấy ID sinh viên
+      });
 
-        if (!sinhViens.length) {
-            throw new Error("Không có sinh viên nào trong lớp này!");
-        }
+      if (!sinhViens.length) {
+        throw new Error("Không có sinh viên nào trong lớp này!");
+      }
 
-        // Lấy danh sách điểm đã tồn tại
-        const existingDiemRecords = await diem.findAll({
-            where: {
-                thoi_khoa_bieu_id: thoi_khoa_bieu_id,
-                sinh_vien_id: sinhViens.map(sv => sv.id)
-            },
-            attributes: ['sinh_vien_id']
-        });
+      // Lấy danh sách điểm đã tồn tại
+      const existingDiemRecords = await diem.findAll({
+        where: {
+          thoi_khoa_bieu_id: thoi_khoa_bieu_id,
+          sinh_vien_id: sinhViens.map(sv => sv.id)
+        },
+        attributes: ['sinh_vien_id']
+      });
 
-        // Lọc ra những sinh viên chưa có bản ghi điểm
-        const existingStudentIds = new Set(existingDiemRecords.map(d => d.sinh_vien_id));
-        const newDiemList = sinhViens
-            .filter(sv => !existingStudentIds.has(sv.id))
-            .map(sv => ({
-                sinh_vien_id: sv.id,
-                thoi_khoa_bieu_id: thoi_khoa_bieu_id,
-                lan_hoc: null,
-                lan_thi: null,
-                diem_tp1: null,
-                diem_tp2: null,
-                diem_gk: null,
-                diem_ck: null,
-                diem_he_4: null,
-                diem_chu: null,
-                ngay_cap_nhat: null,
-                trang_thai: null,
-                diem_hp: null
-            }));
+      // Lọc ra những sinh viên chưa có bản ghi điểm
+      const existingStudentIds = new Set(existingDiemRecords.map(d => d.sinh_vien_id));
+      const newDiemList = sinhViens
+        .filter(sv => !existingStudentIds.has(sv.id))
+        .map(sv => ({
+          sinh_vien_id: sv.id,
+          thoi_khoa_bieu_id: thoi_khoa_bieu_id,
+          lan_hoc: null,
+          lan_thi: null,
+          diem_tp1: null,
+          diem_tp2: null,
+          diem_gk: null,
+          diem_ck: null,
+          diem_he_4: null,
+          diem_chu: null,
+          ngay_cap_nhat: null,
+          trang_thai: null,
+          diem_hp: null
+        }));
 
-        // Chỉ thêm bản ghi nếu có sinh viên mới
-        if (newDiemList.length > 0) {
-            await diem.bulkCreate(newDiemList);
-        }
+      // Chỉ thêm bản ghi nếu có sinh viên mới
+      if (newDiemList.length > 0) {
+        await diem.bulkCreate(newDiemList);
+      }
 
-        return { message: "Tạo bảng điểm thành công!", data: newDiemList };
+      return { message: "Tạo bảng điểm thành công!", data: newDiemList };
     } catch (error) {
-        throw error;
+      throw error;
     }
   }
 
@@ -224,9 +224,9 @@ class DiemService {
         diem_hp: null,
       });
 
-      return { 
-        message: `Thêm sinh viên học lại môn này lần ${newLanHoc} thành công!`, 
-        data: newDiem 
+      return {
+        message: `Thêm sinh viên học lại môn này lần ${newLanHoc} thành công!`,
+        data: newDiem
       };
     } catch (error) {
       throw error;
@@ -235,41 +235,41 @@ class DiemService {
 
   static async update(diemList) {
     try {
-        if (!Array.isArray(diemList) || diemList.length === 0) {
-            throw new Error('Danh sách điểm cần cập nhật không hợp lệ.');
+      if (!Array.isArray(diemList) || diemList.length === 0) {
+        throw new Error('Danh sách điểm cần cập nhật không hợp lệ.');
+      }
+
+      const updatedRecords = [];
+
+      for (const data of diemList) {
+        const { id, sinh_vien_id, thoi_khoa_bieu_id, ...updateData } = data;
+
+        const record = await diem.findByPk(id);
+        if (!record) {
+          throw new Error(`Điểm với ID ${id} không tồn tại.`);
         }
 
-        const updatedRecords = [];
-        
-        for (const data of diemList) {
-            const { id, sinh_vien_id, thoi_khoa_bieu_id, ...updateData } = data;
-            
-            const record = await diem.findByPk(id);
-            if (!record) {
-                throw new Error(`Điểm với ID ${id} không tồn tại.`);
-            }
-
-            if (sinh_vien_id) {
-                const sinhVienExist = await sinh_vien.findByPk(sinh_vien_id);
-                if (!sinhVienExist) {
-                    throw new Error(`Sinh viên với ID ${sinh_vien_id} không tồn tại.`);
-                }
-            }
-
-            if (thoi_khoa_bieu_id) {
-                const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
-                if (!tkbExist) {
-                    throw new Error(`Thời khóa biểu với ID ${thoi_khoa_bieu_id} không tồn tại.`);
-                }
-            }
-
-            await record.update(updateData);
-            updatedRecords.push(record);
+        if (sinh_vien_id) {
+          const sinhVienExist = await sinh_vien.findByPk(sinh_vien_id);
+          if (!sinhVienExist) {
+            throw new Error(`Sinh viên với ID ${sinh_vien_id} không tồn tại.`);
+          }
         }
 
-        return { message: 'Cập nhật danh sách điểm thành công!', data: updatedRecords };
+        if (thoi_khoa_bieu_id) {
+          const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+          if (!tkbExist) {
+            throw new Error(`Thời khóa biểu với ID ${thoi_khoa_bieu_id} không tồn tại.`);
+          }
+        }
+
+        await record.update(updateData);
+        updatedRecords.push(record);
+      }
+
+      return { message: 'Cập nhật danh sách điểm thành công!', data: updatedRecords };
     } catch (error) {
-        throw error;
+      throw error;
     }
   }
 
@@ -448,7 +448,7 @@ class DiemService {
         } else if (!isNaN(Number(diemRaw))) {
           diem = parseFloat(Number(diemRaw).toFixed(2));
         } else {
-          diem = diemRaw; 
+          diem = diemRaw;
         }
 
         if (ma_hvsv !== "") {

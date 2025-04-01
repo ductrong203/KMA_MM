@@ -9,11 +9,14 @@ class KeHoachMonHocService {
     return await ke_hoach_mon_hoc.findByPk(id);
   }
 
-  static async getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+  static async getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc = null) {
     try {
-      const data = await ke_hoach_mon_hoc.findAll({
-        where: { khoa_dao_tao_id, ky_hoc },
-      });
+      const whereClause = { khoa_dao_tao_id };
+      if (ky_hoc) {
+        whereClause.ky_hoc = ky_hoc;
+      }
+      
+      const data = await ke_hoach_mon_hoc.findAll({ where: whereClause });
       return data;
     } catch (error) {
       throw new Error("Lỗi khi lấy dữ liệu kế hoạch môn học");
