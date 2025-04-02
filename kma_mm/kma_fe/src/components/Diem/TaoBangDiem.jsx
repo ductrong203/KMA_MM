@@ -39,6 +39,7 @@ import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monH
 import api from '../../Api_controller/Api_setup/axiosConfig';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { kiemTraBangDiemTonTai, layDanhSachSinhVienTheoTKB, taoBangDiemChoSinhVien, themSinhVienHocLai, timSinhVienTheoMaHoacFilter } from '../../Api_controller/Service/diemService';
+import { exportDanhSachDiem } from '../../Api_controller/Service/excelService';
 
 // Assuming you have an API base URL
 const API_BASE_URL = 'https://your-api-base-url.com/api';
@@ -390,13 +391,13 @@ function TaoBangDiem({ sampleStudents }) {
             alert('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
             return;
         }
-    
+
         setLoadingStudents(true);
         try {
             // Kiểm tra xem bảng điểm đã tồn tại chưa
             const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
             console.log(existingGradeSheet)
-            if (existingGradeSheet ) {
+            if (existingGradeSheet) {
                 alert('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
                 // Tùy chọn: Lấy dữ liệu bảng điểm hiện có
                 const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
@@ -404,13 +405,13 @@ function TaoBangDiem({ sampleStudents }) {
                     studentsResponse.data.map(async (student) => {
                         const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                         const maLop = lopInfo?.ma_lop || student.lop_id;
-    
+
                         return {
                             ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
                             ho_dem: student.sinh_vien.ho_dem,
                             ten: student.sinh_vien.ten,
                             lop: maLop,
-                            lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
+                            lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
                             diem: {
                                 TP1: student.diem_tp1 || null,
                                 TP2: student.diem_tp2 || null,
@@ -424,27 +425,27 @@ function TaoBangDiem({ sampleStudents }) {
                 setStudents(formattedStudents);
                 return; // Dừng hàm nếu bảng điểm đã tồn tại
             }
-    
+
             // Nếu chưa tồn tại, tiến hành tạo bảng điểm
             const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
             console.log('Grade sheet response:', gradeSheetResponse);
-    
+
             // Lấy danh sách sinh viên cho bảng điểm
             const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
             console.log("studentsResponse:", studentsResponse);
-    
+
             // Chuyển đổi dữ liệu sinh viên
             const formattedStudents = await Promise.all(
                 studentsResponse.data.map(async (student) => {
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                     const maLop = lopInfo?.ma_lop || student.lop_id;
-    
+
                     return {
                         ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
                         ho_dem: student.sinh_vien.ho_dem,
                         ten: student.sinh_vien.ten,
                         lop: maLop,
-                        lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
+                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
                         diem: {
                             TP1: student.diem_tp1 || null,
                             TP2: student.diem_tp2 || null,
@@ -457,7 +458,7 @@ function TaoBangDiem({ sampleStudents }) {
             );
             console.log(formattedStudents);
             setStudents(formattedStudents);
-    
+
             if (formattedStudents.length > 0) {
                 alert(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
             } else {
@@ -466,7 +467,7 @@ function TaoBangDiem({ sampleStudents }) {
         } catch (error) {
             console.error('Error creating grade sheet:', error);
             alert('Có lỗi xảy ra khi tạo bảng điểm. Vui lòng thử lại sau.');
-    
+
             // Fallback to sample data
             const allStudents = [
                 {
@@ -482,7 +483,7 @@ function TaoBangDiem({ sampleStudents }) {
                 },
                 // ... other sample students
             ];
-    
+
             let filteredStudents = [...allStudents];
             if (classGroup && classGroup !== 'ALL') {
                 filteredStudents = filteredStudents.filter(student => student.class === classGroup);
@@ -493,7 +494,7 @@ function TaoBangDiem({ sampleStudents }) {
             if (educationType) {
                 filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
             }
-    
+
             setStudents(filteredStudents);
         } finally {
             setLoadingStudents(false);
@@ -541,18 +542,6 @@ function TaoBangDiem({ sampleStudents }) {
             })
         );
 
-        // Update score in API
-        if (gradeSheetId) {
-            try {
-                await axios.put(`${API_BASE_URL}/grade-sheets/${gradeSheetId}/students/${studentId}/diem`, {
-                    scoreType: scoreType,
-                    value: numericValue
-                });
-            } catch (error) {
-                console.error('Error updating score:', error);
-                alert('Có lỗi xảy ra khi cập nhật điểm. Vui lòng thử lại.');
-            }
-        }
     };
 
     const handleRetakeRegistration = async (studentId, checked) => {
@@ -658,9 +647,9 @@ function TaoBangDiem({ sampleStudents }) {
             alert('Vui lòng chọn sinh viên');
             return;
         }
-    
+
         console.log('studentId:', studentId);
-    
+
         try {
             // Kiểm tra xem sinh viên đã có trong bảng điểm hiện tại chưa
             const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
@@ -670,29 +659,29 @@ function TaoBangDiem({ sampleStudents }) {
                 handleCloseDialog();
                 return;
             }
-    
+
             // Gọi API thêm sinh viên học lại
             const response = await themSinhVienHocLai({
                 thoi_khoa_bieu_id: scheduleId, // scheduleId từ context hoặc props
                 ma_sinh_vien: studentId,       // studentId là mã sinh viên (VD: CT060110)
             });
-    
+
             console.log('API Response:', response);
-    
+
             if (response.success) {
                 const retakeData = response.data; // Bản ghi điểm mới từ API
-    
+
                 // Gọi timSinhVienTheoMaHoacFilter để lấy thông tin sinh viên
                 const sinhVienData = await timSinhVienTheoMaHoacFilter({
                     'ma_sinh_vien': studentId, // Truyền ma_sinh_vien làm tham số lọc
                 });
-    
+
                 const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
                 console.log(sinhVienInfo);
                 if (!sinhVienInfo) {
                     throw new Error('Không tìm thấy thông tin sinh viên');
                 }
-    
+
                 // Format dữ liệu sinh viên mới theo định dạng của formattedStudents
                 const newStudent = {
                     ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
@@ -708,7 +697,7 @@ function TaoBangDiem({ sampleStudents }) {
                     },
                     retakeRegistered: true,
                 };
-    
+
                 // Thêm sinh viên vào danh sách cục bộ
                 setStudents(prevStudents => [...prevStudents, newStudent]);
                 alert(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
@@ -719,7 +708,7 @@ function TaoBangDiem({ sampleStudents }) {
             console.error('Error adding retake student:', error);
             alert(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
         }
-    
+
         handleCloseDialog();
     };
 
@@ -763,6 +752,43 @@ function TaoBangDiem({ sampleStudents }) {
         setStudentId(id);
     };
     console.log(classGroup)
+
+
+    const exportExcel = (lopId, monHocId) => {
+        // Chuẩn bị dữ liệu gửi lên server
+        const data = {
+            lop_id: lopId,
+            mon_hoc_id: monHocId
+        };
+
+        exportDanhSachDiem(data)
+            .then(response => {
+                // Trực tiếp xử lý dữ liệu blob từ response.data
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                // Tạo URL để tải xuống file
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                // Tên file tải về
+                a.download = 'export.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a); // Làm sạch DOM
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Thêm thông báo lỗi cho người dùng nếu cần
+                alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+            });
+    };
+
+
+
     return (
         <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -889,19 +915,7 @@ function TaoBangDiem({ sampleStudents }) {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Lần thi</InputLabel>
-                        <Select
-                            value={examNumber}
-                            label="Lần thi"
-                            onChange={(e) => setExamNumber(e.target.value)}
-                        >
-                            <MenuItem value="1">Lần 1</MenuItem>
-                            <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
+
 
                 <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2, mb: 2 }}>
@@ -1217,7 +1231,9 @@ function TaoBangDiem({ sampleStudents }) {
                 <Button
                     variant="contained"
                     color="secondary"
-                    disabled={!gradeSheetId || loadingStudents}
+                    disabled={loadingStudents}
+                    onClick={() => exportExcel(classGroup, course)}
+                    id="exportButton"
                 >
                     Xuất Excel
                 </Button>

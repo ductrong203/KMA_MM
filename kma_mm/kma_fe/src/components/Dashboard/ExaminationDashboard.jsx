@@ -288,7 +288,7 @@ const GradeImportSystem = () => {
             </Typography>
 
             <Tabs value={tabValue} onChange={handleTabChange} aria-label="grade management tabs">
-                <Tab label="Import Điểm" />
+                {/* <Tab label="Import Điểm" /> */}
                 <Tab label="Tạo Bảng Điểm" />
                 <Tab label="Quản lý Điểm" />
                 <Tab label="Xem Danh Sách Điểm" />
@@ -296,7 +296,7 @@ const GradeImportSystem = () => {
             </Tabs>
 
             <Box sx={{ mt: 2 }}>
-                {tabValue === 0 && (
+                {/* {tabValue === 0 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Import Điểm
@@ -422,15 +422,15 @@ const GradeImportSystem = () => {
                             {selectedFile ? `File đã chọn: ${selectedFile.name}` : 'Chưa chọn file nào'}
                         </Typography>
                     </Paper>
-                )}
-                {tabValue == 1 && (
+                )} */}
+                {tabValue == 0 && (
                     <TaoBangDiem />
                 )}
-                {tabValue === 2 && (
+                {tabValue === 1 && (
                     <QuanLyDiem onSave={handleSave} sampleStudents={sampleStudents} />
                 )}
 
-                {tabValue === 3 && (
+                {tabValue === 2 && (
                     // <Paper sx={{ p: 3 }}>
                     //     <Typography variant="h6" gutterBottom>
                     //         Xem Danh Sách Điểm
@@ -643,7 +643,7 @@ const GradeImportSystem = () => {
                     <XemDanhSachDiem/>
                 )}
 
-                {tabValue === 4 && (
+                {tabValue === 3 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Báo cáo

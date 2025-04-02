@@ -15,6 +15,7 @@ import {
     FormControlLabel,
     Grid,
     InputLabel,
+    LinearProgress,
     MenuItem,
     Paper,
     Select,
@@ -30,7 +31,7 @@ import {
     Tooltip,
     Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { layDanhSachSinhVienTheoTKB, nhapDiem } from '../../Api_controller/Service/diemService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
@@ -38,8 +39,10 @@ import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monH
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
+import { exportDanhSachDiem, importDanhSachDiem } from '../../Api_controller/Service/excelService';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
+    const fileInputRef = useRef(null);
     const [year, setYear] = useState('');
     const [semester, setSemester] = useState('');
     const [examPeriod, setExamPeriod] = useState('');
@@ -64,6 +67,11 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const [loadingClasses, setLoadingClasses] = useState(false);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const [loadingStudents, setLoadingStudents] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [fileName, setFileName] = useState('');
+    const [file, setFile] = useState(null);
+
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
@@ -260,7 +268,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         ho_dem: student.sinh_vien.ho_dem,
                         ten: student.sinh_vien.ten,
                         lop: maLop,
-                        lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
+                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
                         diem: {
                             TP1: student.diem_tp1 || null,
                             TP2: student.diem_tp2 || null,
@@ -344,7 +352,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         try {
             // Chuẩn bị dữ liệu để gửi lên API
             const dataToSave = students.map(student => ({
-                id:student.id,
+                id: student.id,
                 sinh_vien_id: student.sinh_vien_id,
                 diem_tp1: student.diem.TP1,
                 diem_tp2: student.diem.TP2,
@@ -355,7 +363,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
             // Gọi API để lưu điểm
             const response = await nhapDiem(dataToSave)
-console.log(response)
+            console.log(response)
             // Xử lý phản hồi từ API
             if (response.data) {
                 alert('Đã lưu điểm thành công!');
@@ -393,6 +401,105 @@ console.log(response)
             return (0.7 * student.diem.TP1 + 0.3 * student.diem.TP2).toFixed(1);
         }
         return null;
+    };
+
+    const exportExcel = (lopId, monHocId) => {
+        // Chuẩn bị dữ liệu gửi lên server
+        const data = {
+            lop_id: lopId,
+            mon_hoc_id: monHocId
+        };
+
+        exportDanhSachDiem(data)
+            .then(response => {
+                // Trực tiếp xử lý dữ liệu blob từ response.data
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                // Tạo URL để tải xuống file
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                // Tên file tải về
+                a.download = 'export.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a); // Làm sạch DOM
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Thêm thông báo lỗi cho người dùng nếu cần
+                alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+            });
+    };
+    // Hàm xử lý upload file Excel
+
+    const handleFileChange = (event) => {
+        event.stopPropagation();
+        console.log('handleFileChange triggered');
+        const selectedFile = event.target.files[0];
+        console.log('Selected file:', selectedFile);
+        if (selectedFile) {
+            setFile(selectedFile);
+            setFileName(selectedFile.name);
+            event.target.value = null; // Reset để chọn lại được
+        } else {
+            setFile(null);
+            setFileName('');
+        }
+    };
+
+    const handleButtonClick = (event) => {
+        event.preventDefault(); // Ngăn chặn hành vi mặc định
+        fileInputRef.current?.click(); // Mở hộp thoại chọn file
+    };
+
+    const importExcel = (lop_id, mon_hoc_id) => {
+        console.log('File before sending:', file);
+        if (!file) {
+            alert('Vui lòng chọn file trước khi import.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('lop_id', lop_id); // Thêm lop_id vào formData
+        formData.append('mon_hoc_id', mon_hoc_id); // Thêm mon_hoc_id vào formData
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]); // Debug FormData
+        }
+        setUploading(true);
+        setProgress(0); // Reset progress khi bắt đầu upload
+
+        // Giả lập tiến trình tải file
+        const interval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                return prev + 10; // Tăng tiến trình lên 10%
+            });
+        }, 1000);
+        importDanhSachDiem(formData)
+            .then(data => {
+                alert('Import thành công!');
+                console.log(data);
+                setUploading(false);
+                setFile(null); // Reset file sau khi import
+                setFileName(''); // Reset tên file
+                // Gọi lại handleSearch để cập nhật danh sách sinh viên
+                handleSearch();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Không thể import dữ liệu. Vui lòng thử lại.');
+                setUploading(false);
+            });
     };
 
     return (
@@ -519,19 +626,7 @@ console.log(response)
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Lần thi</InputLabel>
-                        <Select
-                            value={examNumber}
-                            label="Lần thi"
-                            onChange={(e) => setExamNumber(e.target.value)}
-                        >
-                            <MenuItem value="1">Lần 1</MenuItem>
-                            <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
+
                 <Grid item xs={12} sm={6} md={3}>
                     <Button variant="contained" color="primary" startIcon={<SearchIcon />} onClick={handleSearch} sx={{ height: '56px' }}>
                         Tìm kiếm
@@ -562,6 +657,58 @@ console.log(response)
                             <Alert severity="info" sx={{ my: 2 }}>
                                 Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ 4.0 là điều kiện để sinh viên được thi cuối kỳ.
                             </Alert>
+                            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{ boxShadow: 2 }}
+                                    onClick={handleButtonClick} // Gọi hàm mở input file
+                                >
+                                    Chọn file điểm giữa kỳ
+                                </Button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx, .xls, .csv"
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }} // Ẩn input file
+                                />
+
+                                {/* Hiển thị tên file và tiến trình import */}
+                                {file && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body1" sx={{ marginLeft: 2 }}>
+                                            {fileName}
+                                        </Typography>
+                                        {uploading && (
+                                            <Box sx={{ width: '200px', marginLeft: 2 }}>
+                                                <LinearProgress variant="determinate" value={progress} />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                )}
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => { importExcel(classGroup, course) }}
+                                    sx={{ boxShadow: 2, marginLeft: 2 }}
+                                >
+                                    Thực hiện Import
+                                </Button>
+                                {/* Nút Export, căn phải */}
+                                <Box sx={{ flexGrow: 1 }} /> {/* Giúp căn nút Export ra bên phải */}
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => { exportExcel(classGroup, course) }}
+                                    sx={{ boxShadow: 2 }}
+                                >
+                                    Export điểm giữa kỳ
+                                </Button>
+
+                                {/* Nút Import và xử lý khi đã chọn file */}
+
+                            </Box>
                             <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                                 <Table stickyHeader sx={{ minWidth: 650 }} aria-label="midterm grades table">
                                     <TableHead>
@@ -632,7 +779,26 @@ console.log(response)
                                 {examNumber === "2" ? " Đang nhập điểm thi lại (lần 2)." : " Đang nhập điểm thi lần 1."}
                                 {examNumber === "2" && " Chỉ sinh viên có điểm CK1 < 4.0 mới đủ điều kiện thi lại."}
                             </Alert>
-                            <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
+
+                            <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary" // Màu xanh dương cho import CK lần 1
+                                    onClick={() => {/* Xử lý import điểm CK lần 1 */ }}
+                                    sx={{ boxShadow: 2 }}
+                                >
+                                    Import điểm CK lần 1
+                                </Button>
+
+                                <Button
+                                    variant="contained"
+                                    color="secondary" // Màu tím cho import điểm thi lại
+                                    onClick={() => {/* Xử lý import điểm sinh viên thi lại */ }}
+                                    sx={{ boxShadow: 2 }}
+                                >
+                                    Import điểm thi lại
+                                </Button>
+                            </Box>                            <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                                 <Table stickyHeader sx={{ minWidth: 650 }} aria-label="final exam grades table">
                                     <TableHead>
                                         <TableRow>
@@ -851,6 +1017,16 @@ console.log(response)
                     <Alert severity="error" sx={{ my: 2 }}>
                         {`${studentsEligibleForRetake.length} sinh viên cần thi lại (Điểm CK1 < 4.0)`}
                     </Alert>
+                    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                        <Button
+                            variant="contained"
+                            color="warning" // Màu vàng cho export danh sách thi lại
+                            onClick={() => {/* Xử lý export danh sách sinh viên thi lại */ }}
+                            sx={{ boxShadow: 2 }}
+                        >
+                            Export danh sách thi lại
+                        </Button>
+                    </Box>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="retake students table">
                             <TableHead>
