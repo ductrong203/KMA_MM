@@ -207,11 +207,25 @@ json
   "thoi_khoa_bieu_id": 2
 }
 
+=============================================================================
 import file excel điểm giữa kì
+==========================================================================
 http://localhost:8000/diem/importdiemgk
 post 
 from-data
 key: file ; value: file excel
+key: lop_id 
+key: mon_hoc_id
 
 import file excel điểm cuối kì : tương tự giữa kì, khác link api
 http://localhost:8000/diem/importdiemck
+
+=============================================================================
+export file excel điểm giữa kì
+===============================================================================
+POST
+http://localhost:8000/excel/export
+{
+    "lop_id": 1,
+    "mon_hoc_id": 1
+}

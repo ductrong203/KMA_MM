@@ -5,6 +5,7 @@ const { diem, sinh_vien, thoi_khoa_bieu } = models;
 
 const XLSX = require("xlsx");
 const fs = require("fs");
+const ExcelJS = require("exceljs");
 
 class DiemService {
   // static async filter({ sinh_vien_id, thoi_khoa_bieu_id, page = 1, pageSize = 10 }) {
@@ -280,31 +281,51 @@ class DiemService {
     return { message: 'Xóa thành công!' };
   }
 
-  static async importExcel(filePath) {
+  static async importExcel(filePath, ids = {}) {
     try {
-      const workbook = XLSX.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+      const { lop_id, mon_hoc_id } = ids;
 
-      // Chuyển sheet thành mảng 2D
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      // Kiểm tra tham số đầu vào
+      if (!lop_id || !mon_hoc_id) {
+        throw new Error("Thiếu lop_id hoặc mon_hoc_id trong form-data");
+      }
+
+      // Lấy thoi_khoa_bieu_id từ lop_id và mon_hoc_id
+      const tkb = await thoi_khoa_bieu.findOne({
+        where: { lop_id, mon_hoc_id },
+      });
+      if (!tkb) {
+        throw new Error(`Không tìm thấy thời khóa biểu với lop_id: ${lop_id}, mon_hoc_id: ${mon_hoc_id}`);
+      }
+      const thoi_khoa_bieu_id = tkb.id;
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1); // Lấy worksheet đầu tiên
+
+      const rows = [];
+      worksheet.eachRow((row, rowNumber) => {
+        rows.push(row.values.slice(1)); // Bỏ cột đầu tiên nếu là index
+      });
+
       if (rows.length === 0) {
         throw new Error("File Excel rỗng!");
       }
 
       // Tìm dòng tiêu đề
-      const headerRowIndex = rows.findIndex((row) => row.includes("Mã Sinh Viên"));
+      const headerRowIndex = rows.findIndex((row) =>
+        row.some((cell) => cell && cell.toString().toLowerCase().includes("mã sinh viên"))
+      );
       if (headerRowIndex === -1) {
         throw new Error("Không tìm thấy tiêu đề hợp lệ!");
       }
 
-      // Chuyển tất cả tiêu đề về chữ thường
-      const headers = rows[headerRowIndex].map((h) => h.toLowerCase().trim());
+      const headers = rows[headerRowIndex].map((h) => h.toString().toLowerCase().trim());
       const dataRows = rows.slice(headerRowIndex + 1);
 
-      // Xác định vị trí cột dựa vào headers
+      // Xác định vị trí cột
       const maSVIndex = headers.indexOf("mã sinh viên");
-      const hoTenStartIndex = headers.indexOf("họ và tên"); // Cột đầu tiên chứa họ đệm
+      const hoTenStartIndex = headers.indexOf("họ và tên");
       const lopIndex = headers.indexOf("lớp");
       const diemTP1Index = headers.indexOf("điểm thành phần 1");
       const diemTP2Index = headers.indexOf("điểm thành phần 2");
@@ -313,10 +334,10 @@ class DiemService {
         throw new Error("Không tìm thấy cột hợp lệ!");
       }
 
-      // **Tìm tất cả các cột liên quan đến họ tên**
+      // Tìm tất cả các cột liên quan đến họ tên
       let hoTenIndexes = [];
       for (let i = hoTenStartIndex; i < headers.length; i++) {
-        if (headers[i] === "lớp") break; // Khi tới cột "Lớp", dừng lại
+        if (headers[i] === "lớp") break;
         hoTenIndexes.push(i);
       }
 
@@ -324,61 +345,63 @@ class DiemService {
 
       for (let row of dataRows) {
         let ma_sinh_vien = row[maSVIndex] || "";
-        let lop = row[lopIndex] || "";
+        if (!ma_sinh_vien) continue; // Bỏ qua nếu không có mã sinh viên
 
-        // **Ghép tất cả các phần trong "Họ và tên"**
+        // Lấy sinh_vien_id từ ma_sinh_vien
+        const sv = await sinh_vien.findOne({
+          where: { ma_sinh_vien },
+          attributes: ["id"],
+        });
+        if (!sv) {
+          console.warn(`Không tìm thấy sinh viên với mã: ${ma_sinh_vien}`);
+          continue; // Bỏ qua nếu không tìm thấy sinh viên
+        }
+        const sinh_vien_id = sv.id;
+
+        // Ghép họ và tên
         let ho_va_ten = hoTenIndexes
           .map((idx) => row[idx])
-          .filter((val) => val !== "") // Loại bỏ ô rỗng
-          .join(" "); // Ghép lại thành một chuỗi
+          .filter((val) => val !== "")
+          .join(" ");
 
-        //logic xử lý Điểm
+        // Xử lý điểm thành phần 1
         let diem_tp1 = null;
-        if (diemTP1Index !== -1) {
-          let diem1 = row[diemTP1Index];
-
-          // Kiểm tra nếu có dấu phẩy, đổi thành dấu chấm
-          if (typeof diem1 === "string") {
-            diem1 = diem1.replace(",", ".").trim();
-          }
-
-          // Chuyển thành số thực nếu hợp lệ
-          if (!isNaN(Number(diem1))) {
-            diem_tp1 = parseFloat(Number(diem1).toFixed(2));
-          } else if (diem1 !== "") {
-            diem_tp1 = diem1; // Nếu là chuỗi, giữ nguyên giá trị
-          }
+        if (diemTP1Index !== -1 && row[diemTP1Index] !== undefined) {
+          let diem1 = row[diemTP1Index].toString().replace(",", ".").trim();
+          diem_tp1 = !isNaN(Number(diem1)) ? parseFloat(Number(diem1).toFixed(2)) : null;
         }
 
+        // Xử lý điểm thành phần 2
         let diem_tp2 = null;
-        if (diemTP2Index !== -1) {
-          let diem2 = row[diemTP2Index];
-
-          // Kiểm tra nếu có dấu phẩy, đổi thành dấu chấm
-          if (typeof diem2 === "string") {
-            diem2 = diem2.replace(",", ".").trim();
-          }
-
-          // Chuyển thành số thực nếu hợp lệ
-          if (!isNaN(Number(diem2))) {
-            diem_tp2 = parseFloat(Number(diem2).toFixed(2));
-          } else if (diem2 !== "") {
-            diem_tp2 = diem2; // Nếu là chuỗi, giữ nguyên giá trị
-          }
+        if (diemTP2Index !== -1 && row[diemTP2Index] !== undefined) {
+          let diem2 = row[diemTP2Index].toString().replace(",", ".").trim();
+          diem_tp2 = !isNaN(Number(diem2)) ? parseFloat(Number(diem2).toFixed(2)) : null;
         }
 
-        if (ma_sinh_vien !== "") {
-          jsonResult.push({
-            ma_sinh_vien,
-            ho_va_ten: ho_va_ten.trim(),
-            lop,
-            diem_tp1,
-            diem_tp2
-          });
+        // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
+        let diem_gk = null;
+        if (diem_tp1 !== null && diem_tp2 !== null) {
+          diem_gk = parseFloat((0.3 * diem_tp1 + 0.7 * diem_tp2).toFixed(2));
         }
+
+        // Tìm id của bảng diem từ sinh_vien_id và thoi_khoa_bieu_id
+        const diemRecord = await diem.findOne({
+          where: { sinh_vien_id, thoi_khoa_bieu_id },
+          attributes: ["id"],
+        });
+        const diem_id = diemRecord ? diemRecord.id : null;
+
+        jsonResult.push({
+          id: diem_id, // id của bảng diem (null nếu chưa tồn tại)
+          sinh_vien_id,
+          thoi_khoa_bieu_id,
+          diem_tp1,
+          diem_tp2,
+          diem_gk,
+        });
       }
 
-      fs.unlinkSync(filePath); // Xóa file sau khi xử lý xong
+      fs.unlinkSync(filePath); // Xóa file sau khi xử lý
       return jsonResult;
     } catch (error) {
       throw new Error("Lỗi xử lý file Excel: " + error.message);
