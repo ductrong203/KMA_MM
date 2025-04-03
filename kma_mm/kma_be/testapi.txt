@@ -68,25 +68,130 @@ CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
         {
         "khoa_dao_tao_id": "1"
         }
-kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
+kế hoạch môn học: "khoa_dao_tao_id","mon_hoc_id" bắt buộc
     http://localhost:8000/kehoachmonhoc
     json mẫu:
         {
-        "danh_muc_id": 1,
+        "khoa_dao_tao_id": 1,
         "mon_hoc_id": 1,
         "ky_hoc": 3,
         "bat_buoc": 1
         }
-thời khoá biểu: "lop_id","mon_hoc_id","giang_vien_id" bắt buộc
+
+lấy ds theo khoá, kì (1 là id, 9 là kì)
+get
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1/9
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1
+    
+
+thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
     http://localhost:8000/thoikhoabieu
     json mẫu:
-        {
-        "lop_id": 1,
-        "mon_hoc_id": 1,
-        "giang_vien_id": 1,
-        "phong_hoc": "103 TA1"
-        }
+{
+  "ky_hoc": 2025,
+  "dot_hoc": 1,
+  "lop_id": 1,
+  "mon_hoc_id": 1,
+  "giang_vien": "Nguyễn Văn A",
+  "phong_hoc": "101",
+  "tiet_hoc": "2-4",
+  "trang_thai": 1
+}
     http://localhost:8000/thoikhoabieu/getbypage?page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&lop_id=1&page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?ky_hoc=2025&page=1&pageSize=5
-    http://localhost:8000/thoikhoabieu/filter?lop_id=1&page=1&pageSize=5
+
+    http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&ma_mon_hoc=mh1&ma_lop=l1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+
+Điểm: "sinh_vien_id", "thoi_khoa_bieu_id" bắt buộc
+GET
+http://localhost:8000/diem/filter?page=1&pageSize=10?sinh_vien_id=1&thoi_khoa_bieu_id=1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+POST
+http://localhost:8000/diem
+{
+  "sinh_vien_id": 1,
+  "thoi_khoa_bieu_id": 1,
+  "lan_hoc": 1,
+  "lan_thi": 1,
+  "diem_tp1": 8.5,
+  "diem_tp2": 7.0,
+  "diem_gk": 7.5,
+  "diem_ck": 9.0,
+  "diem_he_4": 3.5,
+  "diem_chu": "B+",
+  "ngay_cap_nhat": "2025-03-18",
+  "trang_thai": "Hoàn thành",
+  "diem_hp": 3.7
+}
+
+cập nhật danh sách Điểm
+PUT
+http://localhost:8000/diem
+[
+    {
+        "id": 1,
+        "sinh_vien_id": 1,
+        "thoi_khoa_bieu_id": 1,
+        "diem_tp1": 8.5,
+        "diem_tp2": 7.0,
+        "diem_gk": 7.5
+    },
+    {
+        "id": 2,
+        "sinh_vien_id": 3,
+        "thoi_khoa_bieu_id": 2,
+        "diem_tp1": 9.0,
+        "diem_tp2": 8.0,
+        "diem_gk": 8.5
+    }
+]
+
+--------
+lấy danh sách điểm của lớp học phần
+-------
+lấy danh sách khoá theo id hệ 
+get
+http://localhost:8000/khoadaotao/getbydanhmucdaotaoid/1
+
+lấy danh sách kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/getbykhoavaky
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách môn học thuộc kế hoạch môn học theo khoá và kỳ
+post
+http://localhost:8000/kehoachmonhoc/monhoc
+{
+  "khoa_dao_tao_id": 1,
+  "ky_hoc": 3
+}
+
+lấy danh sách lớp theo id khoá đào tạo
+get
+http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=1
+
+lấy danh sách tkb theo lop_id, mon_hoc_id, (ky_hoc)
+get
+http://localhost:8000/thoikhoabieu/filterbyid?page=1&pageSize=5&mon_hoc_id=1&lop_id=1&ky_hoc=3
+
+lấy danh sách điểm và sinh viên theo thoi_khoa_bieu_id (chỉ include mã sinh viên, họ đệm, tên)
+get
+http://localhost:8000/diem/filter?page=1&pageSize=10&thoi_khoa_bieu_id=1
+
+tạo bảng điểm cho sinh viên lớp biên chế 
+post
+http://localhost:8000/diem/createDiemForClass
+json
+{
+  "thoi_khoa_bieu_id": 2
+}
+
+import file excel điểm giữa kì
+http://localhost:8000/diem/importdiemgk
+post 
+from-data
+key: file ; value: file excel
+
+import file excel điểm cuối kì : tương tự giữa kì, khác link api
+http://localhost:8000/diem/importdiemck

@@ -17,11 +17,11 @@ module.exports = function (sequelize, DataTypes) {
           key: "id",
         },
       },
-      mon_hoc_id: {
+      thoi_khoa_bieu_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "mon_hoc",
+          model: "thoi_khoa_bieu",
           key: "id",
         },
       },
@@ -41,15 +41,15 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_ck_1: {
+      diem_ck: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_he_4_1: {
+      diem_he_4: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_chu_1: {
+      diem_chu: {
         type: DataTypes.STRING(2),
         allowNull: true,
       },
@@ -61,15 +61,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(50),
         allowNull: true,
       },
-      diem_hp_1: {
+      diem_hp: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
-      diem_ck_2: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-      },
-      diem_hp_2: {
+      diem_ck2: {
         type: DataTypes.FLOAT,
         allowNull: true,
       },
@@ -79,6 +75,10 @@ module.exports = function (sequelize, DataTypes) {
       },
       diem_chu_2: {
         type: DataTypes.STRING(2),
+        allowNull: true,
+      },
+      diem_hp_2: {
+        type: DataTypes.FLOAT,
         allowNull: true,
       },
     },
@@ -99,9 +99,9 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: "sinh_vien_id" }],
         },
         {
-          name: "mon_hoc_id",
+          name: "thoi_khoa_bieu_id",
           using: "BTREE",
-          fields: [{ name: "mon_hoc_id" }],
+          fields: [{ name: "thoi_khoa_bieu_id" }],
         },
       ],
     }

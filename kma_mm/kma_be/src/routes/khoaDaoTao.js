@@ -2,6 +2,7 @@ const express = require("express");
 const KhoaDaoTaoController = require("../controllers/khoaDaoTaoController");
 const router = express.Router();
 
+router.get("/getbydanhmucdaotaoid/:danhmucdaotaoid", KhoaDaoTaoController.getKhoaDaoTaoByDanhMuc);
 router.post("/", KhoaDaoTaoController.create);
 router.get("/", KhoaDaoTaoController.getAll);
 router.get("/:id", KhoaDaoTaoController.getById);

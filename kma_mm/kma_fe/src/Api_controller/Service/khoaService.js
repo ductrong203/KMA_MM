@@ -14,3 +14,8 @@ export const updateKhoa = async (maKhoa, data) => {
     const response = await api.put(`khoadaotao/${maKhoa}`, data)
     return response.data
 }
+
+export const getDanhSachKhoaTheoDanhMucDaoTao = async (danhMucDaoTaoId) => {
+    const response = await api.get(`khoadaotao/getbydanhmucdaotaoid/${danhMucDaoTaoId}`)
+    return response.data
+}

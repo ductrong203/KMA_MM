@@ -34,6 +34,17 @@ class LopService {
     return await lop.findByPk(id);
   }
 
+  static async getByKhoaDaoTaoId(khoaDaoTaoId) {
+    try {
+        const danhSachLop = await lop.findAll({
+            where: { khoa_dao_tao_id: khoaDaoTaoId },
+        });
+        return danhSachLop;
+    } catch (error) {
+        throw new Error("Lỗi khi lấy danh sách lớp theo khoa đào tạo");
+    }
+  }
+
   static async updateLop(id, data) {
     const lopItem = await lop.findByPk(id);
     if (!lopItem) return null;

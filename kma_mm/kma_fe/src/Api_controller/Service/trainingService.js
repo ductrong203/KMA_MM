@@ -14,3 +14,11 @@ export const updateTraining = async (code, data) => {
   return response.data
 }
 
+export const getDanhSachKhoaDaoTao = async () => {
+  const response = await api.get(`/khoadaotao`)
+  return response.data
+}
+export const getDanhSachKhoaDaoTaobyId = async (id) => {
+  const response = await api.get(`/khoadaotao/getbydanhmucdaotaoid/${id}`)
+  return response.data
+}

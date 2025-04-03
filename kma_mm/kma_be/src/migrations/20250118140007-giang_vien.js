@@ -35,6 +35,14 @@ module.exports = {
           allowNull: true,
           defaultValue: "1",
         },
+        role: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        sub_role: {
+          type: Sequelize.TINYINT,
+          allowNull: true,
+        },
         la_giang_vien_moi: {
           type: Sequelize.TINYINT,
           allowNull: true,

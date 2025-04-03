@@ -27,6 +27,10 @@ module.exports = function(sequelize, DataTypes) {
         model: 'danh_muc_dao_tao',
         key: 'id'
       }
+    },
+    so_ky_hoc: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     sequelize,

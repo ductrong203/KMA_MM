@@ -18,11 +18,11 @@ module.exports = {
             key: "id",
           },
         },
-        mon_hoc_id: {
+        thoi_khoa_bieu_id: {
           type: Sequelize.INTEGER,
           allowNull: true,
           references: {
-            model: "mon_hoc",
+            model: "thoi_khoa_bieu",
             key: "id",
           },
         },
@@ -85,9 +85,9 @@ module.exports = {
             fields: [{ name: "sinh_vien_id" }],
           },
           {
-            name: "mon_hoc_id",
+            name: "thoi_khoa_bieu_id",
             using: "BTREE",
-            fields: [{ name: "mon_hoc_id" }],
+            fields: [{ name: "thoi_khoa_bieu_id" }],
           },
         ],
         timestamps: false, // Điều này giống như trong model của bạn

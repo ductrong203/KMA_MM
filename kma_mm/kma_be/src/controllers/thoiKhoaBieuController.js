@@ -22,9 +22,7 @@ class ThoiKhoaBieuController {
 
   static async getByPage(req, res) {
     try {
-      const page = parseInt(req.query.page) || 1;
-      const pageSize = parseInt(req.query.pageSize) || 10;
-      const data = await ThoiKhoaBieuService.getByPage(page, pageSize);
+      const data = await ThoiKhoaBieuService.getByPage(req.query);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -33,11 +31,16 @@ class ThoiKhoaBieuController {
 
   static async filter(req, res) {
     try {
-      const { ky_hoc, lop_id } = req.query;
-      const page = parseInt(req.query.page) || 1;
-      const pageSize = parseInt(req.query.pageSize) || 10;
-      
-      const data = await ThoiKhoaBieuService.filter({ ky_hoc, lop_id, page, pageSize });
+      const data = await ThoiKhoaBieuService.filter(req.query);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async filterbyid(req, res) {
+    try {
+      const data = await ThoiKhoaBieuService.filterbyid(req.query);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });

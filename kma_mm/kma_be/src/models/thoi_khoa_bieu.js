@@ -7,9 +7,18 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       primaryKey: true
     },
-    lop_id: {
+    ky_hoc: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    dot_hoc: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      defaultValue: 1
+    },
+    lop_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
         model: 'lop',
         key: 'id'
@@ -17,19 +26,15 @@ module.exports = function(sequelize, DataTypes) {
     },
     mon_hoc_id: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'mon_hoc',
         key: 'id'
       }
     },
-    giang_vien_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'giang_vien',
-        key: 'id'
-      }
+    giang_vien: {
+      type: DataTypes.STRING(100),
+      allowNull: true
     },
     phong_hoc: {
       type: DataTypes.STRING(50),
@@ -41,10 +46,6 @@ module.exports = function(sequelize, DataTypes) {
     },
     trang_thai: {
       type: DataTypes.TINYINT,
-      allowNull: true
-    },
-    ky_hoc: {
-      type: DataTypes.STRING(20),
       allowNull: true
     }
   }, {
@@ -72,13 +73,6 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "mon_hoc_id" },
-        ]
-      },
-      {
-        name: "giang_vien_id",
-        using: "BTREE",
-        fields: [
-          { name: "giang_vien_id" },
         ]
       },
     ]

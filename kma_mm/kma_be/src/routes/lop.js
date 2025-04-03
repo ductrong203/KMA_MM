@@ -3,6 +3,7 @@ const LopController = require("../controllers/lopController");
 
 const router = express.Router();
 
+router.get("/bykhoadaotao", LopController.getByKhoaDaoTaoId);
 router.get("/", LopController.getAll);
 router.get("/:id", LopController.getById);
 router.post("/", LopController.create);

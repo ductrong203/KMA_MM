@@ -34,24 +34,22 @@ function initModels(sequelize) {
   var thong_tin_quan_nhan = _thong_tin_quan_nhan(sequelize, DataTypes);
   var users = _users(sequelize, DataTypes);
 
-  ke_hoach_mon_hoc.belongsTo(danh_muc_dao_tao, { as: "danh_muc", foreignKey: "danh_muc_id"});
-  danh_muc_dao_tao.hasMany(ke_hoach_mon_hoc, { as: "ke_hoach_mon_hocs", foreignKey: "danh_muc_id"});
   khoa_dao_tao.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
   danh_muc_dao_tao.hasMany(khoa_dao_tao, { as: "khoa_dao_taos", foreignKey: "he_dao_tao_id"});
+  mon_hoc.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
+  danh_muc_dao_tao.hasMany(mon_hoc, { as: "mon_hocs", foreignKey: "he_dao_tao_id"});
   khen_thuong_ky_luat.belongsTo(danh_muc_khen_ky_luat, { as: "danh_muc", foreignKey: "danh_muc_id"});
   danh_muc_khen_ky_luat.hasMany(khen_thuong_ky_luat, { as: "khen_thuong_ky_luats", foreignKey: "danh_muc_id"});
   sinh_vien.belongsTo(doi_tuong_quan_ly, { as: "doi_tuong", foreignKey: "doi_tuong_id"});
   doi_tuong_quan_ly.hasMany(sinh_vien, { as: "sinh_viens", foreignKey: "doi_tuong_id"});
-  thoi_khoa_bieu.belongsTo(giang_vien, { as: "giang_vien", foreignKey: "giang_vien_id"});
-  giang_vien.hasMany(thoi_khoa_bieu, { as: "thoi_khoa_bieus", foreignKey: "giang_vien_id"});
+  ke_hoach_mon_hoc.belongsTo(khoa_dao_tao, { as: "khoa_dao_tao", foreignKey: "khoa_dao_tao_id"});
+  khoa_dao_tao.hasMany(ke_hoach_mon_hoc, { as: "ke_hoach_mon_hocs", foreignKey: "khoa_dao_tao_id"});
   lop.belongsTo(khoa_dao_tao, { as: "khoa_dao_tao", foreignKey: "khoa_dao_tao_id"});
   khoa_dao_tao.hasMany(lop, { as: "lops", foreignKey: "khoa_dao_tao_id"});
   sinh_vien.belongsTo(lop, { as: "lop", foreignKey: "lop_id"});
   lop.hasMany(sinh_vien, { as: "sinh_viens", foreignKey: "lop_id"});
   thoi_khoa_bieu.belongsTo(lop, { as: "lop", foreignKey: "lop_id"});
   lop.hasMany(thoi_khoa_bieu, { as: "thoi_khoa_bieus", foreignKey: "lop_id"});
-  diem.belongsTo(mon_hoc, { as: "mon_hoc", foreignKey: "mon_hoc_id"});
-  mon_hoc.hasMany(diem, { as: "diems", foreignKey: "mon_hoc_id"});
   ke_hoach_mon_hoc.belongsTo(mon_hoc, { as: "mon_hoc", foreignKey: "mon_hoc_id"});
   mon_hoc.hasMany(ke_hoach_mon_hoc, { as: "ke_hoach_mon_hocs", foreignKey: "mon_hoc_id"});
   thoi_khoa_bieu.belongsTo(mon_hoc, { as: "mon_hoc", foreignKey: "mon_hoc_id"});
@@ -64,6 +62,8 @@ function initModels(sequelize) {
   sinh_vien.hasMany(khen_thuong_ky_luat, { as: "khen_thuong_ky_luats", foreignKey: "sinh_vien_id"});
   thong_tin_quan_nhan.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id"});
   sinh_vien.hasMany(thong_tin_quan_nhan, { as: "thong_tin_quan_nhans", foreignKey: "sinh_vien_id"});
+  diem.belongsTo(thoi_khoa_bieu, { as: "thoi_khoa_bieu", foreignKey: "thoi_khoa_bieu_id"});
+  thoi_khoa_bieu.hasMany(diem, { as: "diems", foreignKey: "thoi_khoa_bieu_id"});
 
   return {
     danh_muc_dao_tao,
