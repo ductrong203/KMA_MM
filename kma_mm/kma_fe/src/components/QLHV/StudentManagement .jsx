@@ -1179,6 +1179,7 @@ import {
   createNewStudent,
   getAllMiri,
   getAllStudent,
+  getListClassByKhoaDaoTaoId,
   getMilitaryInfoByStudentId,
   updateMilitaryInfoByStudentId,
   updateStudentById,
@@ -1338,8 +1339,9 @@ const StudentManagement = () => {
     const fetchLopByKhoaDaoTao = async () => {
       if (khoaDaoTaoFilter) {
         try {
-          const response = await fetch(`http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoFilter}`);
-          const data = await response.json();
+          // const response = await fetch(`http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoFilter}`);
+
+          const data = await getListClassByKhoaDaoTaoId(khoaDaoTaoFilter)
           setDanhSachLop(data);
         } catch (error) {
           console.error("Lỗi khi lấy danh sách lớp theo khóa đào tạo:", error);
