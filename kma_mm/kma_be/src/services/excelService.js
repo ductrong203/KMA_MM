@@ -13,7 +13,7 @@ class ExcelService {
           {
             model: diem,
             as: "diems",
-            attributes: [],
+            attributes: ["diem_tp1","diem_tp2"],
             required: true,
             include: [
               {
@@ -175,14 +175,15 @@ class ExcelService {
 
     // **Xử lý dữ liệu**
     const dataRows = sinhVienData.map((sv, index) => {
+      const diem = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
       return [
         `${index + 1}.`,
         sv.ma_sinh_vien || "",
         `${sv.ho_dem || ""} ${sv.ten || ""}`,
         "", "", "", "",
         sv.lop?.ma_lop || "",
-        "",
-        "",
+        diem.diem_tp1 !== undefined && diem.diem_tp1 !== null ? diem.diem_tp1 : "",
+        diem.diem_tp2 !== undefined && diem.diem_tp2 !== null ? diem.diem_tp2 : "",
         "",
         "",
         "",
