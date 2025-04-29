@@ -1459,7 +1459,7 @@ const StudentManagement = () => {
   const handleGenderChange = (event) => {
     setStudentData((prev) => ({
       ...prev,
-      gioi_tinh: event.target.value === "Nam",
+      gioi_tinh: Number(event.target.value),
     }));
   };
   const [errors, setErrors] = useState("");
@@ -1477,7 +1477,7 @@ const StudentManagement = () => {
       if (!studentData.so_dien_thoai)
         newErrors.so_dien_thoai = "Số điện thoại không được để trống";
       if (!studentData.lop_id) newErrors.lop_id = "Lớp không được để trống";
-      if (!studentData.gioi_tinh)
+      if (studentData.gioi_tinh === undefined || studentData.gioi_tinh === null)
         newErrors.gioi_tinh = "Giới tính không được để trống";
       if (!studentData.doi_tuong_id)
         newErrors.doi_tuong_id = "Đối tượng không được để trống";
