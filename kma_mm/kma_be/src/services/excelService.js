@@ -330,7 +330,7 @@ class ExcelService {
     return workbook;
   }
 
-  static async getSinhVienCuoiKy({ mon_hoc_id }) {
+  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id }) {
     try {
       const sinhVienData = await sinh_vien.findAll({
         attributes: ["id", "ma_sinh_vien", "ho_dem", "ten"],
@@ -349,6 +349,17 @@ class ExcelService {
                   mon_hoc_id: mon_hoc_id,
                 },
                 required: true,
+                include: [
+                  {
+                    model: lop,
+                    as: "lop",
+                    attributes: [],
+                    where: {
+                      khoa_dao_tao_id: khoa_dao_tao_id,
+                    },
+                    required: true,
+                  },
+                ],
               },
             ],
           },
@@ -356,22 +367,24 @@ class ExcelService {
             model: lop,
             as: "lop",
             attributes: ["ma_lop"],
-            required: true,
+            required: false, // Cho phép sinh viên học lại từ khóa khác
           },
         ],
         order: [["ten", "ASC"]],
+        // Ngăn trùng lặp sinh viên nếu có nhiều bản ghi diem
+        //group: ["sinh_vien.id", "sinh_vien.ma_sinh_vien", "sinh_vien.ho_dem", "sinh_vien.ten", "lop.ma_lop", "diems.diem_ck"],
+        subQuery: false, // không tạo truy vấn con
       });
-
+  
       if (!sinhVienData || sinhVienData.length === 0) {
         throw new Error("Không tìm thấy sinh viên nào phù hợp");
       }
-
+  
       return sinhVienData;
     } catch (error) {
       throw new Error("Lỗi khi lấy dữ liệu sinh viên: " + error.message);
     }
   }
-
   static async exportToExcelCuoiKy(sinhVienData) {
     const headersRow = [
       "STT",

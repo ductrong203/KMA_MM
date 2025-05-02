@@ -105,6 +105,13 @@ class DiemService {
     const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
     if (!tkbExist) throw new Error('Thời khóa biểu không tồn tại.');
 
+    const existingDiem = await diem.findOne({
+      where: { sinh_vien_id, thoi_khoa_bieu_id },
+    });
+    if (existingDiem) {
+      throw new Error(`Bảng điểm đã tồn tại cho thời khoá biểu id ${thoi_khoa_bieu_id} của sinh viên có id ${sinh_vien_id}`);
+    }
+
     return await diem.create(data);
   }
 

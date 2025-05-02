@@ -54,6 +54,13 @@ class KeHoachMonHocService {
     const monHoc = await mon_hoc.findByPk(mon_hoc_id);
     if (!monHoc) throw new Error('Môn học không tồn tại.');
 
+    const existingKeHoach = await ke_hoach_mon_hoc.findOne({
+      where: { khoa_dao_tao_id, mon_hoc_id, ky_hoc },
+    });
+    if (existingKeHoach) {
+      throw new Error('Kế hoạch môn học đã tồn tại cho khoá đào tạo, môn học và kỳ học này.');
+    }
+    
     return await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
   }
 

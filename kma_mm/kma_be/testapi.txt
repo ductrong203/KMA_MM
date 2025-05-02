@@ -236,5 +236,6 @@ export file excel điểm cuối kì
 POST
 http://localhost:8000/excel/exportcuoiky
 {
-    "mon_hoc_id": 1
+    "mon_hoc_id": 1,
+    "khoa_dao_tao_id": 1
 }
