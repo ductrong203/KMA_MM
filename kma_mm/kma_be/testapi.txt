@@ -229,3 +229,12 @@ http://localhost:8000/excel/export
     "lop_id": 1,
     "mon_hoc_id": 1
 }
+
+=============================================================================
+export file excel điểm cuối kì
+=============================================================================
+POST
+http://localhost:8000/excel/exportcuoiky
+{
+    "mon_hoc_id": 1
+}

@@ -408,97 +408,103 @@ class DiemService {
     }
   }
 
-  static async importExcelCuoiKy(filePath) {
+  static async importExcelCuoiKy(filePath, ids = {}) {
     try {
+      const { mon_hoc_id } = ids;
+  
+      // Kiểm tra tham số đầu vào
+      if (!mon_hoc_id) {
+        throw new Error("Thiếu mon_hoc_id trong form-data");
+      }
+  
       const workbook = XLSX.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-
+  
       // Chuyển sheet thành mảng 2D
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
       if (rows.length === 0) {
         throw new Error("File Excel rỗng!");
       }
-
+  
       // Tìm dòng tiêu đề
       const headerRowIndex = rows.findIndex((row) => row.includes("STT"));
       if (headerRowIndex === -1) {
         throw new Error("Không tìm thấy tiêu đề hợp lệ!");
       }
-
+  
       // Chuyển tất cả tiêu đề về chữ thường
       const headers = rows[headerRowIndex].map((h) => h.toLowerCase().trim());
       const dataRows = rows.slice(headerRowIndex + 1);
-
+  
       // Xác định vị trí cột dựa vào headers
-      const sttIndex = headers.indexOf("stt");
-      const sbdIndex = headers.indexOf("sbd");
       const maHVSVIndex = headers.indexOf("mã hvsv");
-      const hoDemIndex = headers.indexOf("họ đệm");
-      const tenIndex = headers.indexOf("tên");
-      const lopIndex = headers.indexOf("lớp");
       const diemIndex = headers.indexOf("điểm");
-      const ghiChuIndex = headers.indexOf("ghi chú");
-
-      if (sttIndex === -1 || sbdIndex === -1 || maHVSVIndex === -1 || hoDemIndex === -1 || tenIndex === -1 || lopIndex === -1 || diemIndex === -1) {
+  
+      if (maHVSVIndex === -1 || diemIndex === -1) {
         throw new Error("Không tìm thấy cột hợp lệ!");
       }
-
+  
       const jsonResult = [];
-
+  
       for (let row of dataRows) {
-        let stt = row[sttIndex];
-        let sbd = row[sbdIndex];
         let ma_hvsv = row[maHVSVIndex];
-        let ho_dem = row[hoDemIndex];
-        let ten = row[tenIndex];
-        let lop = row[lopIndex];
         let diemRaw = row[diemIndex];
-        let ghi_chu = "";
-
-        // Kiểm tra nếu có ghi chú
-        if (ghiChuIndex !== -1) {
-          ghi_chu = row[ghiChuIndex] || "";
-        }
-
-        let diem = null;
+  
+        // Xử lý điểm cuối kỳ
+        let diem_ck = null;
         if (typeof diemRaw === "string") {
           diemRaw = diemRaw.replace(",", ".").trim();
         }
-
-        if (diemRaw === "") {
-          diem = null;
-        } else if (!isNaN(Number(diemRaw))) {
-          diem = parseFloat(Number(diemRaw).toFixed(2));
-        } else {
-          diem = diemRaw;
+        if (diemRaw !== "") {
+          if (!isNaN(Number(diemRaw))) {
+            diem_ck = parseFloat(Number(diemRaw).toFixed(2));
+          }
         }
-
+  
         if (ma_hvsv !== "") {
+          // Lấy sinh_vien_id từ ma_hvsv
+          const sv = await sinh_vien.findOne({
+            where: { ma_sinh_vien: ma_hvsv },
+            attributes: ["id"],
+          });
+          if (!sv) {
+            console.warn(`Không tìm thấy sinh viên với mã: ${ma_hvsv}`);
+            continue; // Bỏ qua nếu không tìm thấy sinh viên
+          }
+          const sinh_vien_id = sv.id;
+  
+          // Lấy thoi_khoa_bieu_id từ mon_hoc_id
+          const tkb = await thoi_khoa_bieu.findOne({
+            where: { mon_hoc_id },
+          });
+          if (!tkb) {
+            console.warn(`Không tìm thấy thời khóa biểu với mon_hoc_id: ${mon_hoc_id}`);
+            continue; // Bỏ qua nếu không tìm thấy thời khóa biểu
+          }
+          const thoi_khoa_bieu_id = tkb.id;
+  
+          // Tìm id của bảng diem từ sinh_vien_id và thoi_khoa_bieu_id
+          const diemRecord = await diem.findOne({
+            where: { sinh_vien_id, thoi_khoa_bieu_id },
+            attributes: ["id"],
+          });
+          const diem_id = diemRecord ? diemRecord.id : null;
+  
           jsonResult.push({
-            stt: stt,
-            sbd: sbd,
-            ma_hvsv: ma_hvsv,
-            ho_dem: ho_dem,
-            ten: ten,
-            lop: lop,
-            diem: diem,
-            ghi_chu: ghi_chu
+            id: diem_id, // id của bảng diem (null nếu chưa tồn tại)
+            sinh_vien_id,
+            thoi_khoa_bieu_id,
+            diem_ck,
           });
         }
       }
-
+  
       // Xóa file sau khi xử lý
       if (fs.existsSync(filePath)) {
-        fs.unlink(filePath, (err) => {
-          if (err) {
-            console.error(`Lỗi khi xóa file: ${filePath}`, err);
-          } else {
-            console.log(`Đã xóa file: ${filePath}`);
-          }
-        });
+        fs.unlinkSync(filePath);
       }
-
+  
       return jsonResult;
     } catch (error) {
       throw new Error("Lỗi xử lý file Excel: " + error.message);

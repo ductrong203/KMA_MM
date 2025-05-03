@@ -397,7 +397,7 @@ function TaoBangDiem({ sampleStudents }) {
             // Kiểm tra xem bảng điểm đã tồn tại chưa
             const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
             console.log(existingGradeSheet)
-            if (existingGradeSheet) {
+            if (existingGradeSheet&& existingGradeSheet.data && existingGradeSheet.data.length > 0) {
                 alert('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
                 // Tùy chọn: Lấy dữ liệu bảng điểm hiện có
                 const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
@@ -755,26 +755,37 @@ function TaoBangDiem({ sampleStudents }) {
 
 
     const exportExcel = (lopId, monHocId) => {
+        // Tìm tên học phần từ courseOptions
+        const courseInfo = courseOptions.find(option => option.id === monHocId);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+    
+        // Tìm tên lớp từ classOptions
+        const classInfo = classOptions.find(option => option.id === lopId);
+        const maLop = classInfo?.ma_lop || 'Unknown';
+    
+        // Tạo tên file
+        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+    
         // Chuẩn bị dữ liệu gửi lên server
         const data = {
             lop_id: lopId,
             mon_hoc_id: monHocId
         };
-
+    
         exportDanhSachDiem(data)
             .then(response => {
                 // Trực tiếp xử lý dữ liệu blob từ response.data
                 const blob = new Blob([response.data], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 });
-
+    
                 // Tạo URL để tải xuống file
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                // Tên file tải về
-                a.download = 'export.xlsx';
+                // Sử dụng tên file động
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a); // Làm sạch DOM

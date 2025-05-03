@@ -404,37 +404,48 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     };
 
     const exportExcel = (lopId, monHocId) => {
-        // Chuẩn bị dữ liệu gửi lên server
-        const data = {
-            lop_id: lopId,
-            mon_hoc_id: monHocId
-        };
-
-        exportDanhSachDiem(data)
-            .then(response => {
-                // Trực tiếp xử lý dữ liệu blob từ response.data
-                const blob = new Blob([response.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            // Tìm tên học phần từ courseOptions
+            const courseInfo = courseOptions.find(option => option.id === monHocId);
+            const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+        
+            // Tìm tên lớp từ classOptions
+            const classInfo = classOptions.find(option => option.id === lopId);
+            const maLop = classInfo?.ma_lop || 'Unknown';
+        
+            // Tạo tên file
+            const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+        
+            // Chuẩn bị dữ liệu gửi lên server
+            const data = {
+                lop_id: lopId,
+                mon_hoc_id: monHocId
+            };
+        
+            exportDanhSachDiem(data)
+                .then(response => {
+                    // Trực tiếp xử lý dữ liệu blob từ response.data
+                    const blob = new Blob([response.data], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    });
+        
+                    // Tạo URL để tải xuống file
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Sử dụng tên file động
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a); // Làm sạch DOM
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Thêm thông báo lỗi cho người dùng nếu cần
+                    alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
                 });
-
-                // Tạo URL để tải xuống file
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                // Tên file tải về
-                a.download = 'export.xlsx';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a); // Làm sạch DOM
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Thêm thông báo lỗi cho người dùng nếu cần
-                alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
-            });
-    };
+        };
     // Hàm xử lý upload file Excel
 
     const handleFileChange = (event) => {
