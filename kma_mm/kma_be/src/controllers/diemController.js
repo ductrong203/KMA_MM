@@ -83,11 +83,10 @@ class DiemController {
       if (!req.file) {
         return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
       }
-      const {mon_hoc_id } = req.body;
+      const {mon_hoc_id, khoa_dao_tao_id, lop_id } = req.body;
       const filePath = req.file.path;
-      const result = await DiemService.importExcelCuoiKy(filePath, {mon_hoc_id });
-      const data = await DiemService.update(result);
-      res.json(data);
+      const result = await DiemService.importExcelCuoiKy(filePath, {mon_hoc_id, khoa_dao_tao_id, lop_id });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
