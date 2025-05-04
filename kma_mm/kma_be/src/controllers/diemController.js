@@ -20,6 +20,20 @@ class DiemController {
     }
   }
 
+  static async getByKhoaDaoTaoIdVaMonHocId(req, res) {
+    try {
+      const { khoa_dao_tao_id, mon_hoc_id } = req.params;
+      if (!khoa_dao_tao_id || !mon_hoc_id) {
+        return res.status(400).json({ error: 'Thiếu khoa_dao_tao_id hoặc mon_hoc_id.' });
+      }
+      const data = await DiemService.getByKhoaIdVaMonId(khoa_dao_tao_id, mon_hoc_id);
+      if (!data) return res.status(404).json({ error: 'Không tìm thấy điểm.' });
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async create(req, res) {
     try {
       const data = await DiemService.create(req.body);

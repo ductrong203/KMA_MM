@@ -95,6 +95,50 @@ class DiemService {
   static async getById(id) {
     return await diem.findByPk(id);
   }
+  static async getByKhoaIdVaMonId(khoa_id, mon_id) {
+    try {
+      // Lấy danh sách lớp thuộc khóa đào tạo
+      const lops = await lop.findAll({
+        where: {
+          khoa_dao_tao_id: khoa_id,
+        },
+        attributes: ["id"],
+      });
+  
+      // Lấy danh sách ID lớp
+      const lopIds = lops.map((item) => item.id);
+      if (lopIds.length === 0) {
+        throw new Error(`Không tìm thấy lớp nào thuộc khóa đào tạo id ${khoa_id}`);
+      }
+  
+      // Lấy danh sách thời khóa biểu dựa trên lớp và môn học
+      const thoiKhoaBieus = await thoi_khoa_bieu.findAll({
+        where: {
+          lop_id: lopIds,
+          mon_hoc_id: mon_id,
+        },
+        attributes: ["id"],
+      });
+  
+      // Lấy danh sách ID thời khóa biểu
+      const thoiKhoaBieuIds = thoiKhoaBieus.map((tkb) => tkb.id);
+      if (thoiKhoaBieuIds.length === 0) {
+        throw new Error(`Không tìm thấy thời khóa biểu nào cho lớp thuộc khóa đào tạo id ${khoa_id} và môn học id ${mon_id}`);
+      }
+  
+      // Lấy danh sách điểm dựa trên thời khóa biểu
+      const diems = await diem.findAll({
+        where: {
+          thoi_khoa_bieu_id: thoiKhoaBieuIds,
+        },
+      });
+  
+      return diems;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách điểm:", error);
+      throw error;
+    }
+  }
 
   static async create(data) {
     const { sinh_vien_id, thoi_khoa_bieu_id } = data;

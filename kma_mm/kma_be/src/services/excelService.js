@@ -330,8 +330,20 @@ class ExcelService {
     return workbook;
   }
 
-  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id }) {
+  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id, lop_id }) {
     try {
+      // Kiểm tra tham số đầu vào
+      if (!mon_hoc_id || !khoa_dao_tao_id) {
+        throw new Error("Thiếu mon_hoc_id hoặc khoa_dao_tao_id trong form-data");
+      }
+      if (lop_id) {
+        const lopCheck = await lop.findOne({ 
+          where: { id: lop_id, khoa_dao_tao_id: khoa_dao_tao_id } 
+        });
+        if (!lopCheck) {
+          throw new Error("Lớp không tồn tại trong khóa đào tạo này");
+        }
+      }
       const sinhVienData = await sinh_vien.findAll({
         attributes: ["id", "ma_sinh_vien", "ho_dem", "ten"],
         include: [
@@ -356,6 +368,7 @@ class ExcelService {
                     attributes: [],
                     where: {
                       khoa_dao_tao_id: khoa_dao_tao_id,
+                      ...(lop_id && { id: lop_id }), // Nếu có lop_id thì thêm điều kiện này
                     },
                     required: true,
                   },
