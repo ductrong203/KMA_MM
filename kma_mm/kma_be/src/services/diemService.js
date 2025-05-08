@@ -131,9 +131,19 @@ class DiemService {
         where: {
           thoi_khoa_bieu_id: thoiKhoaBieuIds,
         },
+        order: [['id', 'DESC']],
+        include: [
+          {
+            model: sinh_vien,
+            as: 'sinh_vien',
+            attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
+          }
+        ]
       });
   
-      return diems;
+      return {
+        data: diems
+      };
     } catch (error) {
       console.error("Lỗi khi lấy danh sách điểm:", error);
       throw error;
