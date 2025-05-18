@@ -78,6 +78,18 @@ class KeHoachMonHocService {
     await record.destroy();
     return { message: 'Xóa thành công!' };
   }
+
+  static async getMHByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+    try {
+      const data = await ke_hoach_mon_hoc.findAll({
+        where: { khoa_dao_tao_id, ky_hoc },
+      });
+      return data;
+    } catch (error) {
+      throw new Error("Lỗi khi lấy dữ liệu kế hoạch môn học");
+    }
+  }
+
 }
 
 module.exports = KeHoachMonHocService;

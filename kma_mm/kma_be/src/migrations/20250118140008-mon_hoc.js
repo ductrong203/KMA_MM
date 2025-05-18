@@ -29,6 +29,10 @@ module.exports = {
         allowNull: true,
         defaultValue: 1,
       },
+      ghi_chu: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      }
     });
   },
 

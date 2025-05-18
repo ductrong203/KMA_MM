@@ -52,7 +52,7 @@ const ObjectModal = ({ item, open, onClose, onUpdated, isCreating }) => {
         }
       } else {
         const response = await updateDoiTuongQuanLy(item.id, formData);
-        if (response && response.success) {
+        if (response) {
           onUpdated({ ...item, ...formData });
         }
       }

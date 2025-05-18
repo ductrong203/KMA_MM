@@ -66,6 +66,22 @@ class DiemController {
     }
   }
 
+  static async themSinhVienHocLaiVaoLop(req, res) {
+    try {
+      const { thoi_khoa_bieu_id, ma_sinh_vien } = req.body;
+      const result = await DiemService.themSinhVienHocLaiVaoLop(thoi_khoa_bieu_id, ma_sinh_vien);
+      res.status(201).json({
+        success: true,
+        message: result.message,
+        data: result.data,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 
   static async delete(req, res) {
     try {

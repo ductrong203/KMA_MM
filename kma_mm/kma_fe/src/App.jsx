@@ -32,6 +32,7 @@ import ManageObjects from "./components/admin/ManageObject";
 import ManageDepartments from "./components/admin/ManageDepartment";
 import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
+import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 
 
 const App = () => {
@@ -50,7 +51,7 @@ const App = () => {
     try {
       let id = localStorage.getItem("id");
       const response = await getDetailUserById(id); //
-      console.log(response.data);
+      //console.log(response.data);
       setInfo(response.data);
     } catch (e) {
       throw e;

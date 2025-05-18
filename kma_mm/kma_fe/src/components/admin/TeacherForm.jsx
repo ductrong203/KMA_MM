@@ -82,16 +82,26 @@ const FormGiangVien = ({ giangVien, onSubmit, onClose }) => {
     );
     return phongBan ? phongBan.ten_phong_ban : "Không xác định";
   };
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+// Thêm đoạn này vào hàm handleChange để reset maPhongBan khi chuyển đổi giữa khoa và phòng ban
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  
+  if (name === 'thuocKhoa') {
+    // Reset maPhongBan khi chuyển đổi giữa khoa và phòng ban
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      maPhongBan: '' // Reset để tránh lỗi
+    }));
+  } else {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
+  }
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const apiCall = giangVien
       ? updateGiangVien(giangVien.ma_giang_vien, formData)
       : createGiangVien(formData); // Nếu không có, gọi API tạo mới
@@ -166,7 +176,7 @@ const FormGiangVien = ({ giangVien, onSubmit, onClose }) => {
             label="Loại giảng viên"
             required
           >
-            <MenuItem value={0}>Giảng viên cơ hữu</MenuItem>
+            <MenuItem value={0}>{formData.thuocKhoa?"Giảng viên cơ hữu":"Nhân viên"}</MenuItem>
             <MenuItem value={1}>Giảng viên thỉnh giảng</MenuItem>
           </Select>
         </FormControl>
