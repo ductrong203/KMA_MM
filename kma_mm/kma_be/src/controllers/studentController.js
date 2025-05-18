@@ -158,6 +158,25 @@ class SinhVienController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+  
+  static async timSinhVienTheoMaHoacFilter(req, res) {
+    try {
+      const filters = req.query; // Lấy tất cả query params
+      console.log(filters)
+      const sinhVienList = await SinhVienService.timSinhVienTheoMaHoacFilter(filters);
+
+      res.status(200).json({
+        success: true,
+        data: sinhVienList,
+      });
+    } catch (error) {
+      console.error('Error in timSinhVienTheoMaHoacFilter:', error);
+      res.status(error.message === 'Không tìm thấy sinh viên phù hợp' ? 404 : 500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = SinhVienController;
