@@ -40,6 +40,10 @@ module.exports = function (sequelize, DataTypes) {
         model: 'danh_muc_dao_tao',
         key: 'id'
       }
+    },
+    ghi_chu: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     sequelize,

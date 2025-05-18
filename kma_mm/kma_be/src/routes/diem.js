@@ -10,6 +10,7 @@ router.post('/createDiemForClass', DiemController.createDiemForClass);
 router.post('/them-sinh-vien-hoc-lai', DiemController.themSinhVienHocLaiVaoLop);
 router.get('/filter', DiemController.filter);
 router.get('/:id', DiemController.getById);
+router.get('/khoadaotaovamonhoc/:khoa_dao_tao_id/:mon_hoc_id', DiemController.getByKhoaDaoTaoIdVaMonHocId);
 router.post('/', DiemController.create);
 router.put('/', DiemController.update);
 router.delete('/:id', DiemController.delete);

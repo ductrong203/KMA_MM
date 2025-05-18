@@ -124,6 +124,10 @@ http://localhost:8000/thoikhoabieu/createall
 Điểm: "sinh_vien_id", "thoi_khoa_bieu_id" bắt buộc
 GET
 http://localhost:8000/diem/filter?page=1&pageSize=10?sinh_vien_id=1&thoi_khoa_bieu_id=1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+
+GET: /khoadaotaovamonhoc/:khoa_dao_tao_id/:mon_hoc_id
+http://localhost:8000/diem/khoadaotaovamonhoc/1/1
+
 POST
 http://localhost:8000/diem
 {
@@ -207,11 +211,66 @@ json
   "thoi_khoa_bieu_id": 2
 }
 
+=============================================================================
 import file excel điểm giữa kì
+==========================================================================
 http://localhost:8000/diem/importdiemgk
 post 
 from-data
 key: file ; value: file excel
+key: lop_id 
+key: mon_hoc_id
 
-import file excel điểm cuối kì : tương tự giữa kì, khác link api
+import file excel điểm cuối kì 
 http://localhost:8000/diem/importdiemck
+from-data
+key: file ; value: file excel
+key: mon_hoc_id
+key: khoa_dao_tao_id
+key: lop_id // có thể có hoặc không
+
+=============================================================================
+export file excel điểm giữa kì
+===============================================================================
+POST
+http://localhost:8000/excel/export
+{
+    "lop_id": 1,
+    "mon_hoc_id": 1
+}
+
+=============================================================================
+export file excel điểm cuối kì
+=============================================================================
+POST
+http://localhost:8000/excel/exportcuoiky
+{
+    "mon_hoc_id": 1,
+    "khoa_dao_tao_id": 1,
+    "lop_id": 1 //có thể có hoặc không
+}
+
+export danh sách sinh viên
+POST http://localhost:8000/student/export-excel // có 1 trong 3 trường truyền vào là được
+{
+    "doi_tuong_quan_ly_id": 1,
+    "khoa_dao_tao_id": 1,
+    "lop_id": 1
+}
+
+import danh sách sinh viên
+
+POST http://localhost:8000/student/import //
+form-data
+    file 
+    lop_id
+    
+json trả về
+{
+    "success": true,
+    "data": {
+        "message": "Nhập danh sách sinh viên thành công",
+        "newCount": 2,
+        "thongTinQuanNhanCount": 1
+    }
+}
