@@ -113,7 +113,6 @@ class SinhVienService {
           throw new Error("Đối tượng quản lý không tồn tại");
         }
       }
-
       // Xây dựng điều kiện where
       const whereCondition = {};
       if (lop_id) {
@@ -194,9 +193,9 @@ class SinhVienService {
   static async exportSinhVienToExcel({khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id}) {
     try {
       const { students } = await this.getDanhSachSinhVienExcel( {khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id});
-      if (!students || students.length === 0) {
-        throw new Error("Không có sinh viên để xuất Excel");
-      }
+      // if (!students || students.length === 0) {
+      //   throw new Error("Không có sinh viên để xuất Excel");
+      // }
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Danh sách sinh viên');
