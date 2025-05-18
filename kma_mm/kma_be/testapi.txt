@@ -249,3 +249,28 @@ http://localhost:8000/excel/exportcuoiky
     "khoa_dao_tao_id": 1,
     "lop_id": 1 //có thể có hoặc không
 }
+
+export danh sách sinh viên
+POST http://localhost:8000/student/export-excel // có 1 trong 3 trường truyền vào là được
+{
+    "doi_tuong_quan_ly_id": 1,
+    "khoa_dao_tao_id": 1,
+    "lop_id": 1
+}
+
+import danh sách sinh viên
+
+POST http://localhost:8000/student/import //
+form-data
+    file 
+    lop_id
+    
+json trả về
+{
+    "success": true,
+    "data": {
+        "message": "Nhập danh sách sinh viên thành công",
+        "newCount": 2,
+        "thongTinQuanNhanCount": 1
+    }
+}
