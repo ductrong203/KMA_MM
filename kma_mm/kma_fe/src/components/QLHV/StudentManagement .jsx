@@ -219,12 +219,12 @@ const StudentManagement = () => {
     return `${lop.ma_lop}${String(soLuongSinhVien + 1).padStart(2, "0")}`;
   };
 
-  const handleOpen = (index = null) => {
-    setEditIndex(index);
+  const handleOpen = (student = null) => {
 
-    if (index !== null) {
-      setStudentData(students[index]);
-      console.log(students[index]);
+
+    if (student !== null) {
+      setStudentData(student);
+      console.log(student);
     } else {
       const newMaSinhVien = generateMaSinhVien();
       setStudentData({
@@ -292,106 +292,106 @@ const StudentManagement = () => {
   //   setOpenDetail(true);
   // };
   const handleOpenDetail = async (studentId) => {
-  try {
-    if (!studentId) {
-      toast.error("ID học viên không hợp lệ!");
-      return;
-    }
-
-    const student = students.find((s) => s.id === studentId);
-    if (!student) {
-      toast.error("Không tìm thấy học viên!");
-      return;
-    }
-
-    setStudentData({
-      ma_sinh_vien: student.ma_sinh_vien || "",
-      ngay_sinh: student.ngay_sinh || "",
-      gioi_tinh: student.gioi_tinh ?? false,
-      que_quan: student.que_quan || "",
-      lop_id: student.lop_id || "",
-      doi_tuong_id: student.doi_tuong_id || "",
-      dang_hoc: student.dang_hoc ?? false,
-      ghi_chu: student.ghi_chu || "",
-      ho_dem: student.ho_dem || "",
-      ten: student.ten || "",
-      so_tai_khoan: student.so_tai_khoan || "",
-      ngan_hang: student.ngan_hang || "",
-      chuc_vu: student.chuc_vu || "",
-      CCCD: student.CCCD || "",
-      ngay_cap_CCCD: student.ngay_cap_CCCD || "",
-      noi_cap_CCCD: student.noi_cap_CCCD || "",
-      ky_nhap_hoc: student.ky_nhap_hoc || "",
-      ngay_vao_doan: student.ngay_vao_doan || "",
-      ngay_vao_dang: student.ngay_vao_dang || "",
-      ngay_vao_truong: student.ngay_vao_truong || "",
-      ngay_ra_truong: student.ngay_ra_truong || "",
-      tinh_thanh: student.tinh_thanh || "",
-      quan_huyen: student.quan_huyen || "",
-      phuong_xa_khoi: student.phuong_xa_khoi || "",
-      dan_toc: student.dan_toc || "",
-      ton_giao: student.ton_giao || "",
-      quoc_tich: student.quoc_tich || "",
-      trung_tuyen_theo_nguyen_vong: student.trung_tuyen_theo_nguyen_vong || "",
-      nam_tot_nghiep_PTTH: student.nam_tot_nghiep_PTTH || "",
-      thanh_phan_gia_dinh: student.thanh_phan_gia_dinh || "",
-      doi_tuong_dao_tao: student.doi_tuong_dao_tao || "",
-      dv_lien_ket_dao_tao: student.dv_lien_ket_dao_tao || "",
-      so_dien_thoai: student.so_dien_thoai || "",
-      dien_thoai_gia_dinh: student.dien_thoai_gia_dinh || "",
-      dien_thoai_CQ: student.dien_thoai_CQ || "",
-      email: student.email || "",
-      khi_can_bao_tin_cho_ai: student.khi_can_bao_tin_cho_ai || "",
-      noi_tru: student.noi_tru ?? false,
-      ngoai_tru: student.ngoai_tru ?? false,
-      id: student.id || "", // Lưu id để sử dụng trong tab quân nhân
-    });
-
-    // Tải thông tin quân nhân nếu cần
-    if (student.doi_tuong_id) {
-      try {
-        const militaryInfo = await getMilitaryInfoByStudentId(studentId);
-        setMilitaryData({
-          sinh_vien_id: militaryInfo?.sinh_vien_id || null,
-          ngay_nhap_ngu: militaryInfo?.ngay_nhap_ngu || "",
-          cap_bac: militaryInfo?.cap_bac || "",
-          trinh_do_van_hoa: militaryInfo?.trinh_do_van_hoa || "",
-          noi_o_hien_nay: militaryInfo?.noi_o_hien_nay || "",
-          don_vi_cu_di_hoc: militaryInfo?.don_vi_cu_di_hoc || "",
-          loai_luong: militaryInfo?.loai_luong || "",
-          nhom_luong: militaryInfo?.nhom_luong || "",
-          bac_luong: militaryInfo?.bac_luong || "",
-          he_so_luong: militaryInfo?.he_so_luong || "",
-          ngay_nhan_luong: militaryInfo?.ngay_nhan_luong || "",
-          chuc_vu: militaryInfo?.chuc_vu || "",
-          suc_khoe: militaryInfo?.suc_khoe || "",
-        });
-      } catch (error) {
-        console.error("Lỗi khi lấy thông tin quân nhân:", error);
-        setMilitaryData({
-          sinh_vien_id: null,
-          ngay_nhap_ngu: "",
-          cap_bac: "",
-          trinh_do_van_hoa: "",
-          noi_o_hien_nay: "",
-          don_vi_cu_di_hoc: "",
-          loai_luong: "",
-          nhom_luong: "",
-          bac_luong: "",
-          he_so_luong: "",
-          ngay_nhan_luong: "",
-          chuc_vu: "",
-          suc_khoe: "",
-        });
+    try {
+      if (!studentId) {
+        toast.error("ID học viên không hợp lệ!");
+        return;
       }
-    }
 
-    setOpenDetail(true);
-  } catch (error) {
-    console.error("Lỗi khi xem chi tiết học viên:", error);
-    toast.error(`Lỗi khi tải thông tin chi tiết: ${error.message || error}`);
-  }
-};
+      const student = students.find((s) => s.id === studentId);
+      if (!student) {
+        toast.error("Không tìm thấy học viên!");
+        return;
+      }
+
+      setStudentData({
+        ma_sinh_vien: student.ma_sinh_vien || "",
+        ngay_sinh: student.ngay_sinh || "",
+        gioi_tinh: student.gioi_tinh ?? false,
+        que_quan: student.que_quan || "",
+        lop_id: student.lop_id || "",
+        doi_tuong_id: student.doi_tuong_id || "",
+        dang_hoc: student.dang_hoc ?? false,
+        ghi_chu: student.ghi_chu || "",
+        ho_dem: student.ho_dem || "",
+        ten: student.ten || "",
+        so_tai_khoan: student.so_tai_khoan || "",
+        ngan_hang: student.ngan_hang || "",
+        chuc_vu: student.chuc_vu || "",
+        CCCD: student.CCCD || "",
+        ngay_cap_CCCD: student.ngay_cap_CCCD || "",
+        noi_cap_CCCD: student.noi_cap_CCCD || "",
+        ky_nhap_hoc: student.ky_nhap_hoc || "",
+        ngay_vao_doan: student.ngay_vao_doan || "",
+        ngay_vao_dang: student.ngay_vao_dang || "",
+        ngay_vao_truong: student.ngay_vao_truong || "",
+        ngay_ra_truong: student.ngay_ra_truong || "",
+        tinh_thanh: student.tinh_thanh || "",
+        quan_huyen: student.quan_huyen || "",
+        phuong_xa_khoi: student.phuong_xa_khoi || "",
+        dan_toc: student.dan_toc || "",
+        ton_giao: student.ton_giao || "",
+        quoc_tich: student.quoc_tich || "",
+        trung_tuyen_theo_nguyen_vong: student.trung_tuyen_theo_nguyen_vong || "",
+        nam_tot_nghiep_PTTH: student.nam_tot_nghiep_PTTH || "",
+        thanh_phan_gia_dinh: student.thanh_phan_gia_dinh || "",
+        doi_tuong_dao_tao: student.doi_tuong_dao_tao || "",
+        dv_lien_ket_dao_tao: student.dv_lien_ket_dao_tao || "",
+        so_dien_thoai: student.so_dien_thoai || "",
+        dien_thoai_gia_dinh: student.dien_thoai_gia_dinh || "",
+        dien_thoai_CQ: student.dien_thoai_CQ || "",
+        email: student.email || "",
+        khi_can_bao_tin_cho_ai: student.khi_can_bao_tin_cho_ai || "",
+        noi_tru: student.noi_tru ?? false,
+        ngoai_tru: student.ngoai_tru ?? false,
+        id: student.id || "", // Lưu id để sử dụng trong tab quân nhân
+      });
+
+      // Tải thông tin quân nhân nếu cần
+      if (student.doi_tuong_id) {
+        try {
+          const militaryInfo = await getMilitaryInfoByStudentId(studentId);
+          setMilitaryData({
+            sinh_vien_id: militaryInfo?.sinh_vien_id || null,
+            ngay_nhap_ngu: militaryInfo?.ngay_nhap_ngu || "",
+            cap_bac: militaryInfo?.cap_bac || "",
+            trinh_do_van_hoa: militaryInfo?.trinh_do_van_hoa || "",
+            noi_o_hien_nay: militaryInfo?.noi_o_hien_nay || "",
+            don_vi_cu_di_hoc: militaryInfo?.don_vi_cu_di_hoc || "",
+            loai_luong: militaryInfo?.loai_luong || "",
+            nhom_luong: militaryInfo?.nhom_luong || "",
+            bac_luong: militaryInfo?.bac_luong || "",
+            he_so_luong: militaryInfo?.he_so_luong || "",
+            ngay_nhan_luong: militaryInfo?.ngay_nhan_luong || "",
+            chuc_vu: militaryInfo?.chuc_vu || "",
+            suc_khoe: militaryInfo?.suc_khoe || "",
+          });
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin quân nhân:", error);
+          setMilitaryData({
+            sinh_vien_id: null,
+            ngay_nhap_ngu: "",
+            cap_bac: "",
+            trinh_do_van_hoa: "",
+            noi_o_hien_nay: "",
+            don_vi_cu_di_hoc: "",
+            loai_luong: "",
+            nhom_luong: "",
+            bac_luong: "",
+            he_so_luong: "",
+            ngay_nhan_luong: "",
+            chuc_vu: "",
+            suc_khoe: "",
+          });
+        }
+      }
+
+      setOpenDetail(true);
+    } catch (error) {
+      console.error("Lỗi khi xem chi tiết học viên:", error);
+      toast.error(`Lỗi khi tải thông tin chi tiết: ${error.message || error}`);
+    }
+  };
 
   const handleClose = () => {
     setOpen(false);
@@ -495,15 +495,22 @@ const StudentManagement = () => {
       console.log("Dữ liệu gửi đi:", formattedStudentData);
 
       let res;
-      if (editIndex === null) {
+      if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
         setStudents([...students, res]);
         toast.success("Thêm học viên thành công!");
       } else {
-        res = await updateStudentById(formattedStudentData, formattedStudentData.id);
-        const updatedStudents = [...students];
-        updatedStudents[editIndex] = res;
-        setStudents(updatedStudents);
+        res = await updateStudentById(formattedStudentData, formattedStudentData.id);//  formattedStudentData.id   studentData.id, formattedStudentData
+        //const updatedStudents = [...students];
+        //updatedStudents[editIndex] = res;
+        // setStudents(updatedStudents);
+        setStudents(prevStudents =>
+          prevStudents.map(student =>
+            student.id === res.id ? res : student
+          )
+        );
+
+
         toast.success("Cập nhật học viên thành công!");
       }
 
@@ -566,7 +573,7 @@ const StudentManagement = () => {
           : null,
       };
 
-      if (editIndex !== null) {
+      if (militaryData.sinh_vien_id) {
         try {
           const res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
           console.log("Cập nhật thông tin quân nhân thành công!", res);
@@ -688,64 +695,64 @@ const StudentManagement = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-const handleExportToExcel = async () => {
-  try {
-    const payload = {};
-    if (lopFilter) payload.lop_id = lopFilter;
-    else if (khoaDaoTaoFilter) payload.khoa_dao_tao_id = khoaDaoTaoFilter;
-    else if (heDaoTaoFilter) payload.doi_tuong_quan_ly_id = heDaoTaoFilter;
+  const handleExportToExcel = async () => {
+    try {
+      const payload = {};
+      if (lopFilter) payload.lop_id = lopFilter;
+      else if (khoaDaoTaoFilter) payload.khoa_dao_tao_id = khoaDaoTaoFilter;
+      else if (heDaoTaoFilter) payload.doi_tuong_quan_ly_id = heDaoTaoFilter;
 
-    const response = await exportStudentsToExcel(payload);
-    const blob = response.data;
+      const response = await exportStudentsToExcel(payload);
+      const blob = response.data;
 
-    const lop = danhSachLop.find((item) => item.id === lopFilter);
-    const maLop = lop ? lop.ma_lop : "tat_ca";
-    const fileName = `Danh_sach_sinh_vien-${maLop}.xlsx`;
+      const lop = danhSachLop.find((item) => item.id === lopFilter);
+      const maLop = lop ? lop.ma_lop : "tat_ca";
+      const fileName = `Danh_sach_sinh_vien-${maLop}.xlsx`;
 
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
 
-    toast.success(`Xuất danh sách sinh viên thành công: ${fileName}`);
-  } catch (error) {
-    console.error("Lỗi khi xuất danh sách học viên:", error);
-    toast.error(`Có lỗi xảy ra khi xuất file Excel: ${error.message || error}`);
-  }
-};
-
-const handleImportFromExcel = async (event) => {
-  const file = event.target.files[0];
-  if (!file || !lopFilter) {
-    toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("lop_id", lopFilter);
-
-    const response = await importStudentsFromExcel(formData);
-    const result = response.data;
-    if (result.success) {
-      toast.success(
-        `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
-      );
-      const updatedStudents = await getAllStudent();
-      setStudents(updatedStudents);
-    } else {
-      throw new Error(result.message || "Nhập danh sách không thành công");
+      toast.success(`Xuất danh sách sinh viên thành công: ${fileName}`);
+    } catch (error) {
+      console.error("Lỗi khi xuất danh sách học viên:", error);
+      toast.error(`Có lỗi xảy ra khi xuất file Excel: ${error.message || error}`);
     }
-  } catch (error) {
-    console.error("Lỗi khi nhập danh sách học viên:", error);
-    toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
-  }
-};
+  };
+
+  const handleImportFromExcel = async (event) => {
+    const file = event.target.files[0];
+    if (!file || !lopFilter) {
+      toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("lop_id", lopFilter);
+
+      const response = await importStudentsFromExcel(formData);
+      const result = response.data;
+      if (result.success) {
+        toast.success(
+          `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
+        );
+        const updatedStudents = await getAllStudent();
+        setStudents(updatedStudents);
+      } else {
+        throw new Error(result.message || "Nhập danh sách không thành công");
+      }
+    } catch (error) {
+      console.error("Lỗi khi nhập danh sách học viên:", error);
+      toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
+    }
+  };
   return (
     <Container maxWidth="xl">
       <Typography variant="h5" gutterBottom style={{ fontWeight: 600, marginBottom: "20px" }}>
@@ -819,27 +826,27 @@ const handleImportFromExcel = async (event) => {
         Thêm học viên
       </Button>
       <Button
-  sx={{ marginTop: "8px", marginLeft: "8px" }}
-  variant="contained"
-  color="primary"
-  onClick={handleExportToExcel}
->
-  Xuất Excel
-</Button>
-<Button
-  sx={{ marginTop: "8px", marginLeft: "8px" }}
-  variant="contained"
-  color="primary"
-  component="label"
->
-  Nhập Excel
-  <input
-    type="file"
-    accept=".xlsx, .xls"
-    hidden
-    onChange={handleImportFromExcel}
-  />
-</Button>
+        sx={{ marginTop: "8px", marginLeft: "8px" }}
+        variant="contained"
+        color="primary"
+        onClick={handleExportToExcel}
+      >
+        Xuất Excel
+      </Button>
+      <Button
+        sx={{ marginTop: "8px", marginLeft: "8px" }}
+        variant="contained"
+        color="primary"
+        component="label"
+      >
+        Nhập Excel
+        <input
+          type="file"
+          accept=".xlsx, .xls"
+          hidden
+          onChange={handleImportFromExcel}
+        />
+      </Button>
       <TableContainer component={Paper} style={{ marginTop: 20 }}>
         <Table>
           <TableHead>
@@ -876,29 +883,29 @@ const handleImportFromExcel = async (event) => {
             ))}
           </TableBody>
            */}
-           <TableBody>
-  {paginatedStudents.map((student, index) => (
-    <TableRow key={student.id}>
-      <TableCell>{student.ho_dem} {student.ten}</TableCell>
-      <TableCell>{student.ma_sinh_vien}</TableCell>
-      <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
-      <TableCell>{getMaLop(student.lop_id)}</TableCell>
-      <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
-      <TableCell>
-        <Button variant="outlined" onClick={() => handleOpenDetail(student.id)}>
-          Xem chi tiết
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={() => handleOpen(index)} // Giữ nguyên vì handleOpen dùng index
-          style={{ marginLeft: 10 }}
-        >
-          Chỉnh sửa
-        </Button>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+          <TableBody>
+            {paginatedStudents.map((student, index) => (
+              <TableRow key={student.id}>
+                <TableCell>{student.ho_dem} {student.ten}</TableCell>
+                <TableCell>{student.ma_sinh_vien}</TableCell>
+                <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
+                <TableCell>{getMaLop(student.lop_id)}</TableCell>
+                <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
+                <TableCell>
+                  <Button variant="outlined" onClick={() => handleOpenDetail(student.id)}>
+                    Xem chi tiết
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleOpen(student)} // Giữ nguyên vì handleOpen dùng index
+                    style={{ marginLeft: 10 }}
+                  >
+                    Chỉnh sửa
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
         </Table>
         <TablePagination
           rowsPerPageOptions={[5, 10, 20]}
