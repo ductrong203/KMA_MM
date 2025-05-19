@@ -1155,7 +1155,7 @@ const QuanLyChungChi = () => {
                 </Paper>
 
                 {/* Import/Export Section - Thêm mới ở dưới bảng */}
-                <Paper elevation={2} sx={{ p: 2, mt: 3, borderRadius: 2 }}>
+                {/* <Paper elevation={2} sx={{ p: 2, mt: 3, borderRadius: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                         <Button
                             variant="contained"
@@ -1197,7 +1197,7 @@ const QuanLyChungChi = () => {
                             Cập nhật
                         </Button>
                     </Box>
-                </Paper>
+                </Paper> */}
             </Container>
 
             {/* Dialog thêm mới học viên */}
