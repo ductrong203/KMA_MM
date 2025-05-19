@@ -1295,7 +1295,7 @@ const ThoiKhoaBieu = () => {
 
     return (
         <ThemeProvider theme={theme}>
-            <Container maxWidth="md" sx={{ py: 4 }}>
+            <Container maxWidth="" sx={{ py: 4 }}>
                 <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
                     <Typography variant="h4" color="primary" gutterBottom textAlign="center">
                         Thời Khóa Biểu
@@ -1307,9 +1307,9 @@ const ThoiKhoaBieu = () => {
                         </Button>
                     </Box>
 
-                    <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, maxWidth: 900, backgroundColor: "#fff" }}>
+                    <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, maxWidth: 1200, backgroundColor: "#fff" }}>
                         <Grid container spacing={2} justifyContent="center">
-                            <Grid item xs={12} sm={4} md={3}>
+                            <Grid item xs={12} sm={6} md={2.4}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Hệ đào tạo</InputLabel>
                                     <Select value={heDaoTaoFilter} onChange={(e) => setHeDaoTaoFilter(e.target.value)} label="Hệ đào tạo">
@@ -1321,7 +1321,7 @@ const ThoiKhoaBieu = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} sm={4} md={3}>
+                            <Grid item xs={12} sm={6} md={2.4}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Khóa đào tạo</InputLabel>
                                     <Select value={khoaDaoTaoFilter} onChange={(e) => setKhoaDaoTaoFilter(e.target.value)} label="Khóa đào tạo" disabled={!heDaoTaoFilter}>
@@ -1333,7 +1333,7 @@ const ThoiKhoaBieu = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} sm={4} md={3}>
+                            <Grid item xs={12} sm={6} md={2.4}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Kỳ học</InputLabel>
                                     <Select value={kyHocFilter} onChange={(e) => setKyHocFilter(e.target.value)} label="Kỳ học" disabled={!khoaDaoTaoFilter}>
@@ -1345,7 +1345,7 @@ const ThoiKhoaBieu = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} sm={4} md={3}>
+                            <Grid item xs={12} sm={6} md={2.4}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Lớp</InputLabel>
                                     <Select value={lopIdFilter} onChange={(e) => setLopIdFilter(e.target.value)} label="Lớp">
@@ -1357,7 +1357,7 @@ const ThoiKhoaBieu = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} sm={4} md={3}>
+                            <Grid item xs={12} sm={6} md={2.4}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Môn học</InputLabel>
                                     <Select value={monHocIdFilter} onChange={(e) => setMonHocIdFilter(e.target.value)} label="Môn học" disabled={!heDaoTaoFilter}>
@@ -1412,7 +1412,7 @@ const ThoiKhoaBieu = () => {
                             {thoiKhoaBieuList.map((tkb, index) => {
                                 const monHoc = findMonHoc(tkb.mon_hoc_id);
                                 return (
-                                    <Grid item xs={12} sm={6} md={4} key={tkb.id || index}>
+                                    <Grid item xs={12} sm={4} md={3} key={tkb.id || index}>
                                         <Card variant="outlined">
                                             <CardContent>
                                                 <Typography variant="h6" color="primary" gutterBottom>
