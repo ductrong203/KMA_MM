@@ -26,6 +26,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { TablePagination } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import {
   createKhoa,
@@ -33,10 +34,6 @@ import {
   updateKhoa,
 } from "../../Api_controller/Service/khoaService";
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
-import { TablePagination } from "@mui/material";
-
-// URL API (thay thế bằng URL thực của bạn)
-const API_URL = "https://api.example.com";
 
 // Component chính quản lý danh sách khóa
 const QuanLyKhoa = () => {
@@ -46,9 +43,12 @@ const QuanLyKhoa = () => {
   const [openForm, setOpenForm] = useState(false);
   const [selectedKhoa, setSelectedKhoa] = useState(null);
   const [formData, setFormData] = useState({
+    ma_khoa: "",
     ten_khoa: "",
     he_dao_tao_id: null,
-    nam_hoc: "",
+    nam_bat_dau: "",
+    nam_ket_thuc: "",
+    so_ky_hoc: "",
   });
   const [selectedHeDaoTao, setSelectedHeDaoTao] = useState(null);
 
@@ -60,19 +60,17 @@ const QuanLyKhoa = () => {
     message: "",
     severity: "success",
   });
-  const [page, setPage] = useState(1); // Trang hiện tại
+  const [page, setPage] = useState(0); // Trang hiện tại (bắt đầu từ 0)
   const [rowsPerPage, setRowsPerPage] = useState(5); // Số dòng mỗi trang
-
 
   // State cho bộ lọc
   const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
+
   // Fetch dữ liệu khi component mount
   useEffect(() => {
     getDanhSachKhoa();
     getDanhSachHeDaoTao();
   }, []);
-  //   console.log(danhSachKhoa)
-  //   console.log(danhSachHeDaoTao)
 
   // Hàm lấy danh sách khóa từ API
   const getDanhSachKhoa = async () => {
@@ -82,10 +80,7 @@ const QuanLyKhoa = () => {
       setDanhSachKhoa(response);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách khóa:", error);
-      showSnackbar(
-        "Không thể lấy danh sách khóa. Vui lòng thử lại sau.",
-        "error"
-      );
+      showSnackbar("Không thể lấy danh sách khóa. Vui lòng thử lại sau.", "error");
     } finally {
       setLoadingData(false);
     }
@@ -98,37 +93,30 @@ const QuanLyKhoa = () => {
       setDanhSachHeDaoTao(response);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách hệ đào tạo:", error);
-      showSnackbar(
-        "Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.",
-        "error"
-      );
+      showSnackbar("Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.", "error");
     }
   };
 
   // Hiển thị thông báo
   const showSnackbar = (message, severity = "success") => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-    });
+    setSnackbar({ open: true, message, severity });
   };
 
   // Đóng thông báo
   const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
-      open: false,
-    });
+    setSnackbar({ ...snackbar, open: false });
   };
 
   // Xử lý mở form thêm khóa
   const handleOpenForm = () => {
     setOpenForm(true);
     setFormData({
+      ma_khoa: "",
       ten_khoa: "",
       he_dao_tao_id: null,
-      nam_hoc: "",
+      nam_bat_dau: "",
+      nam_ket_thuc: "",
+      so_ky_hoc: "",
     });
     setSelectedHeDaoTao(null);
   };
@@ -142,54 +130,70 @@ const QuanLyKhoa = () => {
   // Xử lý thay đổi giá trị trong form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   // Xử lý khi chọn hệ đào tạo
   const handleHeDaoTaoChange = (event, newValue) => {
     setSelectedHeDaoTao(newValue);
-    if (newValue) {
-      setFormData({
-        ...formData,
-        he_dao_tao_id: newValue.id,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        he_dao_tao_id: null,
-      });
-    }
+    setFormData({
+      ...formData,
+      he_dao_tao_id: newValue ? newValue.id : null,
+    });
   };
 
-  // Xử lý thêm khóa mới thông qua API
+  // Chuyển đổi nam_bat_dau và nam_ket_thuc thành nam_hoc
+  const convertToNamHoc = (namBatDau, namKetThuc) => {
+    if (!namBatDau || !namKetThuc) return "";
+    return `${namBatDau}-${namKetThuc}`;
+  };
+
+  // Xử lý thêm hoặc cập nhật khóa
   const handleSubmit = async () => {
-    // Kiểm tra dữ liệu
-    if (!formData.ten_khoa || !formData.he_dao_tao_id || !formData.nam_hoc || !formData.ma_khoa) {
+    if (
+      !formData.ma_khoa ||
+      !formData.ten_khoa ||
+      !formData.he_dao_tao_id ||
+      !formData.nam_bat_dau ||
+      !formData.nam_ket_thuc ||
+      !formData.so_ky_hoc
+    ) {
       showSnackbar("Vui lòng điền đầy đủ thông tin!", "error");
       return;
     }
 
+    // Kiểm tra năm bắt đầu < năm kết thúc
+    if (parseInt(formData.nam_bat_dau) >= parseInt(formData.nam_ket_thuc)) {
+      showSnackbar("Năm bắt đầu phải nhỏ hơn năm kết thúc!", "error");
+      return;
+    }
+
+    // Kiểm tra số kỳ học là số dương
+    if (parseInt(formData.so_ky_hoc) <= 0) {
+      showSnackbar("Số kỳ học phải là số dương!", "error");
+      return;
+    }
+
+    // Chuyển đổi dữ liệu trước khi gửi lên API
+    const dataToSubmit = {
+      ma_khoa: formData.ma_khoa,
+      ten_khoa: formData.ten_khoa,
+      he_dao_tao_id: formData.he_dao_tao_id,
+      nam_hoc: convertToNamHoc(formData.nam_bat_dau, formData.nam_ket_thuc),
+      so_ky_hoc: formData.so_ky_hoc,
+    };
+console.log(dataToSubmit)
     setLoading(true);
     try {
       if (selectedKhoa) {
-        // Chỉnh sửa khóa
-        await updateKhoa(selectedKhoa.id, formData);
+        await updateKhoa(selectedKhoa.id, dataToSubmit);
         showSnackbar("Cập nhật khóa thành công!");
       } else {
-        // Thêm mới khóa
-        await createKhoa(formData);
+        await createKhoa(dataToSubmit);
         showSnackbar("Thêm khóa mới thành công!");
       }
-
-      // Cập nhật danh sách khóa
       const updatedData = await fetchDanhSachKhoa();
       setDanhSachKhoa(updatedData);
-
-      // Đóng form
-      setSelectedKhoa(null);
       handleCloseForm();
     } catch (error) {
       console.error("Lỗi khi xử lý dữ liệu khóa:", error);
@@ -199,72 +203,70 @@ const QuanLyKhoa = () => {
     }
   };
 
+  // Lấy tên hệ đào tạo dựa trên ID
   const getHeDaoTaoName = (id) => {
-    if (!id || !danhSachHeDaoTao || danhSachHeDaoTao.length === 0) {
-      return "Không xác định";
-    }
-    console.log("Tìm hệ đào tạo với ID:", id);
-    console.log("Danh sách hệ đào tạo:", danhSachHeDaoTao);
-
     const heDaoTao = danhSachHeDaoTao.find((item) => item.id === id);
     return heDaoTao ? heDaoTao.ten_he_dao_tao : "Không xác định";
   };
 
+  // Tách nam_hoc thành nam_bat_dau và nam_ket_thuc khi chỉnh sửa
+  const parseNamHoc = (namHoc) => {
+    if (!namHoc || typeof namHoc !== "string") return { nam_bat_dau: "", nam_ket_thuc: "" };
+    const [namBatDau, namKetThuc] = namHoc.split("-");
+    return { nam_bat_dau: namBatDau || "", nam_ket_thuc: namKetThuc || "" };
+  };
+
+  // Xử lý chỉnh sửa khóa
   const handleEdit = (khoa) => {
+    const { nam_bat_dau, nam_ket_thuc } = parseNamHoc(khoa.nam_hoc);
     setSelectedKhoa(khoa);
     setFormData({
+      ma_khoa: khoa.ma_khoa || "",
       ten_khoa: khoa.ten_khoa || "",
       he_dao_tao_id: khoa.he_dao_tao_id || null,
-      nam_hoc: khoa.nam_hoc || "",
+      nam_bat_dau: nam_bat_dau,
+      nam_ket_thuc: nam_ket_thuc,
+      so_ky_hoc: khoa.so_ky_hoc || "",
     });
-
-    const heDaoTao = danhSachHeDaoTao.find(
-      (item) => item.id === khoa.he_dao_tao_id
-    );
+    const heDaoTao = danhSachHeDaoTao.find((item) => item.id === khoa.he_dao_tao_id);
     setSelectedHeDaoTao(heDaoTao || null);
-
     setOpenForm(true);
   };
+
   // Xử lý thay đổi bộ lọc hệ đào tạo
   const handleFilterChange = (event) => {
     setFilterHeDaoTao(event.target.value);
-    setPage(1); // Reset về trang đầu tiên khi thay đổi bộ lọc
+    setPage(0); // Reset về trang đầu tiên khi thay đổi bộ lọc
   };
 
   // Lọc danh sách khóa theo hệ đào tạo
-  const filteredKhoa = danhSachKhoa.filter((khoa) => {
-    if (!filterHeDaoTao) return true; // Nếu không có bộ lọc, hiển thị tất cả
-    return khoa.he_dao_tao_id === filterHeDaoTao;
-  });
-  console.log("filteredKhoa:", filteredKhoa)
-  const indexOfLastItem = page * rowsPerPage;
+  const filteredKhoa = danhSachKhoa.filter((khoa) =>
+    filterHeDaoTao ? khoa.he_dao_tao_id === filterHeDaoTao : true
+  );
+
+  // Tính toán dữ liệu hiển thị trên trang hiện tại
+  const indexOfLastItem = (page + 1) * rowsPerPage;
   const indexOfFirstItem = indexOfLastItem - rowsPerPage;
   const currentKhoa = filteredKhoa.slice(indexOfFirstItem, indexOfLastItem);
-  // Reset lại trang khi số lượng item thay đổi do lọc
-  useEffect(() => {
-    if (page > 1 && indexOfFirstItem >= filteredKhoa.length) {
-      setPage(Math.max(1, Math.ceil(filteredKhoa.length / rowsPerPage)));
-    }
-  }, [filteredKhoa, page, rowsPerPage, indexOfFirstItem]);
 
+  // Xử lý thay đổi trang
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Xử lý thay đổi số dòng mỗi trang
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Reset về trang đầu tiên khi thay đổi số dòng
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1">
           Danh sách khóa
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenForm}
-        >
+        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenForm}>
           Thêm khóa
         </Button>
       </Box>
@@ -298,17 +300,18 @@ const QuanLyKhoa = () => {
           <TableHead>
             <TableRow>
               <TableCell width="5%">STT</TableCell>
-              <TableCell width="20%">Mã khóa</TableCell>
+              <TableCell width="15%">Mã khóa</TableCell>
               <TableCell width="20%">Tên khóa</TableCell>
               <TableCell width="20%">Hệ đào tạo</TableCell>
-              <TableCell width="20%">Niên khóa</TableCell>
-              <TableCell width="20%">Thao tác</TableCell>
+              <TableCell width="15%">Niên khóa</TableCell>
+              <TableCell width="10%">Số kỳ học</TableCell>
+              <TableCell width="15%">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loadingData ? (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                   <CircularProgress size={30} />
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Đang tải dữ liệu...
@@ -323,11 +326,9 @@ const QuanLyKhoa = () => {
                   <TableCell>{khoa.ten_khoa}</TableCell>
                   <TableCell>{getHeDaoTaoName(khoa.he_dao_tao_id)}</TableCell>
                   <TableCell>{khoa.nam_hoc}</TableCell>
+                  <TableCell>{khoa.so_ky_hoc}</TableCell>
                   <TableCell>
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleEdit(khoa)}
-                    >
+                    <IconButton color="primary" onClick={() => handleEdit(khoa)}>
                       <EditIcon />
                     </IconButton>
                   </TableCell>
@@ -335,7 +336,7 @@ const QuanLyKhoa = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={7} align="center">
                   Không có dữ liệu
                 </TableCell>
               </TableRow>
@@ -345,24 +346,19 @@ const QuanLyKhoa = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 15]}
           component="div"
-          count={filteredKhoa.length} // Tổng số khóa
+          count={filteredKhoa.length}
           rowsPerPage={rowsPerPage}
-          page={page - 1} // MUI bắt đầu từ 0
+          page={page}
           labelRowsPerPage="Số dòng mỗi trang"
-          onPageChange={(event, newPage) => setPage(newPage + 1)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
-            setPage(1); // Quay lại trang đầu khi đổi số dòng
-          }}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} trong ${count !== -1 ? count : `hơn ${to}`}`}
         />
       </TableContainer>
 
-      {/* Form thêm khóa mới */}
+      {/* Form thêm/cập nhật khóa */}
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {selectedKhoa ? "Chỉnh sửa khóa" : "Thêm khóa mới"}
-        </DialogTitle>
-
+        <DialogTitle>{selectedKhoa ? "Chỉnh sửa khóa" : "Thêm khóa mới"}</DialogTitle>
         <DialogContent>
           <Box py={2}>
             <Autocomplete
@@ -371,13 +367,7 @@ const QuanLyKhoa = () => {
               value={selectedHeDaoTao}
               onChange={handleHeDaoTaoChange}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Hệ đào tạo"
-                  margin="normal"
-                  variant="outlined"
-                  fullWidth
-                />
+                <TextField {...params} label="Hệ đào tạo" margin="normal" variant="outlined" fullWidth />
               )}
             />
             <TextField
@@ -398,15 +388,38 @@ const QuanLyKhoa = () => {
               margin="normal"
               variant="outlined"
             />
-
             <TextField
               fullWidth
-              label="Niên khóa"
-              name="nam_hoc"
-              value={formData.nam_hoc}
+              label="Năm bắt đầu"
+              name="nam_bat_dau"
+              value={formData.nam_bat_dau}
               onChange={handleInputChange}
               margin="normal"
               variant="outlined"
+              type="number"
+              inputProps={{ min: 2000, max: 2100 }}
+            />
+            <TextField
+              fullWidth
+              label="Năm kết thúc"
+              name="nam_ket_thuc"
+              value={formData.nam_ket_thuc}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 2000, max: 2100 }}
+            />
+            <TextField
+              fullWidth
+              label="Số kỳ học"
+              name="so_ky_hoc"
+              value={formData.so_ky_hoc}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 1 }}
             />
           </Box>
         </DialogContent>
@@ -433,11 +446,7 @@ const QuanLyKhoa = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

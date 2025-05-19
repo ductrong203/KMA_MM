@@ -9,17 +9,23 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
-  CircularProgress
+  CircularProgress,
+  MenuItem,
+  ListItemText,
+  Select,
+  InputLabel,
+  FormControl
 } from '@mui/material';
 
-const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
+const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   const [formData, setFormData] = useState({
     id: null,
     ma_mon_hoc: '',
     ten_mon_hoc: '',
     so_tin_chi: 0,
     ghi_chu: '',
-    tinh_diem: true
+    tinh_diem: true,
+    curriculumIds: []
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -27,7 +33,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
   // Update form data when subject prop changes
   useEffect(() => {
     if (subject) {
-      setFormData({ ...subject });
+      setFormData({ ...subject, curriculumIds: subject.he_dao_tao_id ? [subject.he_dao_tao_id] : [] });
     }
   }, [subject]);
 
@@ -66,6 +72,13 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+  const handleCurriculumChange = (event) => {
+    const { value } = event.target;
+    setFormData(prev => ({
+      ...prev,
+      curriculumIds: value
+    }));
   };
 
   // Handle form submission
@@ -130,6 +143,25 @@ const MonHocForm = ({ open, onClose, subject, onSubmit }) => {
             disabled={loading}
             InputProps={{ inputProps: { min: 1 } }}
           />
+         <FormControl fullWidth margin="dense">
+            <InputLabel>Hệ đào tạo</InputLabel>
+            <Select
+              multiple
+              name="curriculumIds"
+              value={formData.curriculumIds}
+              onChange={handleCurriculumChange}
+              renderValue={(selected) => 
+                selected.map(id => curriculums.find(c => c.id === id)?.ten_he_dao_tao).join(', ')
+              }
+            >
+              {curriculums.map((curriculum) => (
+                <MenuItem key={curriculum.id} value={curriculum.id}>
+                  <Checkbox checked={formData.curriculumIds.indexOf(curriculum.id) > -1} />
+                  <ListItemText primary={curriculum.ten_he_dao_tao} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             margin="dense"
             name="ghi_chu"

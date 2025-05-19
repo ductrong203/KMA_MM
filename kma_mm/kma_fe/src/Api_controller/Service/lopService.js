@@ -15,3 +15,12 @@ export const updateLop = async (maLop, data) => {
     return response.data
 }
 
+export const getDanhSachLopTheoKhoaDaoTao = async (khoaDaoTaoId) => {
+    const response = await api.get(`lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoId}`)
+    return response.data
+}
+
+export const getLopHocById = async (id) => {
+    const response = await api.get(`lop/${id}`)
+    return response.data
+}

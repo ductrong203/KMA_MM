@@ -60,6 +60,7 @@ const updateTraining = async (code, data) => {
   }
 };
 
+
 module.exports = {
     createTraining,
     fetchDanhSachHeDaoTao,
