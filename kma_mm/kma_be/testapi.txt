@@ -274,3 +274,7 @@ json trả về
         "thongTinQuanNhanCount": 1
     }
 }
+
+export phụ lục bằng
+GET 
+http://localhost:8000/excel-phu-luc-bang/export/?sinh_vien_id=1
