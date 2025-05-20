@@ -51,3 +51,8 @@ export const updateMilitaryInfoByStudentId = async (id, data) => {
     const response = await api.put(`/thongtinquannhan/byidsinhvien/${id}`, data);
     return response.data;
 };
+
+export const getListClassByKhoaDaoTaoId = async (id) => {
+    const response = await api.get(`/lop/bykhoadaotao?khoa_dao_tao_id=${id}`);
+    return response.data
+}

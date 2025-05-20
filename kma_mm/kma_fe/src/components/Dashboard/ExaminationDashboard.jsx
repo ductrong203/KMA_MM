@@ -31,6 +31,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { styled } from '@mui/material/styles';
 import QuanLyDiem from '../Diem/QuanLyDiem';
 import TaoBangDiem from '../Diem/TaoBangDiem';
+import XemDanhSachDiem from '../Diem/XemDanhSachDiem';
 
 // Styled component for file upload
 const VisuallyHiddenInput = styled('input')({
@@ -263,11 +264,6 @@ const GradeImportSystem = () => {
         alert('Đã lưu thành công!');
     };
 
-    const handleExportData = () => {
-        // Logic to export data
-        alert('Đã xuất dữ liệu thành công!');
-    };
-
     const handleRetakeRegistration = (studentId, checked) => {
         const updatedStudents = students.map(student =>
             student.id === studentId
@@ -292,7 +288,7 @@ const GradeImportSystem = () => {
             </Typography>
 
             <Tabs value={tabValue} onChange={handleTabChange} aria-label="grade management tabs">
-                <Tab label="Import Điểm" />
+                {/* <Tab label="Import Điểm" /> */}
                 <Tab label="Tạo Bảng Điểm" />
                 <Tab label="Quản lý Điểm" />
                 <Tab label="Xem Danh Sách Điểm" />
@@ -300,7 +296,7 @@ const GradeImportSystem = () => {
             </Tabs>
 
             <Box sx={{ mt: 2 }}>
-                {tabValue === 0 && (
+                {/* {tabValue === 0 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Import Điểm
@@ -426,227 +422,228 @@ const GradeImportSystem = () => {
                             {selectedFile ? `File đã chọn: ${selectedFile.name}` : 'Chưa chọn file nào'}
                         </Typography>
                     </Paper>
-                )}
-                {tabValue == 1 && (
+                )} */}
+                {tabValue == 0 && (
                     <TaoBangDiem />
                 )}
-                {tabValue === 2 && (
+                {tabValue === 1 && (
                     <QuanLyDiem onSave={handleSave} sampleStudents={sampleStudents} />
                 )}
 
-                {tabValue === 3 && (
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Xem Danh Sách Điểm
-                        </Typography>
+                {tabValue === 2 && (
+                    // <Paper sx={{ p: 3 }}>
+                    //     <Typography variant="h6" gutterBottom>
+                    //         Xem Danh Sách Điểm
+                    //     </Typography>
 
-                        <Grid container spacing={2} sx={{ mb: 3 }}>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Năm học</InputLabel>
-                                    <Select
-                                        value={viewFilter.year}
-                                        label="Năm học"
-                                        onChange={(e) => handleViewFilterChange('year', e.target.value)}
-                                    >
-                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
-                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
-                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //     <Grid container spacing={2} sx={{ mb: 3 }}>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Năm học</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.year}
+                    //                     label="Năm học"
+                    //                     onChange={(e) => handleViewFilterChange('year', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="2023-2024">2023-2024</MenuItem>
+                    //                     <MenuItem value="2024-2025">2024-2025</MenuItem>
+                    //                     <MenuItem value="2025-2026">2025-2026</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học kỳ</InputLabel>
-                                    <Select
-                                        value={viewFilter.semester}
-                                        label="Học kỳ"
-                                        onChange={(e) => handleViewFilterChange('semester', e.target.value)}
-                                    >
-                                        <MenuItem value="1">Học kỳ 1</MenuItem>
-                                        <MenuItem value="2">Học kỳ 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Học kỳ</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.semester}
+                    //                     label="Học kỳ"
+                    //                     onChange={(e) => handleViewFilterChange('semester', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="1">Học kỳ 1</MenuItem>
+                    //                     <MenuItem value="2">Học kỳ 2</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Đợt học</InputLabel>
-                                    <Select
-                                        value={viewFilter.examPeriod}
-                                        label="Đợt học"
-                                        onChange={(e) => handleViewFilterChange('examPeriod', e.target.value)}
-                                    >
-                                        <MenuItem value="1">Đợt 1</MenuItem>
-                                        <MenuItem value="2">Đợt 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Đợt học</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.examPeriod}
+                    //                     label="Đợt học"
+                    //                     onChange={(e) => handleViewFilterChange('examPeriod', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="1">Đợt 1</MenuItem>
+                    //                     <MenuItem value="2">Đợt 2</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Khóa</InputLabel>
-                                    <Select
-                                        value={viewFilter.batch}
-                                        label="Khóa"
-                                        onChange={(e) => handleViewFilterChange('batch', e.target.value)}
-                                    >
-                                        <MenuItem value="K14">K14</MenuItem>
-                                        <MenuItem value="K15">K15</MenuItem>
-                                        <MenuItem value="K16">K16</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Khóa</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.batch}
+                    //                     label="Khóa"
+                    //                     onChange={(e) => handleViewFilterChange('batch', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="K14">K14</MenuItem>
+                    //                     <MenuItem value="K15">K15</MenuItem>
+                    //                     <MenuItem value="K16">K16</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Chuyên ngành</InputLabel>
-                                    <Select
-                                        value={viewFilter.major}
-                                        label="Chuyên ngành"
-                                        onChange={(e) => handleViewFilterChange('major', e.target.value)}
-                                    >
-                                        <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
-                                        <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
-                                        <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
-                                        <MenuItem value="MMT">Mạng máy tính</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Chuyên ngành</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.major}
+                    //                     label="Chuyên ngành"
+                    //                     onChange={(e) => handleViewFilterChange('major', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
+                    //                     <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
+                    //                     <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
+                    //                     <MenuItem value="MMT">Mạng máy tính</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học phần</InputLabel>
-                                    <Select
-                                        value={viewFilter.course}
-                                        label="Học phần"
-                                        onChange={(e) => handleViewFilterChange('course', e.target.value)}
-                                    >
-                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
-                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
-                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
-                                        <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
-                                        <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Học phần</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.course}
+                    //                     label="Học phần"
+                    //                     onChange={(e) => handleViewFilterChange('course', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="WEB">Lập trình Web</MenuItem>
+                    //                     <MenuItem value="JAVA">Lập trình Java</MenuItem>
+                    //                     <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
+                    //                     <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
+                    //                     <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Lớp</InputLabel>
-                                    <Select
-                                        value={viewFilter.classGroup}
-                                        label="Lớp"
-                                        onChange={(e) => handleViewFilterChange('classGroup', e.target.value)}
-                                    >
-                                        <MenuItem value="ALL">Tất cả</MenuItem>
-                                        <MenuItem value="CT6">CT6</MenuItem>
-                                        <MenuItem value="CT7">CT7</MenuItem>
-                                        <MenuItem value="CT8">CT8</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Lớp</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.classGroup}
+                    //                     label="Lớp"
+                    //                     onChange={(e) => handleViewFilterChange('classGroup', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="ALL">Tất cả</MenuItem>
+                    //                     <MenuItem value="CT6">CT6</MenuItem>
+                    //                     <MenuItem value="CT7">CT7</MenuItem>
+                    //                     <MenuItem value="CT8">CT8</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Lần thi</InputLabel>
-                                    <Select
-                                        value={viewFilter.examNumber}
-                                        label="Lần thi"
-                                        onChange={(e) => handleViewFilterChange('examNumber', e.target.value)}
-                                    >
-                                        <MenuItem value="1">Lần 1</MenuItem>
-                                        <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Lần thi</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.examNumber}
+                    //                     label="Lần thi"
+                    //                     onChange={(e) => handleViewFilterChange('examNumber', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="1">Lần 1</MenuItem>
+                    //                     <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Hệ đào tạo</InputLabel>
-                                    <Select
-                                        value={viewFilter.educationType}
-                                        label="Hệ đào tạo"
-                                        onChange={(e) => handleViewFilterChange('educationType', e.target.value)}
-                                    >
-                                        <MenuItem value="CQ">Chính quy</MenuItem>
-                                        <MenuItem value="LT">Liên thông</MenuItem>
-                                        <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <FormControl fullWidth>
+                    //                 <InputLabel>Hệ đào tạo</InputLabel>
+                    //                 <Select
+                    //                     value={viewFilter.educationType}
+                    //                     label="Hệ đào tạo"
+                    //                     onChange={(e) => handleViewFilterChange('educationType', e.target.value)}
+                    //                 >
+                    //                     <MenuItem value="CQ">Chính quy</MenuItem>
+                    //                     <MenuItem value="LT">Liên thông</MenuItem>
+                    //                     <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
+                    //                 </Select>
+                    //             </FormControl>
+                    //         </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<VisibilityIcon />}
-                                    onClick={handleViewSearch}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Xem điểm
-                                </Button>
-                            </Grid>
-                        </Grid>
+                    //         <Grid item xs={12} sm={6} md={3}>
+                    //             <Button
+                    //                 variant="contained"
+                    //                 color="primary"
+                    //                 startIcon={<VisibilityIcon />}
+                    //                 onClick={handleViewSearch}
+                    //                 sx={{ height: '56px' }}
+                    //             >
+                    //                 Xem điểm
+                    //             </Button>
+                    //         </Grid>
+                    //     </Grid>
 
-                        <Divider sx={{ my: 2 }} />
+                    //     <Divider sx={{ my: 2 }} />
 
-                        <TableContainer component={Paper}>
-                            <Table sx={{ minWidth: 650 }} aria-label="view grades table">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Mã SV</TableCell>
-                                        <TableCell>Họ và tên</TableCell>
-                                        <TableCell>Lớp</TableCell>
-                                        <TableCell>Trạng thái</TableCell>
-                                        <TableCell>TP1</TableCell>
-                                        <TableCell>TP2</TableCell>
-                                        <TableCell>CK lần 1</TableCell>
-                                        <TableCell>CK lần 2</TableCell>
-                                        <TableCell>Điểm TK</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {students.map((student) => {
-                                        // Tính điểm tổng kết (giả sử công thức: TP1*0.2 + TP2*0.2 + CK*0.6)
-                                        // Ưu tiên lấy điểm CK lần 2 nếu có, nếu không thì lấy điểm CK lần 1
-                                        const finalExamScore = student.scores.CK2 !== null ? student.scores.CK2 : student.scores.CK1;
-                                        const totalScore = student.scores.TP1 * 0.2 + student.scores.TP2 * 0.2 + finalExamScore * 0.6;
+                    //     <TableContainer component={Paper}>
+                    //         <Table sx={{ minWidth: 650 }} aria-label="view grades table">
+                    //             <TableHead>
+                    //                 <TableRow>
+                    //                     <TableCell>Mã SV</TableCell>
+                    //                     <TableCell>Họ và tên</TableCell>
+                    //                     <TableCell>Lớp</TableCell>
+                    //                     <TableCell>Trạng thái</TableCell>
+                    //                     <TableCell>TP1</TableCell>
+                    //                     <TableCell>TP2</TableCell>
+                    //                     <TableCell>CK lần 1</TableCell>
+                    //                     <TableCell>CK lần 2</TableCell>
+                    //                     <TableCell>Điểm TK</TableCell>
+                    //                 </TableRow>
+                    //             </TableHead>
+                    //             <TableBody>
+                    //                 {students.map((student) => {
+                    //                     // Tính điểm tổng kết (giả sử công thức: TP1*0.2 + TP2*0.2 + CK*0.6)
+                    //                     // Ưu tiên lấy điểm CK lần 2 nếu có, nếu không thì lấy điểm CK lần 1
+                    //                     const finalExamScore = student.scores.CK2 !== null ? student.scores.CK2 : student.scores.CK1;
+                    //                     const totalScore = student.scores.TP1 * 0.2 + student.scores.TP2 * 0.2 + finalExamScore * 0.6;
 
-                                        return (
-                                            <TableRow key={student.id}>
-                                                <TableCell>{student.id}</TableCell>
-                                                <TableCell>{student.name}</TableCell>
-                                                <TableCell>{student.class}</TableCell>
-                                                <TableCell>{student.status}</TableCell>
-                                                <TableCell>{student.scores.TP1}</TableCell>
-                                                <TableCell>{student.scores.TP2}</TableCell>
-                                                <TableCell>{student.scores.CK1}</TableCell>
-                                                <TableCell>{student.scores.CK2 !== null ? student.scores.CK2 : '-'}</TableCell>
-                                                <TableCell>{totalScore.toFixed(1)}</TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                    //                     return (
+                    //                         <TableRow key={student.id}>
+                    //                             <TableCell>{student.id}</TableCell>
+                    //                             <TableCell>{student.name}</TableCell>
+                    //                             <TableCell>{student.class}</TableCell>
+                    //                             <TableCell>{student.status}</TableCell>
+                    //                             <TableCell>{student.scores.TP1}</TableCell>
+                    //                             <TableCell>{student.scores.TP2}</TableCell>
+                    //                             <TableCell>{student.scores.CK1}</TableCell>
+                    //                             <TableCell>{student.scores.CK2 !== null ? student.scores.CK2 : '-'}</TableCell>
+                    //                             <TableCell>{totalScore.toFixed(1)}</TableCell>
+                    //                         </TableRow>
+                    //                     );
+                    //                 })}
+                    //             </TableBody>
+                    //         </Table>
+                    //     </TableContainer>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                            <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={<DownloadIcon />}
-                                onClick={handleExportData}
-                                sx={{ mr: 2 }}
-                            >
-                                Xuất Excel
-                            </Button>
-                        </Box>
-                    </Paper>
+                    //     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                    //         <Button
+                    //             variant="contained"
+                    //             color="success"
+                    //             startIcon={<DownloadIcon />}
+                    //             onClick={handleExportData}
+                    //             sx={{ mr: 2 }}
+                    //         >
+                    //             Xuất Excel
+                    //         </Button>
+                    //     </Box>
+                    // </Paper>
+                    <XemDanhSachDiem/>
                 )}
 
-                {tabValue === 4 && (
+                {tabValue === 3 && (
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Báo cáo

@@ -1,19 +1,22 @@
+
 // import { useState, useEffect } from "react";
 // import {
 //     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
 //     DialogTitle, DialogContent, DialogActions, Card, CardContent, CardActions, IconButton, createTheme,
-//     ThemeProvider, TextField, InputAdornment, Autocomplete
+//     ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText
 // } from "@mui/material";
 // import AddIcon from '@mui/icons-material/Add';
 // import DeleteIcon from '@mui/icons-material/Delete';
 // import EditIcon from '@mui/icons-material/Edit';
 // import SearchIcon from '@mui/icons-material/Search';
-// import { getMonHoc, getThoiKhoaBieu, themThoiKhoaBieu, updateThoiKhoaBieu, xoaThoiKhoaBieu } from "../../Api_controller/Service/monHocService";
+// import { getMonHoc, themThoiKhoaBieu, updateThoiKhoaBieu, xoaThoiKhoaBieu } from "../../Api_controller/Service/monHocService";
 // import { getGiangVien } from "../../Api_controller/Service/giangVienService";
 // import { getDanhSachLop } from "../../Api_controller/Service/lopService";
-// import Pagination from '@mui/material/Pagination';
-// import Stack from '@mui/material/Stack';
 // import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
+// import {
+//     fetchThoiKhoaBieuByPage, fetchThoiKhoaBieuByFilter, fetchLopByKhoaDaoTao,
+//     fetchMonHocByHeDaoTao, fetchKeHoachMonHoc, createAllThoiKhoaBieu
+// } from "../../Api_controller/Service/thoiKhoaBieuService";
 
 // const theme = createTheme({
 //     palette: {
@@ -42,6 +45,8 @@
 //     const [khoaDaoTao, setKhoaDaoTao] = useState([]);
 //     const [kyHocOptionsForm, setKyHocOptionsForm] = useState([]);
 //     const [kyHocOptionsFilter, setKyHocOptionsFilter] = useState([]);
+//     const [useKeHoachDaoTao, setUseKeHoachDaoTao] = useState(false);
+//     const [keHoachMonHocList, setKeHoachMonHocList] = useState([]);
 
 //     const [trangThaiOptions] = useState([
 //         { value: 1, label: "Hoạt động" },
@@ -52,9 +57,10 @@
 //     const [monHocSearch, setMonHocSearch] = useState("");
 //     const [giangVienSearch, setGiangVienSearch] = useState("");
 
-//     const [originalLopList, setOriginalLopList] = useState([]); // Danh sách lớp gốc để hiển thị thời khóa biểu
-//     const [lopList, setLopList] = useState([]); // Danh sách lớp dùng trong form và bộ lọc
+//     const [originalLopList, setOriginalLopList] = useState([]);
+//     const [lopList, setLopList] = useState([]);
 //     const [monHocList, setMonHocList] = useState([]);
+//     const [monHocListForm, setMonHocListForm] = useState([]);
 //     const [giangVienList, setGiangVienList] = useState([]);
 //     const [thoiKhoaBieuList, setThoiKhoaBieuList] = useState([]);
 //     const [khoaDaoTaoList, setKhoaDaoTaoList] = useState([]);
@@ -70,22 +76,29 @@
 //     const [pageSize] = useState(6);
 //     const [totalPages, setTotalPages] = useState(1);
 
-//     // Tải dữ liệu ban đầu
 //     useEffect(() => {
 //         const fetchInitialData = async () => {
 //             setIsLoading(true);
 //             try {
 //                 const [heDaoTao, giangVien, khoaDaoTao, monHoc, lop, thoiKhoaBieu] = await Promise.all([
-//                     fetchHeDaoTaoList(),
-//                     fetchGiangVienList(),
-//                     fetchAllKhoaDaoTaoList(),
-//                     fetchMonHocList(),
-//                     fetchLopList(),
-//                     fetchThoiKhoaBieu()
+//                     fetchDanhSachHeDaoTao(),
+//                     getGiangVien(),
+//                     getDanhSachKhoaDaoTao(),
+//                     getMonHoc(),
+//                     getDanhSachLop(),
+//                     fetchThoiKhoaBieuByPage(page, pageSize)
 //                 ]);
-//                 setOriginalLopList(lop); // Lưu danh sách lớp gốc
-//                 setLopList(lop); // Ban đầu, lopList cũng bằng danh sách gốc
+//                 setHeDaoTao(heDaoTao);
+//                 setGiangVienList(giangVien);
+//                 setKhoaDaoTaoList(khoaDaoTao);
+//                 setMonHocList(monHoc);
+//                 setMonHocListForm(monHoc);
+//                 setOriginalLopList(lop);
+//                 setLopList(lop);
 //                 setLopListView(lop);
+//                 setThoiKhoaBieuList(thoiKhoaBieu.data || []);
+//                 setTotalPages(thoiKhoaBieu.totalPages || 1);
+//                 console.log("monhoclist>>", monHocList)
 //             } catch (error) {
 //                 console.error("Lỗi khi tải dữ liệu ban đầu:", error);
 //             } finally {
@@ -95,94 +108,14 @@
 //         fetchInitialData();
 //     }, []);
 
-//     const fetchAllKhoaDaoTaoList = async () => {
-//         try {
-//             const response = await getDanhSachKhoaDaoTao();
-//             setKhoaDaoTaoList(response);
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchKhoaDaoTaoList = async (heDaoTaoId) => {
-//         try {
-//             const response = await getDanhSachKhoaDaoTaobyId(heDaoTaoId);
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchLopByKhoaDaoTao = async (khoaDaoTaoId) => {
-//         try {
-//             const response = await fetch(`http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoId}`);
-//             const data = await response.json();
-//             setLopList(data); // Chỉ cập nhật lopList cho form
-//             setLopListView(data); // Cập nhật lopListView cho bộ lọc
-//             return data;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách lớp theo khóa đào tạo:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchLopList = async () => {
-//         try {
-//             const response = await getDanhSachLop();
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách lớp:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchHeDaoTaoList = async () => {
-//         try {
-//             const response = await fetchDanhSachHeDaoTao();
-//             setHeDaoTao(response);
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách hệ đào tạo:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchMonHocList = async () => {
-//         try {
-//             const response = await getMonHoc();
-//             setMonHocList(response);
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách môn học:", error);
-//             return [];
-//         }
-//     };
-
-//     const fetchGiangVienList = async () => {
-//         try {
-//             const response = await getGiangVien();
-//             setGiangVienList(response);
-//             return response;
-//         } catch (error) {
-//             console.error("Lỗi khi lấy danh sách giảng viên:", error);
-//             return [];
-//         }
-//     };
-
 //     const fetchThoiKhoaBieu = async () => {
-//         let url = `http://localhost:8000/thoikhoabieu/getbypage?page=${page}&pageSize=${pageSize}`;
-//         if (kyHocFilter || lopIdFilter || monHocIdFilter) {
-//             url = `http://localhost:8000/thoikhoabieu/filterbyid?page=${page}&pageSize=${pageSize}`;
-//             if (kyHocFilter) url += `&ky_hoc=${kyHocFilter}`;
-//             if (lopIdFilter) url += `&lop_id=${lopIdFilter}`;
-//             if (monHocIdFilter) url += `&mon_hoc_id=${monHocIdFilter}`;
-//         }
 //         try {
-//             const response = await fetch(url);
-//             const data = await response.json();
+//             let data;
+//             if (kyHocFilter || lopIdFilter || monHocIdFilter) {
+//                 data = await fetchThoiKhoaBieuByFilter(page, pageSize, kyHocFilter, lopIdFilter, monHocIdFilter);
+//             } else {
+//                 data = await fetchThoiKhoaBieuByPage(page, pageSize);
+//             }
 //             setThoiKhoaBieuList(data.data || []);
 //             setTotalPages(data.totalPages || 1);
 //             return data.data;
@@ -192,30 +125,44 @@
 //         }
 //     };
 
+//     const fetchKeHoachMonHocData = async (khoaDaoTaoId, kyHoc) => {
+//         try {
+//             const data = await fetchKeHoachMonHoc(khoaDaoTaoId, kyHoc);
+//             const enrichedData = data.map(item => ({
+//                 ...item,
+//                 ten_mon_hoc: monHocList.find(mon => mon.id === item.mon_hoc_id)?.ten_mon_hoc || "Môn học không xác định"
+//             }));
+//             setKeHoachMonHocList(enrichedData);
+//         } catch (error) {
+//             console.error("Lỗi khi lấy kế hoạch môn học:", error);
+//             setKeHoachMonHocList([]);
+//         }
+//     };
+
 //     useEffect(() => {
 //         if (heDaoTaoFilter) {
-//             fetchKhoaDaoTaoList(heDaoTaoFilter).then((response) => {
-//                 setKhoaDaoTao(response);
-//             });
+//             getDanhSachKhoaDaoTaobyId(heDaoTaoFilter).then(setKhoaDaoTao);
+//             fetchMonHocByHeDaoTao(heDaoTaoFilter).then(setMonHocListForm);
 //         } else {
 //             setKhoaDaoTao([]);
 //             setKyHocOptionsFilter([]);
-//             setLopList(originalLopList); // Khôi phục danh sách lớp ban đầu
+//             setLopList(originalLopList);
 //             setLopListView(originalLopList);
+//             setMonHocListForm(monHocList);
 //         }
-//     }, [heDaoTaoFilter, originalLopList]);
+//     }, [heDaoTaoFilter, originalLopList, monHocList]);
 
 //     useEffect(() => {
 //         if (heDaoTaoId) {
-//             fetchKhoaDaoTaoList(heDaoTaoId).then((response) => {
-//                 setKhoaDaoTao(response);
-//             });
+//             getDanhSachKhoaDaoTaobyId(heDaoTaoId).then(setKhoaDaoTao);
+//             fetchMonHocByHeDaoTao(heDaoTaoId).then(setMonHocListForm);
 //         } else {
 //             setKhoaDaoTao([]);
 //             setKyHocOptionsForm([]);
-//             setLopList(originalLopList); // Khôi phục danh sách lớp ban đầu
+//             setLopList(originalLopList);
+//             setMonHocListForm(monHocList);
 //         }
-//     }, [heDaoTaoId, originalLopList]);
+//     }, [heDaoTaoId, originalLopList, monHocList]);
 
 //     useEffect(() => {
 //         if (khoaDaoTaoFilter) {
@@ -224,11 +171,14 @@
 //                 const kyHocCount = selectedKhoa.so_ky_hoc;
 //                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
 //                 setKyHocOptionsFilter(kyHocArray);
-//                 fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
+//                 fetchLopByKhoaDaoTao(khoaDaoTaoFilter).then(data => {
+//                     setLopList(data);
+//                     setLopListView(data);
+//                 });
 //             }
 //         } else {
 //             setKyHocOptionsFilter([]);
-//             setLopList(originalLopList); // Khôi phục danh sách lớp ban đầu
+//             setLopList(originalLopList);
 //             setLopListView(originalLopList);
 //         }
 //     }, [khoaDaoTaoFilter, khoaDaoTao, originalLopList]);
@@ -240,18 +190,27 @@
 //                 const kyHocCount = selectedKhoa.so_ky_hoc;
 //                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
 //                 setKyHocOptionsForm(kyHocArray);
-//                 fetchLopByKhoaDaoTao(khoaDaoTaoId);
+//                 fetchLopByKhoaDaoTao(khoaDaoTaoId).then(setLopList);
 //             }
 //         } else {
 //             setKyHocOptionsForm([]);
-//             setLopList(originalLopList); // Khôi phục danh sách lớp ban đầu
+//             setLopList(originalLopList);
 //         }
 //     }, [khoaDaoTaoId, khoaDaoTao, originalLopList]);
+
+//     useEffect(() => {
+//         if (useKeHoachDaoTao && khoaDaoTaoId && kyHoc && editId === null) {
+//             fetchKeHoachMonHocData(khoaDaoTaoId, kyHoc);
+//         } else {
+//             setKeHoachMonHocList([]);
+//         }
+//     }, [useKeHoachDaoTao, khoaDaoTaoId, kyHoc, editId]);
 
 //     useEffect(() => {
 //         fetchThoiKhoaBieu();
 //     }, [page, kyHocFilter, lopIdFilter, monHocIdFilter]);
 
+//     const handlePageChange = (event, value) => setPage(value);
 //     const handlekhoaChange = (event) => setKhoaDaoTaoId(event.target.value);
 //     const handleKyHocChange = (event) => setKyHoc(event.target.value);
 //     const handleHeDaoTaoChange = (event) => setHeDaoTaoId(event.target.value);
@@ -264,31 +223,46 @@
 //         setGiangVien(selectedGV ? selectedGV.ho_ten : "");
 //     };
 //     const handleTrangThaiChange = (event) => setTrangThai(event.target.value);
+//     const handleUseKeHoachDaoTaoChange = (event) => setUseKeHoachDaoTao(event.target.checked);
 
 //     const filteredLopList = lopList.filter(lop => lop.ma_lop.toLowerCase().includes(lopSearch.toLowerCase()));
-//     const filteredMonHocList = monHocList.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
+//     const filteredMonHocList = monHocListForm.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
 //     const filteredGiangVienList = giangVienList.filter(giangVien => giangVien.ho_ten.toLowerCase().includes(giangVienSearch.toLowerCase()));
 
 //     const handleSubmit = async () => {
-//         if (lopId && monHocId && kyHoc) {
+//         if (lopId && kyHoc) {
 //             setIsLoading(true);
-//             const thoiKhoaBieuData = {
-//                 ky_hoc: kyHoc,
-//                 lop_id: lopId,
-//                 mon_hoc_id: monHocId,
-//                 giang_vien_id: giangVienId,
-//                 giang_vien: giangVien,
-//                 phong_hoc: phongHoc,
-//                 tiet_hoc: tietHoc,
-//                 trang_thai: trangThai
-//             };
 //             try {
-//                 if (editId !== null) {
-//                     await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
-//                 } else {
-//                     await themThoiKhoaBieu(thoiKhoaBieuData);
+//                 if (useKeHoachDaoTao && editId === null) {
+//                     const thoiKhoaBieuData = {
+//                         ky_hoc: parseInt(kyHoc),
+//                         dot_hoc: 1,
+//                         lop_id: lopId,
+//                         khoa_dao_tao_id: khoaDaoTaoId,
+//                         giang_vien: "",
+//                         phong_hoc: "",
+//                         tiet_hoc: "",
+//                         trang_thai: trangThai
+//                     };
+//                     await createAllThoiKhoaBieu(thoiKhoaBieuData);
+//                 } else if (monHocId) {
+//                     const thoiKhoaBieuData = {
+//                         ky_hoc: kyHoc,
+//                         lop_id: lopId,
+//                         mon_hoc_id: monHocId,
+//                         giang_vien_id: giangVienId,
+//                         giang_vien: giangVien,
+//                         phong_hoc: phongHoc,
+//                         tiet_hoc: tietHoc,
+//                         trang_thai: trangThai
+//                     };
+//                     if (editId !== null) {
+//                         await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
+//                     } else {
+//                         await themThoiKhoaBieu(thoiKhoaBieuData);
+//                     }
 //                 }
-//                 fetchThoiKhoaBieu();
+//                 await fetchThoiKhoaBieu();
 //                 resetForm();
 //             } catch (error) {
 //                 console.error("Lỗi khi lưu thời khóa biểu:", error);
@@ -307,8 +281,6 @@
 //         setKyHoc("");
 //         setLopId("");
 //         setMonHocId("");
-//         setKhoaDaoTaoId("");
-//         setHeDaoTaoId("");
 //         setKyHocOptionsForm([]);
 //         setLopSearch("");
 //         setMonHocSearch("");
@@ -316,18 +288,33 @@
 //         setEditIndex(null);
 //         setEditId(null);
 //         setOpen(false);
-//         setLopList(originalLopList); // Khôi phục danh sách lớp ban đầu khi reset
+//         setUseKeHoachDaoTao(false);
+//         setKeHoachMonHocList([]);
+//         setLopList(originalLopList);
 //     };
 
 //     const handleOpenForm = () => {
-//         resetForm();
-//         setHeDaoTaoId(heDaoTaoFilter || "");
-//         setKhoaDaoTaoId(khoaDaoTaoFilter || "");
+//         setGiangVienId("");
+//         setGiangVien("");
+//         setPhongHoc("");
+//         setTietHoc("");
+//         setTrangThai(1);
 //         setKyHoc(kyHocFilter || "");
 //         setLopId(lopIdFilter || "");
 //         setMonHocId(monHocIdFilter || "");
+//         setEditIndex(null);
+//         setEditId(null);
+//         setUseKeHoachDaoTao(false);
+//         setKeHoachMonHocList([]);
+
+//         if (heDaoTaoFilter && !heDaoTaoId) setHeDaoTaoId(heDaoTaoFilter);
+//         if (khoaDaoTaoFilter && !khoaDaoTaoId) setKhoaDaoTaoId(khoaDaoTaoFilter);
+
+//         if (heDaoTaoFilter) {
+//             fetchMonHocByHeDaoTao(heDaoTaoFilter).then(setMonHocListForm);
+//         }
 //         if (khoaDaoTaoFilter) {
-//             fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
+//             fetchLopByKhoaDaoTao(khoaDaoTaoFilter).then(setLopList);
 //             const selectedKhoa = khoaDaoTao.find(khoa => khoa.id === khoaDaoTaoFilter);
 //             if (selectedKhoa) {
 //                 const kyHocCount = selectedKhoa.so_ky_hoc;
@@ -338,7 +325,55 @@
 //         setOpen(true);
 //     };
 
-//     const handleEdit = (tkb, index) => {
+//     // const handleEdit = async (tkb, index) => {
+//     //     // Thiết lập các giá trị cơ bản từ thời khóa biểu
+//     //     setKyHoc(tkb.ky_hoc || "");
+//     //     setLopId(tkb.lop_id || "");
+//     //     setMonHocId(tkb.mon_hoc_id || "");
+//     //     setGiangVienId(tkb.giang_vien_id || "");
+//     //     setGiangVien(tkb.giang_vien || "");
+//     //     setPhongHoc(tkb.phong_hoc || "");
+//     //     setTietHoc(tkb.tiet_hoc || "");
+//     //     setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
+//     //     setEditIndex(index);
+//     //     setEditId(tkb.id);
+//     //     console.log(tkb)
+//     //     // Tìm môn học liên quan để lấy he_dao_tao_id
+//     //     const monHoc = monHocList.find(m => m.id === tkb.mon_hoc_id);
+//     //     if (monHoc && monHoc.he_dao_tao_id) {
+//     //         setHeDaoTaoId(monHoc.he_dao_tao_id);
+
+//     //         // Tải danh sách khóa đào tạo dựa trên hệ đào tạo
+//     //         const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(monHoc.he_dao_tao_id);
+//     //         console.log("khoa:>>.", khoaDaoTaoData)
+//     //         setKhoaDaoTao(khoaDaoTaoData);
+
+//     //         // Tìm khóa đào tạo liên quan đến lớp
+//     //         const selectedLop = originalLopList.find(lop => lop.id === tkb.lop_id);
+//     //         if (selectedLop && selectedLop.khoa_dao_tao_id) {
+//     //             setKhoaDaoTaoId(selectedLop.khoa_dao_tao_id);
+
+//     //             // Tải danh sách lớp dựa trên khóa đào tạo
+//     //             await fetchLopByKhoaDaoTao(selectedLop.khoa_dao_tao_id).then(setLopList);
+
+//     //             // Tạo danh sách kỳ học dựa trên số kỳ học của khóa đào tạo
+//     //             const selectedKhoa = khoaDaoTaoData.find(khoa => khoa.id === selectedLop.khoa_dao_tao_id);
+//     //             if (selectedKhoa) {
+//     //                 const kyHocCount = selectedKhoa.so_ky_hoc;
+//     //                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
+//     //                 setKyHocOptionsForm(kyHocArray);
+//     //             }
+//     //         }
+
+//     //         // Tải danh sách môn học dựa trên hệ đào tạo
+//     //         await fetchMonHocByHeDaoTao(monHoc.he_dao_tao_id).then(setMonHocListForm);
+//     //     }
+
+//     //     setOpen(true);
+//     // };
+
+//     const handleEdit = async (tkb, index) => {
+//         // Thiết lập các giá trị cơ bản từ thời khóa biểu
 //         setKyHoc(tkb.ky_hoc || "");
 //         setLopId(tkb.lop_id || "");
 //         setMonHocId(tkb.mon_hoc_id || "");
@@ -349,18 +384,62 @@
 //         setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
 //         setEditIndex(index);
 //         setEditId(tkb.id);
-//         setOpen(true);
 
-//         const selectedKhoa = khoaDaoTaoList.find(khoa => khoa.id === tkb.khoaDaoTaoId);
-//         if (selectedKhoa) {
-//             setHeDaoTaoId(selectedKhoa.he_dao_tao_id);
-//             setKhoaDaoTaoId(selectedKhoa.id);
-//             fetchLopByKhoaDaoTao(selectedKhoa.id);
-//             const kyHocCount = selectedKhoa.so_ky_hoc;
-//             const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
-//             setKyHocOptionsForm(kyHocArray);
+//         try {
+//             // Tìm môn học để lấy he_dao_tao_id
+//             const monHoc = monHocList.find(m => m.id === tkb.mon_hoc_id);
+//             if (monHoc && monHoc.he_dao_tao_id) {
+//                 setHeDaoTaoId(monHoc.he_dao_tao_id);
+//                 await fetchMonHocByHeDaoTao(monHoc.he_dao_tao_id).then(setMonHocListForm);
+//             } else {
+//                 console.warn("Không tìm thấy môn học hoặc he_dao_tao_id cho mon_hoc_id:", tkb.mon_hoc_id);
+//                 setHeDaoTaoId("");
+//             }
+
+//             // Tìm lớp để lấy khoa_dao_tao_id
+//             const selectedLop = originalLopList.find(lop => lop.id === tkb.lop_id);
+//             if (selectedLop && selectedLop.khoa_dao_tao_id) {
+//                 setKhoaDaoTaoId(selectedLop.khoa_dao_tao_id);
+
+//                 // Tải danh sách khóa đào tạo dựa trên he_dao_tao_id (nếu có)
+//                 if (monHoc && monHoc.he_dao_tao_id) {
+//                     const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(monHoc.he_dao_tao_id);
+//                     setKhoaDaoTao(khoaDaoTaoData);
+
+//                     // Tìm khóa đào tạo và tạo danh sách kỳ học
+//                     const selectedKhoa = khoaDaoTaoData.find(khoa => khoa.id === selectedLop.khoa_dao_tao_id);
+//                     if (selectedKhoa) {
+//                         const kyHocCount = selectedKhoa.so_ky_hoc;
+//                         const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
+//                         // Đảm bảo kyHocOptionsForm bao gồm tkb.ky_hoc nếu nó hợp lệ
+//                         if (!kyHocArray.includes(Number(tkb.ky_hoc))) {
+//                             kyHocArray.push(Number(tkb.ky_hoc)); // Thêm giá trị ky_hoc nếu không có trong danh sách
+//                             kyHocArray.sort((a, b) => a - b); // Sắp xếp lại
+//                         }
+//                         setKyHocOptionsForm(kyHocArray);
+//                     } else {
+//                         console.warn("Không tìm thấy khóa đào tạo trong khoaDaoTaoData cho khoa_dao_tao_id:", selectedLop.khoa_dao_tao_id);
+//                         setKyHocOptionsForm([Number(tkb.ky_hoc)]); // Dùng giá trị ky_hoc mặc định nếu không tìm thấy
+//                     }
+//                 }
+
+//                 // Tải danh sách lớp dựa trên khoa_dao_tao_id
+//                 await fetchLopByKhoaDaoTao(selectedLop.khoa_dao_tao_id).then(setLopList);
+//             } else {
+//                 console.warn("Không tìm thấy lớp hoặc khoa_dao_tao_id cho lop_id:", tkb.lop_id);
+//                 setKhoaDaoTaoId("");
+//                 setKyHocOptionsForm([Number(tkb.ky_hoc)]); // Dùng giá trị ky_hoc mặc định
+//                 setLopList(originalLopList);
+//             }
+//         } catch (error) {
+//             console.error("Lỗi trong handleEdit:", error);
+//             setKyHocOptionsForm([Number(tkb.ky_hoc)]); // Dự phòng nếu có lỗi
 //         }
+
+//         setOpen(true);
 //     };
+
+
 
 //     const handleDelete = async (id) => {
 //         try {
@@ -371,7 +450,7 @@
 //         }
 //     };
 
-//     const findLopName = (id) => originalLopList.find(item => item.id === id)?.ma_lop || "Lớp không xác định"; // Sử dụng originalLopList
+//     const findLopName = (id) => originalLopList.find(item => item.id === id)?.ma_lop || "Lớp không xác định";
 //     const findMonHoc = (id) => monHocList.find(item => item.id === id) || { ten_mon_hoc: "Môn học không xác định", ma_mon_hoc: "N/A", so_tin_chi: "N/A", tinh_diem: "N/A", he_dao_tao_id: null, ghi_chu: "N/A" };
 //     const findGiangVienName = (id) => giangVienList.find(item => item.id === id)?.ho_ten || "Giảng viên không xác định";
 //     const findHeDaoTaoName = (id) => HeDaoTao.find(item => item.id === id)?.ten_he_dao_tao || "Hệ đào tạo không xác định";
@@ -385,26 +464,17 @@
 //                     </Typography>
 
 //                     <Box textAlign="center" my={2}>
-//                         <Button
-//                             variant="contained"
-//                             startIcon={<AddIcon />}
-//                             onClick={handleOpenForm}
-//                         >
+//                         <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenForm}>
 //                             Thêm Thời Khóa Biểu
 //                         </Button>
 //                     </Box>
 
-//                     {/* Bộ lọc */}
 //                     <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, maxWidth: 900, backgroundColor: "#fff" }}>
 //                         <Grid container spacing={2} justifyContent="center">
 //                             <Grid item xs={12} sm={4} md={3}>
 //                                 <FormControl fullWidth size="small" variant="outlined">
 //                                     <InputLabel>Hệ đào tạo</InputLabel>
-//                                     <Select
-//                                         value={heDaoTaoFilter}
-//                                         onChange={(e) => setHeDaoTaoFilter(e.target.value)}
-//                                         label="Hệ đào tạo"
-//                                     >
+//                                     <Select value={heDaoTaoFilter} onChange={(e) => setHeDaoTaoFilter(e.target.value)} label="Hệ đào tạo">
 //                                         <MenuItem value="">Tất cả</MenuItem>
 //                                         {HeDaoTao.map((item) => (
 //                                             <MenuItem key={item.id} value={item.id}>{item.ten_he_dao_tao}</MenuItem>
@@ -416,12 +486,7 @@
 //                             <Grid item xs={12} sm={4} md={3}>
 //                                 <FormControl fullWidth size="small" variant="outlined">
 //                                     <InputLabel>Khóa đào tạo</InputLabel>
-//                                     <Select
-//                                         value={khoaDaoTaoFilter}
-//                                         onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}
-//                                         label="Khóa đào tạo"
-//                                         disabled={!heDaoTaoFilter}
-//                                     >
+//                                     <Select value={khoaDaoTaoFilter} onChange={(e) => setKhoaDaoTaoFilter(e.target.value)} label="Khóa đào tạo" disabled={!heDaoTaoFilter}>
 //                                         <MenuItem value="">Tất cả</MenuItem>
 //                                         {khoaDaoTao.map((item) => (
 //                                             <MenuItem key={item.id} value={item.id}>{item.ten_khoa}</MenuItem>
@@ -433,12 +498,7 @@
 //                             <Grid item xs={12} sm={4} md={3}>
 //                                 <FormControl fullWidth size="small" variant="outlined">
 //                                     <InputLabel>Kỳ học</InputLabel>
-//                                     <Select
-//                                         value={kyHocFilter}
-//                                         onChange={(e) => setKyHocFilter(e.target.value)}
-//                                         label="Kỳ học"
-//                                         disabled={!khoaDaoTaoFilter}
-//                                     >
+//                                     <Select value={kyHocFilter} onChange={(e) => setKyHocFilter(e.target.value)} label="Kỳ học" disabled={!khoaDaoTaoFilter}>
 //                                         <MenuItem value="">Tất cả</MenuItem>
 //                                         {kyHocOptionsFilter.map((option) => (
 //                                             <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -450,11 +510,7 @@
 //                             <Grid item xs={12} sm={4} md={3}>
 //                                 <FormControl fullWidth size="small" variant="outlined">
 //                                     <InputLabel>Lớp</InputLabel>
-//                                     <Select
-//                                         value={lopIdFilter}
-//                                         onChange={(e) => setLopIdFilter(e.target.value)}
-//                                         label="Lớp"
-//                                     >
+//                                     <Select value={lopIdFilter} onChange={(e) => setLopIdFilter(e.target.value)} label="Lớp">
 //                                         <MenuItem value="">Tất cả</MenuItem>
 //                                         {lopListView.map((item) => (
 //                                             <MenuItem key={item.id} value={item.id}>{item.ma_lop}</MenuItem>
@@ -466,13 +522,9 @@
 //                             <Grid item xs={12} sm={4} md={3}>
 //                                 <FormControl fullWidth size="small" variant="outlined">
 //                                     <InputLabel>Môn học</InputLabel>
-//                                     <Select
-//                                         value={monHocIdFilter}
-//                                         onChange={(e) => setMonHocIdFilter(e.target.value)}
-//                                         label="Môn học"
-//                                     >
+//                                     <Select value={monHocIdFilter} onChange={(e) => setMonHocIdFilter(e.target.value)} label="Môn học" disabled={!heDaoTaoFilter}>
 //                                         <MenuItem value="">Tất cả</MenuItem>
-//                                         {monHocList.map((item) => (
+//                                         {monHocListForm.map((item) => (
 //                                             <MenuItem key={item.id} value={item.id}>{item.ten_mon_hoc}</MenuItem>
 //                                         ))}
 //                                     </Select>
@@ -496,8 +548,9 @@
 //                                             setHeDaoTaoFilter("");
 //                                             setKhoaDaoTaoFilter("");
 //                                             setMonHocIdFilter("");
-//                                             setLopList(originalLopList); // Khôi phục danh sách lớp
+//                                             setLopList(originalLopList);
 //                                             setLopListView(originalLopList);
+//                                             setMonHocListForm(monHocList);
 //                                             fetchThoiKhoaBieu();
 //                                         } else {
 //                                             fetchThoiKhoaBieu();
@@ -579,18 +632,17 @@
 //                             })}
 //                         </Grid>
 //                     )}
-
-//                     <Box textAlign="center" mt={4}>
-//                         <Stack spacing={2} alignItems="center">
-//                             <Pagination
-//                                 count={totalPages}
-//                                 page={page}
-//                                 onChange={(event, value) => setPage(value)}
-//                                 color="primary"
-//                             />
-//                         </Stack>
-//                     </Box>
 //                 </Paper>
+//                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+//                     <MuiPagination
+//                         color="primary"
+//                         count={totalPages}
+//                         page={page}
+//                         onChange={handlePageChange}
+//                         variant="outlined"
+//                         shape="rounded"
+//                     />
+//                 </Box>
 //             </Container>
 
 //             <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
@@ -614,7 +666,7 @@
 //                                 <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
 //                                     <MenuItem value="">Chọn khóa đào tạo</MenuItem>
 //                                     {khoaDaoTao.map((option) => (
-//                                         <MenuItem key={option.id} value={option.id}>{option.ten_khoa}  | niên khóa  {option.nam_hoc}</MenuItem>
+//                                         <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
 //                                     ))}
 //                                 </Select>
 //                             </FormControl>
@@ -661,80 +713,119 @@
 //                             />
 //                         </Grid>
 //                     </Grid>
-//                     <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-//                         <Grid item xs={12} sm={8}>
-//                             <Autocomplete
-//                                 freeSolo
-//                                 options={filteredMonHocList}
-//                                 getOptionLabel={(option) => (typeof option === "string" ? option : option.ten_mon_hoc)}
-//                                 value={filteredMonHocList.find((m) => m.id === monHocId) || null}
-//                                 onChange={(event, newValue) => {
-//                                     if (typeof newValue === "string") {
-//                                         handleMonHocChange({ target: { value: newValue } });
-//                                     } else if (newValue) {
-//                                         handleMonHocChange({ target: { value: newValue.id } });
-//                                     } else {
-//                                         handleMonHocChange({ target: { value: "" } });
-//                                     }
-//                                 }}
-//                                 renderInput={(params) => <TextField {...params} label="Môn học" fullWidth size="small" />}
-//                             />
+
+//                     {editId === null && (
+//                         <Grid container spacing={2} sx={{ mt: 1 }}>
+//                             <Grid item xs={12}>
+//                                 <Box display="flex" alignItems="center">
+//                                     <Checkbox
+//                                         checked={useKeHoachDaoTao}
+//                                         onChange={handleUseKeHoachDaoTaoChange}
+//                                         disabled={!khoaDaoTaoId || !kyHoc}
+//                                     />
+//                                     <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
+//                                 </Box>
+//                             </Grid>
 //                         </Grid>
-//                         <Grid item xs={12} sm={4}>
-//                             <TextField
-//                                 fullWidth
-//                                 size="small"
-//                                 placeholder="Tìm kiếm môn học..."
-//                                 value={monHocSearch}
-//                                 onChange={(e) => setMonHocSearch(e.target.value)}
-//                                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-//                             />
-//                         </Grid>
-//                     </Grid>
-//                     <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-//                         <Grid item xs={12} sm={8}>
-//                             <Autocomplete
-//                                 freeSolo
-//                                 options={filteredGiangVienList}
-//                                 getOptionLabel={(option) => option.ho_ten}
-//                                 value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
-//                                 onChange={(event, newValue) => handleGiangVienChange({ target: { value: newValue ? newValue.id : "" } })}
-//                                 renderInput={(params) => <TextField {...params} label="Giảng viên" fullWidth size="small" />}
-//                             />
-//                         </Grid>
-//                         <Grid item xs={12} sm={4}>
-//                             <TextField
-//                                 fullWidth
-//                                 size="small"
-//                                 placeholder="Tìm kiếm giảng viên..."
-//                                 value={giangVienSearch}
-//                                 onChange={(e) => setGiangVienSearch(e.target.value)}
-//                                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-//                             />
-//                         </Grid>
-//                     </Grid>
-//                     <Grid container spacing={2} sx={{ mt: 1 }}>
-//                         <Grid item xs={12} sm={6}>
-//                             <TextField
-//                                 fullWidth
-//                                 label="Phòng học"
-//                                 value={phongHoc}
-//                                 onChange={(e) => setPhongHoc(e.target.value)}
-//                                 placeholder="Ví dụ: 103 TA1"
-//                                 margin="dense"
-//                             />
-//                         </Grid>
-//                         <Grid item xs={12} sm={6}>
-//                             <TextField
-//                                 fullWidth
-//                                 label="Tiết học"
-//                                 value={tietHoc}
-//                                 onChange={(e) => setTietHoc(e.target.value)}
-//                                 placeholder="Ví dụ: 2-4"
-//                                 margin="dense"
-//                             />
-//                         </Grid>
-//                     </Grid>
+//                     )}
+
+//                     {editId === null && useKeHoachDaoTao ? (
+//                         <Box sx={{ mt: 2 }}>
+//                             <Typography variant="subtitle1">Danh sách môn học từ kế hoạch đào tạo:</Typography>
+//                             {keHoachMonHocList.length > 0 ? (
+//                                 <List dense>
+//                                     {keHoachMonHocList.map((mon) => (
+//                                         <ListItem key={mon.id}>
+//                                             <ListItemText
+//                                                 primary={mon.ten_mon_hoc}
+//                                                 secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
+//                                             />
+//                                         </ListItem>
+//                                     ))}
+//                                 </List>
+//                             ) : (
+//                                 <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
+//                             )}
+//                         </Box>
+//                     ) : (
+//                         <>
+//                             <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+//                                 <Grid item xs={12} sm={8}>
+//                                     <Autocomplete
+//                                         freeSolo
+//                                         options={filteredMonHocList}
+//                                         getOptionLabel={(option) => (typeof option === "string" ? option : option.ten_mon_hoc)}
+//                                         value={filteredMonHocList.find((m) => m.id === monHocId) || null}
+//                                         onChange={(event, newValue) => {
+//                                             if (typeof newValue === "string") {
+//                                                 handleMonHocChange({ target: { value: newValue } });
+//                                             } else if (newValue) {
+//                                                 handleMonHocChange({ target: { value: newValue.id } });
+//                                             } else {
+//                                                 handleMonHocChange({ target: { value: "" } });
+//                                             }
+//                                         }}
+//                                         renderInput={(params) => <TextField {...params} label="Môn học" fullWidth size="small" />}
+//                                     />
+//                                 </Grid>
+//                                 <Grid item xs={12} sm={4}>
+//                                     <TextField
+//                                         fullWidth
+//                                         size="small"
+//                                         placeholder="Tìm kiếm môn học..."
+//                                         value={monHocSearch}
+//                                         onChange={(e) => setMonHocSearch(e.target.value)}
+//                                         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+//                                     />
+//                                 </Grid>
+//                             </Grid>
+//                             <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+//                                 <Grid item xs={12} sm={8}>
+//                                     <Autocomplete
+//                                         freeSolo
+//                                         options={filteredGiangVienList}
+//                                         getOptionLabel={(option) => option.ho_ten}
+//                                         value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
+//                                         onChange={(event, newValue) => handleGiangVienChange({ target: { value: newValue ? newValue.id : "" } })}
+//                                         renderInput={(params) => <TextField {...params} label="Giảng viên" fullWidth size="small" />}
+//                                     />
+//                                 </Grid>
+//                                 <Grid item xs={12} sm={4}>
+//                                     <TextField
+//                                         fullWidth
+//                                         size="small"
+//                                         placeholder="Tìm kiếm giảng viên..."
+//                                         value={giangVienSearch}
+//                                         onChange={(e) => setGiangVienSearch(e.target.value)}
+//                                         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+//                                     />
+//                                 </Grid>
+//                             </Grid>
+//                             <Grid container spacing={2} sx={{ mt: 1 }}>
+//                                 <Grid item xs={12} sm={6}>
+//                                     <TextField
+//                                         fullWidth
+//                                         label="Phòng học"
+//                                         value={phongHoc}
+//                                         onChange={(e) => setPhongHoc(e.target.value)}
+//                                         placeholder="Ví dụ: 103 TA1"
+//                                         margin="dense"
+//                                     />
+//                                 </Grid>
+//                                 <Grid item xs={12} sm={6}>
+//                                     <TextField
+//                                         fullWidth
+//                                         label="Tiết học"
+//                                         value={tietHoc}
+//                                         onChange={(e) => setTietHoc(e.target.value)}
+//                                         placeholder="Ví dụ: 2-4"
+//                                         margin="dense"
+//                                     />
+//                                 </Grid>
+//                             </Grid>
+//                         </>
+//                     )}
+
 //                     <FormControl fullWidth margin="dense">
 //                         <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
 //                         <Select value={trangThai} onChange={handleTrangThaiChange}>
@@ -750,7 +841,7 @@
 //                         onClick={handleSubmit}
 //                         color="primary"
 //                         variant="contained"
-//                         disabled={!lopId || !monHocId || !kyHoc || isLoading}
+//                         disabled={!lopId || !kyHoc || (!useKeHoachDaoTao && !monHocId) || (useKeHoachDaoTao && keHoachMonHocList.length === 0) || isLoading}
 //                     >
 //                         {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
 //                     </Button>
@@ -788,22 +879,26 @@
 
 
 
+
+
 import { useState, useEffect } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
     DialogTitle, DialogContent, DialogActions, Card, CardContent, CardActions, IconButton, createTheme,
-    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination
+    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
-import { getMonHoc, getThoiKhoaBieu, themThoiKhoaBieu, updateThoiKhoaBieu, xoaThoiKhoaBieu } from "../../Api_controller/Service/monHocService";
+import { getMonHoc, themThoiKhoaBieu, updateThoiKhoaBieu, xoaThoiKhoaBieu } from "../../Api_controller/Service/monHocService";
 import { getGiangVien } from "../../Api_controller/Service/giangVienService";
 import { getDanhSachLop } from "../../Api_controller/Service/lopService";
-import Pagination from '@mui/material/Pagination';
-import Stack from '@mui/material/Stack';
 import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
+import {
+    fetchThoiKhoaBieuByPage, fetchThoiKhoaBieuByFilter, fetchLopByKhoaDaoTao,
+    fetchMonHocByHeDaoTao, fetchKeHoachMonHoc
+} from "../../Api_controller/Service/thoiKhoaBieuService";
 
 const theme = createTheme({
     palette: {
@@ -832,6 +927,9 @@ const ThoiKhoaBieu = () => {
     const [khoaDaoTao, setKhoaDaoTao] = useState([]);
     const [kyHocOptionsForm, setKyHocOptionsForm] = useState([]);
     const [kyHocOptionsFilter, setKyHocOptionsFilter] = useState([]);
+    const [useKeHoachDaoTao, setUseKeHoachDaoTao] = useState(false);
+    const [keHoachMonHocList, setKeHoachMonHocList] = useState([]);
+    const [selectedMonHocIds, setSelectedMonHocIds] = useState([]); // Danh sách môn học được chọn
 
     const [trangThaiOptions] = useState([
         { value: 1, label: "Hoạt động" },
@@ -845,6 +943,7 @@ const ThoiKhoaBieu = () => {
     const [originalLopList, setOriginalLopList] = useState([]);
     const [lopList, setLopList] = useState([]);
     const [monHocList, setMonHocList] = useState([]);
+    const [monHocListForm, setMonHocListForm] = useState([]);
     const [giangVienList, setGiangVienList] = useState([]);
     const [thoiKhoaBieuList, setThoiKhoaBieuList] = useState([]);
     const [khoaDaoTaoList, setKhoaDaoTaoList] = useState([]);
@@ -860,22 +959,29 @@ const ThoiKhoaBieu = () => {
     const [pageSize] = useState(6);
     const [totalPages, setTotalPages] = useState(1);
 
-    // Tải dữ liệu ban đầu
     useEffect(() => {
         const fetchInitialData = async () => {
             setIsLoading(true);
             try {
                 const [heDaoTao, giangVien, khoaDaoTao, monHoc, lop, thoiKhoaBieu] = await Promise.all([
-                    fetchHeDaoTaoList(),
-                    fetchGiangVienList(),
-                    fetchAllKhoaDaoTaoList(),
-                    fetchMonHocList(),
-                    fetchLopList(),
-                    fetchThoiKhoaBieu()
+                    fetchDanhSachHeDaoTao(),
+                    getGiangVien(),
+                    getDanhSachKhoaDaoTao(),
+                    getMonHoc(),
+                    getDanhSachLop(),
+                    fetchThoiKhoaBieuByPage(page, pageSize)
                 ]);
+                setHeDaoTao(heDaoTao);
+                setGiangVienList(giangVien);
+                setKhoaDaoTaoList(khoaDaoTao);
+                setMonHocList(monHoc);
+                setMonHocListForm(monHoc);
                 setOriginalLopList(lop);
                 setLopList(lop);
                 setLopListView(lop);
+                setThoiKhoaBieuList(thoiKhoaBieu.data || []);
+                setTotalPages(thoiKhoaBieu.totalPages || 1);
+                console.log("monhoclist>>", monHocList);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu ban đầu:", error);
             } finally {
@@ -885,94 +991,14 @@ const ThoiKhoaBieu = () => {
         fetchInitialData();
     }, []);
 
-    const fetchAllKhoaDaoTaoList = async () => {
-        try {
-            const response = await getDanhSachKhoaDaoTao();
-            setKhoaDaoTaoList(response);
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
-            return [];
-        }
-    };
-
-    const fetchKhoaDaoTaoList = async (heDaoTaoId) => {
-        try {
-            const response = await getDanhSachKhoaDaoTaobyId(heDaoTaoId);
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
-            return [];
-        }
-    };
-
-    const fetchLopByKhoaDaoTao = async (khoaDaoTaoId) => {
-        try {
-            const response = await fetch(`http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoId}`);
-            const data = await response.json();
-            setLopList(data);
-            setLopListView(data);
-            return data;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách lớp theo khóa đào tạo:", error);
-            return [];
-        }
-    };
-
-    const fetchLopList = async () => {
-        try {
-            const response = await getDanhSachLop();
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách lớp:", error);
-            return [];
-        }
-    };
-
-    const fetchHeDaoTaoList = async () => {
-        try {
-            const response = await fetchDanhSachHeDaoTao();
-            setHeDaoTao(response);
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách hệ đào tạo:", error);
-            return [];
-        }
-    };
-
-    const fetchMonHocList = async () => {
-        try {
-            const response = await getMonHoc();
-            setMonHocList(response);
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách môn học:", error);
-            return [];
-        }
-    };
-
-    const fetchGiangVienList = async () => {
-        try {
-            const response = await getGiangVien();
-            setGiangVienList(response);
-            return response;
-        } catch (error) {
-            console.error("Lỗi khi lấy danh sách giảng viên:", error);
-            return [];
-        }
-    };
-
     const fetchThoiKhoaBieu = async () => {
-        let url = `http://localhost:8000/thoikhoabieu/getbypage?page=${page}&pageSize=${pageSize}`;
-        if (kyHocFilter || lopIdFilter || monHocIdFilter) {
-            url = `http://localhost:8000/thoikhoabieu/filterbyid?page=${page}&pageSize=${pageSize}`;
-            if (kyHocFilter) url += `&ky_hoc=${kyHocFilter}`;
-            if (lopIdFilter) url += `&lop_id=${lopIdFilter}`;
-            if (monHocIdFilter) url += `&mon_hoc_id=${monHocIdFilter}`;
-        }
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            let data;
+            if (kyHocFilter || lopIdFilter || monHocIdFilter) {
+                data = await fetchThoiKhoaBieuByFilter(page, pageSize, kyHocFilter, lopIdFilter, monHocIdFilter);
+            } else {
+                data = await fetchThoiKhoaBieuByPage(page, pageSize);
+            }
             setThoiKhoaBieuList(data.data || []);
             setTotalPages(data.totalPages || 1);
             return data.data;
@@ -981,33 +1007,45 @@ const ThoiKhoaBieu = () => {
             return [];
         }
     };
-    const handlePageChange = (event, value) => {
-        setPage(value);
+
+    const fetchKeHoachMonHocData = async (khoaDaoTaoId, kyHoc) => {
+        try {
+            const data = await fetchKeHoachMonHoc(khoaDaoTaoId, kyHoc);
+            const enrichedData = data.map(item => ({
+                ...item,
+                ten_mon_hoc: monHocList.find(mon => mon.id === item.mon_hoc_id)?.ten_mon_hoc || "Môn học không xác định"
+            }));
+            setKeHoachMonHocList(enrichedData);
+        } catch (error) {
+            console.error("Lỗi khi lấy kế hoạch môn học:", error);
+            setKeHoachMonHocList([]);
+        }
     };
+
     useEffect(() => {
         if (heDaoTaoFilter) {
-            fetchKhoaDaoTaoList(heDaoTaoFilter).then((response) => {
-                setKhoaDaoTao(response);
-            });
+            getDanhSachKhoaDaoTaobyId(heDaoTaoFilter).then(setKhoaDaoTao);
+            fetchMonHocByHeDaoTao(heDaoTaoFilter).then(setMonHocListForm);
         } else {
             setKhoaDaoTao([]);
             setKyHocOptionsFilter([]);
             setLopList(originalLopList);
             setLopListView(originalLopList);
+            setMonHocListForm(monHocList);
         }
-    }, [heDaoTaoFilter, originalLopList]);
+    }, [heDaoTaoFilter, originalLopList, monHocList]);
 
     useEffect(() => {
         if (heDaoTaoId) {
-            fetchKhoaDaoTaoList(heDaoTaoId).then((response) => {
-                setKhoaDaoTao(response);
-            });
+            getDanhSachKhoaDaoTaobyId(heDaoTaoId).then(setKhoaDaoTao);
+            fetchMonHocByHeDaoTao(heDaoTaoId).then(setMonHocListForm);
         } else {
             setKhoaDaoTao([]);
             setKyHocOptionsForm([]);
             setLopList(originalLopList);
+            setMonHocListForm(monHocList);
         }
-    }, [heDaoTaoId, originalLopList]);
+    }, [heDaoTaoId, originalLopList, monHocList]);
 
     useEffect(() => {
         if (khoaDaoTaoFilter) {
@@ -1016,7 +1054,10 @@ const ThoiKhoaBieu = () => {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
                 setKyHocOptionsFilter(kyHocArray);
-                fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
+                fetchLopByKhoaDaoTao(khoaDaoTaoFilter).then(data => {
+                    setLopList(data);
+                    setLopListView(data);
+                });
             }
         } else {
             setKyHocOptionsFilter([]);
@@ -1032,7 +1073,7 @@ const ThoiKhoaBieu = () => {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
                 const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
                 setKyHocOptionsForm(kyHocArray);
-                fetchLopByKhoaDaoTao(khoaDaoTaoId);
+                fetchLopByKhoaDaoTao(khoaDaoTaoId).then(setLopList);
             }
         } else {
             setKyHocOptionsForm([]);
@@ -1041,14 +1082,23 @@ const ThoiKhoaBieu = () => {
     }, [khoaDaoTaoId, khoaDaoTao, originalLopList]);
 
     useEffect(() => {
+        if (useKeHoachDaoTao && khoaDaoTaoId && kyHoc && editId === null) {
+            fetchKeHoachMonHocData(khoaDaoTaoId, kyHoc);
+        } else {
+            setKeHoachMonHocList([]);
+        }
+    }, [useKeHoachDaoTao, khoaDaoTaoId, kyHoc, editId]);
+
+    useEffect(() => {
         fetchThoiKhoaBieu();
     }, [page, kyHocFilter, lopIdFilter, monHocIdFilter]);
 
+    const handlePageChange = (event, value) => setPage(value);
     const handlekhoaChange = (event) => setKhoaDaoTaoId(event.target.value);
     const handleKyHocChange = (event) => setKyHoc(event.target.value);
     const handleHeDaoTaoChange = (event) => setHeDaoTaoId(event.target.value);
     const handleLopChange = (event) => setLopId(event.target.value);
-    const handleMonHocChange = (event) => setMonHocId(event.target.value);
+    const handleMonHocChange = (event) => setMonHocId(event.target.value); // Không còn dùng nữa, giữ lại để tương thích
     const handleGiangVienChange = (event) => {
         const selectedId = event.target.value;
         setGiangVienId(selectedId);
@@ -1056,31 +1106,47 @@ const ThoiKhoaBieu = () => {
         setGiangVien(selectedGV ? selectedGV.ho_ten : "");
     };
     const handleTrangThaiChange = (event) => setTrangThai(event.target.value);
+    const handleUseKeHoachDaoTaoChange = (event) => setUseKeHoachDaoTao(event.target.checked);
 
     const filteredLopList = lopList.filter(lop => lop.ma_lop.toLowerCase().includes(lopSearch.toLowerCase()));
-    const filteredMonHocList = monHocList.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
+    const filteredMonHocList = monHocListForm.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
     const filteredGiangVienList = giangVienList.filter(giangVien => giangVien.ho_ten.toLowerCase().includes(giangVienSearch.toLowerCase()));
 
     const handleSubmit = async () => {
-        if (lopId && monHocId && kyHoc) {
+        if (lopId && kyHoc && selectedMonHocIds.length > 0) {
             setIsLoading(true);
-            const thoiKhoaBieuData = {
-                ky_hoc: kyHoc,
-                lop_id: lopId,
-                mon_hoc_id: monHocId,
-                giang_vien_id: giangVienId,
-                giang_vien: giangVien,
-                phong_hoc: phongHoc,
-                tiet_hoc: tietHoc,
-                trang_thai: trangThai
-            };
             try {
                 if (editId !== null) {
+                    // Chỉnh sửa một thời khóa biểu
+                    const thoiKhoaBieuData = {
+                        ky_hoc: kyHoc,
+                        lop_id: lopId,
+                        mon_hoc_id: selectedMonHocIds[0], // Chỉ một môn khi chỉnh sửa
+                        giang_vien_id: giangVienId,
+                        giang_vien: giangVien,
+                        phong_hoc: phongHoc,
+                        tiet_hoc: tietHoc,
+                        trang_thai: trangThai,
+                    };
                     await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
                 } else {
-                    await themThoiKhoaBieu(thoiKhoaBieuData);
+                    // Tạo mới nhiều thời khóa biểu
+                    const createPromises = selectedMonHocIds.map((monHocId) => {
+                        const thoiKhoaBieuData = {
+                            ky_hoc: kyHoc,
+                            lop_id: lopId,
+                            mon_hoc_id: monHocId,
+                            giang_vien_id: giangVienId,
+                            giang_vien: giangVien,
+                            phong_hoc: phongHoc,
+                            tiet_hoc: tietHoc,
+                            trang_thai: trangThai,
+                        };
+                        return themThoiKhoaBieu(thoiKhoaBieuData);
+                    });
+                    await Promise.all(createPromises);
                 }
-                fetchThoiKhoaBieu();
+                await fetchThoiKhoaBieu();
                 resetForm();
             } catch (error) {
                 console.error("Lỗi khi lưu thời khóa biểu:", error);
@@ -1098,9 +1164,11 @@ const ThoiKhoaBieu = () => {
         setTrangThai(1);
         setKyHoc("");
         setLopId("");
+        setHeDaoTaoId("")//
+        setKhoaDaoTaoId("")//
+        setHeDaoTaoFilter("")
         setMonHocId("");
-        setKhoaDaoTaoId("");
-        setHeDaoTaoId("");
+        setSelectedMonHocIds([]); // Reset danh sách môn học được chọn
         setKyHocOptionsForm([]);
         setLopSearch("");
         setMonHocSearch("");
@@ -1108,18 +1176,34 @@ const ThoiKhoaBieu = () => {
         setEditIndex(null);
         setEditId(null);
         setOpen(false);
+        setUseKeHoachDaoTao(false);
+        setKeHoachMonHocList([]);
         setLopList(originalLopList);
     };
 
     const handleOpenForm = () => {
-        resetForm();
-        setHeDaoTaoId(heDaoTaoFilter || "");
-        setKhoaDaoTaoId(khoaDaoTaoFilter || "");
+        setGiangVienId("");
+        setGiangVien("");
+        setPhongHoc("");
+        setTietHoc("");
+        setTrangThai(1);
         setKyHoc(kyHocFilter || "");
         setLopId(lopIdFilter || "");
         setMonHocId(monHocIdFilter || "");
+        setSelectedMonHocIds(monHocIdFilter ? [monHocIdFilter] : []);
+        setEditIndex(null);
+        setEditId(null);
+        setUseKeHoachDaoTao(false);
+        setKeHoachMonHocList([]);
+
+        if (heDaoTaoFilter && !heDaoTaoId) setHeDaoTaoId(heDaoTaoFilter);
+        if (khoaDaoTaoFilter && !khoaDaoTaoId) setKhoaDaoTaoId(khoaDaoTaoFilter);
+
+        if (heDaoTaoFilter) {
+            fetchMonHocByHeDaoTao(heDaoTaoFilter).then(setMonHocListForm);
+        }
         if (khoaDaoTaoFilter) {
-            fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
+            fetchLopByKhoaDaoTao(khoaDaoTaoFilter).then(setLopList);
             const selectedKhoa = khoaDaoTao.find(khoa => khoa.id === khoaDaoTaoFilter);
             if (selectedKhoa) {
                 const kyHocCount = selectedKhoa.so_ky_hoc;
@@ -1130,10 +1214,11 @@ const ThoiKhoaBieu = () => {
         setOpen(true);
     };
 
-    const handleEdit = (tkb, index) => {
+    const handleEdit = async (tkb, index) => {
         setKyHoc(tkb.ky_hoc || "");
         setLopId(tkb.lop_id || "");
         setMonHocId(tkb.mon_hoc_id || "");
+        setSelectedMonHocIds([tkb.mon_hoc_id]); // Chỉ chọn một môn khi chỉnh sửa
         setGiangVienId(tkb.giang_vien_id || "");
         setGiangVien(tkb.giang_vien || "");
         setPhongHoc(tkb.phong_hoc || "");
@@ -1141,17 +1226,57 @@ const ThoiKhoaBieu = () => {
         setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
         setEditIndex(index);
         setEditId(tkb.id);
-        setOpen(true);
 
-        const selectedKhoa = khoaDaoTaoList.find(khoa => khoa.id === tkb.khoaDaoTaoId);
-        if (selectedKhoa) {
-            setHeDaoTaoId(selectedKhoa.he_dao_tao_id);
-            setKhoaDaoTaoId(selectedKhoa.id);
-            fetchLopByKhoaDaoTao(selectedKhoa.id);
-            const kyHocCount = selectedKhoa.so_ky_hoc;
-            const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
-            setKyHocOptionsForm(kyHocArray);
+        try {
+            // Tìm môn học để lấy he_dao_tao_id
+            const monHoc = monHocList.find(m => m.id === tkb.mon_hoc_id);
+            if (monHoc && monHoc.he_dao_tao_id) {
+                setHeDaoTaoId(monHoc.he_dao_tao_id);
+                await fetchMonHocByHeDaoTao(monHoc.he_dao_tao_id).then(setMonHocListForm);
+            } else {
+                console.warn("Không tìm thấy môn học hoặc he_dao_tao_id:", tkb.mon_hoc_id);
+                setHeDaoTaoId("");
+            }
+
+            // Tìm lớp để lấy khoa_dao_tao_id
+            const selectedLop = originalLopList.find(lop => lop.id === tkb.lop_id);
+            let khoaDaoTaoIdFromData = tkb.khoa_dao_tao_id; // Kiểm tra nếu tkb có trường này
+            if (!khoaDaoTaoIdFromData && selectedLop && selectedLop.khoa_dao_tao_id) {
+                khoaDaoTaoIdFromData = selectedLop.khoa_dao_tao_id; // Lấy từ lớp nếu tkb không có
+            }
+
+            if (khoaDaoTaoIdFromData) {
+                setKhoaDaoTaoId(khoaDaoTaoIdFromData);
+                // Tải danh sách khóa đào tạo dựa trên he_dao_tao_id
+                if (monHoc && monHoc.he_dao_tao_id) {
+                    const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(monHoc.he_dao_tao_id);
+                    setKhoaDaoTao(khoaDaoTaoData);
+                    const selectedKhoa = khoaDaoTaoData.find(khoa => khoa.id === khoaDaoTaoIdFromData);
+                    if (selectedKhoa) {
+                        const kyHocCount = selectedKhoa.so_ky_hoc;
+                        const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
+                        if (!kyHocArray.includes(Number(tkb.ky_hoc))) {
+                            kyHocArray.push(Number(tkb.ky_hoc));
+                            kyHocArray.sort((a, b) => a - b);
+                        }
+                        setKyHocOptionsForm(kyHocArray);
+                    } else {
+                        setKyHocOptionsForm([Number(tkb.ky_hoc)]);
+                    }
+                }
+                await fetchLopByKhoaDaoTao(khoaDaoTaoIdFromData).then(setLopList);
+            } else {
+                console.warn("Không tìm thấy khoa_dao_tao_id từ tkb hoặc lop_id:", tkb.lop_id);
+                setKhoaDaoTaoId("");
+                setKyHocOptionsForm([Number(tkb.ky_hoc)]);
+                setLopList(originalLopList);
+            }
+        } catch (error) {
+            console.error("Lỗi trong handleEdit:", error);
+            setKyHocOptionsForm([Number(tkb.ky_hoc)]);
         }
+
+        setOpen(true);
     };
 
     const handleDelete = async (id) => {
@@ -1177,26 +1302,17 @@ const ThoiKhoaBieu = () => {
                     </Typography>
 
                     <Box textAlign="center" my={2}>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={handleOpenForm}
-                        >
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenForm}>
                             Thêm Thời Khóa Biểu
                         </Button>
                     </Box>
 
-                    {/* Bộ lọc */}
                     <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, maxWidth: 900, backgroundColor: "#fff" }}>
                         <Grid container spacing={2} justifyContent="center">
                             <Grid item xs={12} sm={4} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Hệ đào tạo</InputLabel>
-                                    <Select
-                                        value={heDaoTaoFilter}
-                                        onChange={(e) => setHeDaoTaoFilter(e.target.value)}
-                                        label="Hệ đào tạo"
-                                    >
+                                    <Select value={heDaoTaoFilter} onChange={(e) => setHeDaoTaoFilter(e.target.value)} label="Hệ đào tạo">
                                         <MenuItem value="">Tất cả</MenuItem>
                                         {HeDaoTao.map((item) => (
                                             <MenuItem key={item.id} value={item.id}>{item.ten_he_dao_tao}</MenuItem>
@@ -1208,12 +1324,7 @@ const ThoiKhoaBieu = () => {
                             <Grid item xs={12} sm={4} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Khóa đào tạo</InputLabel>
-                                    <Select
-                                        value={khoaDaoTaoFilter}
-                                        onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}
-                                        label="Khóa đào tạo"
-                                        disabled={!heDaoTaoFilter}
-                                    >
+                                    <Select value={khoaDaoTaoFilter} onChange={(e) => setKhoaDaoTaoFilter(e.target.value)} label="Khóa đào tạo" disabled={!heDaoTaoFilter}>
                                         <MenuItem value="">Tất cả</MenuItem>
                                         {khoaDaoTao.map((item) => (
                                             <MenuItem key={item.id} value={item.id}>{item.ten_khoa}</MenuItem>
@@ -1225,12 +1336,7 @@ const ThoiKhoaBieu = () => {
                             <Grid item xs={12} sm={4} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Kỳ học</InputLabel>
-                                    <Select
-                                        value={kyHocFilter}
-                                        onChange={(e) => setKyHocFilter(e.target.value)}
-                                        label="Kỳ học"
-                                        disabled={!khoaDaoTaoFilter}
-                                    >
+                                    <Select value={kyHocFilter} onChange={(e) => setKyHocFilter(e.target.value)} label="Kỳ học" disabled={!khoaDaoTaoFilter}>
                                         <MenuItem value="">Tất cả</MenuItem>
                                         {kyHocOptionsFilter.map((option) => (
                                             <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -1242,11 +1348,7 @@ const ThoiKhoaBieu = () => {
                             <Grid item xs={12} sm={4} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Lớp</InputLabel>
-                                    <Select
-                                        value={lopIdFilter}
-                                        onChange={(e) => setLopIdFilter(e.target.value)}
-                                        label="Lớp"
-                                    >
+                                    <Select value={lopIdFilter} onChange={(e) => setLopIdFilter(e.target.value)} label="Lớp">
                                         <MenuItem value="">Tất cả</MenuItem>
                                         {lopListView.map((item) => (
                                             <MenuItem key={item.id} value={item.id}>{item.ma_lop}</MenuItem>
@@ -1258,13 +1360,9 @@ const ThoiKhoaBieu = () => {
                             <Grid item xs={12} sm={4} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Môn học</InputLabel>
-                                    <Select
-                                        value={monHocIdFilter}
-                                        onChange={(e) => setMonHocIdFilter(e.target.value)}
-                                        label="Môn học"
-                                    >
+                                    <Select value={monHocIdFilter} onChange={(e) => setMonHocIdFilter(e.target.value)} label="Môn học" disabled={!heDaoTaoFilter}>
                                         <MenuItem value="">Tất cả</MenuItem>
-                                        {monHocList.map((item) => (
+                                        {monHocListForm.map((item) => (
                                             <MenuItem key={item.id} value={item.id}>{item.ten_mon_hoc}</MenuItem>
                                         ))}
                                     </Select>
@@ -1290,6 +1388,7 @@ const ThoiKhoaBieu = () => {
                                             setMonHocIdFilter("");
                                             setLopList(originalLopList);
                                             setLopListView(originalLopList);
+                                            setMonHocListForm(monHocList);
                                             fetchThoiKhoaBieu();
                                         } else {
                                             fetchThoiKhoaBieu();
@@ -1384,7 +1483,6 @@ const ThoiKhoaBieu = () => {
                 </Box>
             </Container>
 
-            {/* Dialog form */}
             <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
                 <DialogTitle>{editId !== null ? "Sửa" : "Thêm"} Thời Khóa Biểu</DialogTitle>
                 <DialogContent>
@@ -1406,7 +1504,7 @@ const ThoiKhoaBieu = () => {
                                 <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
                                     <MenuItem value="">Chọn khóa đào tạo</MenuItem>
                                     {khoaDaoTao.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa}  | niên khóa  {option.nam_hoc}</MenuItem>
+                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -1453,80 +1551,131 @@ const ThoiKhoaBieu = () => {
                             />
                         </Grid>
                     </Grid>
-                    <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={8}>
-                            <Autocomplete
-                                freeSolo
-                                options={filteredMonHocList}
-                                getOptionLabel={(option) => (typeof option === "string" ? option : option.ten_mon_hoc)}
-                                value={filteredMonHocList.find((m) => m.id === monHocId) || null}
-                                onChange={(event, newValue) => {
-                                    if (typeof newValue === "string") {
-                                        handleMonHocChange({ target: { value: newValue } });
-                                    } else if (newValue) {
-                                        handleMonHocChange({ target: { value: newValue.id } });
-                                    } else {
-                                        handleMonHocChange({ target: { value: "" } });
-                                    }
-                                }}
-                                renderInput={(params) => <TextField {...params} label="Môn học" fullWidth size="small" />}
-                            />
+
+                    {editId === null && (
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12}>
+                                <Box display="flex" alignItems="center">
+                                    <Checkbox
+                                        checked={useKeHoachDaoTao}
+                                        onChange={handleUseKeHoachDaoTaoChange}
+                                        disabled={!khoaDaoTaoId || !kyHoc}
+                                    />
+                                    <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
+                                </Box>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="Tìm kiếm môn học..."
-                                value={monHocSearch}
-                                onChange={(e) => setMonHocSearch(e.target.value)}
-                                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                            />
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={8}>
-                            <Autocomplete
-                                freeSolo
-                                options={filteredGiangVienList}
-                                getOptionLabel={(option) => option.ho_ten}
-                                value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
-                                onChange={(event, newValue) => handleGiangVienChange({ target: { value: newValue ? newValue.id : "" } })}
-                                renderInput={(params) => <TextField {...params} label="Giảng viên" fullWidth size="small" />}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="Tìm kiếm giảng viên..."
-                                value={giangVienSearch}
-                                onChange={(e) => setGiangVienSearch(e.target.value)}
-                                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                            />
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Phòng học"
-                                value={phongHoc}
-                                onChange={(e) => setPhongHoc(e.target.value)}
-                                placeholder="Ví dụ: 103 TA1"
-                                margin="dense"
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Tiết học"
-                                value={tietHoc}
-                                onChange={(e) => setTietHoc(e.target.value)}
-                                placeholder="Ví dụ: 2-4"
-                                margin="dense"
-                            />
-                        </Grid>
-                    </Grid>
+                    )}
+
+                    {editId === null && useKeHoachDaoTao ? (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle1">Danh sách môn học từ kế hoạch đào tạo:</Typography>
+                            {keHoachMonHocList.length > 0 ? (
+                                <List dense>
+                                    {keHoachMonHocList.map((mon) => (
+                                        <ListItem key={mon.id}>
+                                            <Checkbox
+                                                checked={selectedMonHocIds.includes(mon.mon_hoc_id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedMonHocIds([...selectedMonHocIds, mon.mon_hoc_id]);
+                                                    } else {
+                                                        setSelectedMonHocIds(selectedMonHocIds.filter((id) => id !== mon.mon_hoc_id));
+                                                    }
+                                                }}
+                                            />
+                                            <ListItemText
+                                                primary={mon.ten_mon_hoc}
+                                                secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            ) : (
+                                <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
+                            )}
+                        </Box>
+                    ) : (
+                        <>
+                            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                                <Grid item xs={12} sm={8}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Môn học</InputLabel>
+                                        <Select
+                                            multiple
+                                            value={selectedMonHocIds}
+                                            onChange={(e) => setSelectedMonHocIds(e.target.value)}
+                                            label="Môn học"
+                                            disabled={editId !== null} // Chỉ cho phép chọn một môn khi chỉnh sửa
+                                            renderValue={(selected) => selected.map(id => filteredMonHocList.find(m => m.id === id)?.ten_mon_hoc || "").join(", ")}
+                                        >
+                                            {filteredMonHocList.map((monHoc) => (
+                                                <MenuItem key={monHoc.id} value={monHoc.id}>
+                                                    <Checkbox checked={selectedMonHocIds.includes(monHoc.id)} />
+                                                    <ListItemText primary={monHoc.ten_mon_hoc} />
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="Tìm kiếm môn học..."
+                                        value={monHocSearch}
+                                        onChange={(e) => setMonHocSearch(e.target.value)}
+                                        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                                <Grid item xs={12} sm={8}>
+                                    <Autocomplete
+                                        freeSolo
+                                        options={filteredGiangVienList}
+                                        getOptionLabel={(option) => option.ho_ten}
+                                        value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
+                                        onChange={(event, newValue) => handleGiangVienChange({ target: { value: newValue ? newValue.id : "" } })}
+                                        renderInput={(params) => <TextField {...params} label="Giảng viên" fullWidth size="small" />}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="Tìm kiếm giảng viên..."
+                                        value={giangVienSearch}
+                                        onChange={(e) => setGiangVienSearch(e.target.value)}
+                                        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid container spacing={2} sx={{ mt: 1 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Phòng học"
+                                        value={phongHoc}
+                                        onChange={(e) => setPhongHoc(e.target.value)}
+                                        placeholder="Ví dụ: 103 TA1"
+                                        margin="dense"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Tiết học"
+                                        value={tietHoc}
+                                        onChange={(e) => setTietHoc(e.target.value)}
+                                        placeholder="Ví dụ: 2-4"
+                                        margin="dense"
+                                    />
+                                </Grid>
+                            </Grid>
+                        </>
+                    )}
+
                     <FormControl fullWidth margin="dense">
                         <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
                         <Select value={trangThai} onChange={handleTrangThaiChange}>
@@ -1542,7 +1691,7 @@ const ThoiKhoaBieu = () => {
                         onClick={handleSubmit}
                         color="primary"
                         variant="contained"
-                        disabled={!lopId || !monHocId || !kyHoc || isLoading}
+                        disabled={!lopId || !kyHoc || selectedMonHocIds.length === 0 || isLoading}
                     >
                         {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
                     </Button>
