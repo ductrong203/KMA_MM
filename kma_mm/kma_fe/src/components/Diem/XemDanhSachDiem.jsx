@@ -409,19 +409,7 @@ function XemDanhSachDiem() {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Lần thi</InputLabel>
-                        <Select
-                            value={examNumber}
-                            label="Lần thi"
-                            onChange={(e) => setExamNumber(e.target.value)}
-                        >
-                            <MenuItem value="1">Lần 1</MenuItem>
-                            <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
+               
                 <Grid item xs={12} sm={6} md={3}>
                     <Button variant="contained" color="primary" startIcon={<SearchIcon />} onClick={handleSearch} sx={{ height: '56px' }}>
                         Tìm kiếm

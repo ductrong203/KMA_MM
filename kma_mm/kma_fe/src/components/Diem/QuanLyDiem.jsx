@@ -15,6 +15,7 @@ import {
     FormControlLabel,
     Grid,
     InputLabel,
+    LinearProgress,
     MenuItem,
     Paper,
     Select,
@@ -30,16 +31,18 @@ import {
     Tooltip,
     Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { layDanhSachSinhVienTheoTKB, nhapDiem } from '../../Api_controller/Service/diemService';
+import React, { act, useEffect, useRef, useState } from 'react';
+import { layDanhSachSinhVienTheoTKB, layDSSVTheoKhoaVaMonHoc, nhapDiem } from '../../Api_controller/Service/diemService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
 import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
+import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, importDanhSachDiemGK } from '../../Api_controller/Service/excelService';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
+    const fileInputRef = useRef(null);
     const [year, setYear] = useState('');
     const [semester, setSemester] = useState('');
     const [examPeriod, setExamPeriod] = useState('');
@@ -56,6 +59,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const [students, setStudents] = useState([]);
     const [activeTab, setActiveTab] = useState(0);
     const [activeGradeTab, setActiveGradeTab] = useState(0);
+    const [numberOfSemesters, setNumberOfSemesters] = useState(null);
+
     // ... (các state hiện có)
     const [scheduleId, setScheduleId] = useState(null);
     const [gradeSheetId, setGradeSheetId] = useState(null);
@@ -64,6 +69,13 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const [loadingClasses, setLoadingClasses] = useState(false);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const [loadingStudents, setLoadingStudents] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [fileName, setFileName] = useState('');
+    const [file, setFile] = useState(null);
+    const [loadingSemester, setLoadingSemester] = useState(false);
+    const [searchType, setSearchType] = useState('class'); // 'class' hoặc 'batch'
+    const [semesterOptions, setSemesterOptions] = useState([]);
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
@@ -80,12 +92,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setEducationTypeOptions(response);
             } catch (error) {
                 console.error('Error fetching education types:', error);
-                // Fallback to sample data
-                setEducationTypeOptions([
-                    { id: 'CQ', name: 'Chính quy' },
-                    { id: 'LT', name: 'Liên thông' },
-                    { id: 'VLVH', name: 'Vừa làm vừa học' }
-                ]);
             }
         };
 
@@ -106,12 +112,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setBatchOptions(response);
             } catch (error) {
                 console.error('Error fetching batches:', error);
-                // Fallback to sample data
-                setBatchOptions([
-                    { id: 'K14', name: 'K14' },
-                    { id: 'K15', name: 'K15' },
-                    { id: 'K16', name: 'K16' }
-                ]);
             } finally {
                 setLoadingBatches(false);
             }
@@ -120,6 +120,40 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         fetchBatches();
     }, [educationType]);
 
+    useEffect(() => {
+        if (!batch) {
+            setNumberOfSemesters(null);
+            return;
+        }
+
+        const selectedBatch = batchOptions.find((b) => b.id === batch);
+        if (selectedBatch) {
+            setNumberOfSemesters(selectedBatch.so_ky_hoc);
+        }
+    }, [batch, batchOptions]);
+
+    useEffect(() => {
+        if (!batch || !numberOfSemesters) return;
+
+        const fetchSemesters = async () => {
+            setLoadingSemester(true);
+            setSemester('');
+            try {
+                const semesters = Array.from({ length: numberOfSemesters }, (_, i) => ({
+                    id: i + 1,
+                    name: `Kỳ ${i + 1}`
+                }));
+                setSemesterOptions(semesters);
+            } catch (error) {
+                console.error('Error fetching semesters:', error);
+                setSemesterOptions([]);
+            } finally {
+                setLoadingSemester(false);
+            }
+        };
+
+        fetchSemesters();
+    }, [batch, numberOfSemesters]);
     // Fetch classes when batch changes
     useEffect(() => {
         if (!batch) return;
@@ -133,12 +167,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setClassOptions(response);
             } catch (error) {
                 console.error('Error fetching classes:', error);
-                // Fallback to sample data
-                setClassOptions([
-                    { id: 'CT6', name: 'CT6' },
-                    { id: 'CT7', name: 'CT7' },
-                    { id: 'CT8', name: 'CT8' }
-                ]);
             } finally {
                 setLoadingClasses(false);
             }
@@ -149,7 +177,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Fetch courses when class and semester change
     useEffect(() => {
-        if (!classGroup || !batch || !semester) return;
+        if ( !batch || !semester) return;
 
         const fetchCourses = async () => {
             setLoadingCourses(true);
@@ -188,14 +216,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setCourseOptions(coursesWithDetails);
             } catch (error) {
                 console.error('Error fetching courses:', error);
-                // Fallback to sample data in case of error
-                setCourseOptions([
-                    { id: 'WEB', name: 'Lập trình Web' },
-                    { id: 'JAVA', name: 'Lập trình Java' },
-                    { id: 'DB', name: 'Cơ sở dữ liệu' },
-                    { id: 'AI', name: 'Trí tuệ nhân tạo' },
-                    { id: 'DS', name: 'Cấu trúc dữ liệu' }
-                ]);
             } finally {
                 setLoadingCourses(false);
             }
@@ -206,7 +226,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Find schedule ID when course and class are selected
     useEffect(() => {
-        if (!classGroup || !course) return;
+        if (!classGroup || !course || (searchType === 'class' && !classGroup)) return;
 
         const fetchScheduleId = async () => {
             setLoading(true);
@@ -222,8 +242,6 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setScheduleId(response.data[0].id);
             } catch (error) {
                 console.error('Error fetching schedule ID:', error);
-                // Mock schedule ID for testing
-                setScheduleId('SCH001');
             } finally {
                 setLoading(false);
             }
@@ -235,57 +253,59 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
 
     // Thêm hàm xử lý chức năng tìm kiếm
-    const handleSearch = async () => {
-        if (!batch || !classGroup || !semester || !course) {
-            alert('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
-            return;
+   const handleSearch = async () => {
+    if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
+        alert('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+        return;
+    }
+    setLoadingStudents(true);
+    try {
+        let response;
+        if (searchType === 'class') {
+            response = await layDanhSachSinhVienTheoTKB(scheduleId);
+            console.log(response)
+            
+        } else {
+            response = await layDSSVTheoKhoaVaMonHoc(batch, course)
+            console.log(response)
         }
-        setLoadingStudents(true);
-        try {
-            // Lấy danh sách sinh viên theo filter
-            const response = await layDanhSachSinhVienTheoTKB(scheduleId);
-            console.log("searchResponse:", response);
+        const formattedStudents = await Promise.all(
+            response.data.map(async (student) => {
+                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                const maLop = lopInfo?.ma_lop || student.lop_id;
 
-            // Chuyển đổi dữ liệu sinh viên
-            const formattedStudents = await Promise.all(
-                response.data.map(async (student) => {
-                    // Gọi API để lấy thông tin lớp dựa trên lop_id
-                    const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                    const maLop = lopInfo?.ma_lop || student.lop_id;
+                return {
+                    id: student.id,
+                    sinh_vien_id: student.sinh_vien_id,
+                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                    ho_dem: student.sinh_vien.ho_dem,
+                    ten: student.sinh_vien.ten,
+                    lop: maLop,
+                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                    diem: {
+                        TP1: student.diem_tp1 || null,
+                        TP2: student.diem_tp2 || null,
+                        CK1: student.diem_ck || null,
+                        CK2: student.diem_ck2 || null
+                    },
+                    retakeRegistered: student.retakeRegistered || false
+                };
+            })
+        );
+        setStudents(formattedStudents);
 
-                    return {
-                        id: student.id,
-                        sinh_vien_id: student.sinh_vien_id,
-                        ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                        ho_dem: student.sinh_vien.ho_dem,
-                        ten: student.sinh_vien.ten,
-                        lop: maLop,
-                        lan_hoc: student.lan_hoc?'Học lần '+ student.lan_hoc: 'Học lần 1',
-                        diem: {
-                            TP1: student.diem_tp1 || null,
-                            TP2: student.diem_tp2 || null,
-                            CK1: student.diem_ck || null,
-                            CK2: student.diem_ck2 || null
-                        },
-                        retakeRegistered: student.retakeRegistered || false
-                    };
-                })
-            );
-            console.log(formattedStudents);
-            setStudents(formattedStudents);
-
-            if (formattedStudents.length > 0) {
-                alert(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
-            } else {
-                alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
-            }
-        } catch (error) {
-            console.error('Error searching students:', error);
-            alert('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
-        } finally {
-            setLoadingStudents(false);
+        if (formattedStudents.length > 0) {
+            alert(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+        } else {
+            alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
         }
-    };
+    } catch (error) {
+        console.error('Error searching students:', error);
+        alert('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+    } finally {
+        setLoadingStudents(false);
+    }
+};
 
     // Sinh viên đủ điều kiện thi CK khi điểm TP1 >= 4.0
     const canTakeFinalExam = (student) => {
@@ -344,10 +364,11 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         try {
             // Chuẩn bị dữ liệu để gửi lên API
             const dataToSave = students.map(student => ({
-                id:student.id,
+                id: student.id,
                 sinh_vien_id: student.sinh_vien_id,
                 diem_tp1: student.diem.TP1,
                 diem_tp2: student.diem.TP2,
+                diem_gk: calculateComponentScore(student),
                 diem_ck: student.diem.CK1,
                 diem_ck2: student.diem.CK2,
                 thoi_khoa_bieu_id: scheduleId // Thêm scheduleId nếu API yêu cầu
@@ -355,7 +376,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
             // Gọi API để lưu điểm
             const response = await nhapDiem(dataToSave)
-console.log(response)
+            console.log(response)
             // Xử lý phản hồi từ API
             if (response.data) {
                 alert('Đã lưu điểm thành công!');
@@ -395,11 +416,226 @@ console.log(response)
         return null;
     };
 
+    // const exportExcel = (lopId, monHocId) => {
+    //     // Tìm tên học phần từ courseOptions
+    //     const courseInfo = courseOptions.find(option => option.id === monHocId);
+    //     const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+
+    //     // Tìm tên lớp từ classOptions
+    //     const classInfo = classOptions.find(option => option.id === lopId);
+    //     const maLop = classInfo?.ma_lop || 'Unknown';
+
+    //     // Tạo tên file
+    //     const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+
+    //     // Chuẩn bị dữ liệu gửi lên server
+    //     const data = {
+    //         lop_id: lopId,
+    //         mon_hoc_id: monHocId
+    //     };
+
+    //     exportDanhSachDiem(data)
+    //         .then(response => {
+    //             // Trực tiếp xử lý dữ liệu blob từ response.data
+    //             const blob = new Blob([response.data], {
+    //                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    //             });
+
+    //             // Tạo URL để tải xuống file
+    //             const url = window.URL.createObjectURL(blob);
+    //             const a = document.createElement('a');
+    //             a.style.display = 'none';
+    //             a.href = url;
+    //             // Sử dụng tên file động
+    //             a.download = fileName;
+    //             document.body.appendChild(a);
+    //             a.click();
+    //             document.body.removeChild(a); // Làm sạch DOM
+    //             window.URL.revokeObjectURL(url);
+    //         })
+    //         .catch(error => {
+    //             console.error('Error:', error);
+    //             // Thêm thông báo lỗi cho người dùng nếu cần
+    //             alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+    //         });
+    // };
+    // Hàm xử lý upload file Excel
+    // Hàm export điểm, dùng chung cho giữa kỳ và cuối kỳ
+    const exportExcel = (lop_id, khoa_dao_tao_id, mon_hoc_id, activeGradeTab, courseOptions, classOptions, searchType = 'class') => {
+        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+            alert('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
+            return;
+        }
+    
+        if (activeGradeTab === 0 && searchType === 'batch') {
+            alert('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
+            return;
+        }
+    
+        const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+    
+        let maLop = 'Unknown';
+        if (searchType === 'class' && lop_id) {
+            const classInfo = classOptions.find((option) => option.id === lop_id);
+            maLop = classInfo?.ma_lop || 'Unknown';
+        } else {
+            const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
+            maLop = batchInfo?.ma_khoa || 'Unknown';
+        }
+    
+        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+    
+        const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
+    
+        const data = activeGradeTab === 0
+            ? { lop_id, mon_hoc_id } // Chỉ export giữa kỳ theo lớp
+            : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
+    
+        exportApi(data)
+            .then((response) => {
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+    
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+            });
+    };
+    const handleFileChange = (event) => {
+        event.stopPropagation();
+        console.log('handleFileChange triggered');
+        const selectedFile = event.target.files[0];
+        console.log('Selected file:', selectedFile);
+        if (selectedFile) {
+            setFile(selectedFile);
+            setFileName(selectedFile.name);
+            event.target.value = null; // Reset để chọn lại được
+        } else {
+            setFile(null);
+            setFileName('');
+        }
+    };
+
+    const handleButtonClick = (event) => {
+        event.preventDefault(); // Ngăn chặn hành vi mặc định
+        fileInputRef.current?.click(); // Mở hộp thoại chọn file
+    };
+
+    // const importExcel = (lop_id, mon_hoc_id) => {
+    //     console.log('File before sending:', file);
+    //     if (!file) {
+    //         alert('Vui lòng chọn file trước khi import.');
+    //         return;
+    //     }
+
+    //     const formData = new FormData();
+    //     formData.append('file', file);
+    //     formData.append('lop_id', lop_id); // Thêm lop_id vào formData
+    //     formData.append('mon_hoc_id', mon_hoc_id); // Thêm mon_hoc_id vào formData
+    //     console.log('FormData entries:');
+    //     for (let pair of formData.entries()) {
+    //         console.log(pair[0], pair[1]); // Debug FormData
+    //     }
+    //     setUploading(true);
+    //     setProgress(0); // Reset progress khi bắt đầu upload
+
+    //     // Giả lập tiến trình tải file
+    //     const interval = setInterval(() => {
+    //         setProgress((prev) => {
+    //             if (prev >= 100) {
+    //                 clearInterval(interval);
+    //                 return 100;
+    //             }
+    //             return prev + 10; // Tăng tiến trình lên 10%
+    //         });
+    //     }, 1000);
+    //     importDanhSachDiem(formData)
+    //         .then(data => {
+    //             alert('Import thành công!');
+    //             console.log(data);
+    //             setUploading(false);
+    //             setFile(null); // Reset file sau khi import
+    //             setFileName(''); // Reset tên file
+    //             // Gọi lại handleSearch để cập nhật danh sách sinh viên
+    //             handleSearch();
+    //         })
+    //         .catch(error => {
+    //             console.error('Error:', error);
+    //             alert('Không thể import dữ liệu. Vui lòng thử lại.');
+    //             setUploading(false);
+    //         });
+    // };
+    const importExcel = (lop_id, mon_hoc_id, khoa_dao_tao_id, activeGradeTab) => {
+        if (!file) {
+            alert('Vui lòng chọn file trước khi import.');
+            return;
+        }
+        console.log("activeGradeTab", activeGradeTab)
+
+        // Chọn hàm API dựa trên activeGradeTab
+        const importApi =
+            activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('mon_hoc_id', mon_hoc_id);
+        formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
+        if (lop_id) {
+            formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
+        }
+
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]); // Debug FormData
+        }
+
+        setUploading(true);
+        setProgress(0); // Reset tiến trình
+
+        // Giả lập tiến trình tải
+        const interval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                return prev + 10;
+            });
+        }, 1000);
+
+        // Gọi API import
+        importApi(formData)
+            .then((response) => {
+                alert('Import thành công!');
+                console.log(response.data);
+                setUploading(false);
+                setFile(null); // Reset file
+                setFileName(''); // Reset tên file
+                handleSearch(); // Cập nhật danh sách sinh viên
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Không thể import dữ liệu. Vui lòng thử lại.');
+                setUploading(false);
+            });
+    };
     return (
         <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>Quản lý Điểm</Typography>
 
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            {/* <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <FormControl fullWidth>
                         <InputLabel>Hệ đào tạo</InputLabel>
@@ -446,31 +682,21 @@ console.log(response)
                             value={semester}
                             label="Học kỳ"
                             onChange={(e) => setSemester(e.target.value)}
+                            disabled={!numberOfSemesters}
                         >
-                            <MenuItem value="1">Học kỳ 1</MenuItem>
-                            <MenuItem value="2">Học kỳ 2</MenuItem>
-                            <MenuItem value="3">Học kỳ 3</MenuItem>
-                            <MenuItem value="4">Học kỳ 4</MenuItem>
-                            <MenuItem value="5">Học kỳ 5</MenuItem>
-                            <MenuItem value="6">Học kỳ 6</MenuItem>
-                            <MenuItem value="7">Học kỳ 7</MenuItem>
-                            <MenuItem value="8">Học kỳ 8</MenuItem>
+                            <MenuItem value="">
+                                <em>Chọn học kỳ</em>
+                            </MenuItem>
+                            {numberOfSemesters &&
+                                Array.from({ length: numberOfSemesters }, (_, i) => (
+                                    <MenuItem key={i + 1} value={`${i + 1}`}>
+                                        Học kỳ {i + 1}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Đợt học</InputLabel>
-                        <Select
-                            value={examPeriod}
-                            label="Đợt học"
-                            onChange={(e) => setExamPeriod(e.target.value)}
-                        >
-                            <MenuItem value="1">Đợt 1</MenuItem>
-                            <MenuItem value="2">Đợt 2</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
+
 
                 <Grid item xs={12} sm={6} md={3}>
                     <FormControl fullWidth>
@@ -519,25 +745,151 @@ console.log(response)
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Lần thi</InputLabel>
-                        <Select
-                            value={examNumber}
-                            label="Lần thi"
-                            onChange={(e) => setExamNumber(e.target.value)}
-                        >
-                            <MenuItem value="1">Lần 1</MenuItem>
-                            <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
+
                 <Grid item xs={12} sm={6} md={3}>
                     <Button variant="contained" color="primary" startIcon={<SearchIcon />} onClick={handleSearch} sx={{ height: '56px' }}>
                         Tìm kiếm
                     </Button>
                 </Grid>
-            </Grid>
+            </Grid> */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+    <Grid item xs={12} sm={6} md={3}>
+        <FormControl fullWidth>
+            <InputLabel>Hệ đào tạo</InputLabel>
+            <Select
+                value={educationType}
+                label="Hệ đào tạo"
+                onChange={(e) => setEducationType(e.target.value)}
+            >
+                {educationTypeOptions.map((option) => (
+                    <MenuItem key={option.id} value={option.id}>
+                        {option.ten_he_dao_tao}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    </Grid>
+    <Grid item xs={12} sm={6} md={3}>
+        <FormControl fullWidth>
+            <InputLabel>Khóa</InputLabel>
+            <Select
+                value={batch}
+                label="Khóa"
+                onChange={(e) => setBatch(e.target.value)}
+                disabled={!educationType || loadingBatches}
+            >
+                {loadingBatches ? (
+                    <MenuItem value="">
+                        <CircularProgress size={20} />
+                    </MenuItem>
+                ) : (
+                    batchOptions.map((option) => (
+                        <MenuItem key={option.id} value={option.id}>
+                            {option.ma_khoa}
+                        </MenuItem>
+                    ))
+                )}
+            </Select>
+        </FormControl>
+    </Grid>
+    <Grid item xs={12} sm={6} md={3}>
+        <FormControl fullWidth>
+            <InputLabel>Học kỳ</InputLabel>
+            <Select
+                value={semester}
+                label="Học kỳ"
+                onChange={(e) => setSemester(e.target.value)}
+                disabled={!numberOfSemesters || loadingSemester}
+            >
+                <MenuItem value="">
+                    <em>Chọn học kỳ</em>
+                </MenuItem>
+                {semesterOptions.map((option) => (
+                    <MenuItem key={option.id} value={option.id}>
+                        {option.name}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    </Grid>
+    <Grid item xs={12} sm={6} md={3}>
+        <FormControl fullWidth>
+            <InputLabel>Tìm kiếm theo</InputLabel>
+            <Select
+                value={searchType}
+                label="Tìm kiếm theo"
+                onChange={(e) => {
+                    setSearchType(e.target.value);
+                    setClassGroup(''); // Reset lớp khi thay đổi kiểu tìm kiếm
+                }}
+                disabled={!batch}
+            >
+                <MenuItem value="class">Theo lớp</MenuItem>
+                <MenuItem value="batch">Theo khóa</MenuItem>
+            </Select>
+        </FormControl>
+    </Grid>
+    {searchType === 'class' && (
+        <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+                <InputLabel>Lớp</InputLabel>
+                <Select
+                    value={classGroup}
+                    label="Lớp"
+                    onChange={(e) => setClassGroup(e.target.value)}
+                    disabled={!batch || loadingClasses}
+                >
+                    {loadingClasses ? (
+                        <MenuItem value="">
+                            <CircularProgress size={20} />
+                        </MenuItem>
+                    ) : (
+                        classOptions.map((option) => (
+                            <MenuItem key={option.id} value={option.id}>
+                                {option.ma_lop}
+                            </MenuItem>
+                        ))
+                    )}
+                </Select>
+            </FormControl>
+        </Grid>
+    )}
+    <Grid item xs={12} sm={6} md={3}>
+        <FormControl fullWidth>
+            <InputLabel>Học phần</InputLabel>
+            <Select
+                value={course}
+                label="Học phần"
+                onChange={(e) => setCourse(e.target.value)}
+                disabled={(!classGroup && searchType === 'class') || !semester || loadingCourses}
+            >
+                {loadingCourses ? (
+                    <MenuItem value="">
+                        <CircularProgress size={20} />
+                    </MenuItem>
+                ) : (
+                    courseOptions.map((option) => (
+                        <MenuItem key={option.id} value={option.id}>
+                            {option.ten_mon_hoc || option.name || option.mon_hoc_id}
+                        </MenuItem>
+                    ))
+                )}
+            </Select>
+        </FormControl>
+    </Grid>
+    <Grid item xs={12} sm={6} md={3}>
+        <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SearchIcon />}
+            onClick={handleSearch}
+            sx={{ height: '56px' }}
+            disabled={(!classGroup && searchType === 'class') || !course || !batch || !semester}
+        >
+            Tìm kiếm
+        </Button>
+    </Grid>
+</Grid>
 
             <Divider sx={{ my: 2 }} />
 
@@ -562,6 +914,58 @@ console.log(response)
                             <Alert severity="info" sx={{ my: 2 }}>
                                 Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ 4.0 là điều kiện để sinh viên được thi cuối kỳ.
                             </Alert>
+                            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{ boxShadow: 2 }}
+                                    onClick={handleButtonClick} // Gọi hàm mở input file
+                                >
+                                    Chọn file điểm giữa kỳ
+                                </Button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx, .xls, .csv"
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }} // Ẩn input file
+                                />
+
+                                {/* Hiển thị tên file và tiến trình import */}
+                                {file && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body1" sx={{ marginLeft: 2 }}>
+                                            {fileName}
+                                        </Typography>
+                                        {uploading && (
+                                            <Box sx={{ width: '200px', marginLeft: 2 }}>
+                                                <LinearProgress variant="determinate" value={progress} />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                )}
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => { importExcel(classGroup, course, batch, activeGradeTab) }}
+                                    sx={{ boxShadow: 2, marginLeft: 2 }}
+                                >
+                                    Thực hiện Import
+                                </Button>
+                                {/* Nút Export, căn phải */}
+                                <Box sx={{ flexGrow: 1 }} /> {/* Giúp căn nút Export ra bên phải */}
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => {exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class')}}
+                                    sx={{ boxShadow: 2 }}
+                                >
+                                    Export điểm giữa kỳ
+                                </Button>
+
+                                {/* Nút Import và xử lý khi đã chọn file */}
+
+                            </Box>
                             <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                                 <Table stickyHeader sx={{ minWidth: 650 }} aria-label="midterm grades table">
                                     <TableHead>
@@ -632,6 +1036,59 @@ console.log(response)
                                 {examNumber === "2" ? " Đang nhập điểm thi lại (lần 2)." : " Đang nhập điểm thi lần 1."}
                                 {examNumber === "2" && " Chỉ sinh viên có điểm CK1 < 4.0 mới đủ điều kiện thi lại."}
                             </Alert>
+
+                            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{ boxShadow: 2 }}
+                                    onClick={handleButtonClick} // Gọi hàm mở input file
+                                >
+                                    Chọn file điểm cuối kỳ/thi lại
+                                </Button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx, .xls, .csv"
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }} // Ẩn input file
+                                />
+
+                                {/* Hiển thị tên file và tiến trình import */}
+                                {file && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body1" sx={{ marginLeft: 2 }}>
+                                            {fileName}
+                                        </Typography>
+                                        {uploading && (
+                                            <Box sx={{ width: '200px', marginLeft: 2 }}>
+                                                <LinearProgress variant="determinate" value={progress} />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                )}
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => { importExcel(classGroup, course, batch, activeGradeTab) }}
+                                    sx={{ boxShadow: 2, marginLeft: 2 }}
+                                >
+                                    Thực hiện Import
+                                </Button>
+                                {/* Nút Export, căn phải */}
+                                <Box sx={{ flexGrow: 1 }} /> {/* Giúp căn nút Export ra bên phải */}
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => { exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class') }}
+                                    sx={{ boxShadow: 2 }}
+                                >
+                                    Export điểm cuối kỳ
+                                </Button>
+
+                                {/* Nút Import và xử lý khi đã chọn file */}
+
+                            </Box>
                             <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                                 <Table stickyHeader sx={{ minWidth: 650 }} aria-label="final exam grades table">
                                     <TableHead>
@@ -851,6 +1308,16 @@ console.log(response)
                     <Alert severity="error" sx={{ my: 2 }}>
                         {`${studentsEligibleForRetake.length} sinh viên cần thi lại (Điểm CK1 < 4.0)`}
                     </Alert>
+                    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                        <Button
+                            variant="contained"
+                            color="warning" // Màu vàng cho export danh sách thi lại
+                            onClick={() => {/* Xử lý export danh sách sinh viên thi lại */ }}
+                            sx={{ boxShadow: 2 }}
+                        >
+                            Export danh sách thi lại
+                        </Button>
+                    </Box>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="retake students table">
                             <TableHead>

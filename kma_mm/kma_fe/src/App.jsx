@@ -34,7 +34,7 @@ import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
 import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 
-
+import { ToastContainer } from 'react-toastify';
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
@@ -256,6 +256,18 @@ const App = () => {
 
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </Router>
   );
 };

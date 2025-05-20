@@ -9,11 +9,14 @@ class KeHoachMonHocService {
     return await ke_hoach_mon_hoc.findByPk(id);
   }
 
-  static async getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+  static async getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc = null) {
     try {
-      const data = await ke_hoach_mon_hoc.findAll({
-        where: { khoa_dao_tao_id, ky_hoc },
-      });
+      const whereClause = { khoa_dao_tao_id };
+      if (ky_hoc) {
+        whereClause.ky_hoc = ky_hoc;
+      }
+      
+      const data = await ke_hoach_mon_hoc.findAll({ where: whereClause });
       return data;
     } catch (error) {
       throw new Error("Lỗi khi lấy dữ liệu kế hoạch môn học");
@@ -51,6 +54,13 @@ class KeHoachMonHocService {
     const monHoc = await mon_hoc.findByPk(mon_hoc_id);
     if (!monHoc) throw new Error('Môn học không tồn tại.');
 
+    const existingKeHoach = await ke_hoach_mon_hoc.findOne({
+      where: { khoa_dao_tao_id, mon_hoc_id, ky_hoc },
+    });
+    if (existingKeHoach) {
+      throw new Error('Kế hoạch môn học đã tồn tại cho khoá đào tạo, môn học và kỳ học này.');
+    }
+    
     return await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
   }
 
@@ -68,6 +78,18 @@ class KeHoachMonHocService {
     await record.destroy();
     return { message: 'Xóa thành công!' };
   }
+
+  static async getMHByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc) {
+    try {
+      const data = await ke_hoach_mon_hoc.findAll({
+        where: { khoa_dao_tao_id, ky_hoc },
+      });
+      return data;
+    } catch (error) {
+      throw new Error("Lỗi khi lấy dữ liệu kế hoạch môn học");
+    }
+  }
+
 }
 
 module.exports = KeHoachMonHocService;

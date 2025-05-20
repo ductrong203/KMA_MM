@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   return sequelize.define('mon_hoc', {
     id: {
       autoIncrement: true,
@@ -28,7 +28,12 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: 1
     },
-    he_dao_tao_id: {
+
+    ghi_chu: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    he_dao_tao_id: {  // Tách riêng ra khỏi ghi_chu
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {

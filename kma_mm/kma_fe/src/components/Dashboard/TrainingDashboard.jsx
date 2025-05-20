@@ -57,6 +57,8 @@ import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
 import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
 import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
+import PhuLucBangDiem from "../Dao Tao/PhuLucBangDiem";
+import ThongKeTotNghiep from "../Dao Tao/ThongKeTotNghiep";
 
 // Mock data
 const trainerInfo = {
@@ -204,44 +206,10 @@ function TrainingDashboard() {
                 <Tab label="Thống kê tốt nghiệp" />
                 <Tab label="Báo cáo chi tiết" />
               </Tabs>
-              {subTab == 0 && (
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Thống kê điểm theo lớp
-                    </Typography>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Lớp</InputLabel>
-                      <Select value="" label="Lớp">
-                        <MenuItem value="LT01">LT01</MenuItem>
-                        <MenuItem value="LT02">LT02</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <Button variant="outlined" startIcon={<FileDownloadIcon />}>
-                      Xuất báo cáo
-                    </Button>
-                  </Paper>
-                </Grid>
-              )}
-              {subTab == 1 && (
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Thống kê tốt nghiệp
-                    </Typography>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Khóa</InputLabel>
-                      <Select value="" label="Khóa">
-                        <MenuItem value="2020">2020</MenuItem>
-                        <MenuItem value="2021">2021</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <Button variant="outlined" startIcon={<BarChartIcon />}>
-                      Xem biểu đồ
-                    </Button>
-                  </Paper>
-                </Grid>
-              )}
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {subTab === 0 && <PhuLucBangDiem />}
+                {subTab === 1 && <ThongKeTotNghiep />}
+              </Grid>
             </Box>
           )}
 

@@ -61,27 +61,40 @@ CRUD khoadaotao
             "ten_khoa": "An toan 18",
             "nam_hoc": "2024-2025"
         }
-Lớp: 
+================================================================
+Lớp:
+==== 
 CRUD lop: khoa_dao_tao_id là bắt buộc, và phải tồn tại
     http://localhost:8000/lop
     json mẫu:
         {
         "khoa_dao_tao_id": "1"
         }
-kế hoạch môn học: "danh_muc_id","mon_hoc_id" bắt buộc
+=================================================================
+Kế hoạch môn học: 
+=================
+"khoa_dao_tao_id","mon_hoc_id" bắt buộc
     http://localhost:8000/kehoachmonhoc
     json mẫu:
         {
-        "danh_muc_id": 1,
+        "khoa_dao_tao_id": 1,
         "mon_hoc_id": 1,
         "ky_hoc": 3,
         "bat_buoc": 1
         }
-thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
+
+lấy ds theo khoá, kì (1 là id, 9 là kì)
+get
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1/9
+    http://localhost:8000/kehoachmonhoc/getbykhoavaky/1
+    
+=================================================================
+Thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
+==============
     http://localhost:8000/thoikhoabieu
     json mẫu:
 {
-  "ky_hoc": 2025,
+  "ky_hoc": 5,
   "dot_hoc": 1,
   "lop_id": 1,
   "mon_hoc_id": 1,
@@ -94,9 +107,27 @@ thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
 
     http://localhost:8000/thoikhoabieu/filter?page=1&pageSize=5&ma_mon_hoc=mh1&ma_lop=l1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
 
+Tạo thời khoá biểu của tất cả các môn thuộc kế hoạch đào tạo trong khoá và lớp tương ứng
+post
+http://localhost:8000/thoikhoabieu/createall
+{
+  "ky_hoc": 3,
+  "dot_hoc": 1,
+  "lop_id": 1,
+  "khoa_dao_tao_id": 1, // không có mon_hoc_id
+  "giang_vien": "",
+  "phong_hoc": "",
+  "tiet_hoc": "",
+  "trang_thai": 1
+}
+=======================================================================
 Điểm: "sinh_vien_id", "thoi_khoa_bieu_id" bắt buộc
 GET
 http://localhost:8000/diem/filter?page=1&pageSize=10?sinh_vien_id=1&thoi_khoa_bieu_id=1   // bỏ hết filter hoặc bỏ filter ko cần vẫn được
+
+GET: /khoadaotaovamonhoc/:khoa_dao_tao_id/:mon_hoc_id
+http://localhost:8000/diem/khoadaotaovamonhoc/1/1
+
 POST
 http://localhost:8000/diem
 {
@@ -180,11 +211,70 @@ json
   "thoi_khoa_bieu_id": 2
 }
 
+=============================================================================
 import file excel điểm giữa kì
+==========================================================================
 http://localhost:8000/diem/importdiemgk
 post 
 from-data
 key: file ; value: file excel
+key: lop_id 
+key: mon_hoc_id
 
-import file excel điểm cuối kì : tương tự giữa kì, khác link api
+import file excel điểm cuối kì 
 http://localhost:8000/diem/importdiemck
+from-data
+key: file ; value: file excel
+key: mon_hoc_id
+key: khoa_dao_tao_id
+key: lop_id // có thể có hoặc không
+
+=============================================================================
+export file excel điểm giữa kì
+===============================================================================
+POST
+http://localhost:8000/excel/export
+{
+    "lop_id": 1,
+    "mon_hoc_id": 1
+}
+
+=============================================================================
+export file excel điểm cuối kì
+=============================================================================
+POST
+http://localhost:8000/excel/exportcuoiky
+{
+    "mon_hoc_id": 1,
+    "khoa_dao_tao_id": 1,
+    "lop_id": 1 //có thể có hoặc không
+}
+
+export danh sách sinh viên
+POST http://localhost:8000/student/export-excel // có 1 trong 3 trường truyền vào là được
+{
+    "doi_tuong_quan_ly_id": 1,
+    "khoa_dao_tao_id": 1,
+    "lop_id": 1
+}
+
+import danh sách sinh viên
+
+POST http://localhost:8000/student/import //
+form-data
+    file 
+    lop_id
+    
+json trả về
+{
+    "success": true,
+    "data": {
+        "message": "Nhập danh sách sinh viên thành công",
+        "newCount": 2,
+        "thongTinQuanNhanCount": 1
+    }
+}
+
+export phụ lục bằng
+GET 
+http://localhost:8000/excel-phu-luc-bang/export/?sinh_vien_id=1

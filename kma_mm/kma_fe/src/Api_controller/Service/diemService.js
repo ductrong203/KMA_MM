@@ -44,3 +44,8 @@ export const kiemTraBangDiemTonTai = async (id) => {
   const response = await api.get(`/diem/filter?thoi_khoa_bieu_id=${id}`);
   return response.data;
 };
+
+export const layDSSVTheoKhoaVaMonHoc = async (khoa_id, mon_hoc_id) => {
+  const response = await api.get(`/diem/khoadaotaovamonhoc/${khoa_id}/${mon_hoc_id}`);
+  return response.data;
+};
