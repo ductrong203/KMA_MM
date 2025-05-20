@@ -368,6 +368,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 sinh_vien_id: student.sinh_vien_id,
                 diem_tp1: student.diem.TP1,
                 diem_tp2: student.diem.TP2,
+                diem_gk: calculateComponentScore(student),
                 diem_ck: student.diem.CK1,
                 diem_ck2: student.diem.CK2,
                 thoi_khoa_bieu_id: scheduleId // Thêm scheduleId nếu API yêu cầu
