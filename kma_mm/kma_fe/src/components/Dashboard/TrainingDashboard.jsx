@@ -162,9 +162,9 @@ function TrainingDashboard() {
             }}
           >
             <Tab label="Quản lý đào tạo" />
-            <Tab label="Thống kê và báo cáo" />
             <Tab label="Quản lý học viên" />
             <Tab label="Quản lý môn học" />
+            <Tab label="Thống kê và báo cáo" />
           </Tabs>
 
           {currentTab === 0 && (
@@ -202,20 +202,6 @@ function TrainingDashboard() {
           {currentTab === 1 && (
             <Box>
               <Tabs value={subTab} onChange={handleSubTabChange}>
-                <Tab label="Thống kê điểm" />
-                <Tab label="Thống kê tốt nghiệp" />
-                <Tab label="Báo cáo chi tiết" />
-              </Tabs>
-              <Grid container spacing={3} sx={{ mt: 2 }}>
-                {subTab === 0 && <PhuLucBangDiem />}
-                {subTab === 1 && <ThongKeTotNghiep />}
-              </Grid>
-            </Box>
-          )}
-
-          {currentTab === 2 && (
-            <Box>
-              <Tabs value={subTab} onChange={handleSubTabChange}>
                 <Tab label="Danh sách học viên" />
                 <Tab label="Xét tốt nghiệp" />
                 <Tab label="Quản lý bằng cấp" />
@@ -228,8 +214,21 @@ function TrainingDashboard() {
             </Box>
           )}
 
-          {currentTab === 3 && (
+          {currentTab === 2 && (
             <QuanLyMonHoc />
+          )}
+          {currentTab === 3 && (
+            <Box>
+              <Tabs value={subTab} onChange={handleSubTabChange}>
+                <Tab label="Thống kê điểm" />
+                <Tab label="Thống kê tốt nghiệp" />
+                <Tab label="Báo cáo chi tiết" />
+              </Tabs>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {subTab === 0 && <PhuLucBangDiem />}
+                {subTab === 1 && <ThongKeTotNghiep />}
+              </Grid>
+            </Box>
           )}
         </Paper>
 
