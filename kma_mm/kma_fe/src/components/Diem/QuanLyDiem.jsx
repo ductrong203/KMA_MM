@@ -40,6 +40,7 @@ import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuServic
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
 import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, importDanhSachDiemGK } from '../../Api_controller/Service/excelService';
+import { toast } from 'react-toastify';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
     const fileInputRef = useRef(null);
@@ -177,7 +178,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Fetch courses when class and semester change
     useEffect(() => {
-        if ( !batch || !semester) return;
+        if (!batch || !semester) return;
 
         const fetchCourses = async () => {
             setLoadingCourses(true);
@@ -253,9 +254,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
 
     // Thêm hàm xử lý chức năng tìm kiếm
-   const handleSearch = async () => {
+    const handleSearch = async () => {
     if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
-        alert('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+        toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
         return;
     }
     setLoadingStudents(true);
@@ -263,11 +264,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         let response;
         if (searchType === 'class') {
             response = await layDanhSachSinhVienTheoTKB(scheduleId);
-            console.log(response)
-            
+            console.log(response);
         } else {
-            response = await layDSSVTheoKhoaVaMonHoc(batch, course)
-            console.log(response)
+            response = await layDSSVTheoKhoaVaMonHoc(batch, course);
+            console.log(response);
         }
         const formattedStudents = await Promise.all(
             response.data.map(async (student) => {
@@ -288,20 +288,20 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         CK1: student.diem_ck || null,
                         CK2: student.diem_ck2 || null
                     },
-                    retakeRegistered: student.retakeRegistered || false
+                    retakeRegistered: student.trang_thai === 'thi_lai'
                 };
             })
         );
         setStudents(formattedStudents);
 
         if (formattedStudents.length > 0) {
-            alert(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+            toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
         } else {
-            alert('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
         }
     } catch (error) {
         console.error('Error searching students:', error);
-        alert('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+        toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
     } finally {
         setLoadingStudents(false);
     }
@@ -351,14 +351,21 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             })
         );
     };
-
     const handleRetakeRegistration = (studentId, checked) => {
         setStudents(prevStudents =>
-            prevStudents.map(student =>
-                student.id === studentId ? { ...student, retakeRegistered: checked } : student
-            )
+            prevStudents.map(student => {
+                if (student.ma_sinh_vien === studentId) {
+                    if (!eligibleForRetake(student) && checked) {
+                        toast.error('Sinh viên không đủ điều kiện đăng ký thi lại (CK1 phải < 4.0).');
+                        return student;
+                    }
+                    return { ...student, retakeRegistered: checked };
+                }
+                return student;
+            })
         );
     };
+
 
     const handleSave = async () => {
         try {
@@ -371,25 +378,25 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 diem_gk: calculateComponentScore(student),
                 diem_ck: student.diem.CK1,
                 diem_ck2: student.diem.CK2,
-                thoi_khoa_bieu_id: scheduleId // Thêm scheduleId nếu API yêu cầu
+                thoi_khoa_bieu_id: scheduleId,
+                trang_thai: student.retakeRegistered && eligibleForRetake(student) ? 'thi_lai' : null
             }));
 
             // Gọi API để lưu điểm
-            const response = await nhapDiem(dataToSave)
-            console.log(response)
+            const response = await nhapDiem(dataToSave);
+            console.log(response);
+
             // Xử lý phản hồi từ API
             if (response.data) {
-                alert('Đã lưu điểm thành công!');
-                // if (onSave) onSave(students); // Gọi callback nếu có
+                toast.success('Đã lưu điểm và trạng thái thi lại thành công!');
             } else {
-                alert('Lưu điểm thất bại: ' + response.data.message);
+                toast.error('Lưu thất bại: ' + response.data.message);
             }
         } catch (error) {
             console.error('Lỗi khi lưu điểm:', error);
-            alert('Có lỗi xảy ra khi lưu điểm. Vui lòng thử lại.');
+            toast.error('Có lỗi xảy ra khi lưu điểm. Vui lòng thử lại.');
         }
     };
-
     // Tính toán các danh sách sinh viên cho các tab
     const studentsForFinalExam = students.filter(student => canTakeFinalExam(student));
     const eligibleStudentCount = studentsForFinalExam.length;
@@ -462,57 +469,59 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     // Hàm xử lý upload file Excel
     // Hàm export điểm, dùng chung cho giữa kỳ và cuối kỳ
     const exportExcel = (lop_id, khoa_dao_tao_id, mon_hoc_id, activeGradeTab, courseOptions, classOptions, searchType = 'class') => {
-        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
-            alert('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
-            return;
-        }
-    
-        if (activeGradeTab === 0 && searchType === 'batch') {
-            alert('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
-            return;
-        }
-    
-        const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
-        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
-    
-        let maLop = 'Unknown';
-        if (searchType === 'class' && lop_id) {
-            const classInfo = classOptions.find((option) => option.id === lop_id);
-            maLop = classInfo?.ma_lop || 'Unknown';
-        } else {
-            const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
-            maLop = batchInfo?.ma_khoa || 'Unknown';
-        }
-    
-        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
-    
-        const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
-    
-        const data = activeGradeTab === 0
-            ? { lop_id, mon_hoc_id } // Chỉ export giữa kỳ theo lớp
-            : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
-    
-        exportApi(data)
-            .then((response) => {
-                const blob = new Blob([response.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-    
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+    if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+        toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
+        return;
+    }
+
+    if (activeGradeTab === 0 && searchType === 'batch') {
+        toast.error('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
+        return;
+    }
+
+    const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
+    const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+
+    let maLop = 'Unknown';
+    if (searchType === 'class' && lop_id) {
+        const classInfo = classOptions.find((option) => option.id === lop_id);
+        maLop = classInfo?.ma_lop || 'Unknown';
+    } else {
+        const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
+        maLop = batchInfo?.ma_khoa || 'Unknown';
+    }
+
+    const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+
+    const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
+
+    const data = activeGradeTab === 0
+        ? { lop_id, mon_hoc_id }
+        : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
+
+    exportApi(data)
+        .then((response) => {
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             });
-    };
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            toast.success(`Xuất điểm ${activeGradeTab === 0 ? 'giữa kỳ' : 'cuối kỳ'} thành công!`);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
+        });
+};
+
     const handleFileChange = (event) => {
         event.stopPropagation();
         console.log('handleFileChange triggered');
@@ -578,57 +587,105 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     //         });
     // };
     const importExcel = (lop_id, mon_hoc_id, khoa_dao_tao_id, activeGradeTab) => {
-        if (!file) {
-            alert('Vui lòng chọn file trước khi import.');
+    if (!file) {
+        toast.error('Vui lòng chọn file trước khi import.');
+        return;
+    }
+    console.log("activeGradeTab", activeGradeTab);
+
+    // Chọn hàm API dựa trên activeGradeTab
+    const importApi = activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mon_hoc_id', mon_hoc_id);
+    formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
+    if (lop_id) {
+        formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
+    }
+
+    console.log('FormData entries:');
+    for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]); // Debug FormData
+    }
+
+    setUploading(true);
+    setProgress(0); // Reset tiến trình
+
+    // Giả lập tiến trình tải
+    const interval = setInterval(() => {
+        setProgress((prev) => {
+            if (prev >= 100) {
+                clearInterval(interval);
+                return 100;
+            }
+            return prev + 10;
+        });
+    }, 1000);
+
+    // Gọi API import
+    importApi(formData)
+        .then((response) => {
+            toast.success('Import thành công!');
+            console.log(response.data);
+            setUploading(false);
+            setFile(null); // Reset file
+            setFileName(''); // Reset tên file
+            handleSearch(); // Cập nhật danh sách sinh viên
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            toast.error('Không thể import dữ liệu. Vui lòng thử lại.');
+            setUploading(false);
+        });
+};
+
+    const exportRetakeList = (lop_id, khoa_dao_tao_id, mon_hoc_id, searchType = 'class') => {
+        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+            toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
             return;
         }
-        console.log("activeGradeTab", activeGradeTab)
 
-        // Chọn hàm API dựa trên activeGradeTab
-        const importApi =
-            activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
+        const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('mon_hoc_id', mon_hoc_id);
-        formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
-        if (lop_id) {
-            formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
+        let maLop = 'Unknown';
+        if (searchType === 'class' && lop_id) {
+            const classInfo = classOptions.find((option) => option.id === lop_id);
+            maLop = classInfo?.ma_lop || 'Unknown';
+        } else {
+            const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
+            maLop = batchInfo?.ma_khoa || 'Unknown';
         }
 
-        console.log('FormData entries:');
-        for (let pair of formData.entries()) {
-            console.log(pair[0], pair[1]); // Debug FormData
-        }
+        const fileName = `DanhSachThiLai_${tenMonHoc}_${maLop}.xlsx`;
 
-        setUploading(true);
-        setProgress(0); // Reset tiến trình
+        const data = {
+            mon_hoc_id,
+            khoa_dao_tao_id,
+            ...(searchType === 'class' && lop_id && { lop_id })
+        };
 
-        // Giả lập tiến trình tải
-        const interval = setInterval(() => {
-            setProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 1000);
-
-        // Gọi API import
-        importApi(formData)
+        exportDanhSachThiLai(data)
             .then((response) => {
-                alert('Import thành công!');
-                console.log(response.data);
-                setUploading(false);
-                setFile(null); // Reset file
-                setFileName(''); // Reset tên file
-                handleSearch(); // Cập nhật danh sách sinh viên
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast.success('Xuất danh sách thi lại thành công!');
             })
             .catch((error) => {
-                console.error('Error:', error);
-                alert('Không thể import dữ liệu. Vui lòng thử lại.');
-                setUploading(false);
+                console.error('Error exporting retake list:', error);
+                toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
             });
     };
     return (
@@ -753,143 +810,143 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </Grid>
             </Grid> */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-    <Grid item xs={12} sm={6} md={3}>
-        <FormControl fullWidth>
-            <InputLabel>Hệ đào tạo</InputLabel>
-            <Select
-                value={educationType}
-                label="Hệ đào tạo"
-                onChange={(e) => setEducationType(e.target.value)}
-            >
-                {educationTypeOptions.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                        {option.ten_he_dao_tao}
-                    </MenuItem>
-                ))}
-            </Select>
-        </FormControl>
-    </Grid>
-    <Grid item xs={12} sm={6} md={3}>
-        <FormControl fullWidth>
-            <InputLabel>Khóa</InputLabel>
-            <Select
-                value={batch}
-                label="Khóa"
-                onChange={(e) => setBatch(e.target.value)}
-                disabled={!educationType || loadingBatches}
-            >
-                {loadingBatches ? (
-                    <MenuItem value="">
-                        <CircularProgress size={20} />
-                    </MenuItem>
-                ) : (
-                    batchOptions.map((option) => (
-                        <MenuItem key={option.id} value={option.id}>
-                            {option.ma_khoa}
-                        </MenuItem>
-                    ))
-                )}
-            </Select>
-        </FormControl>
-    </Grid>
-    <Grid item xs={12} sm={6} md={3}>
-        <FormControl fullWidth>
-            <InputLabel>Học kỳ</InputLabel>
-            <Select
-                value={semester}
-                label="Học kỳ"
-                onChange={(e) => setSemester(e.target.value)}
-                disabled={!numberOfSemesters || loadingSemester}
-            >
-                <MenuItem value="">
-                    <em>Chọn học kỳ</em>
-                </MenuItem>
-                {semesterOptions.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                        {option.name}
-                    </MenuItem>
-                ))}
-            </Select>
-        </FormControl>
-    </Grid>
-    <Grid item xs={12} sm={6} md={3}>
-        <FormControl fullWidth>
-            <InputLabel>Tìm kiếm theo</InputLabel>
-            <Select
-                value={searchType}
-                label="Tìm kiếm theo"
-                onChange={(e) => {
-                    setSearchType(e.target.value);
-                    setClassGroup(''); // Reset lớp khi thay đổi kiểu tìm kiếm
-                }}
-                disabled={!batch}
-            >
-                <MenuItem value="class">Theo lớp</MenuItem>
-                <MenuItem value="batch">Theo khóa</MenuItem>
-            </Select>
-        </FormControl>
-    </Grid>
-    {searchType === 'class' && (
-        <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth>
-                <InputLabel>Lớp</InputLabel>
-                <Select
-                    value={classGroup}
-                    label="Lớp"
-                    onChange={(e) => setClassGroup(e.target.value)}
-                    disabled={!batch || loadingClasses}
-                >
-                    {loadingClasses ? (
-                        <MenuItem value="">
-                            <CircularProgress size={20} />
-                        </MenuItem>
-                    ) : (
-                        classOptions.map((option) => (
-                            <MenuItem key={option.id} value={option.id}>
-                                {option.ma_lop}
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Hệ đào tạo</InputLabel>
+                        <Select
+                            value={educationType}
+                            label="Hệ đào tạo"
+                            onChange={(e) => setEducationType(e.target.value)}
+                        >
+                            {educationTypeOptions.map((option) => (
+                                <MenuItem key={option.id} value={option.id}>
+                                    {option.ten_he_dao_tao}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Khóa</InputLabel>
+                        <Select
+                            value={batch}
+                            label="Khóa"
+                            onChange={(e) => setBatch(e.target.value)}
+                            disabled={!educationType || loadingBatches}
+                        >
+                            {loadingBatches ? (
+                                <MenuItem value="">
+                                    <CircularProgress size={20} />
+                                </MenuItem>
+                            ) : (
+                                batchOptions.map((option) => (
+                                    <MenuItem key={option.id} value={option.id}>
+                                        {option.ma_khoa}
+                                    </MenuItem>
+                                ))
+                            )}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Học kỳ</InputLabel>
+                        <Select
+                            value={semester}
+                            label="Học kỳ"
+                            onChange={(e) => setSemester(e.target.value)}
+                            disabled={!numberOfSemesters || loadingSemester}
+                        >
+                            <MenuItem value="">
+                                <em>Chọn học kỳ</em>
                             </MenuItem>
-                        ))
-                    )}
-                </Select>
-            </FormControl>
-        </Grid>
-    )}
-    <Grid item xs={12} sm={6} md={3}>
-        <FormControl fullWidth>
-            <InputLabel>Học phần</InputLabel>
-            <Select
-                value={course}
-                label="Học phần"
-                onChange={(e) => setCourse(e.target.value)}
-                disabled={(!classGroup && searchType === 'class') || !semester || loadingCourses}
-            >
-                {loadingCourses ? (
-                    <MenuItem value="">
-                        <CircularProgress size={20} />
-                    </MenuItem>
-                ) : (
-                    courseOptions.map((option) => (
-                        <MenuItem key={option.id} value={option.id}>
-                            {option.ten_mon_hoc || option.name || option.mon_hoc_id}
-                        </MenuItem>
-                    ))
+                            {semesterOptions.map((option) => (
+                                <MenuItem key={option.id} value={option.id}>
+                                    {option.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Tìm kiếm theo</InputLabel>
+                        <Select
+                            value={searchType}
+                            label="Tìm kiếm theo"
+                            onChange={(e) => {
+                                setSearchType(e.target.value);
+                                setClassGroup(''); // Reset lớp khi thay đổi kiểu tìm kiếm
+                            }}
+                            disabled={!batch}
+                        >
+                            <MenuItem value="class">Theo lớp</MenuItem>
+                            <MenuItem value="batch">Theo khóa</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+                {searchType === 'class' && (
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FormControl fullWidth>
+                            <InputLabel>Lớp</InputLabel>
+                            <Select
+                                value={classGroup}
+                                label="Lớp"
+                                onChange={(e) => setClassGroup(e.target.value)}
+                                disabled={!batch || loadingClasses}
+                            >
+                                {loadingClasses ? (
+                                    <MenuItem value="">
+                                        <CircularProgress size={20} />
+                                    </MenuItem>
+                                ) : (
+                                    classOptions.map((option) => (
+                                        <MenuItem key={option.id} value={option.id}>
+                                            {option.ma_lop}
+                                        </MenuItem>
+                                    ))
+                                )}
+                            </Select>
+                        </FormControl>
+                    </Grid>
                 )}
-            </Select>
-        </FormControl>
-    </Grid>
-    <Grid item xs={12} sm={6} md={3}>
-        <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SearchIcon />}
-            onClick={handleSearch}
-            sx={{ height: '56px' }}
-            disabled={(!classGroup && searchType === 'class') || !course || !batch || !semester}
-        >
-            Tìm kiếm
-        </Button>
-    </Grid>
-</Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Học phần</InputLabel>
+                        <Select
+                            value={course}
+                            label="Học phần"
+                            onChange={(e) => setCourse(e.target.value)}
+                            disabled={(!classGroup && searchType === 'class') || !semester || loadingCourses}
+                        >
+                            {loadingCourses ? (
+                                <MenuItem value="">
+                                    <CircularProgress size={20} />
+                                </MenuItem>
+                            ) : (
+                                courseOptions.map((option) => (
+                                    <MenuItem key={option.id} value={option.id}>
+                                        {option.ten_mon_hoc || option.name || option.mon_hoc_id}
+                                    </MenuItem>
+                                ))
+                            )}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SearchIcon />}
+                        onClick={handleSearch}
+                        sx={{ height: '56px' }}
+                        disabled={(!classGroup && searchType === 'class') || !course || !batch || !semester}
+                    >
+                        Tìm kiếm
+                    </Button>
+                </Grid>
+            </Grid>
 
             <Divider sx={{ my: 2 }} />
 
@@ -957,7 +1014,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                 <Button
                                     variant="contained"
                                     color="success"
-                                    onClick={() => {exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class')}}
+                                    onClick={() => { exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class') }}
                                     sx={{ boxShadow: 2 }}
                                 >
                                     Export điểm giữa kỳ
@@ -1171,16 +1228,23 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         ) : '-'}
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        <FormControlLabel
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={!!student.retakeRegistered}
-                                                                    onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
-                                                                    disabled={!canRetake || student.diem.CK2 !== null}
+                                                        <Tooltip title={
+                                                            !eligibleForRetake(student) ? 'Sinh viên phải có điểm CK1 < 4.0 để đăng ký thi lại.' :
+                                                                student.diem.CK2 !== null ? 'Đã có điểm thi lại (CK2), không thể thay đổi.' : ''
+                                                        }>
+                                                            <span>
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Checkbox
+                                                                            checked={!!student.retakeRegistered}
+                                                                            onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
+                                                                            disabled={!eligibleForRetake(student) || student.diem.CK2 !== null}
+                                                                        />
+                                                                    }
+                                                                    label=""
                                                                 />
-                                                            }
-                                                            label=""
-                                                        />
+                                                            </span>
+                                                        </Tooltip>
                                                     </TableCell>
                                                 </TableRow>
                                             );
@@ -1312,7 +1376,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         <Button
                             variant="contained"
                             color="warning" // Màu vàng cho export danh sách thi lại
-                            onClick={() => {/* Xử lý export danh sách sinh viên thi lại */ }}
+                            onClick={() => exportRetakeList(classGroup, batch, course, searchType)}
                             sx={{ boxShadow: 2 }}
                         >
                             Export danh sách thi lại
@@ -1365,16 +1429,22 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                 ) : '-'}
                                             </TableCell>
                                             <TableCell align="center">
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            checked={!!student.retakeRegistered}
-                                                            onChange={(e) => handleRetakeRegistration(student.id, e.target.checked)}
-                                                            disabled={student.diem.CK2 !== null}
+                                                <Tooltip title={
+                                                    student.diem.CK2 !== null ? 'Đã có điểm thi lại (CK2), không thể thay đổi.' : ''
+                                                }>
+                                                    <span>
+                                                        <FormControlLabel
+                                                            control={
+                                                                <Checkbox
+                                                                    checked={!!student.retakeRegistered}
+                                                                    onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
+                                                                    disabled={student.diem.CK2 !== null}
+                                                                />
+                                                            }
+                                                            label=""
                                                         />
-                                                    }
-                                                    label=""
-                                                />
+                                                    </span>
+                                                </Tooltip>
                                             </TableCell>
                                         </TableRow>
                                     );

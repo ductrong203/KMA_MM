@@ -33,6 +33,7 @@ import ManageDepartments from "./components/admin/ManageDepartment";
 import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
 import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
+import QuanLyChungChi from "./components/QuanLyChungChi/QuanLyChungChi";
 
 import { ToastContainer } from 'react-toastify';
 const App = () => {
@@ -195,6 +196,18 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["training"]}>
               <Layout Info={info} title="HỆ QUẢN LÝ ĐÀO TẠO">
                 <TrainingDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* chung chi */}
+        <Route
+          path="/training/certificates"
+          element={
+            <PrivateRoute role={role} allowedRoles={["training"]}>
+              <Layout Info={info} title="Quản lý chứng chỉ">
+                <QuanLyChungChi />
               </Layout>
             </PrivateRoute>
           }

@@ -16,6 +16,7 @@ import {
   InputLabel,
   FormControl
 } from '@mui/material';
+import { toast } from 'react-toastify';
 
 const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   const [formData, setFormData] = useState({
@@ -44,7 +45,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
- 
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors({
@@ -84,14 +85,17 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) {
+      toast.error("Vui lòng kiểm tra và điền đầy đủ thông tin hợp lệ!");
       return;
     }
 
     setLoading(true);
     try {
       await onSubmit(formData);
+      toast.success(formData.id ? "Cập nhật môn học thành công!" : "Thêm môn học mới thành công!");
+      handleClose(); // Close dialog on success
     } catch (error) {
-      console.error('Error submitting form:', error);
+      toast.error("Đã xảy ra lỗi khi lưu môn học. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -143,14 +147,14 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
             disabled={loading}
             InputProps={{ inputProps: { min: 1 } }}
           />
-         <FormControl fullWidth margin="dense">
+          <FormControl fullWidth margin="dense">
             <InputLabel>Hệ đào tạo</InputLabel>
             <Select
               multiple
               name="curriculumIds"
               value={formData.curriculumIds}
               onChange={handleCurriculumChange}
-              renderValue={(selected) => 
+              renderValue={(selected) =>
                 selected.map(id => curriculums.find(c => c.id === id)?.ten_he_dao_tao).join(', ')
               }
             >

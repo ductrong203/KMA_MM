@@ -59,6 +59,8 @@ import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
 import PhuLucBangDiem from "../Dao Tao/PhuLucBangDiem";
 import ThongKeTotNghiep from "../Dao Tao/ThongKeTotNghiep";
+import QuanLyChungChi from "../QuanLyChungChi/QuanLyChungChi";
+
 
 // Mock data
 const trainerInfo = {
@@ -138,7 +140,7 @@ function TrainingDashboard() {
 
   return (
     <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="" sx={{ py: 4 }}>
         <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
           {/* Tab chính */}
           <Tabs
@@ -206,11 +208,13 @@ function TrainingDashboard() {
                 <Tab label="Xét tốt nghiệp" />
                 <Tab label="Quản lý bằng cấp" />
                 <Tab label="Quản lý danh mục khen thưởng" />
+                <Tab label="Quản lý chứng chỉ" />
               </Tabs>
               {subTab === 0 && <StudentManagement />}
               {subTab === 1 && <DieuKienTotNghiep />}
               {subTab === 2 && <QuanLyBangCap />}
               {subTab === 3 && < QuanLyKhenKyLuat />}
+              {subTab === 4 && < QuanLyChungChi />}
             </Box>
           )}
 
@@ -220,7 +224,7 @@ function TrainingDashboard() {
           {currentTab === 3 && (
             <Box>
               <Tabs value={subTab} onChange={handleSubTabChange}>
-                <Tab label="Thống kê điểm" />
+                <Tab label="Phụ lục văn bằng" />
                 <Tab label="Thống kê tốt nghiệp" />
                 <Tab label="Báo cáo chi tiết" />
               </Tabs>
