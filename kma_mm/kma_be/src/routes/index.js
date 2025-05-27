@@ -29,6 +29,7 @@ const thoiKhoaBieuRoute = require('./thoiKhoaBieu');
 const diemRoute = require('./diem');
 const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
+const chungChiRoute = require('./chungChi');
 
 const routes = (app) => {
   app.use("/auth", authRouter);
@@ -52,6 +53,7 @@ const routes = (app) => {
   app.use('/diem', diemRoute);
   app.use('/excel', excelRoute);
   app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
+  app.use('/chung-chi', chungChiRoute);
 
 
   //   app.use("student", studentRouter);
