@@ -132,9 +132,9 @@ class SinhVienController {
 
   static async importSinhVien(req, res) {
     try {
-      const { lop_id } = req.body;
+      const { lop_id, ghi_de } = req.body;
       const filePath = req.file.path; // Giả sử sử dụng middleware như multer để upload file
-      const result = await SinhVienService.importSinhVien(lop_id, filePath);
+      const result = await SinhVienService.importSinhVien({lop_id, filePath, ghi_de});
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -157,6 +157,17 @@ class SinhVienController {
         success: false,
         message: error.message,
       });
+    }
+  }
+
+  static async kiemTraTonTai(req, res) {
+    try {
+      const { lop_id } = req.body;
+      const filePath = req.file.path; // Giả sử sử dụng middleware như multer để upload file
+      const result = await SinhVienService.kiemTraTonTai({lop_id, filePath});
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 }
