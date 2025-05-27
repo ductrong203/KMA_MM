@@ -1,7 +1,7 @@
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
-const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan } = models;
+const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao } = models;
 const ExcelJS = require('exceljs');
 const fs = require("fs");
 
