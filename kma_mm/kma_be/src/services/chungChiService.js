@@ -147,6 +147,186 @@ class ChungChiService {
       throw error;
     }
   }
+
+  static async taoChungChi(data) {
+    try {
+      const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+
+      // Kiểm tra sinh_vien_id có tồn tại
+      const sinhVien = await sinh_vien.findByPk(sinh_vien_id);
+      if (!sinhVien) {
+        throw new Error(`Sinh viên với id ${sinh_vien_id} không tồn tại`);
+      }
+
+      // Kiểm tra tinh_trang hợp lệ
+      const tinhTrangHopLe = ['tốt nghiệp', 'bình thường'];
+      if (!tinh_trang || !tinhTrangHopLe.includes(tinh_trang)) {
+        throw new Error(`Tình trạng phải là một trong các giá trị: ${tinhTrangHopLe.join(', ')}`);
+      }
+
+      // Xử lý ngay_ky_quyet_dinh
+      let ngayKyQuyetDinh = ngay_ky_quyet_dinh ? new Date(ngay_ky_quyet_dinh) : null;
+      if (ngay_ky_quyet_dinh && isNaN(ngayKyQuyetDinh.getTime())) {
+        throw new Error('Ngày ký quyết định không hợp lệ');
+      }
+
+      // Tạo chứng chỉ mới
+      const chungChiMoi = await chung_chi.create({
+        sinh_vien_id,
+        diem_trung_binh,
+        xep_loai,
+        ghi_chu,
+        so_quyet_dinh,
+        loai_chung_chi,
+        ngay_ky_quyet_dinh: ngayKyQuyetDinh,
+        tinh_trang,
+      });
+
+      // Lấy thông tin sinh viên và các bảng liên quan để trả về
+      const lopSv = await lop.findByPk(sinhVien.lop_id, {
+        attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
+      });
+
+      const khoaDaoTao = await khoa_dao_tao.findByPk(lopSv?.khoa_dao_tao_id, {
+        attributes: ['id', 'ma_khoa', 'ten_khoa', 'he_dao_tao_id'],
+      });
+
+      const danhMucDaoTao = await danh_muc_dao_tao.findByPk(khoaDaoTao?.he_dao_tao_id, {
+        attributes: ['id', 'ma_he_dao_tao', 'ten_he_dao_tao'],
+      });
+
+      // Định dạng kết quả trả về
+      const ketQua = {
+        id: chungChiMoi.id,
+        maSinhVien: sinhVien.ma_sinh_vien || '',
+        hoTen: `${sinhVien.ho_dem || ''} ${sinhVien.ten || ''}`.trim(),
+        lop: lopSv?.ma_lop || '',
+        khoaDaoTao: khoaDaoTao?.ten_khoa || '',
+        chuongTrinhDaoTao: danhMucDaoTao?.ten_he_dao_tao || '',
+        diemTrungBinh: chungChiMoi.diem_trung_binh,
+        xepLoai: chungChiMoi.xep_loai,
+        ghiChu: chungChiMoi.ghi_chu,
+        soQuyetDinh: chungChiMoi.so_quyet_dinh,
+        ngayKyQuyetDinh: chungChiMoi.ngay_ky_quyet_dinh,
+        tinhTrang: chungChiMoi.tinh_trang,
+        loaiChungChi: chungChiMoi.loai_chung_chi,
+      };
+
+      return {
+        data: ketQua,
+      };
+    } catch (error) {
+      console.error("Lỗi khi tạo chứng chỉ:", error);
+      throw error;
+    }
+  }
+
+  static async chinhSuaChungChi(id, data) {
+    try {
+      const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+
+      // Kiểm tra chứng chỉ tồn tại
+      const chungChi = await chung_chi.findByPk(id);
+      if (!chungChi) {
+        throw new Error(`Chứng chỉ với id ${id} không tồn tại`);
+      }
+
+      // Kiểm tra sinh_vien_id (nếu có)
+      if (sinh_vien_id) {
+        const sinhVien = await sinh_vien.findByPk(sinh_vien_id);
+        if (!sinhVien) {
+          throw new Error(`Sinh viên với id ${sinh_vien_id} không tồn tại`);
+        }
+      }
+
+      // Kiểm tra tinh_trang (nếu có)
+      if (tinh_trang) {
+        const tinhTrangHopLe = ['tốt nghiệp', 'bình thường'];
+        if (!tinhTrangHopLe.includes(tinh_trang)) {
+          throw new Error(`Tình trạng phải là một trong các giá trị: ${tinhTrangHopLe.join(', ')}`);
+        }
+      }
+
+      // Kiểm tra ngay_ky_quyet_dinh (nếu có)
+      let ngayKyQuyetDinh;
+      if (ngay_ky_quyet_dinh !== undefined) {
+        ngayKyQuyetDinh = ngay_ky_quyet_dinh ? new Date(ngay_ky_quyet_dinh) : null;
+        if (ngay_ky_quyet_dinh && isNaN(ngayKyQuyetDinh.getTime())) {
+          throw new Error('Ngày ký quyết định không hợp lệ');
+        }
+      }
+
+      // Cập nhật chứng chỉ
+      await chungChi.update({
+        sinh_vien_id: sinh_vien_id !== undefined ? sinh_vien_id : chungChi.sinh_vien_id,
+        diem_trung_binh: diem_trung_binh !== undefined ? diem_trung_binh : chungChi.diem_trung_binh,
+        xep_loai: xep_loai !== undefined ? xep_loai : chungChi.xep_loai,
+        ghi_chu: ghi_chu !== undefined ? ghi_chu : chungChi.ghi_chu,
+        so_quyet_dinh: so_quyet_dinh !== undefined ? so_quyet_dinh : chungChi.so_quyet_dinh,
+        loai_chung_chi: loai_chung_chi !== undefined ? loai_chung_chi : chungChi.loai_chung_chi,
+        ngay_ky_quyet_dinh: ngayKyQuyetDinh !== undefined ? ngayKyQuyetDinh : chungChi.ngay_ky_quyet_dinh,
+        tinh_trang: tinh_trang !== undefined ? tinh_trang : chungChi.tinh_trang,
+      });
+
+      // Lấy thông tin sinh viên và các bảng liên quan để trả về
+      const sinhVien = await sinh_vien.findByPk(chungChi.sinh_vien_id);
+      const lopSv = await lop.findByPk(sinhVien.lop_id, {
+        attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
+      });
+
+      const khoaDaoTao = await khoa_dao_tao.findByPk(lopSv?.khoa_dao_tao_id, {
+        attributes: ['id', 'ma_khoa', 'ten_khoa', 'he_dao_tao_id'],
+      });
+
+      const danhMucDaoTao = await danh_muc_dao_tao.findByPk(khoaDaoTao?.he_dao_tao_id, {
+        attributes: ['id', 'ma_he_dao_tao', 'ten_he_dao_tao'],
+      });
+
+      // Định dạng kết quả trả về
+      const ketQua = {
+        id: chungChi.id,
+        maSinhVien: sinhVien.ma_sinh_vien || '',
+        hoTen: `${sinhVien.ho_dem || ''} ${sinhVien.ten || ''}`.trim(),
+        lop: lopSv?.ma_lop || '',
+        khoaDaoTao: khoaDaoTao?.ten_khoa || '',
+        chuongTrinhDaoTao: danhMucDaoTao?.ten_he_dao_tao || '',
+        diemTrungBinh: chungChi.diem_trung_binh,
+        xepLoai: chungChi.xep_loai,
+        ghiChu: chungChi.ghi_chu,
+        soQuyetDinh: chungChi.so_quyet_dinh,
+        ngayKyQuyetDinh: chungChi.ngay_ky_quyet_dinh,
+        tinhTrang: chungChi.tinh_trang,
+        loaiChungChi: chungChi.loai_chung_chi,
+      };
+
+      return {
+        data: ketQua,
+      };
+    } catch (error) {
+      console.error("Lỗi khi chỉnh sửa chứng chỉ:", error);
+      throw error;
+    }
+  }
+
+  static async xoaChungChi(id) {
+    try {
+      // Kiểm tra chứng chỉ tồn tại
+      const chungChi = await chung_chi.findByPk(id);
+      if (!chungChi) {
+        throw new Error(`Chứng chỉ với id ${id} không tồn tại`);
+      }
+
+      // Xóa chứng chỉ
+      await chungChi.destroy();
+
+      return {
+        data: { id },
+      };
+    } catch (error) {
+      console.error("Lỗi khi xóa chứng chỉ:", error);
+      throw error;
+    }
+  }
 }
 
 // Export class thay vì instance
