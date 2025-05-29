@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: quanlydaotao
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    build: ./kma_be
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: 123456
+      DB_DATABASE: quanlydaotao
+      DB_HOST: mysql
+      DB_DIALECT: mysql
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./kma_fe
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
