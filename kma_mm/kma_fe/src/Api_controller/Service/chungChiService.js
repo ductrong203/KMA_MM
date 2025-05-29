@@ -20,3 +20,12 @@ export const suaChungChi = async (id, data) => {
 export const xoaChungChi = async (id) => {
 
 };
+export const laydanhsachloaichungchi = async () => {
+    try {
+        const response = await api.get("/chung-chi/loai-chung-chi");
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching chung chi types:", error);
+        throw error;
+    }
+}

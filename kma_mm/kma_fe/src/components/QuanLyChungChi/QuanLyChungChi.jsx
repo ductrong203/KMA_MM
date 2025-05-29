@@ -1,16 +1,23 @@
-// import { useState, useEffect } from "react";
+
+
+// import React, { useState, useEffect } from "react";
 // import {
 //     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container,
 //     TextField, InputAdornment, Pagination as MuiPagination, Table, TableBody, TableCell,
-//     TableContainer, TableHead, TableRow, IconButton, Tooltip, createTheme, ThemeProvider
+//     TableContainer, TableHead, TableRow, IconButton, Tooltip, createTheme, ThemeProvider,
+//     Dialog, DialogActions, DialogContent, DialogTitle // Thêm các components cho dialog
 // } from "@mui/material";
 // import SearchIcon from '@mui/icons-material/Search';
 // import DeleteIcon from '@mui/icons-material/Delete';
 // import InfoIcon from '@mui/icons-material/Info';
+// import AddIcon from '@mui/icons-material/Add'; // Thêm icon
+// import FileUploadIcon from '@mui/icons-material/FileUpload'; // Thêm icon
+// import FileDownloadIcon from '@mui/icons-material/FileDownload'; // Thêm icon
 // import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
 // import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 // import { fetchLopByKhoaDaoTao } from "../../Api_controller/Service/thoiKhoaBieuService";
-
+// import { laydanhsachloaichungchi } from "../../Api_controller/Service/chungChiService";
+// import { toast } from "react-toastify";
 // // Mock Data for demonstration
 // const mockSinhVien = [
 //     {
@@ -154,6 +161,21 @@
 //     const [sinhVienList, setSinhVienList] = useState([]);
 //     const [filteredSinhVien, setFilteredSinhVien] = useState([]);
 
+//     // State mới cho dialog thêm học viên
+//     const [openDialog, setOpenDialog] = useState(false);
+//     const [newData, setNewData] = useState({
+//         ma_sinh_vien: "",
+//         ho_ten: "",
+//         diem_tb: "",
+//         xep_loai: "",
+//         ghi_chu: "",
+//         so_quyet_dinh: "",
+//         ngay_ky_qd: "",
+//         tinh_trang: "Bình thường",
+//         da_dat: true,
+//         loai_chung_chi: "GDQP"
+//     });
+
 //     // Pagination
 //     const [page, setPage] = useState(1);
 //     const [pageSize] = useState(10);
@@ -162,42 +184,110 @@
 //     // Loading state
 //     const [isLoading, setIsLoading] = useState(false);
 
+
+
 //     // Certificate types
 //     const loaiChungChiOptions = [
 //         { value: "GDQP", label: "Chứng chỉ GDQP" },
 //         { value: "TIENGANH", label: "Chứng chỉ Tiếng Anh" }
 //     ];
 
+
+// // Hàm thêm mới chứng chỉ
+// const handleSubmitNew = async () => {
+//     try {
+//         setIsLoading(true);
+//         // TODO: Thay thế bằng API thực tế khi có
+//         const newItem = {
+//             ...newData,
+//             id: Date.now(),
+//             lop_id: lopIdFilter || 201,
+//         };
+
+//         // Giả lập API call
+//         // await themChungChi(newItem);
+
+//         const updatedList = [...sinhVienList, newItem];
+//         setSinhVienList(updatedList);
+//         filterSinhVien(updatedList);
+//         toast.success("Thêm chứng chỉ thành công!");
+//         handleCloseDialog();
+//     } catch (error) {
+//         console.error("Lỗi khi thêm chứng chỉ:", error);
+//         toast.error("Không thể thêm chứng chỉ");
+//     } finally {
+//         setIsLoading(false);
+//     }
+// };
+
+// // Hàm xóa chứng chỉ
+// const handleDelete = async (id) => {
+//     if (window.confirm("Bạn có chắc chắn muốn xóa bản ghi này?")) {
+//         try {
+//             setIsLoading(true);
+//             // TODO: Thay thế bằng API thực tế khi có
+//             // await xoaChungChi(id);
+
+//             const updatedList = sinhVienList.filter(sv => sv.id !== id);
+//             setSinhVienList(updatedList);
+//             filterSinhVien(updatedList);
+//             toast.success("Xóa chứng chỉ thành công!");
+//         } catch (error) {
+//             console.error("Lỗi khi xóa chứng chỉ:", error);
+//             toast.error("Không thể xóa chứng chỉ");
+//         } finally {
+//             setIsLoading(false);
+//         }
+//     }
+// };
+
+
+// const findLopName = (id) => originalLopList.find(item => item.id === id)?.ma_lop || "Lớp không xác định";
+// const findHeDaoTaoName = (id) => HeDaoTao.find(item => item.id === id)?.ten_he_dao_tao || "Hệ đào tạo không xác định";
+// const findKhoaDaoTaoName = (id) => khoaDaoTao.find(item => item.id === id)?.ten_khoa || "Khóa đào tạo không xác định";
+
+
+//     // Thêm state cho loại chứng chỉ
+//     const [loaiChungChiList, setLoaiChungChiList] = useState(loaiChungChiOptions); // Mặc định là GDQP
 //     // Initial data loading
 //     useEffect(() => {
 //         const fetchInitialData = async () => {
 //             setIsLoading(true);
 //             try {
-//                 // Mock fetch HeDaoTao
-//                 const heDaoTao = [
-//                     { id: 401, ten_he_dao_tao: "Đại học chính quy" },
-//                     { id: 402, ten_he_dao_tao: "Đại học liên thông" },
-//                     { id: 403, ten_he_dao_tao: "Cao đẳng" }
-//                 ];
+//                 // Gọi các API song song để tối ưu thời gian tải
+//                 const [loaiChungChiRes, heDaoTaoRes, lopRes] = await Promise.all([
+//                     laydanhsachloaichungchi(),
+//                     fetchDanhSachHeDaoTao(),
+//                     getDanhSachLop()
+//                 ]);
 
-//                 // Mock fetch Lop
-//                 const lop = [
-//                     { id: 201, ma_lop: "AT14AT", khoa_dao_tao_id: 301 },
-//                     { id: 202, ma_lop: "AT13AT", khoa_dao_tao_id: 301 },
-//                     { id: 203, ma_lop: "AT12AT", khoa_dao_tao_id: 302 },
-//                     { id: 204, ma_lop: "AT11AT", khoa_dao_tao_id: 303 }
-//                 ];
+//                 // Xử lý response loại chứng chỉ
+//                 if (loaiChungChiRes && loaiChungChiRes.thongBao === "Lấy danh sách loại chứng chỉ thành công") {
+//                     const formattedList = loaiChungChiRes.data.map(item => ({
+//                         value: item,
+//                         label: item
+//                     }));
+//                     setLoaiChungChiList(formattedList);
+//                 } else {
+//                     console.error("Không thể tải danh sách loại chứng chỉ");
+//                     setLoaiChungChiList([
+//                         { value: "Chuẩn đầu ra TA", label: "Chuẩn đầu ra TA" },
+//                         { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" }
+//                     ]);
+//                 }
 
-//                 setHeDaoTao(heDaoTao);
-//                 setOriginalLopList(lop);
-//                 setLopListView(lop);
+//                 // Set data từ API
+//                 setHeDaoTao(heDaoTaoRes);
+//                 setOriginalLopList(lopRes);
+//                 setLopListView(lopRes);
+
+//                 // TODO: Thay thế mockSinhVien bằng API thực tế khi có
 //                 setSinhVienList(mockSinhVien);
-
-//                 // Initial filtering
 //                 filterSinhVien(mockSinhVien);
 
 //             } catch (error) {
 //                 console.error("Lỗi khi tải dữ liệu ban đầu:", error);
+//                 toast.error("Có lỗi xảy ra khi tải dữ liệu");
 //             } finally {
 //                 setIsLoading(false);
 //             }
@@ -206,37 +296,47 @@
 //         fetchInitialData();
 //     }, []);
 
-//     // Handle Hệ đào tạo filter change
 //     useEffect(() => {
-//         if (heDaoTaoFilter) {
-//             // Mock fetch khoa dao tao by he dao tao
-//             const mockKhoaDaoTao = [
-//                 { id: 301, ten_khoa: "Khóa AT14", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2020-2024" },
-//                 { id: 302, ten_khoa: "Khóa AT13", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2019-2023" },
-//                 { id: 303, ten_khoa: "Khóa AT12", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2018-2022" },
-//                 { id: 304, ten_khoa: "Khóa AT11", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2017-2021" }
-//             ];
+//         const fetchKhoaDaoTao = async () => {
+//             if (heDaoTaoFilter) {
+//                 try {
+//                     const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(heDaoTaoFilter);
+//                     setKhoaDaoTao(khoaDaoTaoData);
+//                 } catch (error) {
+//                     console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+//                     toast.error("Không thể lấy danh sách khóa đào tạo");
+//                 }
+//             } else {
+//                 setKhoaDaoTao([]);
+//                 setKhoaDaoTaoFilter("");
+//                 setLopIdFilter("");
+//                 setLopListView(originalLopList);
+//             }
+//         };
 
-//             const filteredKhoa = mockKhoaDaoTao.filter(k => k.he_dao_tao_id == heDaoTaoFilter);
-//             setKhoaDaoTao(filteredKhoa);
-//         } else {
-//             setKhoaDaoTao([]);
-//             setKhoaDaoTaoFilter("");
-//             setLopIdFilter("");
-//             setLopListView(originalLopList);
-//         }
+//         fetchKhoaDaoTao();
 //     }, [heDaoTaoFilter, originalLopList]);
 
-//     // Handle Khóa đào tạo filter change
+
+
+//     //khóa đào tạo thay đổi thì lấy danh sách lớp theo khóa đào tạo
 //     useEffect(() => {
-//         if (khoaDaoTaoFilter) {
-//             // Filter lop by khoa dao tao
-//             const filteredLop = originalLopList.filter(lop => lop.khoa_dao_tao_id == khoaDaoTaoFilter);
-//             setLopListView(filteredLop);
-//         } else {
-//             setLopIdFilter("");
-//             setLopListView(originalLopList);
-//         }
+//         const fetchLopByKhoa = async () => {
+//             if (khoaDaoTaoFilter) {
+//                 try {
+//                     const lopData = await fetchLopByKhoaDaoTao(khoaDaoTaoFilter);
+//                     setLopListView(lopData);
+//                 } catch (error) {
+//                     console.error("Lỗi khi lấy danh sách lớp:", error);
+//                     toast.error("Không thể lấy danh sách lớp");
+//                 }
+//             } else {
+//                 setLopIdFilter("");
+//                 setLopListView(originalLopList);
+//             }
+//         };
+
+//         fetchLopByKhoa();
 //     }, [khoaDaoTaoFilter, originalLopList]);
 
 //     // Filter sinh vien based on all criteria
@@ -317,13 +417,74 @@
 //         // trangThai and loaiChungChi are kept
 //     };
 
+//     // Hàm xử lý cho dialog thêm học viên
+//     const handleOpenDialog = () => {
+//         setOpenDialog(true);
+//         setNewData({
+//             ...newData,
+//             loai_chung_chi: loaiChungChi
+//         });
+//     };
+
+//     const handleCloseDialog = () => {
+//         setOpenDialog(false);
+//     };
+
+//     const handleInputChange = (e) => {
+//         const { name, value } = e.target;
+//         setNewData({
+//             ...newData,
+//             [name]: value
+//         });
+//     };
+
+//     const handleSubmitNew = () => {
+//         // Giả lập thêm mới
+//         const newItem = {
+//             ...newData,
+//             id: Date.now(), // Tạm dùng timestamp làm id
+//             lop_id: lopIdFilter || 201, // Default hoặc selected
+//         };
+
+//         const updatedList = [...sinhVienList, newItem];
+//         setSinhVienList(updatedList);
+//         filterSinhVien(updatedList);
+
+//         handleCloseDialog();
+//     };
+
 //     return (
 //         <ThemeProvider theme={theme}>
 //             <Container maxWidth="" sx={{ py: 4 }}>
 //                 <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-//                     {/* <Typography variant="h4" color="primary" gutterBottom textAlign="center">
-//                         Quản Lý Chứng Chỉ
-//                     </Typography> */}
+//                     {/* Thêm nút thêm mới + import/export ở đây */}
+//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+//                         <Button
+//                             variant="contained"
+//                             color="primary"
+//                             startIcon={<AddIcon />}
+//                             onClick={handleOpenDialog}
+//                         >
+//                             Thêm học viên
+//                         </Button>
+
+//                         <Box sx={{ display: 'flex', gap: 2 }}>
+//                             <Button
+//                                 variant="contained"
+//                                 color="secondary"
+//                                 startIcon={<FileUploadIcon />}
+//                             >
+//                                 Import
+//                             </Button>
+//                             <Button
+//                                 variant="contained"
+//                                 color="success"
+//                                 startIcon={<FileDownloadIcon />}
+//                             >
+//                                 Export
+//                             </Button>
+//                         </Box>
+//                     </Box>
 
 //                     {/* Filter Section */}
 //                     <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, backgroundColor: "#fff" }}>
@@ -336,7 +497,7 @@
 //                                         onChange={(e) => setLoaiChungChi(e.target.value)}
 //                                         label="Loại chứng chỉ"
 //                                     >
-//                                         {loaiChungChiOptions.map((option) => (
+//                                         {loaiChungChiList.map((option) => (
 //                                             <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
 //                                         ))}
 //                                     </Select>
@@ -528,7 +689,184 @@
 //                         </Box>
 //                     )}
 //                 </Paper>
+
+//                 {/* Import/Export Section - Thêm mới ở dưới bảng */}
+//                 {/* <Paper elevation={2} sx={{ p: 2, mt: 3, borderRadius: 2 }}>
+//                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+//                         <Button
+//                             variant="contained"
+//                             component="label"
+//                             startIcon={<FileUploadIcon />}
+//                             size="medium"
+//                         >
+//                             Chọn File
+//                             <input type="file" hidden />
+//                         </Button>
+//                         <TextField
+//                             size="small"
+//                             label="Ngày cấp theo dạng"
+//                             placeholder="ngày/tháng/năm"
+//                             sx={{ width: 180 }}
+//                         />
+//                         <Button
+//                             variant="contained"
+//                             size="medium"
+//                         >
+//                             Import q.định
+//                         </Button>
+//                         <FormControl size="small" sx={{ minWidth: 180 }}>
+//                             <InputLabel>Import c.chỉ vào HK</InputLabel>
+//                             <Select
+//                                 label="Import c.chỉ vào HK"
+//                                 defaultValue="2023_2024_1"
+//                             >
+//                                 <MenuItem value="2023_2024_1">2023_2024_1</MenuItem>
+//                                 <MenuItem value="2023_2024_2">2023_2024_2</MenuItem>
+//                                 <MenuItem value="2024_2025_1">2024_2025_1</MenuItem>
+//                             </Select>
+//                         </FormControl>
+//                         <Button
+//                             variant="contained"
+//                             color="success"
+//                             sx={{ ml: 'auto' }}
+//                         >
+//                             Cập nhật
+//                         </Button>
+//                     </Box>
+//                 </Paper> */}
 //             </Container>
+
+//             {/* Dialog thêm mới học viên */}
+//             <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="md">
+//                 <DialogTitle>Thêm học viên đạt chứng chỉ</DialogTitle>
+//                 <DialogContent>
+//                     <Grid container spacing={2} sx={{ mt: 1 }}>
+//                         <Grid item xs={12} md={6}>
+//                             <TextField
+//                                 name="ma_sinh_vien"
+//                                 label="Mã sinh viên"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 size="small"
+//                                 value={newData.ma_sinh_vien}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <TextField
+//                                 name="ho_ten"
+//                                 label="Họ và tên"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 size="small"
+//                                 value={newData.ho_ten}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <TextField
+//                                 name="diem_tb"
+//                                 label="Điểm trung bình"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 size="small"
+//                                 type="number"
+//                                 value={newData.diem_tb}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <FormControl fullWidth size="small">
+//                                 <InputLabel>Xếp loại</InputLabel>
+//                                 <Select
+//                                     name="xep_loai"
+//                                     value={newData.xep_loai}
+//                                     label="Xếp loại"
+//                                     onChange={handleInputChange}
+//                                 >
+//                                     <MenuItem value="Xuất sắc">Xuất sắc</MenuItem>
+//                                     <MenuItem value="Giỏi">Giỏi</MenuItem>
+//                                     <MenuItem value="Khá">Khá</MenuItem>
+//                                     <MenuItem value="Trung bình">Trung bình</MenuItem>
+//                                 </Select>
+//                             </FormControl>
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <TextField
+//                                 name="so_quyet_dinh"
+//                                 label="Số quyết định"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 size="small"
+//                                 value={newData.so_quyet_dinh}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <TextField
+//                                 name="ngay_ky_qd"
+//                                 label="Ngày ký quyết định"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 size="small"
+//                                 placeholder="DD/MM/YYYY"
+//                                 value={newData.ngay_ky_qd}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <FormControl fullWidth size="small">
+//                                 <InputLabel>Tình trạng</InputLabel>
+//                                 <Select
+//                                     name="tinh_trang"
+//                                     value={newData.tinh_trang}
+//                                     label="Tình trạng"
+//                                     onChange={handleInputChange}
+//                                 >
+//                                     <MenuItem value="Bình thường">Bình thường</MenuItem>
+//                                     <MenuItem value="Tốt Nghiệp">Tốt Nghiệp</MenuItem>
+//                                     <MenuItem value="TB Nghiệp">TB Nghiệp</MenuItem>
+//                                 </Select>
+//                             </FormControl>
+//                         </Grid>
+//                         <Grid item xs={12} md={6}>
+//                             <FormControl fullWidth size="small">
+//                                 <InputLabel>Trạng thái đạt</InputLabel>
+//                                 <Select
+//                                     name="da_dat"
+//                                     value={newData.da_dat ? 'true' : 'false'}
+//                                     label="Trạng thái đạt"
+//                                     onChange={(e) => handleInputChange({
+//                                         target: { name: 'da_dat', value: e.target.value === 'true' }
+//                                     })}
+//                                 >
+//                                     <MenuItem value={'true'}>Đã đạt</MenuItem>
+//                                     <MenuItem value={'false'}>Chưa đạt</MenuItem>
+//                                 </Select>
+//                             </FormControl>
+//                         </Grid>
+//                         <Grid item xs={12}>
+//                             <TextField
+//                                 name="ghi_chu"
+//                                 label="Ghi chú"
+//                                 variant="outlined"
+//                                 fullWidth
+//                                 multiline
+//                                 rows={2}
+//                                 size="small"
+//                                 value={newData.ghi_chu}
+//                                 onChange={handleInputChange}
+//                             />
+//                         </Grid>
+//                     </Grid>
+//                 </DialogContent>
+//                 <DialogActions>
+//                     <Button onClick={handleCloseDialog}>Hủy</Button>
+//                     <Button variant="contained" onClick={handleSubmitNew} color="primary">
+//                         Thêm
+//                     </Button>
+//                 </DialogActions>
+//             </Dialog>
 //         </ThemeProvider>
 //     );
 // };
@@ -543,24 +881,55 @@
 
 
 
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container,
     TextField, InputAdornment, Pagination as MuiPagination, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, IconButton, Tooltip, createTheme, ThemeProvider,
-    Dialog, DialogActions, DialogContent, DialogTitle // Thêm các components cho dialog
+    Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
-import AddIcon from '@mui/icons-material/Add'; // Thêm icon
-import FileUploadIcon from '@mui/icons-material/FileUpload'; // Thêm icon
-import FileDownloadIcon from '@mui/icons-material/FileDownload'; // Thêm icon
+import AddIcon from '@mui/icons-material/Add';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
-import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 import { fetchLopByKhoaDaoTao } from "../../Api_controller/Service/thoiKhoaBieuService";
+import { laydanhsachloaichungchi } from "../../Api_controller/Service/chungChiService";
+import { toast } from "react-toastify";
 
-// Mock Data for demonstration
+// Constants
+const DEFAULT_CHUNG_CHI_OPTIONS = [
+    { value: "Chuẩn đầu ra TA", label: "Chuẩn đầu ra TA" },
+    { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" }
+];
+
+const TRANG_THAI_OPTIONS = [
+    { value: "all", label: "Tất cả sinh viên" },
+    { value: "Bình thường", label: "Sinh viên đang học" },
+    { value: "Tốt nghiệp", label: "Sinh viên đã tốt nghiệp" }
+];
+
+const TINH_TRANG_OPTIONS = [
+    { value: "Bình thường", label: "Bình thường" },
+    { value: "Tốt nghiệp", label: "Tốt nghiệp" }
+];
+
+const INIT_NEW_DATA = {
+    ma_sinh_vien: "",
+    ho_ten: "",
+    diem_tb: "",
+    xep_loai: "",
+    ghi_chu: "",
+    so_quyet_dinh: "",
+    ngay_ky_qd: "",
+    tinh_trang: "Bình thường",
+    loai_chung_chi: "Chuẩn đầu ra TA"
+};
+
+// Mock Data
 const mockSinhVien = [
     {
         id: 1,
@@ -573,8 +942,7 @@ const mockSinhVien = [
         ngay_ky_qd: "28/07/2020",
         tinh_trang: "Bình thường",
         lop_id: 201,
-        da_dat: true,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 2,
@@ -585,10 +953,9 @@ const mockSinhVien = [
         ghi_chu: "",
         so_quyet_dinh: "67K/QĐ-HVM",
         ngay_ky_qd: "28/07/2020",
-        tinh_trang: "TB Nghiệp",
+        tinh_trang: "Tốt nghiệp",
         lop_id: 201,
-        da_dat: true,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 3,
@@ -599,10 +966,9 @@ const mockSinhVien = [
         ghi_chu: "",
         so_quyet_dinh: "67K/QĐ-HVM",
         ngay_ky_qd: "28/07/2020",
-        tinh_trang: "Tốt Nghiệp",
+        tinh_trang: "Tốt nghiệp",
         lop_id: 201,
-        da_dat: true,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 4,
@@ -613,10 +979,9 @@ const mockSinhVien = [
         ghi_chu: "Môn không đạt: Giáo dục thể chất 2(0), Giáo dục thể chất 3(0), DTB Không đạt: 2.27",
         so_quyet_dinh: "",
         ngay_ky_qd: "",
-        tinh_trang: "Tốt Nghiệp",
+        tinh_trang: "bình thường",
         lop_id: 202,
-        da_dat: false,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 5,
@@ -629,8 +994,7 @@ const mockSinhVien = [
         ngay_ky_qd: "",
         tinh_trang: "Bình thường",
         lop_id: 202,
-        da_dat: false,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 6,
@@ -643,8 +1007,7 @@ const mockSinhVien = [
         ngay_ky_qd: "",
         tinh_trang: "Bình thường",
         lop_id: 203,
-        da_dat: false,
-        loai_chung_chi: "GDQP"
+        loai_chung_chi: "Chuẩn đầu ra TA"
     },
     {
         id: 7,
@@ -657,8 +1020,7 @@ const mockSinhVien = [
         ngay_ky_qd: "",
         tinh_trang: "Bình thường",
         lop_id: 203,
-        da_dat: false,
-        loai_chung_chi: "TIENGANH"
+        loai_chung_chi: "Chứng chỉ GDTC"
     },
     {
         id: 8,
@@ -669,10 +1031,9 @@ const mockSinhVien = [
         ghi_chu: "",
         so_quyet_dinh: "",
         ngay_ky_qd: "",
-        tinh_trang: "Bình thường",
+        tinh_trang: "Tốt nghiệp",
         lop_id: 204,
-        da_dat: true,
-        loai_chung_chi: "TIENGANH"
+        loai_chung_chi: "Chứng chỉ GDTC"
     }
 ];
 
@@ -685,146 +1046,59 @@ const theme = createTheme({
 });
 
 const QuanLyChungChi = () => {
-    // Filter states
-    const [heDaoTaoFilter, setHeDaoTaoFilter] = useState("");
-    const [khoaDaoTaoFilter, setKhoaDaoTaoFilter] = useState("");
-    const [lopIdFilter, setLopIdFilter] = useState("");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [loaiChungChi, setLoaiChungChi] = useState("GDQP"); // Default to GDQP
-    const [trangThai, setTrangThai] = useState("all"); // all, da_dat, chua_dat
-
-    // Data for filters
-    const [HeDaoTao, setHeDaoTao] = useState([]);
-    const [khoaDaoTao, setKhoaDaoTao] = useState([]);
-    const [originalLopList, setOriginalLopList] = useState([]);
-    const [lopListView, setLopListView] = useState([]);
-
-    // Student data
-    const [sinhVienList, setSinhVienList] = useState([]);
-    const [filteredSinhVien, setFilteredSinhVien] = useState([]);
-
-    // State mới cho dialog thêm học viên
-    const [openDialog, setOpenDialog] = useState(false);
-    const [newData, setNewData] = useState({
-        ma_sinh_vien: "",
-        ho_ten: "",
-        diem_tb: "",
-        xep_loai: "",
-        ghi_chu: "",
-        so_quyet_dinh: "",
-        ngay_ky_qd: "",
-        tinh_trang: "Bình thường",
-        da_dat: true,
-        loai_chung_chi: "GDQP"
+    // Consolidated filter state
+    const [filters, setFilters] = useState({
+        heDaoTao: "",
+        khoaDaoTao: "",
+        lopId: "",
+        searchTerm: "",
+        loaiChungChi: "Chuẩn đầu ra TA",
+        trangThai: "all"
     });
 
-    // Pagination
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
-    const [totalPages, setTotalPages] = useState(1);
+    // Data states
+    const [data, setData] = useState({
+        heDaoTao: [],
+        khoaDaoTao: [],
+        lopList: [],
+        originalLopList: [],
+        sinhVienList: [],
+        loaiChungChiList: DEFAULT_CHUNG_CHI_OPTIONS
+    });
 
-    // Loading state
-    const [isLoading, setIsLoading] = useState(false);
+    // UI states
+    const [ui, setUi] = useState({
+        isLoading: false,
+        openDialog: false,
+        page: 1,
+        pageSize: 10,
+        totalPages: 1
+    });
 
-    // Certificate types
-    const loaiChungChiOptions = [
-        { value: "GDQP", label: "Chứng chỉ GDQP" },
-        { value: "TIENGANH", label: "Chứng chỉ Tiếng Anh" }
-    ];
+    // Form data
+    const [newData, setNewData] = useState(INIT_NEW_DATA);
+    const [filteredSinhVien, setFilteredSinhVien] = useState([]);
 
-    // Initial data loading
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            setIsLoading(true);
-            try {
-                // Mock fetch HeDaoTao
-                const heDaoTao = [
-                    { id: 401, ten_he_dao_tao: "Đại học chính quy" },
-                    { id: 402, ten_he_dao_tao: "Đại học liên thông" },
-                    { id: 403, ten_he_dao_tao: "Cao đẳng" }
-                ];
+    // Memoized filtered data
+    const filterSinhVien = useCallback((sinhVienData = data.sinhVienList) => {
+        let filtered = [...sinhVienData];
 
-                // Mock fetch Lop
-                const lop = [
-                    { id: 201, ma_lop: "AT14AT", khoa_dao_tao_id: 301 },
-                    { id: 202, ma_lop: "AT13AT", khoa_dao_tao_id: 301 },
-                    { id: 203, ma_lop: "AT12AT", khoa_dao_tao_id: 302 },
-                    { id: 204, ma_lop: "AT11AT", khoa_dao_tao_id: 303 }
-                ];
+        // Apply filters
+        filtered = filtered.filter(sv => sv.loai_chung_chi === filters.loaiChungChi);
 
-                setHeDaoTao(heDaoTao);
-                setOriginalLopList(lop);
-                setLopListView(lop);
-                setSinhVienList(mockSinhVien);
-
-                // Initial filtering
-                filterSinhVien(mockSinhVien);
-
-            } catch (error) {
-                console.error("Lỗi khi tải dữ liệu ban đầu:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchInitialData();
-    }, []);
-
-    // Handle Hệ đào tạo filter change
-    useEffect(() => {
-        if (heDaoTaoFilter) {
-            // Mock fetch khoa dao tao by he dao tao
-            const mockKhoaDaoTao = [
-                { id: 301, ten_khoa: "Khóa AT14", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2020-2024" },
-                { id: 302, ten_khoa: "Khóa AT13", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2019-2023" },
-                { id: 303, ten_khoa: "Khóa AT12", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2018-2022" },
-                { id: 304, ten_khoa: "Khóa AT11", he_dao_tao_id: 401, so_ky_hoc: 8, nam_hoc: "2017-2021" }
-            ];
-
-            const filteredKhoa = mockKhoaDaoTao.filter(k => k.he_dao_tao_id == heDaoTaoFilter);
-            setKhoaDaoTao(filteredKhoa);
-        } else {
-            setKhoaDaoTao([]);
-            setKhoaDaoTaoFilter("");
-            setLopIdFilter("");
-            setLopListView(originalLopList);
-        }
-    }, [heDaoTaoFilter, originalLopList]);
-
-    // Handle Khóa đào tạo filter change
-    useEffect(() => {
-        if (khoaDaoTaoFilter) {
-            // Filter lop by khoa dao tao
-            const filteredLop = originalLopList.filter(lop => lop.khoa_dao_tao_id == khoaDaoTaoFilter);
-            setLopListView(filteredLop);
-        } else {
-            setLopIdFilter("");
-            setLopListView(originalLopList);
-        }
-    }, [khoaDaoTaoFilter, originalLopList]);
-
-    // Filter sinh vien based on all criteria
-    const filterSinhVien = (data = sinhVienList) => {
-        let filtered = [...data];
-
-        // Filter by certificate type
-        filtered = filtered.filter(sv => sv.loai_chung_chi === loaiChungChi);
-
-        // Filter by he dao tao -> khoa dao tao -> lop (when selected)
-        if (lopIdFilter) {
-            filtered = filtered.filter(sv => sv.lop_id == lopIdFilter);
+        if (filters.lopId) {
+            filtered = filtered.filter(sv => sv.lop_id == filters.lopId);
         }
 
-        // Filter by pass status
-        if (trangThai === 'da_dat') {
-            filtered = filtered.filter(sv => sv.da_dat);
-        } else if (trangThai === 'chua_dat') {
-            filtered = filtered.filter(sv => !sv.da_dat);
+        // Filter by tinh_trang instead of da_dat
+        if (filters.trangThai === 'Bình thường') {
+            filtered = filtered.filter(sv => sv.tinh_trang === 'Bình thường');
+        } else if (filters.trangThai === 'Tốt nghiệp') {
+            filtered = filtered.filter(sv => sv.tinh_trang === 'Tốt nghiệp');
         }
 
-        // Search by name or student ID
-        if (searchTerm) {
-            const search = searchTerm.toLowerCase();
+        if (filters.searchTerm) {
+            const search = filters.searchTerm.toLowerCase();
             filtered = filtered.filter(sv =>
                 sv.ho_ten.toLowerCase().includes(search) ||
                 sv.ma_sinh_vien.toLowerCase().includes(search)
@@ -832,96 +1106,220 @@ const QuanLyChungChi = () => {
         }
 
         // Pagination
-        setTotalPages(Math.ceil(filtered.length / pageSize));
+        const totalPages = Math.ceil(filtered.length / ui.pageSize);
+        setUi(prev => ({ ...prev, totalPages }));
 
-        // Slice for current page
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
+        const startIndex = (ui.page - 1) * ui.pageSize;
+        const endIndex = startIndex + ui.pageSize;
         setFilteredSinhVien(filtered.slice(startIndex, endIndex));
 
         // Reset page if no results on current page
         if (filtered.length > 0 && startIndex >= filtered.length) {
-            setPage(1);
+            setUi(prev => ({ ...prev, page: 1 }));
         }
-    };
+    }, [filters, ui.page, ui.pageSize, data.sinhVienList]);
 
-    // Apply filters when parameters change
+    // API calls
+    const fetchInitialData = useCallback(async () => {
+        setUi(prev => ({ ...prev, isLoading: true }));
+        try {
+            const [loaiChungChiRes, heDaoTaoRes, lopRes] = await Promise.all([
+                laydanhsachloaichungchi(),
+                fetchDanhSachHeDaoTao(),
+                // getDanhSachLop() // Uncomment when available
+            ]);
+
+            // Process certificate types
+            let loaiChungChiList = DEFAULT_CHUNG_CHI_OPTIONS;
+            if (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0) {
+                loaiChungChiList = loaiChungChiRes.data.map(item => ({
+                    value: item,
+                    label: item
+                }));
+            }
+
+            setData(prev => ({
+                ...prev,
+                heDaoTao: heDaoTaoRes || [],
+                originalLopList: lopRes || [],
+                lopList: lopRes || [],
+                sinhVienList: mockSinhVien, // Replace with API when available
+                loaiChungChiList
+            }));
+
+            filterSinhVien(mockSinhVien);
+        } catch (error) {
+            console.error("Lỗi khi tải dữ liệu ban đầu:", error);
+            toast.error("Có lỗi xảy ra khi tải dữ liệu");
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
+        }
+    }, [filterSinhVien]);
+
+    const fetchKhoaDaoTao = useCallback(async (heDaoTaoId) => {
+        if (!heDaoTaoId) {
+            setData(prev => ({ ...prev, khoaDaoTao: [], lopList: prev.originalLopList }));
+            setFilters(prev => ({ ...prev, khoaDaoTao: "", lopId: "" }));
+            return;
+        }
+
+        try {
+            const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(heDaoTaoId);
+            setData(prev => ({ ...prev, khoaDaoTao: khoaDaoTaoData || [] }));
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+            toast.error("Không thể lấy danh sách khóa đào tạo");
+        }
+    }, []);
+
+    const fetchLopByKhoa = useCallback(async (khoaDaoTaoId) => {
+        if (!khoaDaoTaoId) {
+            setData(prev => ({ ...prev, lopList: prev.originalLopList }));
+            setFilters(prev => ({ ...prev, lopId: "" }));
+            return;
+        }
+
+        try {
+            const lopData = await fetchLopByKhoaDaoTao(khoaDaoTaoId);
+            setData(prev => ({ ...prev, lopList: lopData || [] }));
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách lớp:", error);
+            toast.error("Không thể lấy danh sách lớp");
+        }
+    }, []);
+
+    // Event handlers
+    const handleFilterChange = useCallback((filterName, value) => {
+        setFilters(prev => ({ ...prev, [filterName]: value }));
+
+        // Handle cascading filters
+        if (filterName === 'heDaoTao') {
+            fetchKhoaDaoTao(value);
+        } else if (filterName === 'khoaDaoTao') {
+            fetchLopByKhoa(value);
+        }
+    }, [fetchKhoaDaoTao, fetchLopByKhoa]);
+
+    const handlePageChange = useCallback((event, value) => {
+        setUi(prev => ({ ...prev, page: value }));
+    }, []);
+
+    const handleApplyFilter = useCallback(() => {
+        setUi(prev => ({ ...prev, page: 1 }));
+        filterSinhVien();
+    }, [filterSinhVien]);
+
+    const handleClearFilter = useCallback(() => {
+        setFilters(prev => ({
+            ...prev,
+            heDaoTao: "",
+            khoaDaoTao: "",
+            lopId: "",
+            searchTerm: ""
+        }));
+        setUi(prev => ({ ...prev, page: 1 }));
+        setData(prev => ({ ...prev, khoaDaoTao: [], lopList: prev.originalLopList }));
+    }, []);
+
+    const handleSubmitNew = useCallback(async () => {
+        try {
+            setUi(prev => ({ ...prev, isLoading: true }));
+
+            const newItem = {
+                ...newData,
+                id: Date.now(),
+                lop_id: filters.lopId || 201,
+            };
+
+            const updatedList = [...data.sinhVienList, newItem];
+            setData(prev => ({ ...prev, sinhVienList: updatedList }));
+            filterSinhVien(updatedList);
+
+            toast.success("Thêm chứng chỉ thành công!");
+            setUi(prev => ({ ...prev, openDialog: false }));
+            setNewData(INIT_NEW_DATA);
+        } catch (error) {
+            console.error("Lỗi khi thêm chứng chỉ:", error);
+            toast.error("Không thể thêm chứng chỉ");
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
+        }
+    }, [newData, filters.lopId, data.sinhVienList, filterSinhVien]);
+
+    const handleDelete = useCallback(async (id) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xóa bản ghi này?")) return;
+
+        try {
+            setUi(prev => ({ ...prev, isLoading: true }));
+
+            const updatedList = data.sinhVienList.filter(sv => sv.id !== id);
+            setData(prev => ({ ...prev, sinhVienList: updatedList }));
+            filterSinhVien(updatedList);
+
+            toast.success("Xóa chứng chỉ thành công!");
+        } catch (error) {
+            console.error("Lỗi khi xóa chứng chỉ:", error);
+            toast.error("Không thể xóa chứng chỉ");
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
+        }
+    }, [data.sinhVienList, filterSinhVien]);
+
+    const handleInputChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setNewData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const handleOpenDialog = useCallback(() => {
+        setUi(prev => ({ ...prev, openDialog: true }));
+        setNewData(prev => ({ ...prev, loai_chung_chi: filters.loaiChungChi }));
+    }, [filters.loaiChungChi]);
+
+    const handleCloseDialog = useCallback(() => {
+        setUi(prev => ({ ...prev, openDialog: false }));
+        setNewData(INIT_NEW_DATA);
+    }, []);
+
+    // Memoized utility functions
+    const findLopName = useCallback((id) =>
+        data.originalLopList.find(item => item.id === id)?.ma_lop || "Lớp không xác định",
+        [data.originalLopList]
+    );
+
+    const formatDate = useCallback((dateString) => dateString || "", []);
+
+    // Effects
+    useEffect(() => {
+        fetchInitialData();
+    }, []);
+
     useEffect(() => {
         filterSinhVien();
-    }, [loaiChungChi, trangThai, lopIdFilter, page, searchTerm]);
+    }, [filters, ui.page]);
 
-    // Format date for display
-    const formatDate = (dateString) => {
-        if (!dateString) return "";
-        return dateString;
-    };
-
-    // Handle delete
-    const handleDelete = (id) => {
-        if (window.confirm("Bạn có chắc chắn muốn xóa bản ghi này?")) {
-            const updatedList = sinhVienList.filter(sv => sv.id !== id);
-            setSinhVienList(updatedList);
-            filterSinhVien(updatedList);
+    useEffect(() => {
+        if (filters.heDaoTao) {
+            fetchKhoaDaoTao(filters.heDaoTao);
         }
-    };
+    }, [filters.heDaoTao, fetchKhoaDaoTao]);
 
-    // Apply filters
-    const handleApplyFilter = () => {
-        setPage(1);
-        filterSinhVien();
-    };
+    useEffect(() => {
+        if (filters.khoaDaoTao) {
+            fetchLopByKhoa(filters.khoaDaoTao);
+        }
+    }, [filters.khoaDaoTao, fetchLopByKhoa]);
 
-    // Clear filters
-    const handleClearFilter = () => {
-        setHeDaoTaoFilter("");
-        setKhoaDaoTaoFilter("");
-        setLopIdFilter("");
-        setSearchTerm("");
-        setPage(1);
-        // trangThai and loaiChungChi are kept
-    };
-
-    // Hàm xử lý cho dialog thêm học viên
-    const handleOpenDialog = () => {
-        setOpenDialog(true);
-        setNewData({
-            ...newData,
-            loai_chung_chi: loaiChungChi
-        });
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewData({
-            ...newData,
-            [name]: value
-        });
-    };
-
-    const handleSubmitNew = () => {
-        // Giả lập thêm mới
-        const newItem = {
-            ...newData,
-            id: Date.now(), // Tạm dùng timestamp làm id
-            lop_id: lopIdFilter || 201, // Default hoặc selected
-        };
-
-        const updatedList = [...sinhVienList, newItem];
-        setSinhVienList(updatedList);
-        filterSinhVien(updatedList);
-
-        handleCloseDialog();
-    };
+    // Memoized filter criteria check
+    const hasActiveFilters = useMemo(() =>
+        !!(filters.heDaoTao || filters.khoaDaoTao || filters.lopId || filters.searchTerm),
+        [filters.heDaoTao, filters.khoaDaoTao, filters.lopId, filters.searchTerm]
+    );
 
     return (
         <ThemeProvider theme={theme}>
             <Container maxWidth="" sx={{ py: 4 }}>
                 <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-                    {/* Thêm nút thêm mới + import/export ở đây */}
+                    {/* Action Buttons */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                         <Button
                             variant="contained"
@@ -957,12 +1355,14 @@ const QuanLyChungChi = () => {
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Loại chứng chỉ</InputLabel>
                                     <Select
-                                        value={loaiChungChi}
-                                        onChange={(e) => setLoaiChungChi(e.target.value)}
+                                        value={filters.loaiChungChi}
+                                        onChange={(e) => handleFilterChange('loaiChungChi', e.target.value)}
                                         label="Loại chứng chỉ"
                                     >
-                                        {loaiChungChiOptions.map((option) => (
-                                            <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                                        {data.loaiChungChiList.map((option) => (
+                                            <MenuItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>
@@ -972,13 +1372,15 @@ const QuanLyChungChi = () => {
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Hệ đào tạo</InputLabel>
                                     <Select
-                                        value={heDaoTaoFilter}
-                                        onChange={(e) => setHeDaoTaoFilter(e.target.value)}
+                                        value={filters.heDaoTao}
+                                        onChange={(e) => handleFilterChange('heDaoTao', e.target.value)}
                                         label="Hệ đào tạo"
                                     >
                                         <MenuItem value="">Tất cả</MenuItem>
-                                        {HeDaoTao.map((item) => (
-                                            <MenuItem key={item.id} value={item.id}>{item.ten_he_dao_tao}</MenuItem>
+                                        {data.heDaoTao.map((item) => (
+                                            <MenuItem key={item.id} value={item.id}>
+                                                {item.ten_he_dao_tao}
+                                            </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>
@@ -988,14 +1390,16 @@ const QuanLyChungChi = () => {
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Khóa đào tạo</InputLabel>
                                     <Select
-                                        value={khoaDaoTaoFilter}
-                                        onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}
+                                        value={filters.khoaDaoTao}
+                                        onChange={(e) => handleFilterChange('khoaDaoTao', e.target.value)}
                                         label="Khóa đào tạo"
-                                        disabled={!heDaoTaoFilter}
+                                        disabled={!filters.heDaoTao}
                                     >
                                         <MenuItem value="">Tất cả</MenuItem>
-                                        {khoaDaoTao.map((item) => (
-                                            <MenuItem key={item.id} value={item.id}>{item.ten_khoa}</MenuItem>
+                                        {data.khoaDaoTao.map((item) => (
+                                            <MenuItem key={item.id} value={item.id}>
+                                                {item.ten_khoa}
+                                            </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>
@@ -1005,13 +1409,15 @@ const QuanLyChungChi = () => {
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Lớp</InputLabel>
                                     <Select
-                                        value={lopIdFilter}
-                                        onChange={(e) => setLopIdFilter(e.target.value)}
+                                        value={filters.lopId}
+                                        onChange={(e) => handleFilterChange('lopId', e.target.value)}
                                         label="Lớp"
                                     >
                                         <MenuItem value="">Tất cả</MenuItem>
-                                        {lopListView.map((item) => (
-                                            <MenuItem key={item.id} value={item.id}>{item.ma_lop}</MenuItem>
+                                        {data.lopList.map((item) => (
+                                            <MenuItem key={item.id} value={item.id}>
+                                                {item.ma_lop}
+                                            </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>
@@ -1022,8 +1428,8 @@ const QuanLyChungChi = () => {
                                     fullWidth
                                     size="small"
                                     placeholder="Tìm kiếm theo tên hoặc mã sinh viên..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    value={filters.searchTerm}
+                                    onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
@@ -1038,13 +1444,15 @@ const QuanLyChungChi = () => {
                                 <FormControl fullWidth size="small">
                                     <InputLabel>Trạng thái</InputLabel>
                                     <Select
-                                        value={trangThai}
-                                        onChange={(e) => setTrangThai(e.target.value)}
+                                        value={filters.trangThai}
+                                        onChange={(e) => handleFilterChange('trangThai', e.target.value)}
                                         label="Trạng thái"
                                     >
-                                        <MenuItem value="all">Tất cả sinh viên</MenuItem>
-                                        <MenuItem value="da_dat">Sinh viên đã đạt</MenuItem>
-                                        <MenuItem value="chua_dat">Sinh viên chưa đạt</MenuItem>
+                                        {TRANG_THAI_OPTIONS.map((option) => (
+                                            <MenuItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -1053,10 +1461,7 @@ const QuanLyChungChi = () => {
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    sx={{
-                                        minWidth: 100,
-                                        textTransform: "none"
-                                    }}
+                                    sx={{ minWidth: 100, textTransform: "none" }}
                                     onClick={handleApplyFilter}
                                 >
                                     Áp dụng
@@ -1065,12 +1470,9 @@ const QuanLyChungChi = () => {
                                 <Button
                                     variant="outlined"
                                     color="secondary"
-                                    sx={{
-                                        minWidth: 100,
-                                        textTransform: "none"
-                                    }}
+                                    sx={{ minWidth: 100, textTransform: "none" }}
                                     onClick={handleClearFilter}
-                                    disabled={!heDaoTaoFilter && !khoaDaoTaoFilter && !lopIdFilter && !searchTerm}
+                                    disabled={!hasActiveFilters}
                                 >
                                     Xóa bộ lọc
                                 </Button>
@@ -1079,10 +1481,10 @@ const QuanLyChungChi = () => {
                     </Box>
 
                     {/* Student List Table */}
-                    {isLoading ? (
-                        <Typography variant="body1" textAlign="center" sx={{ my: 4 }}>
-                            Đang tải dữ liệu...
-                        </Typography>
+                    {ui.isLoading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                            <CircularProgress />
+                        </Box>
                     ) : filteredSinhVien.length === 0 ? (
                         <Typography variant="body1" color="textSecondary" textAlign="center" sx={{ my: 4, fontStyle: 'italic' }}>
                             Không tìm thấy sinh viên nào
@@ -1107,9 +1509,9 @@ const QuanLyChungChi = () => {
                                 <TableBody>
                                     {filteredSinhVien.map((sv, index) => (
                                         <TableRow key={sv.id} sx={{
-                                            backgroundColor: !sv.da_dat ? '#fff9f9' : 'inherit',
+                                            backgroundColor: sv.tinh_trang === 'Tốt nghiệp' ? '#f0f8ff' : 'inherit',
                                         }}>
-                                            <TableCell align="center">{(page - 1) * pageSize + index + 1}</TableCell>
+                                            <TableCell align="center">{(ui.page - 1) * ui.pageSize + index + 1}</TableCell>
                                             <TableCell>{sv.ma_sinh_vien}</TableCell>
                                             <TableCell>{sv.ho_ten}</TableCell>
                                             <TableCell align="center">{sv.diem_tb}</TableCell>
@@ -1126,9 +1528,21 @@ const QuanLyChungChi = () => {
                                             </TableCell>
                                             <TableCell>{sv.so_quyet_dinh}</TableCell>
                                             <TableCell>{formatDate(sv.ngay_ky_qd)}</TableCell>
-                                            <TableCell>{sv.tinh_trang}</TableCell>
+                                            <TableCell>
+                                                <Box sx={{
+                                                    color: sv.tinh_trang === 'Tốt nghiệp' ? '#2e7d32' : '#1976d2',
+                                                    fontWeight: 'medium'
+                                                }}>
+                                                    {sv.tinh_trang}
+                                                </Box>
+                                            </TableCell>
                                             <TableCell align="center">
-                                                <IconButton color="error" size="small" onClick={() => handleDelete(sv.id)}>
+                                                <IconButton
+                                                    color="error"
+                                                    size="small"
+                                                    onClick={() => handleDelete(sv.id)}
+                                                    disabled={ui.isLoading}
+                                                >
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
                                             </TableCell>
@@ -1140,68 +1554,23 @@ const QuanLyChungChi = () => {
                     )}
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {ui.totalPages > 1 && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                             <MuiPagination
                                 color="primary"
-                                count={totalPages}
-                                page={page}
-                                onChange={(event, value) => setPage(value)}
+                                count={ui.totalPages}
+                                page={ui.page}
+                                onChange={handlePageChange}
                                 variant="outlined"
                                 shape="rounded"
                             />
                         </Box>
                     )}
                 </Paper>
-
-                {/* Import/Export Section - Thêm mới ở dưới bảng */}
-                {/* <Paper elevation={2} sx={{ p: 2, mt: 3, borderRadius: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                        <Button
-                            variant="contained"
-                            component="label"
-                            startIcon={<FileUploadIcon />}
-                            size="medium"
-                        >
-                            Chọn File
-                            <input type="file" hidden />
-                        </Button>
-                        <TextField
-                            size="small"
-                            label="Ngày cấp theo dạng"
-                            placeholder="ngày/tháng/năm"
-                            sx={{ width: 180 }}
-                        />
-                        <Button
-                            variant="contained"
-                            size="medium"
-                        >
-                            Import q.định
-                        </Button>
-                        <FormControl size="small" sx={{ minWidth: 180 }}>
-                            <InputLabel>Import c.chỉ vào HK</InputLabel>
-                            <Select
-                                label="Import c.chỉ vào HK"
-                                defaultValue="2023_2024_1"
-                            >
-                                <MenuItem value="2023_2024_1">2023_2024_1</MenuItem>
-                                <MenuItem value="2023_2024_2">2023_2024_2</MenuItem>
-                                <MenuItem value="2024_2025_1">2024_2025_1</MenuItem>
-                            </Select>
-                        </FormControl>
-                        <Button
-                            variant="contained"
-                            color="success"
-                            sx={{ ml: 'auto' }}
-                        >
-                            Cập nhật
-                        </Button>
-                    </Box>
-                </Paper> */}
             </Container>
 
             {/* Dialog thêm mới học viên */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="md">
+            <Dialog open={ui.openDialog} onClose={handleCloseDialog} fullWidth maxWidth="md">
                 <DialogTitle>Thêm học viên đạt chứng chỉ</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -1287,25 +1656,11 @@ const QuanLyChungChi = () => {
                                     label="Tình trạng"
                                     onChange={handleInputChange}
                                 >
-                                    <MenuItem value="Bình thường">Bình thường</MenuItem>
-                                    <MenuItem value="Tốt Nghiệp">Tốt Nghiệp</MenuItem>
-                                    <MenuItem value="TB Nghiệp">TB Nghiệp</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Trạng thái đạt</InputLabel>
-                                <Select
-                                    name="da_dat"
-                                    value={newData.da_dat ? 'true' : 'false'}
-                                    label="Trạng thái đạt"
-                                    onChange={(e) => handleInputChange({
-                                        target: { name: 'da_dat', value: e.target.value === 'true' }
-                                    })}
-                                >
-                                    <MenuItem value={'true'}>Đã đạt</MenuItem>
-                                    <MenuItem value={'false'}>Chưa đạt</MenuItem>
+                                    {TINH_TRANG_OPTIONS.map((option) => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -1325,9 +1680,16 @@ const QuanLyChungChi = () => {
                     </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>Hủy</Button>
-                    <Button variant="contained" onClick={handleSubmitNew} color="primary">
-                        Thêm
+                    <Button onClick={handleCloseDialog} disabled={ui.isLoading}>
+                        Hủy
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitNew}
+                        color="primary"
+                        disabled={ui.isLoading}
+                    >
+                        {ui.isLoading ? <CircularProgress size={20} /> : "Thêm"}
                     </Button>
                 </DialogActions>
             </Dialog>
