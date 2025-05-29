@@ -1,12 +1,13 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, TablePagination } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { createTraining, fetchDanhSachHeDaoTao, updateTraining } from "../../Api_controller/Service/trainingService";
+import { toast } from 'react-toastify';
+
 function QuanLyDaoTao() {
     const [openAddTraining, setOpenAddTraining] = useState(false);
     const [loading, setLoading] = useState(false);
-
     const [editingTraining, setEditingTraining] = useState(null);
     const [newTraining, setNewTraining] = useState({
         code: '',
@@ -14,16 +15,10 @@ function QuanLyDaoTao() {
         active: true,
     });
     const [trainingTypes, setTrainingTypes] = useState([]);
+    // Thêm trạng thái cho phân trang
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
 
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: '',
-        severity: 'success'
-    });
-
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, open: false });
-    };
     // Fetch training types from API on component mount
     useEffect(() => {
         fetchTrainingTypes();
@@ -35,13 +30,10 @@ function QuanLyDaoTao() {
         try {
             const response = await fetchDanhSachHeDaoTao();
             setTrainingTypes(response);
+            setPage(0); // Reset về trang đầu khi dữ liệu mới được tải
         } catch (error) {
             console.error('Error fetching training types:', error);
-            setSnackbar({
-                open: true,
-                message: 'Không thể tải danh sách hệ đào tạo. Vui lòng thử lại!',
-                severity: 'error'
-            });
+            toast.error('Không thể tải danh sách hệ đào tạo. Vui lòng thử lại!');
         } finally {
             setLoading(false);
         }
@@ -50,21 +42,13 @@ function QuanLyDaoTao() {
     const handleAddTraining = async () => {
         // Validate code length
         if (newTraining.code.length > 5) {
-            setSnackbar({
-                open: true,
-                message: 'Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!',
-                severity: 'error'
-            });
+            toast.error('Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!');
             return;
         }
 
         // Validate required fields
         if (!newTraining.code || !newTraining.name) {
-            setSnackbar({
-                open: true,
-                message: 'Vui lòng điền đầy đủ thông tin!',
-                severity: 'error'
-            });
+            toast.error('Vui lòng điền đầy đủ thông tin!');
             return;
         }
 
@@ -72,22 +56,12 @@ function QuanLyDaoTao() {
         try {
             if (editingTraining) {
                 // Update existing training
-                console.log(newTraining)
-                console.log(editingTraining)
                 await updateTraining(editingTraining.ma_he_dao_tao, newTraining);
-                setSnackbar({
-                    open: true,
-                    message: 'Cập nhật hệ đào tạo thành công!',
-                    severity: 'success'
-                });
+                toast.success('Cập nhật hệ đào tạo thành công!');
             } else {
                 // Add new training
                 await createTraining(newTraining);
-                setSnackbar({
-                    open: true,
-                    message: 'Thêm hệ đào tạo thành công!',
-                    severity: 'success'
-                });
+                toast.success('Thêm hệ đào tạo thành công!');
             }
 
             // Refresh the list
@@ -99,11 +73,7 @@ function QuanLyDaoTao() {
             setNewTraining({ code: '', name: '', active: true });
         } catch (error) {
             console.error('Error adding/updating training:', error);
-            setSnackbar({
-                open: true,
-                message: 'Đã xảy ra lỗi! Vui lòng thử lại.',
-                severity: 'error'
-            });
+            toast.error('Đã xảy ra lỗi! Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
@@ -122,24 +92,35 @@ function QuanLyDaoTao() {
     const handleToggleTrainingStatus = async (id) => {
         setLoading(true);
         try {
+            // Giả sử bạn có hàm toggleTrainingStatus được định nghĩa
             await toggleTrainingStatus(id);
             fetchTrainingTypes(); // Refresh the list after toggling
-            setSnackbar({
-                open: true,
-                message: 'Cập nhật trạng thái thành công!',
-                severity: 'success'
-            });
+            toast.success('Cập nhật trạng thái thành công!');
         } catch (error) {
             console.error('Error toggling training status:', error);
-            setSnackbar({
-                open: true,
-                message: 'Không thể cập nhật trạng thái. Vui lòng thử lại!',
-                severity: 'error'
-            });
+            toast.error('Không thể cập nhật trạng thái. Vui lòng thử lại!');
         } finally {
             setLoading(false);
         }
     };
+
+    // Xử lý thay đổi trang
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    // Xử lý thay đổi số hàng mỗi trang
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0); // Reset về trang đầu khi thay đổi số hàng mỗi trang
+    };
+
+    // Tính toán dữ liệu hiển thị cho trang hiện tại
+    const paginatedTrainingTypes = trainingTypes.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
+
     return (
         <Box>
             <Button
@@ -157,44 +138,57 @@ function QuanLyDaoTao() {
                     <CircularProgress />
                 </Box>
             ) : (
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Ký hiệu</TableCell>
-                                <TableCell>Tên hệ đào tạo</TableCell>
-                                <TableCell >Thao tác</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {trainingTypes.length > 0 ? (
-                                trainingTypes.map((type) => (
-                                    <TableRow key={type.id}>
-                                        <TableCell>{type.ma_he_dao_tao}</TableCell>
-                                        <TableCell>{type.ten_he_dao_tao}</TableCell>
-
-                                        <TableCell >
-                                            <IconButton
-                                                onClick={() => handleEditTraining(type)}
-                                                disabled={loading}
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
+                <>
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Ký hiệu</TableCell>
+                                    <TableCell>Tên hệ đào tạo</TableCell>
+                                    <TableCell>Thao tác</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {paginatedTrainingTypes.length > 0 ? (
+                                    paginatedTrainingTypes.map((type) => (
+                                        <TableRow key={type.id}>
+                                            <TableCell>{type.ma_he_dao_tao}</TableCell>
+                                            <TableCell>{type.ten_he_dao_tao}</TableCell>
+                                            <TableCell>
+                                                <IconButton
+                                                    onClick={() => handleEditTraining(type)}
+                                                    disabled={loading}
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} align="center">
+                                            Không có dữ liệu hệ đào tạo
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">
-                                        Không có dữ liệu hệ đào tạo
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    {/* Thêm TablePagination */}
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={trainingTypes.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        labelRowsPerPage="Số hàng mỗi trang:"
+                        labelDisplayedRows={({ from, to, count }) => `${from}–${to} của ${count}`}
+                    />
+                </>
             )}
+
             {/* Add/Edit Training Type Dialog */}
             <Dialog
                 open={openAddTraining}
@@ -262,7 +256,7 @@ function QuanLyDaoTao() {
                 </DialogActions>
             </Dialog>
         </Box>
-    )
+    );
 }
 
-export default QuanLyDaoTao
+export default QuanLyDaoTao;

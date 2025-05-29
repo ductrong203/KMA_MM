@@ -195,7 +195,7 @@ const PhuLucBangDiem = () => {
     <Grid item xs={12} md={12}>
       <Paper sx={{ p: 3, borderRadius: 2 }}>
         <Typography variant="h6" marginBottom={2}>
-          Thống kê điểm theo lớp
+          Phụ lục văn bằng
         </Typography>
         
          <Stack direction="row" spacing={2} mb={3}>

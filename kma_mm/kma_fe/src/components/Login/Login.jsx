@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import axios from "axios"; // Import Axios để gọi API
 import { login, register } from "../../Api_controller/Service/authService";
+import { toast } from "react-toastify";
 const Login = ({ onLogin }) => {
     const [isLoginMode, setIsLoginMode] = useState(true); // Quản lý chế độ
     const [username, setUsername] = useState("");
@@ -16,41 +17,47 @@ const Login = ({ onLogin }) => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState(""); // Lưu thông báo lỗi
 
-    const handleLogin = async () => {
+   const handleLogin = async () => {
         if (!username || !password) {
-            setErrorMessage("Please enter both username and password.");
+            toast.error("Vui lòng nhập username và password!");
             return;
         }
 
         try {
             const role = await login(username, password); // Gọi hàm login từ authService
+            toast.success("Login successful!");
             // Cập nhật trạng thái đăng nhập sau khi đăng nhập thành công
             onLogin(role);
         } catch (error) {
-            setErrorMessage(error.message || "Failed to login. Please try again.");
+            toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại!");
         }
     };
 
-
     const handleRegister = async () => {
         if (!username || !password || !confirmPassword) {
-            setErrorMessage("Please fill all fields.");
+            toast.error("Please fill all fields.");
             return;
         }
         if (password !== confirmPassword) {
-            setErrorMessage("Passwords do not match.");
+            toast.error("Passwords do not match.");
             return;
         }
 
         try {
             const message = await register(username, password, confirmPassword); // Gọi hàm register từ authService
-            alert(message); // Hiển thị thông báo đăng ký thành công
+            toast.success(message); // Hiển thị thông báo đăng ký thành công
             setIsLoginMode(true); // Chuyển sang chế độ đăng nhập
         } catch (error) {
-            setErrorMessage(error.message || "Failed to register. Please try again.");
+            toast.error(error.message || "Failed to register. Please try again.");
         }
     };
 
+    const handleKeyDown = (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Prevent form submission or other default behavior
+            isLoginMode ? handleLogin() : handleRegister();
+        }
+    };
     return (
         <Container
             maxWidth="sm"
@@ -107,6 +114,7 @@ const Login = ({ onLogin }) => {
                         "& .MuiTextField-root": { mb: 2 },
                     }}
                     noValidate
+                    onKeyDown={handleKeyDown}
                 >
                     <TextField
                         label="Username"

@@ -219,12 +219,12 @@ const StudentManagement = () => {
     return `${lop.ma_lop}${String(soLuongSinhVien + 1).padStart(2, "0")}`;
   };
 
-  const handleOpen = (index = null) => {
-    setEditIndex(index);
+  const handleOpen = (student = null) => {
 
-    if (index !== null) {
-      setStudentData(students[index]);
-      console.log(students[index]);
+
+    if (student !== null) {
+      setStudentData(student);
+      console.log(student);
     } else {
       const newMaSinhVien = generateMaSinhVien();
       setStudentData({
@@ -495,15 +495,22 @@ const StudentManagement = () => {
       console.log("Dữ liệu gửi đi:", formattedStudentData);
 
       let res;
-      if (editIndex === null) {
+      if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
         setStudents([...students, res]);
         toast.success("Thêm học viên thành công!");
       } else {
-        res = await updateStudentById(formattedStudentData, formattedStudentData.id);
-        const updatedStudents = [...students];
-        updatedStudents[editIndex] = res;
-        setStudents(updatedStudents);
+        res = await updateStudentById(formattedStudentData, formattedStudentData.id);//  formattedStudentData.id   studentData.id, formattedStudentData
+        //const updatedStudents = [...students];
+        //updatedStudents[editIndex] = res;
+        // setStudents(updatedStudents);
+        setStudents(prevStudents =>
+          prevStudents.map(student =>
+            student.id === res.id ? res : student
+          )
+        );
+
+
         toast.success("Cập nhật học viên thành công!");
       }
 
@@ -566,7 +573,7 @@ const StudentManagement = () => {
           : null,
       };
 
-      if (editIndex !== null) {
+      if (militaryData.sinh_vien_id) {
         try {
           const res = await updateMilitaryInfoByStudentId(militaryData.sinh_vien_id, formattedData);
           console.log("Cập nhật thông tin quân nhân thành công!", res);
@@ -897,7 +904,7 @@ const StudentManagement = () => {
                   </Button>
                   <Button
                     variant="outlined"
-                    onClick={() => handleOpen(index)} // Giữ nguyên vì handleOpen dùng index
+                    onClick={() => handleOpen(student)} // Giữ nguyên vì handleOpen dùng index
                     style={{ marginLeft: 10 }}
                   >
                     Chỉnh sửa
