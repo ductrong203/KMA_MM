@@ -1,3 +1,4 @@
+# Debug commit issue
 FROM node:20
 
 WORKDIR /app
