@@ -1,3 +1,4 @@
+# Debug commit issue
 services:
   mysql:
     image: mysql:8.0
