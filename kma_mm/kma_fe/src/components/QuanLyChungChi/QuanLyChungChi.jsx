@@ -11,6 +11,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import AddIcon from '@mui/icons-material/Add';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import EditIcon from '@mui/icons-material/Edit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
 import { fetchLopByKhoaDaoTao } from "../../Api_controller/Service/thoiKhoaBieuService";
@@ -376,6 +377,85 @@ const QuanLyChungChi = () => {
         setNewData(prev => ({ ...prev, loai_chung_chi: filters.loaiChungChi || "" }));
     }, [filters.loaiChungChi]);
 
+
+
+    // Thêm handlers cho edit
+    const handleEdit = useCallback((sv) => {
+        setEditData({
+            id: sv.id,
+            sinh_vien_id: sv.sinh_vien_id || "",
+            ma_sinh_vien: sv.ma_sinh_vien,
+            ho_ten: sv.ho_ten,
+            diem_tb: sv.diem_tb,
+            xep_loai: sv.xep_loai,
+            ghi_chu: sv.ghi_chu,
+            so_quyet_dinh: sv.so_quyet_dinh,
+            ngay_ky_qd: sv.ngay_ky_qd,
+            tinh_trang: sv.tinh_trang,
+            loai_chung_chi: sv.loai_chung_chi
+        });
+        setUi(prev => ({ ...prev, openEditDialog: true }));
+    }, []);
+
+
+
+    // Thêm states cho edit
+    const [editData, setEditData] = useState(INIT_NEW_DATA);
+    const [isEditMode, setIsEditMode] = useState(false);
+
+
+    const handleCloseEditDialog = useCallback(() => {
+        setUi(prev => ({ ...prev, openEditDialog: false }));
+        setEditData(INIT_NEW_DATA);
+    }, []);
+
+    const handleEditInputChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setEditData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const handleEditAutocompleteChange = useCallback((name, value) => {
+        setEditData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const handleSubmitEdit = useCallback(async () => {
+        try {
+            setUi(prev => ({ ...prev, isLoading: true }));
+
+            // Tách ID ra và không đưa vào body data
+            const chungChiId = editData.id;
+            const apiData = {
+                sinh_vien_id: parseInt(editData.sinh_vien_id) || 1,
+                diem_trung_binh: parseFloat(editData.diem_tb) || null,
+                xep_loai: editData.xep_loai || null,
+                ghi_chu: editData.ghi_chu || null,
+                so_quyet_dinh: editData.so_quyet_dinh || null,
+                loai_chung_chi: editData.loai_chung_chi,
+                ngay_ky_quyet_dinh: editData.ngay_ky_qd || null,
+                tinh_trang: editData.tinh_trang === "Bình thường" ? "bình thường" : "tốt nghiệp"
+            };
+
+            // Truyền ID và data riêng biệt
+            const result = await suaChungChi(chungChiId, apiData);
+
+            if (result?.thongBao === "Chỉnh sửa chứng chỉ thành công") {
+                toast.success("Cập nhật chứng chỉ thành công!");
+                setUi(prev => ({ ...prev, openEditDialog: false }));
+                setEditData(INIT_NEW_DATA);
+                fetchChungChiData();
+            } else {
+                throw new Error(result?.thongBao || "Có lỗi xảy ra");
+            }
+        } catch (error) {
+            console.error("Lỗi khi cập nhật chứng chỉ:", error);
+            toast.error(error?.response?.data?.thongBao || "Không thể cập nhật chứng chỉ");
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
+        }
+    }, [editData, fetchChungChiData]);
+
+
+
     const handleCloseDialog = useCallback(() => {
         setUi(prev => ({ ...prev, openDialog: false }));
         setNewData(INIT_NEW_DATA);
@@ -600,6 +680,7 @@ const QuanLyChungChi = () => {
                                         <TableCell sx={{ fontWeight: "bold", width: '120px' }}>Số quyết định</TableCell>
                                         <TableCell sx={{ fontWeight: "bold", width: '120px' }}>Ngày ký QĐ</TableCell>
                                         <TableCell sx={{ fontWeight: "bold", width: '100px' }}>Tình trạng</TableCell>
+                                        <TableCell align="center" sx={{ fontWeight: "bold", width: '60px' }}>Sửa</TableCell>
                                         <TableCell align="center" sx={{ fontWeight: "bold", width: '60px' }}>Xóa</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -633,6 +714,17 @@ const QuanLyChungChi = () => {
                                                     {sv.tinh_trang}
                                                 </Box>
                                             </TableCell>
+                                            <TableCell align="center">
+                                                <IconButton
+                                                    color="primary"
+                                                    size="small"
+                                                    onClick={() => handleEdit(sv)}
+                                                    disabled={ui.isLoading}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+
                                             <TableCell align="center">
                                                 <IconButton
                                                     color="error"
@@ -821,6 +913,167 @@ const QuanLyChungChi = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+
+
+            {/* Dialog chỉnh sửa học viên */}
+            <Dialog open={ui.openEditDialog} onClose={handleCloseEditDialog} fullWidth maxWidth="md">
+                <DialogTitle>Chỉnh sửa thông tin chứng chỉ</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="ma_sinh_vien"
+                                label="Mã sinh viên"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                                value={editData.ma_sinh_vien}
+                                onChange={handleEditInputChange}
+                                disabled // Không cho sửa mã sinh viên
+                            />
+                        </Grid>
+
+                        {/* Trường Loại chứng chỉ */}
+                        <Grid item xs={12} md={6}>
+                            <Autocomplete
+                                freeSolo
+                                options={data.loaiChungChiList.map(option => option.label)}
+                                value={editData.loai_chung_chi}
+                                onChange={(event, newValue) => {
+                                    handleEditAutocompleteChange('loai_chung_chi', newValue || '');
+                                }}
+                                onInputChange={(event, newInputValue) => {
+                                    if (event && event.type === 'change') {
+                                        handleEditAutocompleteChange('loai_chung_chi', newInputValue);
+                                    }
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Loại chứng chỉ"
+                                        variant="outlined"
+                                        size="small"
+                                        fullWidth
+                                        helperText="Chọn từ danh sách hoặc nhập mới"
+                                    />
+                                )}
+                                renderOption={(props, option) => (
+                                    <Box component="li" {...props}>
+                                        {option}
+                                    </Box>
+                                )}
+                                noOptionsText="Không tìm thấy. Bạn có thể nhập loại chứng chỉ mới"
+                                clearOnBlur
+                                selectOnFocus
+                                handleHomeEndKeys
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="diem_tb"
+                                label="Điểm trung bình"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                                type="number"
+                                value={editData.diem_tb}
+                                onChange={handleEditInputChange}
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Xếp loại</InputLabel>
+                                <Select
+                                    name="xep_loai"
+                                    value={editData.xep_loai}
+                                    label="Xếp loại"
+                                    onChange={handleEditInputChange}
+                                >
+                                    <MenuItem value="Xuất sắc">Xuất sắc</MenuItem>
+                                    <MenuItem value="Giỏi">Giỏi</MenuItem>
+                                    <MenuItem value="Khá">Khá</MenuItem>
+                                    <MenuItem value="Trung bình">Trung bình</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="so_quyet_dinh"
+                                label="Số quyết định"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                                value={editData.so_quyet_dinh}
+                                onChange={handleEditInputChange}
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="ngay_ky_qd"
+                                label="Ngày ký quyết định"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                                type="date"
+                                value={editData.ngay_ky_qd}
+                                onChange={handleEditInputChange}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Tình trạng</InputLabel>
+                                <Select
+                                    name="tinh_trang"
+                                    value={editData.tinh_trang}
+                                    label="Tình trạng"
+                                    onChange={handleEditInputChange}
+                                >
+                                    {TINH_TRANG_OPTIONS.map((option) => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <TextField
+                                name="ghi_chu"
+                                label="Ghi chú"
+                                variant="outlined"
+                                fullWidth
+                                multiline
+                                rows={2}
+                                size="small"
+                                value={editData.ghi_chu}
+                                onChange={handleEditInputChange}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEditDialog} disabled={ui.isLoading}>
+                        Hủy
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitEdit}
+                        color="primary"
+                        disabled={ui.isLoading}
+                    >
+                        {ui.isLoading ? <CircularProgress size={20} /> : "Cập nhật"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </ThemeProvider>
     );
 };
