@@ -1,9 +1,10 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, TablePagination } from '@mui/material';
+import { Box, Paper, FormLabel, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, TablePagination } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { createTraining, fetchDanhSachHeDaoTao, updateTraining } from "../../Api_controller/Service/trainingService";
 import { toast } from 'react-toastify';
+import PageHeader from '../../layout/PageHeader';
 
 function QuanLyDaoTao() {
     const [openAddTraining, setOpenAddTraining] = useState(false);
@@ -123,6 +124,11 @@ function QuanLyDaoTao() {
 
     return (
         <Box>
+            <PageHeader
+                title="Hệ đào tạo"
+
+
+            />
             <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -139,13 +145,13 @@ function QuanLyDaoTao() {
                 </Box>
             ) : (
                 <>
-                    <TableContainer>
+                    <TableContainer >
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Ký hiệu</TableCell>
-                                    <TableCell>Tên hệ đào tạo</TableCell>
-                                    <TableCell>Thao tác</TableCell>
+                                    <TableCell style={{ fontWeight: 'bold' }}>Ký hiệu</TableCell>
+                                    <TableCell style={{ fontWeight: 'bold' }}>Tên hệ đào tạo</TableCell>
+                                    <TableCell style={{ fontWeight: 'bold' }}>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -201,11 +207,12 @@ function QuanLyDaoTao() {
                 <DialogTitle>
                     {editingTraining ? 'Sửa hệ đào tạo' : 'Thêm hệ đào tạo'}
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: '500px' }}>
+                    <FormLabel component="legend">Mã ký hiệu hệ đào tạo</FormLabel>
                     <TextField
                         label="Ký hiệu"
                         fullWidth
-                        margin="normal"
+                        margin=""
                         value={newTraining.code}
                         onChange={(e) => setNewTraining({ ...newTraining, code: e.target.value })}
                         inputProps={{ maxLength: 5 }}
@@ -214,10 +221,11 @@ function QuanLyDaoTao() {
                         error={!newTraining.code}
                         disabled={loading}
                     />
+                    <FormLabel component="legend">Tên hệ đào tạo</FormLabel>
                     <TextField
                         label="Tên hệ đào tạo"
                         fullWidth
-                        margin="normal"
+                        margin=""
                         value={newTraining.name}
                         onChange={(e) => setNewTraining({ ...newTraining, name: e.target.value })}
                         required

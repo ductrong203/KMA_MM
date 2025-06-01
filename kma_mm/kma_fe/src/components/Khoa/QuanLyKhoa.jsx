@@ -26,6 +26,7 @@ import {
   TablePagination,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
+
 import {
   createKhoa,
   fetchDanhSachKhoa,
@@ -33,6 +34,7 @@ import {
 } from "../../Api_controller/Service/khoaService";
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
 import { toast } from 'react-toastify';
+import PageHeader from "../../layout/PageHeader";
 
 // Component chính quản lý danh sách khóa
 const QuanLyKhoa = () => {
@@ -245,13 +247,11 @@ const QuanLyKhoa = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="" sx={{ mt: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Danh sách khóa
-        </Typography>
+        <PageHeader title="Danh sách khóa" />
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenForm}>
-          Thêm khóa
+          Thêm khóa đào tạo mới
         </Button>
       </Box>
 
@@ -283,13 +283,13 @@ const QuanLyKhoa = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell width="5%">STT</TableCell>
-              <TableCell width="15%">Mã khóa</TableCell>
-              <TableCell width="20%">Tên khóa</TableCell>
-              <TableCell width="20%">Hệ đào tạo</TableCell>
-              <TableCell width="15%">Niên khóa</TableCell>
-              <TableCell width="10%">Số kỳ học</TableCell>
-              <TableCell width="15%">Thao tác</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="5%">STT</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Mã khóa đào tạo</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="20%">Tên khóa</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="20%">Hệ đào tạo</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Niên khóa</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="10%">Số kỳ học</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -341,10 +341,14 @@ const QuanLyKhoa = () => {
       </TableContainer>
 
       {/* Form thêm/cập nhật khóa */}
-      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedKhoa ? "Chỉnh sửa khóa" : "Thêm khóa mới"}</DialogTitle>
+
+      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedKhoa ? "Chỉnh sửa khóa đào tạo" : "Thêm khóa đào tạo mới"}</DialogTitle>
         <DialogContent>
           <Box py={2}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Hệ đào tạo
+            </Typography>
             <Autocomplete
               options={danhSachHeDaoTao}
               getOptionLabel={(option) => option.ten_he_dao_tao}
@@ -354,6 +358,10 @@ const QuanLyKhoa = () => {
                 <TextField {...params} label="Hệ đào tạo" margin="normal" variant="outlined" fullWidth />
               )}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Mã ký hiệu khóa đào tạo
+            </Typography>
             <TextField
               fullWidth
               label="Mã khóa"
@@ -363,6 +371,10 @@ const QuanLyKhoa = () => {
               margin="normal"
               variant="outlined"
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Tên khóa đào tạo
+            </Typography>
             <TextField
               fullWidth
               label="Tên khóa"
@@ -372,6 +384,10 @@ const QuanLyKhoa = () => {
               margin="normal"
               variant="outlined"
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Năm bắt đầu
+            </Typography>
             <TextField
               fullWidth
               label="Năm bắt đầu"
@@ -383,6 +399,10 @@ const QuanLyKhoa = () => {
               type="number"
               inputProps={{ min: 2000, max: 2100 }}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Năm kết thúc
+            </Typography>
             <TextField
               fullWidth
               label="Năm kết thúc"
@@ -394,6 +414,10 @@ const QuanLyKhoa = () => {
               type="number"
               inputProps={{ min: 2000, max: 2100 }}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Số kỳ học
+            </Typography>
             <TextField
               fullWidth
               label="Số kỳ học"
