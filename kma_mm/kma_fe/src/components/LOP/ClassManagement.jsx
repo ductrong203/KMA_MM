@@ -15,6 +15,7 @@ import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingServ
 import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
 import { toast } from 'react-toastify';
 import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService";
+import PageHeader from "../../layout/PageHeader";
 
 function QuanLyLop() {
     const [danhSachLop, setDanhSachLop] = useState([]);
@@ -289,12 +290,10 @@ function QuanLyLop() {
 
     return (
         <div>
-            <Card sx={{ mb: 4, p: 2 }}>
+            <Card sx={{ mb: 4 }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h5" component="h1" fontWeight="bold">
-                            Quản lý danh sách lớp theo khóa
-                        </Typography>
+                        <PageHeader title="Quản lý danh sách lớp theo khóa" />
                         <Button
                             variant="contained"
                             color="primary"

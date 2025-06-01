@@ -192,8 +192,8 @@ function TrainingDashboard() {
                 }}
               >
                 <Tab label="Hệ đào tạo" />
-                <Tab label="Quản lý khóa" />
-                <Tab label="Quản lý lớp" />
+                <Tab label="Quản lý khóa đào tạo" />
+                <Tab label="Quản lý lớp học" />
               </Tabs>
               {subTab === 0 && <QuanLyDaoTao />}
               {subTab === 1 && <QuanLyKhoa />}

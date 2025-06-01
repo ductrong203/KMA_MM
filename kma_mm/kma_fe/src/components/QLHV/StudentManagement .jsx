@@ -27,7 +27,16 @@ import {
   Grid,
   TablePagination,
   FormHelperText,
+  Box,
+  Chip,
 } from "@mui/material";
+import {
+  Add as AddIcon,
+  FilterList as FilterIcon,
+  Clear as ClearIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
+} from "@mui/icons-material";
 
 import {
   createMilitaryInfo,
@@ -45,6 +54,7 @@ import { getAllDoiTuongQuanLy } from "../../Api_controller/Service/dtqlService";
 import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
 import { toast } from "react-toastify";
+import PageHeader from "../../layout/PageHeader";
 
 const StudentManagement = () => {
   const [students, setStudents] = useState([]);
@@ -125,25 +135,36 @@ const StudentManagement = () => {
     chuc_vu: "",
     suc_khoe: "",
   });
-  const [openMilitaryPopup, setOpenMilitaryPopup] = useState(false);
 
-  const handleCloseMiPopup = () => {
-    setOpenMilitaryPopup(false);
-  };
+  const [openMilitaryPopup, setOpenMilitaryPopup] = useState(false);
   const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
   const [danhSachDoiTuongQL, setDanhSachDoiTuongQL] = useState([]);
   const [danhSachLop, setDanhSachLop] = useState([]);
   const [danhSachKhoa, setDanhSachKhoa] = useState([]);
   const [lop_filter, setLopFilter] = useState();
-  const [originalLopList, setOriginalLopList] = useState([]); // Danh sách lớp gốc
+  const [originalLopList, setOriginalLopList] = useState([]);
 
   // State cho bộ lọc
   const [heDaoTaoFilter, setHeDaoTaoFilter] = useState("");
   const [khoaDaoTaoFilter, setKhoaDaoTaoFilter] = useState("");
   const [lopFilter, setLopFilter_] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
+  const [errors, setErrors] = useState("");
 
-    const role = localStorage.getItem("role") || "";
+  // State phân trang - THAY ĐỔI MẶC ĐỊNH THÀNH 40
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(40);
 
+  // State cho bộ lọc mới
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
+  const [displayStudents, setDisplayStudents] = useState([]);
+
+  const handleCloseMiPopup = () => {
+    setOpenMilitaryPopup(false);
+  };
+
+  // Logic fetch data ban đầu (giữ nguyên)
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -164,7 +185,7 @@ const StudentManagement = () => {
         setDanhSachHeDaoTao(data3);
         setDanhSachDoiTuongQL(data4);
         setDanhSachLop(data5);
-        setOriginalLopList(data5); // Lưu danh sách lớp gốc
+        setOriginalLopList(data5);
         setDanhSachKhoa(data6);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách học viên:", error);
@@ -174,7 +195,7 @@ const StudentManagement = () => {
     fetchStudents();
   }, []);
 
-  // Lọc khóa đào tạo theo hệ đào tạo
+  // Lọc khóa đào tạo theo hệ đào tạo (giữ nguyên)
   useEffect(() => {
     const fetchKhoaDaoTao = async () => {
       if (heDaoTaoFilter) {
@@ -187,32 +208,70 @@ const StudentManagement = () => {
         }
       } else {
         setDanhSachKhoa([]);
-        setDanhSachLop(originalLopList); // Reset về danh sách lớp gốc
+        setDanhSachLop(originalLopList);
       }
     };
     fetchKhoaDaoTao();
   }, [heDaoTaoFilter, originalLopList]);
 
-  // Lọc lớp theo khóa đào tạo
+  // Lọc lớp theo khóa đào tạo (giữ nguyên)
   useEffect(() => {
     const fetchLopByKhoaDaoTao = async () => {
       if (khoaDaoTaoFilter) {
         try {
-          // const response = await fetch(`http://localhost:8000/lop/bykhoadaotao?khoa_dao_tao_id=${khoaDaoTaoFilter}`);
-
-          const data = await getListClassByKhoaDaoTaoId(khoaDaoTaoFilter)
+          const data = await getListClassByKhoaDaoTaoId(khoaDaoTaoFilter);
           setDanhSachLop(data);
         } catch (error) {
           console.error("Lỗi khi lấy danh sách lớp theo khóa đào tạo:", error);
-          setDanhSachLop(originalLopList); // Reset nếu lỗi
+          setDanhSachLop(originalLopList);
         }
       } else {
-        setDanhSachLop(originalLopList); // Reset về danh sách lớp gốc
+        setDanhSachLop(originalLopList);
       }
     };
     fetchLopByKhoaDaoTao();
   }, [khoaDaoTaoFilter, originalLopList]);
 
+  // THÊM MỚI: Logic áp dụng bộ lọc
+  const handleApplyFilter = () => {
+    let filtered = students;
+
+    // Lọc theo từ khóa tìm kiếm
+    if (searchTerm) {
+      filtered = filtered.filter((student) => {
+        const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+        const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+        const matchesSearch =
+          searchWords.every((word) => fullName.includes(word)) ||
+          student.ma_sinh_vien.includes(searchTerm);
+        return matchesSearch;
+      });
+    }
+
+    // Lọc theo lớp
+    if (lopFilter) {
+      filtered = filtered.filter(student => student.lop_id === lopFilter);
+    }
+
+    setDisplayStudents(filtered);
+    setIsFilterApplied(true);
+    setPage(0);
+    toast.success(`Đã tìm thấy ${filtered.length} học viên phù hợp`);
+  };
+
+  // THÊM MỚI: Hủy bộ lọc
+  const handleClearFilter = () => {
+    setHeDaoTaoFilter("");
+    setKhoaDaoTaoFilter("");
+    setLopFilter_("");
+    setSearchTerm("");
+    setDisplayStudents([]);
+    setIsFilterApplied(false);
+    setPage(0);
+    toast.info("Đã hủy bộ lọc");
+  };
+
+  // Logic generateMaSinhVien (giữ nguyên)
   const generateMaSinhVien = (lop_id = lop_tu_sinh?.lop_id) => {
     if (!lop_id) return "";
     const lop = danhSachLop.find((l) => l.id === lop_id);
@@ -221,9 +280,49 @@ const StudentManagement = () => {
     return `${lop.ma_lop}${String(soLuongSinhVien + 1).padStart(2, "0")}`;
   };
 
+  // THÊM MỚI: Function lấy tên hệ đào tạo
+  const getHeDaoTaoName = (lop_id) => {
+    const lop = originalLopList.find(l => l.id === lop_id);
+    if (!lop) return "Chưa xác định";
+
+    const khoa = danhSachKhoa.find(k => k.id === lop.khoa_dao_tao_id);
+    if (!khoa) return "Chưa xác định";
+
+    const heDaoTao = danhSachHeDaoTao.find(h => h.id === khoa.he_dao_tao_id);
+    return heDaoTao ? heDaoTao.ten_he_dao_tao : "Chưa xác định";
+  };
+
+  // Utility functions (giữ nguyên)
+  const getDoiTuongName = (id) => {
+    const doiTuong = danhSachDoiTuongQL.find((item) => item.id === Number(id));
+    return doiTuong ? doiTuong.ten_doi_tuong : "Không xác định";
+  };
+
+  const getMaLop = (id) => {
+    const lop = danhSachLop.find((item) => item.id === Number(id));
+    return lop ? lop.ma_lop : "Không xác định";
+  };
+
+  // THAY ĐỔI: Logic hiển thị dữ liệu
+  const filteredStudents = isFilterApplied ? displayStudents : students;
+  const paginatedStudents = filteredStudents.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Pagination handlers (giữ nguyên)
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+
+  // handleOpen (giữ nguyên)
   const handleOpen = (student = null) => {
-
-
     if (student !== null) {
       setStudentData(student);
       console.log(student);
@@ -236,7 +335,7 @@ const StudentManagement = () => {
         que_quan: "",
         lop_id: lop_tu_sinh.lop_id,
         doi_tuong_id: "",
-        dang_hoc: 1, // Mặc định là "Có"
+        dang_hoc: 1,
         ghi_chu: "",
         ho_dem: "",
         ten: "",
@@ -289,10 +388,7 @@ const StudentManagement = () => {
     setOpen(true);
   };
 
-  // const handleOpenDetail = (index) => {
-  //   setStudentData(students[index]);
-  //   setOpenDetail(true);
-  // };
+  // handleOpenDetail (giữ nguyên)
   const handleOpenDetail = async (studentId) => {
     try {
       if (!studentId) {
@@ -346,10 +442,9 @@ const StudentManagement = () => {
         khi_can_bao_tin_cho_ai: student.khi_can_bao_tin_cho_ai || "",
         noi_tru: student.noi_tru ?? false,
         ngoai_tru: student.ngoai_tru ?? false,
-        id: student.id || "", // Lưu id để sử dụng trong tab quân nhân
+        id: student.id || "",
       });
 
-      // Tải thông tin quân nhân nếu cần
       if (student.doi_tuong_id) {
         try {
           const militaryInfo = await getMilitaryInfoByStudentId(studentId);
@@ -403,27 +498,14 @@ const StudentManagement = () => {
     setOpenDetail(false);
   };
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [lop_tu_sinh, setLop_ts] = useState({ lop_id: "", ma_lop: "" });
-
-  const filteredStudents = students.filter((student) => {
-    const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-    const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-    const matchesSearch =
-      searchWords.every((word) => fullName.includes(word)) ||
-      student.ma_sinh_vien.includes(searchTerm);
-    const matchesLop = lopFilter ? student.lop_id === lopFilter : true;
-    return matchesSearch && matchesLop;
-  });
-
   const handleGenderChange = (event) => {
     setStudentData((prev) => ({
       ...prev,
       gioi_tinh: Number(event.target.value),
     }));
   };
-  const [errors, setErrors] = useState("");
 
+  // handleSave (giữ nguyên, chỉ thêm refresh data sau khi save)
   const handleSave = async () => {
     try {
       let newErrors = {};
@@ -497,23 +579,46 @@ const StudentManagement = () => {
       console.log("Dữ liệu gửi đi:", formattedStudentData);
 
       let res;
+      let updatedStudents;
+
       if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
-        setStudents([...students, res]);
+        updatedStudents = [...students, res];
+        setStudents(updatedStudents);
         toast.success("Thêm học viên thành công!");
       } else {
-        res = await updateStudentById(formattedStudentData, formattedStudentData.id);//  formattedStudentData.id   studentData.id, formattedStudentData
-        //const updatedStudents = [...students];
-        //updatedStudents[editIndex] = res;
-        // setStudents(updatedStudents);
-        setStudents(prevStudents =>
-          prevStudents.map(student =>
-            student.id === res.id ? res : student
-          )
+        res = await updateStudentById(formattedStudentData, formattedStudentData.id);
+        updatedStudents = students.map(student =>
+          student.id === res.id ? res : student
         );
-
-
+        setStudents(updatedStudents);
         toast.success("Cập nhật học viên thành công!");
+      }
+
+      // THÊM MỚI: Refresh filtered data nếu đang áp dụng bộ lọc
+      if (isFilterApplied) {
+        if (isFilterApplied) {
+          let filtered = updatedStudents;
+
+          // Áp dụng lại các filter hiện tại
+          if (searchTerm) {
+            filtered = filtered.filter((student) => {
+              const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+              const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+              const matchesSearch =
+                searchWords.every((word) => fullName.includes(word)) ||
+                student.ma_sinh_vien.includes(searchTerm);
+              return matchesSearch;
+            });
+          }
+
+          if (lopFilter) {
+            filtered = filtered.filter(student => student.lop_id === lopFilter);
+          }
+
+          setDisplayStudents(filtered);
+        }
+
       }
 
       const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
@@ -536,32 +641,7 @@ const StudentManagement = () => {
     }
   };
 
-  const getDoiTuongName = (id) => {
-    const doiTuong = danhSachDoiTuongQL.find((item) => item.id === Number(id));
-    return doiTuong ? doiTuong.ten_doi_tuong : "Không xác định";
-  };
-
-  const getMaLop = (id) => {
-    const lop = danhSachLop.find((item) => item.id === Number(id));
-    return lop ? lop.ma_lop : "Không xác định";
-  };
-
-  // useEffect(() => {
-  //   const fetchMilitaryInfo = async () => {
-  //     if (tabIndex === 1 && studentData.id) {
-  //       try {
-  //         const data = await getMilitaryInfoByStudentId(studentData.id);
-  //         setMilitaryData(data);
-  //       } catch (error) {
-  //         console.error("Lỗi khi lấy thông tin quân nhân:", error);
-  //         setMilitaryData([]);
-  //       }
-  //     }
-  //   };
-
-  //   fetchMilitaryInfo();
-  // }, [tabIndex, studentData.id]);
-
+  // handleSaveMilitary (giữ nguyên)
   const handleSaveMilitary = async () => {
     try {
       console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
@@ -600,6 +680,7 @@ const StudentManagement = () => {
     }
   };
 
+  // renderField (giữ nguyên)
   const renderField = (field) => (
     <Grid item xs={12} sm={4} key={field.key}>
       {field.type === "select" ? (
@@ -681,27 +762,13 @@ const StudentManagement = () => {
     </Grid>
   );
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  const paginatedStudents = filteredStudents.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+  // THAY ĐỔI: handleExportToExcel - chỉ xuất dữ liệu đã lọc
   const handleExportToExcel = async () => {
-    if (!lopFilter) {
-      toast.warning("Vui lòng chọn lớp trước khi xuất danh sách.");
+    if (!isFilterApplied || displayStudents.length === 0) {
+      toast.warning("Vui lòng áp dụng bộ lọc và có dữ liệu trước khi xuất Excel.");
       return;
     }
+
     try {
       const payload = {};
       if (lopFilter) payload.lop_id = lopFilter;
@@ -731,6 +798,7 @@ const StudentManagement = () => {
     }
   };
 
+  // handleImportFromExcel (giữ nguyên, chỉ thêm refresh data)
   const handleImportFromExcel = async (event) => {
     const file = event.target.files[0];
     if (!file || !lopFilter) {
@@ -749,8 +817,32 @@ const StudentManagement = () => {
         toast.success(
           `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
         );
+
+        // Lấy dữ liệu mới và update
         const updatedStudents = await getAllStudent();
         setStudents(updatedStudents);
+
+        // THAY ĐỔI: Update displayStudents với dữ liệu mới
+        if (isFilterApplied) {
+          let filtered = updatedStudents;
+
+          if (searchTerm) {
+            filtered = filtered.filter((student) => {
+              const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+              const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+              const matchesSearch =
+                searchWords.every((word) => fullName.includes(word)) ||
+                student.ma_sinh_vien.includes(searchTerm);
+              return matchesSearch;
+            });
+          }
+
+          if (lopFilter) {
+            filtered = filtered.filter(student => student.lop_id === lopFilter);
+          }
+
+          setDisplayStudents(filtered);
+        }
       } else {
         throw new Error(result.message || "Nhập danh sách không thành công");
       }
@@ -759,188 +851,244 @@ const StudentManagement = () => {
       toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
     }
   };
+
   return (
     <Container maxWidth="xl">
-      
-      <TextField
-        label="Tìm kiếm học viên..."
-        variant="outlined"
-        fullWidth
-        margin="normal"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <Grid container spacing={2} alignItems="center" sx={{ marginTop: "4px" }}>
-        <Grid item xs={4}>
-          <FormControl fullWidth>
-            <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
-            <Select
-              value={heDaoTaoFilter}
-              onChange={(e) => setHeDaoTaoFilter(e.target.value)}
-            >
-              <MenuItem value="">Tất cả</MenuItem>
-              {danhSachHeDaoTao.map((item) => (
-                <MenuItem key={item.id} value={item.id}>{item.ten_he_dao_tao}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={4}>
-          <FormControl fullWidth>
-            <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
-            <Select
-              value={khoaDaoTaoFilter}
-              onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}
-              disabled={!heDaoTaoFilter}
-            >
-              <MenuItem value="">Tất cả</MenuItem>
-              {danhSachKhoa.map((item) => (
-                <MenuItem key={item.id} value={item.id}>{item.ten_khoa}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={4}>
-          <FormControl fullWidth>
-            <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Lớp</InputLabel>
-            <Select
-              value={lopFilter}
-              onChange={(e) => {
-                const selectedLop = e.target.value;
-                setLopFilter_(selectedLop);
-                setLop_ts({ ...lop_tu_sinh, lop_id: selectedLop });
-                setStudentData({ ...studentData, lop_id: selectedLop });
-              }}
-              disabled={!khoaDaoTaoFilter}
-            >
-              <MenuItem value="">Tất cả</MenuItem>
-              {danhSachLop.map((item) => (
-                <MenuItem key={item.id} value={item.id}>{item.ma_lop}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
-      <Typography variant="body2" color="textSecondary" sx={{ marginTop: "12px", fontStyle: "italic" }}>
-        * Vui lòng chọn "Xuất Excel" để lấy form nhập danh sách sinh viên nếu chưa có sinh viên trong lớp.
-      </Typography>
-      {/* <Button
-        sx={{ marginTop: "8px" }}
-        variant="contained"
-        color="primary"
-        onClick={() => handleOpen()}
-      >
-        Thêm học viên
-      </Button>
-       */}
+      {/* THAY ĐỔI: Header với màu đẹp hơn */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={0} mt={2}>
+        <PageHeader title="Quản lý học viên" />
+      </Box>
 
-        {(role !== "examination" && role !== "student_manage") && (
+      {/* THAY ĐỔI: Bộ lọc ở trên, có nút áp dụng/hủy */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Bộ lọc tìm kiếm
+        </Typography>
+
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
+              <Select
+                value={heDaoTaoFilter}
+                onChange={(e) => setHeDaoTaoFilter(e.target.value)}
+              >
+                <MenuItem value="">Tất cả</MenuItem>
+                {danhSachHeDaoTao.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>{item.ten_he_dao_tao}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
+              <Select
+                value={khoaDaoTaoFilter}
+                onChange={(e) => setKhoaDaoTaoFilter(e.target.value)}
+                disabled={!heDaoTaoFilter}
+              >
+                <MenuItem value="">Tất cả</MenuItem>
+                {danhSachKhoa.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>{item.ten_khoa}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel sx={{ padding: "0 2px", backgroundColor: "white" }}>Lớp</InputLabel>
+              <Select
+                value={lopFilter}
+                onChange={(e) => {
+                  const selectedLop = e.target.value;
+                  setLopFilter_(selectedLop);
+                  setLop_ts({ ...lop_tu_sinh, lop_id: selectedLop });
+                  setStudentData({ ...studentData, lop_id: selectedLop });
+                }}
+                disabled={!khoaDaoTaoFilter}
+              >
+                <MenuItem value="">Tất cả</MenuItem>
+                {danhSachLop.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>{item.ma_lop}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              label="Tìm kiếm theo mã SV hoặc tên"
+              variant="outlined"
+              fullWidth
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Grid>
+        </Grid>
+
+        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<FilterIcon />}
+            onClick={handleApplyFilter}
+            disabled={!heDaoTaoFilter && !khoaDaoTaoFilter && !lopFilter && !searchTerm}
+          >
+            Áp dụng bộ lọc
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<ClearIcon />}
+            onClick={handleClearFilter}
+            disabled={!isFilterApplied}
+          >
+            Hủy bộ lọc
+          </Button>
+
+          {isFilterApplied && (
+            <Chip
+              label={`Đã lọc: ${displayStudents.length} học viên`}
+              color="success"
+              variant="outlined"
+            />
+          )}
+        </Box>
+      </Paper>
+
+      {/* THAY ĐỔI: Action buttons với layout mới */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Box>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpen()}
+            sx={{ mr: 1 }}
+          >
+            Thêm học viên
+          </Button>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<UploadIcon />}
+            component="label"
+          >
+            Nhập Excel
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              hidden
+              onChange={handleImportFromExcel}
+            />
+          </Button>
+        </Box>
+
         <Button
-          sx={{ marginTop: "8px" }}
           variant="contained"
-          color="primary"
-          onClick={() => handleOpen()}
+          color="success"
+          startIcon={<DownloadIcon />}
+          onClick={handleExportToExcel}
+          disabled={!isFilterApplied || displayStudents.length === 0}
         >
-          Thêm học viên
+          Xuất Excel
         </Button>
-      )}
-      <Button
-        sx={{ marginTop: "8px", marginLeft: "8px" }}
-        variant="contained"
-        color="success"
-        onClick={handleExportToExcel}
-      >
-        Xuất Excel
-      </Button>
-      <Button
-        sx={{ marginTop: "8px", marginLeft: "8px" }}
-        variant="contained"
-        color="secondary"
-        component="label"
-      >
-        Nhập Excel
-        <input
-          type="file"
-          accept=".xlsx, .xls"
-          hidden
-          onChange={handleImportFromExcel}
-        />
-      </Button>
-      <TableContainer component={Paper} style={{ marginTop: 20 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Họ và tên</TableCell>
-              <TableCell>Mã học viên</TableCell>
-              <TableCell>Giới tính</TableCell>
-              <TableCell>Lớp</TableCell>
-              <TableCell>Đối tượng quản lý</TableCell>
-              <TableCell>Hành động</TableCell>
-            </TableRow>
-          </TableHead>
-          {/* <TableBody>
-            {paginatedStudents.map((student, index) => (
-              <TableRow key={student.id}>
-                <TableCell>{student.ho_dem} {student.ten}</TableCell>
-                <TableCell>{student.ma_sinh_vien}</TableCell>
-                <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
-                <TableCell>{getMaLop(student.lop_id)}</TableCell>
-                <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
-                <TableCell>
-                  <Button variant="outlined" onClick={() => handleOpenDetail(student?.id - 1)}>
-                    Xem chi tiết
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleOpen(student?.id - 1)}
-                    style={{ marginLeft: 10 }}
-                  >
-                    Chỉnh sửa
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-           */}
-          <TableBody>
-            {paginatedStudents.map((student, index) => (
-              <TableRow key={student.id}>
-                <TableCell>{student.ho_dem} {student.ten}</TableCell>
-                <TableCell>{student.ma_sinh_vien}</TableCell>
-                <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
-                <TableCell>{getMaLop(student.lop_id)}</TableCell>
-                <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
-                <TableCell>
-                  <Button variant="outlined" onClick={() => handleOpenDetail(student.id)}>
-                    Xem chi tiết
-                  </Button>
-                {role !== "examination" && (
-                    <Button
-                      variant="outlined"
-                      onClick={() => handleOpen(student)}
-                      style={{ marginLeft: 10 }}
-                    >
-                      Chỉnh sửa
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 20]}
-          component="div"
-          count={filteredStudents.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Số dòng mỗi trang"
-        />
-      </TableContainer>
+      </Box>
 
-      {/* Dialog Chi Tiết */}
+      {/* THAY ĐỔI: Hướng dẫn khi chưa áp dụng bộ lọc */}
+      {!isFilterApplied && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: '', borderRadius: 1 }}>
+          <Typography variant="body2" color="gray">
+            💡 Vui lòng chọn bộ lọc và nhấn "Áp dụng bộ lọc" để hiển thị danh sách học viên.
+          </Typography>
+        </Box>
+      )}
+      {/* THAY ĐỔI: Bảng chỉ hiển thị khi đã áp dụng bộ lọc, với cấu trúc cột mới */}
+      {isFilterApplied && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                {/* THAY ĐỔI: Thứ tự cột mới */}
+                <TableCell style={{ fontWeight: 'bold' }}>STT</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Mã học viên</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Họ và tên</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Giới tính</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Hệ đào tạo</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Lớp</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Đối tượng quản lý</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Hành động</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedStudents.length > 0 ? (
+                paginatedStudents.map((student, index) => (
+                  <TableRow key={student.id}>
+                    {/* THAY ĐỔI: STT bắt đầu từ 1, theo pagination */}
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell>{student.ma_sinh_vien}</TableCell>
+                    <TableCell>{student.ho_dem} {student.ten}</TableCell>
+                    <TableCell>{student.gioi_tinh === 0 ? "Nữ" : "Nam"}</TableCell>
+                    {/* THÊM MỚI: Cột hệ đào tạo */}
+                    <TableCell>{getHeDaoTaoName(student.lop_id)}</TableCell>
+                    <TableCell>{getMaLop(student.lop_id)}</TableCell>
+                    <TableCell>{getDoiTuongName(student.doi_tuong_id)}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleOpenDetail(student.id)}
+                        sx={{ mr: 1 }}
+                      >
+                        Xem chi tiết
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleOpen(student)}
+                      >
+                        Chỉnh sửa
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">
+                      Không tìm thấy học viên nào phù hợp với bộ lọc
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          {/* THAY ĐỔI: Phân trang với nhiều lựa chọn hơn */}
+          {filteredStudents.length > 0 && (
+            <TablePagination
+              rowsPerPageOptions={[10, 20, 40, 50, 100]}
+              component="div"
+              count={filteredStudents.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Số dòng mỗi trang"
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}–${to} trong ${count !== -1 ? count : `hơn ${to}`}`
+              }
+            />
+          )}
+        </TableContainer>
+      )}
+
+      {/* Dialog Chi tiết học viên (giữ nguyên) */}
       <Dialog fullWidth maxWidth="xl" open={openDetail} onClose={handleCloseDetail}>
         <DialogTitle>Chi tiết học viên</DialogTitle>
         <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)}>
@@ -956,8 +1104,9 @@ const StudentManagement = () => {
                 { label: "Ngày sinh", value: studentData.ngay_sinh || "Chưa cập nhật" },
                 { label: "Giới tính", value: studentData.gioi_tinh ? "Nam" : "Nữ" || "Chưa cập nhật" },
                 { label: "Nơi sinh", value: studentData.que_quan || "Chưa cập nhật" },
-                { label: "Lớp ID", value: getMaLop(studentData.lop_id) || "Chưa cập nhật" },
-                { label: "Đối tượng ID", value: getDoiTuongName(studentData.doi_tuong_id) || "Chưa cập nhật" },
+                { label: "Lớp", value: getMaLop(studentData.lop_id) || "Chưa cập nhật" },
+                { label: "Hệ đào tạo", value: getHeDaoTaoName(studentData.lop_id) || "Chưa cập nhật" },
+                { label: "Đối tượng", value: getDoiTuongName(studentData.doi_tuong_id) || "Chưa cập nhật" },
                 { label: "Đang học", value: studentData.dang_hoc ? "Có" : "Không" || "Chưa cập nhật" },
                 { label: "Ghi chú", value: studentData.ghi_chu || "Chưa cập nhật" },
                 { label: "Số tài khoản", value: studentData.so_tai_khoan || "Chưa cập nhật" },
@@ -998,7 +1147,7 @@ const StudentManagement = () => {
             </Grid>
           )}
           {tabIndex === 1 && studentData.doi_tuong_id && (
-            <Grid maxWidth="" xs={12} sm={3} container spacing={2}>
+            <Grid container spacing={2}>
               {[
                 { label: "Sinh viên ID", value: militaryData.sinh_vien_id || "Chưa cập nhật" },
                 { label: "Ngày nhập ngũ", value: militaryData.ngay_nhap_ngu || "Chưa cập nhật" },
@@ -1026,7 +1175,7 @@ const StudentManagement = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog Chỉnh Sửa */}
+      {/* Dialog Form thêm/sửa học viên (giữ nguyên toàn bộ) */}
       <Dialog maxWidth="xl" open={open} onClose={handleClose}>
         <DialogTitle>
           {editIndex !== null
@@ -1102,8 +1251,7 @@ const StudentManagement = () => {
           <Button onClick={handleSave} color="primary">Lưu</Button>
         </DialogActions>
       </Dialog>
-
-      {/* Dialog Chỉnh Sửa thông tin quân nhân */}
+      {/* Dialog thông tin quân nhân (giữ nguyên) */}
       <Dialog maxWidth="xl" open={openMilitaryPopup} onClose={handleCloseMiPopup} disableEscapeKeyDown={false}>
         <DialogTitle>
           {editIndex !== null
