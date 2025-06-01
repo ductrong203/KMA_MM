@@ -230,6 +230,7 @@ const ThoiKhoaBieu = () => {
     const filteredLopList = lopList.filter(lop => lop.ma_lop.toLowerCase().includes(lopSearch.toLowerCase()));
     const filteredMonHocList = monHocListForm.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
     const filteredGiangVienList = giangVienList.filter(giangVien => giangVien.ho_ten.toLowerCase().includes(giangVienSearch.toLowerCase()));
+    const role = localStorage.getItem("role") || "";
 
     const handleSubmit = async () => {
         if (lopId && kyHoc && selectedMonHocIds.length > 0) {
@@ -421,9 +422,11 @@ const ThoiKhoaBieu = () => {
                     </Typography>
 
                     <Box textAlign="center" my={2}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenForm}>
-                            Thêm Thời Khóa Biểu
-                        </Button>
+                        {role !== "examination" && (
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenForm}>
+                                Thêm Thời Khóa Biểu
+                            </Button>
+                        )}
                     </Box>
 
                     <Box sx={{ p: 3, borderRadius: 2, mx: "auto", mt: 3, border: "1px solid #e0e0e0", boxShadow: 2, maxWidth: 1200, backgroundColor: "#fff" }}>
@@ -575,14 +578,16 @@ const ThoiKhoaBieu = () => {
                                                     <strong>Trạng thái:</strong> {tkb.trang_thai === 1 ? "Hoạt động" : "Không hoạt động"}
                                                 </Typography>
                                             </CardContent>
-                                            <CardActions sx={{ justifyContent: "center" }}>
-                                                <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </CardActions>
+                                            {role !== "examination" && (
+                                                <CardActions sx={{ justifyContent: "center" }}>
+                                                    <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </CardActions>
+                                            )}
                                         </Card>
                                     </Grid>
                                 );

@@ -255,57 +255,57 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearch = async () => {
-    if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
-        toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
-        return;
-    }
-    setLoadingStudents(true);
-    try {
-        let response;
-        if (searchType === 'class') {
-            response = await layDanhSachSinhVienTheoTKB(scheduleId);
-            console.log(response);
-        } else {
-            response = await layDSSVTheoKhoaVaMonHoc(batch, course);
-            console.log(response);
+        if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
+            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+            return;
         }
-        const formattedStudents = await Promise.all(
-            response.data.map(async (student) => {
-                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                const maLop = lopInfo?.ma_lop || student.lop_id;
+        setLoadingStudents(true);
+        try {
+            let response;
+            if (searchType === 'class') {
+                response = await layDanhSachSinhVienTheoTKB(scheduleId);
+                console.log(response);
+            } else {
+                response = await layDSSVTheoKhoaVaMonHoc(batch, course);
+                console.log(response);
+            }
+            const formattedStudents = await Promise.all(
+                response.data.map(async (student) => {
+                    const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                    const maLop = lopInfo?.ma_lop || student.lop_id;
 
-                return {
-                    id: student.id,
-                    sinh_vien_id: student.sinh_vien_id,
-                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                    ho_dem: student.sinh_vien.ho_dem,
-                    ten: student.sinh_vien.ten,
-                    lop: maLop,
-                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                    diem: {
-                        TP1: student.diem_tp1 || null,
-                        TP2: student.diem_tp2 || null,
-                        CK1: student.diem_ck || null,
-                        CK2: student.diem_ck2 || null
-                    },
-                    retakeRegistered: student.trang_thai === 'thi_lai'
-                };
-            })
-        );
-        setStudents(formattedStudents);
+                    return {
+                        id: student.id,
+                        sinh_vien_id: student.sinh_vien_id,
+                        ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                        ho_dem: student.sinh_vien.ho_dem,
+                        ten: student.sinh_vien.ten,
+                        lop: maLop,
+                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                        diem: {
+                            TP1: student.diem_tp1 || null,
+                            TP2: student.diem_tp2 || null,
+                            CK1: student.diem_ck || null,
+                            CK2: student.diem_ck2 || null
+                        },
+                        retakeRegistered: student.trang_thai === 'thi_lai'
+                    };
+                })
+            );
+            setStudents(formattedStudents);
 
-        if (formattedStudents.length > 0) {
-            toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
-        } else {
-            toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            if (formattedStudents.length > 0) {
+                toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+            } else {
+                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            }
+        } catch (error) {
+            console.error('Error searching students:', error);
+            toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setLoadingStudents(false);
         }
-    } catch (error) {
-        console.error('Error searching students:', error);
-        toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
-    } finally {
-        setLoadingStudents(false);
-    }
-};
+    };
 
     // Sinh viên đủ điều kiện thi CK khi điểm TP1 >= 4.0
     const canTakeFinalExam = (student) => {
@@ -469,58 +469,58 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     // Hàm xử lý upload file Excel
     // Hàm export điểm, dùng chung cho giữa kỳ và cuối kỳ
     const exportExcel = (lop_id, khoa_dao_tao_id, mon_hoc_id, activeGradeTab, courseOptions, classOptions, searchType = 'class') => {
-    if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
-        toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
-        return;
-    }
+        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+            toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
+            return;
+        }
 
-    if (activeGradeTab === 0 && searchType === 'batch') {
-        toast.error('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
-        return;
-    }
+        if (activeGradeTab === 0 && searchType === 'batch') {
+            toast.error('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
+            return;
+        }
 
-    const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
-    const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+        const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
 
-    let maLop = 'Unknown';
-    if (searchType === 'class' && lop_id) {
-        const classInfo = classOptions.find((option) => option.id === lop_id);
-        maLop = classInfo?.ma_lop || 'Unknown';
-    } else {
-        const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
-        maLop = batchInfo?.ma_khoa || 'Unknown';
-    }
+        let maLop = 'Unknown';
+        if (searchType === 'class' && lop_id) {
+            const classInfo = classOptions.find((option) => option.id === lop_id);
+            maLop = classInfo?.ma_lop || 'Unknown';
+        } else {
+            const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
+            maLop = batchInfo?.ma_khoa || 'Unknown';
+        }
 
-    const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
 
-    const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
+        const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
 
-    const data = activeGradeTab === 0
-        ? { lop_id, mon_hoc_id }
-        : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
+        const data = activeGradeTab === 0
+            ? { lop_id, mon_hoc_id }
+            : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
 
-    exportApi(data)
-        .then((response) => {
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        exportApi(data)
+            .then((response) => {
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast.success(`Xuất điểm ${activeGradeTab === 0 ? 'giữa kỳ' : 'cuối kỳ'} thành công!`);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
             });
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            toast.success(`Xuất điểm ${activeGradeTab === 0 ? 'giữa kỳ' : 'cuối kỳ'} thành công!`);
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
-        });
-};
+    };
 
     const handleFileChange = (event) => {
         event.stopPropagation();
@@ -586,60 +586,119 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     //             setUploading(false);
     //         });
     // };
-    const importExcel = (lop_id, mon_hoc_id, khoa_dao_tao_id, activeGradeTab) => {
-    if (!file) {
-        toast.error('Vui lòng chọn file trước khi import.');
-        return;
-    }
-    console.log("activeGradeTab", activeGradeTab);
+    // const importExcel = (lop_id, mon_hoc_id, khoa_dao_tao_id, activeGradeTab) => {
 
-    // Chọn hàm API dựa trên activeGradeTab
-    const importApi = activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
+    //     if (!file) {
+    //         toast.error('Vui lòng chọn file trước khi import.');
+    //         return;
+    //     }
+    //     console.log("activeGradeTab", activeGradeTab);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('mon_hoc_id', mon_hoc_id);
-    formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
-    if (lop_id) {
-        formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
-    }
+    //     // Chọn hàm API dựa trên activeGradeTab
+    //     const importApi = activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
 
-    console.log('FormData entries:');
-    for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]); // Debug FormData
-    }
+    //     const formData = new FormData();
+    //     formData.append('file', file);
+    //     formData.append('mon_hoc_id', mon_hoc_id);
+    //     formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
+    //     if (lop_id) {
+    //         formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
+    //     }
 
-    setUploading(true);
-    setProgress(0); // Reset tiến trình
+    //     console.log('FormData entries:');
+    //     for (let pair of formData.entries()) {
+    //         console.log(pair[0], pair[1]); // Debug FormData
+    //     }
 
-    // Giả lập tiến trình tải
-    const interval = setInterval(() => {
-        setProgress((prev) => {
-            if (prev >= 100) {
-                clearInterval(interval);
-                return 100;
-            }
-            return prev + 10;
-        });
-    }, 1000);
+    //     setUploading(true);
+    //     setProgress(0); // Reset tiến trình
 
-    // Gọi API import
-    importApi(formData)
-        .then((response) => {
-            toast.success('Import thành công!');
-            console.log(response.data);
-            setUploading(false);
-            setFile(null); // Reset file
-            setFileName(''); // Reset tên file
-            handleSearch(); // Cập nhật danh sách sinh viên
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            toast.error('Không thể import dữ liệu. Vui lòng thử lại.');
-            setUploading(false);
-        });
-};
+    //     // Giả lập tiến trình tải
+    //     const interval = setInterval(() => {
+    //         setProgress((prev) => {
+    //             if (prev >= 100) {
+    //                 clearInterval(interval);
+    //                 return 100;
+    //             }
+    //             return prev + 10;
+    //         });
+    //     }, 1000);
 
+    //     // Gọi API import
+    //     importApi(formData)
+    //         .then((response) => {
+    //             toast.success('Import thành công!');
+    //             console.log(response.data);
+    //             setUploading(false);
+    //             setFile(null); // Reset file
+    //             setFileName(''); // Reset tên file
+    //             handleSearch(); // Cập nhật danh sách sinh viên
+    //         })
+    //         .catch((error) => {
+    //             console.error('Error:', error);
+    //             toast.error('Không thể import dữ liệu. Vui lòng thử lại.');
+    //             setUploading(false);
+    //         });
+    // };
+
+    const importExcel = (lop_id, mon_hoc_id, khoa_dao_tao_id, activeGradeTab, selectedFile) => {
+        if (!selectedFile) {
+            toast.error('Vui lòng chọn file trước khi import.');
+            return;
+        }
+
+        console.log("activeGradeTab:", activeGradeTab);
+        console.log("selectedFile:", selectedFile);
+
+        // Chọn hàm API dựa trên activeGradeTab
+        const importApi = activeGradeTab === 0 ? importDanhSachDiemGK : importDanhSachDiemCK;
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('mon_hoc_id', mon_hoc_id);
+        formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
+        if (lop_id) {
+            formData.append('lop_id', lop_id); // Chỉ thêm lop_id nếu có
+        }
+
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]); // Debug FormData
+        }
+
+        setUploading(true);
+        setProgress(0); // Reset tiến trình
+
+        // Giả lập tiến trình tải
+        const interval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                return prev + 10;
+            });
+        }, 1000);
+
+        // Gọi API import
+        importApi(formData)
+            .then((response) => {
+                clearInterval(interval); // Dừng tiến trình giả lập
+                setProgress(100); // Đặt tiến trình thành 100%
+                toast.success('Import thành công!');
+                console.log('Response:', response.data);
+                setUploading(false);
+                setFile(null); // Reset file
+                setFileName(''); // Reset tên file
+                handleSearch(); // Cập nhật danh sách sinh viên
+            })
+            .catch((error) => {
+                clearInterval(interval); // Dừng tiến trình giả lập
+                console.error('Error:', error);
+                toast.error('Không thể import dữ liệu. Vui lòng thử lại.');
+                setUploading(false);
+            });
+    };
     const exportRetakeList = (lop_id, khoa_dao_tao_id, mon_hoc_id, searchType = 'class') => {
         if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
             toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
@@ -828,10 +887,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <FormControl fullWidth>
-                        <InputLabel>Khóa</InputLabel>
+                        <InputLabel>Khóa đào tạo</InputLabel>
                         <Select
                             value={batch}
-                            label="Khóa"
+                            label="Khóa đào tạo"
                             onChange={(e) => setBatch(e.target.value)}
                             disabled={!educationType || loadingBatches}
                         >
@@ -882,7 +941,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                             disabled={!batch}
                         >
                             <MenuItem value="class">Theo lớp</MenuItem>
-                            <MenuItem value="batch">Theo khóa</MenuItem>
+                            <MenuItem value="batch">Theo khóa đào tạo</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>
@@ -976,15 +1035,21 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     variant="contained"
                                     color="primary"
                                     sx={{ boxShadow: 2 }}
-                                    onClick={handleButtonClick} // Gọi hàm mở input file
+                                    onClick={handleButtonClick} // Mở input file
                                 >
-                                    Chọn file điểm giữa kỳ
+                                    Import điểm giữa kỳ
                                 </Button>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
                                     accept=".xlsx, .xls, .csv"
-                                    onChange={handleFileChange}
+                                    onChange={(e) => {
+                                        const selectedFile = e.target.files[0];
+                                        handleFileChange(e); // Cập nhật trạng thái file và tên file
+                                        if (selectedFile) {
+                                            importExcel(classGroup, course, batch, activeGradeTab, selectedFile); // Truyền file trực tiếp
+                                        }
+                                    }}
                                     style={{ display: 'none' }} // Ẩn input file
                                 />
 
@@ -1001,27 +1066,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                         )}
                                     </Box>
                                 )}
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={() => { importExcel(classGroup, course, batch, activeGradeTab) }}
-                                    sx={{ boxShadow: 2, marginLeft: 2 }}
-                                >
-                                    Thực hiện Import
-                                </Button>
-                                {/* Nút Export, căn phải */}
-                                <Box sx={{ flexGrow: 1 }} /> {/* Giúp căn nút Export ra bên phải */}
+
+                                <Box sx={{ flexGrow: 1 }} />
                                 <Button
                                     variant="contained"
                                     color="success"
-                                    onClick={() => { exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class') }}
+                                    onClick={() => exportExcel(classGroup, batch, course, activeGradeTab, courseOptions, classOptions, searchType || 'class')}
                                     sx={{ boxShadow: 2 }}
                                 >
                                     Export điểm giữa kỳ
                                 </Button>
-
-                                {/* Nút Import và xử lý khi đã chọn file */}
-
                             </Box>
                             <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                                 <Table stickyHeader sx={{ minWidth: 650 }} aria-label="midterm grades table">
@@ -1099,15 +1153,21 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     variant="contained"
                                     color="primary"
                                     sx={{ boxShadow: 2 }}
-                                    onClick={handleButtonClick} // Gọi hàm mở input file
+                                    onClick={handleButtonClick} // Mở input file
                                 >
-                                    Chọn file điểm cuối kỳ/thi lại
+                                    Import điểm cuối kỳ/thi lại
                                 </Button>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
                                     accept=".xlsx, .xls, .csv"
-                                    onChange={handleFileChange}
+                                    onChange={(e) => {
+                                        const selectedFile = e.target.files[0];
+                                        handleFileChange(e); // Cập nhật trạng thái file và tên file
+                                        if (selectedFile) {
+                                            importExcel(classGroup, course, batch, activeGradeTab, selectedFile); // Truyền file trực tiếp
+                                        }
+                                    }}
                                     style={{ display: 'none' }} // Ẩn input file
                                 />
 
@@ -1124,15 +1184,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                         )}
                                     </Box>
                                 )}
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={() => { importExcel(classGroup, course, batch, activeGradeTab) }}
-                                    sx={{ boxShadow: 2, marginLeft: 2 }}
-                                >
-                                    Thực hiện Import
-                                </Button>
-                                {/* Nút Export, căn phải */}
+
                                 <Box sx={{ flexGrow: 1 }} /> {/* Giúp căn nút Export ra bên phải */}
                                 <Button
                                     variant="contained"
@@ -1389,7 +1441,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     <TableCell>Mã SV</TableCell>
                                     <TableCell>Họ và tên</TableCell>
                                     <TableCell>Lớp</TableCell>
-                                    <TableCell>Khóa</TableCell>
+                                    <TableCell>Khóa đào tạo</TableCell>
                                     <TableCell align="center">Điểm TP1</TableCell>
                                     <TableCell align="center">Điểm TP2</TableCell>
                                     <TableCell align="center">Điểm thành phần</TableCell> {/* Thêm cột mới */}

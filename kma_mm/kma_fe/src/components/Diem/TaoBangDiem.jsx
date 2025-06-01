@@ -743,10 +743,10 @@ function TaoBangDiem({ sampleStudents }) {
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <FormControl fullWidth>
-                        <InputLabel>Khóa</InputLabel>
+                        <InputLabel>Khóa đào tạo</InputLabel>
                         <Select
                             value={batch}
-                            label="Khóa"
+                            label="Khóa đào tạo"
                             onChange={(e) => setBatch(e.target.value)}
                             disabled={!educationType || loadingBatches}
                         >
@@ -1059,10 +1059,10 @@ function TaoBangDiem({ sampleStudents }) {
                         </Grid>
                         <Grid item xs={12} md={4}>
                             <FormControl fullWidth>
-                                <InputLabel>Khóa</InputLabel>
+                                <InputLabel>Khóa đào tạo</InputLabel>
                                 <Select
                                     value={dialogBatch}
-                                    label="Khóa"
+                                    label="Khóa đào tạo"
                                     onChange={(e) => setDialogBatch(e.target.value)}
                                     disabled={!dialogEducationType || loadingDialogData}
                                 >
@@ -1123,7 +1123,7 @@ function TaoBangDiem({ sampleStudents }) {
                                     <TableCell>Mã SV</TableCell>
                                     <TableCell>Họ và tên</TableCell>
                                     <TableCell>Lớp</TableCell>
-                                    <TableCell>Khóa</TableCell>
+                                    <TableCell>Khóa đào tạo</TableCell>
                                     <TableCell>Hệ đào tạo</TableCell>
                                     <TableCell>Thao tác</TableCell>
                                 </TableRow>
