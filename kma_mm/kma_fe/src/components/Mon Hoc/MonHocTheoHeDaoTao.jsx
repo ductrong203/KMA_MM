@@ -40,7 +40,7 @@ const MonHocTheoHeDaoTao = () => {
     bat_buoc: 0
   });
   const [changedSubjects, setChangedSubjects] = useState([]);
-
+ const role = localStorage.getItem("role") || "";
   useEffect(() => {
     const fetchCurriculums = async () => {
       try {
@@ -334,9 +334,11 @@ const MonHocTheoHeDaoTao = () => {
           </FormControl>
         </Grid>
         <Grid item xs={2}>
-          <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
-            Tạo kế hoạch
-          </Button>
+          {(role !== "examination" && role !== "student_manage") && (
+            <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
+              Tạo kế hoạch
+            </Button>
+          )}
         </Grid>
       </Grid>
 

@@ -142,6 +142,8 @@ const StudentManagement = () => {
   const [khoaDaoTaoFilter, setKhoaDaoTaoFilter] = useState("");
   const [lopFilter, setLopFilter_] = useState("");
 
+    const role = localStorage.getItem("role") || "";
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -759,9 +761,7 @@ const StudentManagement = () => {
   };
   return (
     <Container maxWidth="xl">
-      <Typography variant="h5" gutterBottom style={{ fontWeight: 600, marginBottom: "20px" }}>
-        Quản lý học viên
-      </Typography>
+      
       <TextField
         label="Tìm kiếm học viên..."
         variant="outlined"
@@ -824,7 +824,7 @@ const StudentManagement = () => {
       <Typography variant="body2" color="textSecondary" sx={{ marginTop: "12px", fontStyle: "italic" }}>
         * Vui lòng chọn "Xuất Excel" để lấy form nhập danh sách sinh viên nếu chưa có sinh viên trong lớp.
       </Typography>
-      <Button
+      {/* <Button
         sx={{ marginTop: "8px" }}
         variant="contained"
         color="primary"
@@ -832,6 +832,18 @@ const StudentManagement = () => {
       >
         Thêm học viên
       </Button>
+       */}
+
+        {(role !== "examination" && role !== "student_manage") && (
+        <Button
+          sx={{ marginTop: "8px" }}
+          variant="contained"
+          color="primary"
+          onClick={() => handleOpen()}
+        >
+          Thêm học viên
+        </Button>
+      )}
       <Button
         sx={{ marginTop: "8px", marginLeft: "8px" }}
         variant="contained"
@@ -902,13 +914,15 @@ const StudentManagement = () => {
                   <Button variant="outlined" onClick={() => handleOpenDetail(student.id)}>
                     Xem chi tiết
                   </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleOpen(student)} // Giữ nguyên vì handleOpen dùng index
-                    style={{ marginLeft: 10 }}
-                  >
-                    Chỉnh sửa
-                  </Button>
+                {role !== "examination" && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleOpen(student)}
+                      style={{ marginLeft: 10 }}
+                    >
+                      Chỉnh sửa
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
