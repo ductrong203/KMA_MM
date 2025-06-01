@@ -41,6 +41,7 @@ import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monH
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
+import PageHeader from '../../layout/PageHeader';
 
 function XemDanhSachDiem() {
   const [year, setYear] = useState('');
@@ -82,11 +83,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching education types:', error);
         toast.error('Không thể tải danh sách hệ đào tạo.');
-        setEducationTypeOptions([
-          { id: 'CQ', name: 'Chính quy' },
-          { id: 'LT', name: 'Liên thông' },
-          { id: 'VLVH', name: 'Vừa làm vừa học' },
-        ]);
+  
       }
     };
     fetchEducationTypes();
@@ -106,11 +103,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching batches:', error);
         toast.error('Không thể tải danh sách khóa.');
-        setBatchOptions([
-          { id: 'K14', name: 'K14' },
-          { id: 'K15', name: 'K15' },
-          { id: 'K16', name: 'K16' },
-        ]);
+     
       } finally {
         setLoadingBatches(false);
       }
@@ -131,11 +124,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching classes:', error);
         toast.error('Không thể tải danh sách lớp.');
-        setClassOptions([
-          { id: 'CT6', name: 'CT6' },
-          { id: 'CT7', name: 'CT7' },
-          { id: 'CT8', name: 'CT8' },
-        ]);
+       
       } finally {
         setLoadingClasses(false);
       }
@@ -169,13 +158,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching courses:', error);
         toast.error('Không thể tải danh sách học phần.');
-        setCourseOptions([
-          { id: 'WEB', name: 'Lập trình Web' },
-          { id: 'JAVA', name: 'Lập trình Java' },
-          { id: 'DB', name: 'Cơ sở dữ liệu' },
-          { id: 'AI', name: 'Trí tuệ nhân tạo' },
-          { id: 'DS', name: 'Cấu trúc dữ liệu' },
-        ]);
+        
       } finally {
         setLoadingCourses(false);
       }
@@ -329,9 +312,7 @@ function XemDanhSachDiem() {
   return (
     <Paper sx={{ p: 3 }}>
 
-      <Typography variant="h6" gutterBottom>
-        Xem Danh Sách Điểm
-      </Typography>
+      <PageHeader title="Xem danh sách điểm" />
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -352,7 +333,7 @@ function XemDanhSachDiem() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <FormControl fullWidth>
-            <InputLabel>Khóa</InputLabel>
+            <InputLabel>Khóa đào tạo</InputLabel>
             <Select
               value={batch}
               label="Khóa"
@@ -453,40 +434,6 @@ function XemDanhSachDiem() {
 
       {/* Phần nhập file Excel */}
       <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ boxShadow: 2 }}
-          onClick={handleButtonClick}
-          startIcon={<CloudUploadIcon />}
-        >
-          Nhập Excel
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx, .xls, .csv"
-          onChange={(e) => {
-            const selectedFile = e.target.files[0];
-            handleFileChange(e);
-            if (selectedFile) {
-              importExcel(classGroup, course, batch, activeGradeTab, selectedFile);
-            }
-          }}
-          style={{ display: 'none' }}
-        />
-        {file && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body1" sx={{ marginLeft: 2 }}>
-              {fileName}
-            </Typography>
-            {uploading && (
-              <Box sx={{ width: '200px', marginLeft: 2 }}>
-                <LinearProgress variant="determinate" value={progress} />
-              </Box>
-            )}
-          </Box>
-        )}
         <Box sx={{ flexGrow: 1 }} />
         <Button
           variant="contained"

@@ -93,7 +93,7 @@ const Login = ({ onLogin }) => {
                         textTransform: "uppercase",
                     }}
                 >
-                    {isLoginMode ? "Welcome Back!" : "Create Account"}
+                    {isLoginMode ? "ĐĂNG NHẬP" : "Tạo Tài Khoản"}
                 </Typography>
 
                 {errorMessage && (
@@ -117,14 +117,14 @@ const Login = ({ onLogin }) => {
                     onKeyDown={handleKeyDown}
                 >
                     <TextField
-                        label="Username"
+                        label="Tên đăng nhập"
                         variant="outlined"
                         fullWidth
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                     <TextField
-                        label="Password"
+                        label="Mật khẩu"
                         type="password"
                         variant="outlined"
                         fullWidth
@@ -133,7 +133,7 @@ const Login = ({ onLogin }) => {
                     />
                     {!isLoginMode && (
                         <TextField
-                            label="Confirm Password"
+                            label="Xác nhận mật khẩu"
                             type="password"
                             variant="outlined"
                             fullWidth
@@ -155,7 +155,7 @@ const Login = ({ onLogin }) => {
                             },
                         }}
                     >
-                        {isLoginMode ? "Login" : "Register"}
+                        {isLoginMode ? "Đăng nhập" : "Đăng ký"}
                     </Button>
                     {/* <Button
                         fullWidth

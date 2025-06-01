@@ -124,20 +124,20 @@ function QuanLyDaoTao() {
 
     return (
         <Box>
-            <PageHeader
-                title="Hệ đào tạo"
-
-
-            />
-            <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenAddTraining(true)}
-                sx={{ mb: 3 }}
-                disabled={loading}
-            >
-                Thêm hệ đào tạo
-            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <PageHeader
+                    title="Hệ đào tạo"
+                />
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setOpenAddTraining(true)}
+                    sx={{ mb: 3 }}
+                    disabled={loading}
+                >
+                    Thêm hệ đào tạo
+                </Button>
+            </Box>
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>

@@ -249,7 +249,7 @@ const QuanLyKhoa = () => {
   return (
     <Container maxWidth="" sx={{ mt: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <PageHeader title="Danh sách khóa" />
+        <PageHeader title="Danh sách khóa đào tạo" />
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenForm}>
           Thêm khóa đào tạo mới
         </Button>

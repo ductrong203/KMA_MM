@@ -22,6 +22,7 @@ import MonHocForm from './MonHocForm';
 import MonHocTheoHeDaoTao from './MonHocTheoHeDaoTao';
 import { createMonHoc, getMonHoc, updateMonHoc } from '../../Api_controller/Service/monHocService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
+import PageHeader from '../../layout/PageHeader';
 
 const QuanLyMonHoc = () => {
   const [subjects, setSubjects] = useState([]);
@@ -219,7 +220,7 @@ const QuanLyMonHoc = () => {
       {tabValue === 0 && (
         <Paper sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">Danh sách môn học</Typography>
+            <PageHeader title="Quản lý môn học" />
             {role !== 'examination' && (
               <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenSubjectForm}>
                 Thêm môn học

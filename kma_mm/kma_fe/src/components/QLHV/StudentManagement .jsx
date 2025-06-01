@@ -29,6 +29,7 @@ import {
   FormHelperText,
   Box,
   Chip,
+  Alert,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -159,6 +160,7 @@ const StudentManagement = () => {
   // State cho bộ lọc mới
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [displayStudents, setDisplayStudents] = useState([]);
+  const role = localStorage.getItem("role") || "";
 
   const handleCloseMiPopup = () => {
     setOpenMilitaryPopup(false);
@@ -963,16 +965,23 @@ const StudentManagement = () => {
       {/* THAY ĐỔI: Action buttons với layout mới */}
       <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Box>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpen()}
-            sx={{ mr: 1 }}
-          >
-            Thêm học viên
-          </Button>
+          {role !== "examination" && (
 
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpen()}
+              sx={{ mr: 1 }}
+            >
+              Thêm học viên
+            </Button>
+          )}
+          {isFilterApplied && (
+            <Alert severity="info" sx={{ my: 2 }}>
+              Vui lòng chọn xuất excel để lấy form nhập danh sách học viên nếu chưa có sinh viên!
+            </Alert>
+          )}
           <Button
             variant="contained"
             color="secondary"
@@ -1047,13 +1056,16 @@ const StudentManagement = () => {
                       >
                         Xem chi tiết
                       </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleOpen(student)}
-                      >
-                        Chỉnh sửa
-                      </Button>
+                      {role !== "examination" && (
+
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleOpen(student)}
+                        >
+                          Chỉnh sửa
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
