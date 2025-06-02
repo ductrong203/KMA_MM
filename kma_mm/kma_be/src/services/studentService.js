@@ -131,7 +131,10 @@ class SinhVienService {
           'que_quan',
           'so_dien_thoai',
           'email',
-          'ghi_chu'
+          'ghi_chu',
+          'CCCD',
+          'ngay_cap_CCCD',
+          'noi_cap_CCCD'
         ],
         include: [
           {
@@ -178,6 +181,9 @@ class SinhVienService {
         don_vi_gui_dao_tao: sv['thong_tin_quan_nhans.don_vi_cu_di_hoc'] || '',
         dien_thoai: sv.so_dien_thoai || '',
         email: sv.email || '',
+        cccd: sv.CCCD || '',
+        ngay_cap_cccd: sv.ngay_cap_CCCD ? new Date(sv.ngay_cap_CCCD).toLocaleDateString('vi-VN') : '',
+        noi_cap_cccd: sv.noi_cap_CCCD || '',
         ghi_chu: sv.ghi_chu || ''
       }));
 
@@ -212,6 +218,9 @@ class SinhVienService {
         { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui_dao_tao', width: 25 },
         { header: 'Điện thoại', key: 'dien_thoai', width: 15 },
         { header: 'Email', key: 'email', width: 25 },
+        { header: 'CCCD', key: 'cccd', width: 15 },
+        { header: 'Ngày cấp', key: 'ngay_cap_cccd', width: 15 },
+        { header: 'Nơi cấp', key: 'noi_cap_cccd', width: 25 },
         { header: 'Ghi chú', key: 'ghi_chu', width: 30 }
       ];
 
@@ -248,9 +257,9 @@ class SinhVienService {
     if (!sinhVien) return null;
     await sinhVien.destroy();
     return sinhVien;
-  }
-
-  static async importSinhVien(lop_id, filePath) {
+  }  
+  
+  static async importSinhVien({lop_id, filePath, ghi_de = 0}) {
     const transaction = await sequelize.transaction(); // Bắt đầu transaction
     try {
       // Kiểm tra tham số đầu vào
@@ -259,6 +268,10 @@ class SinhVienService {
       }
       if (!filePath || !fs.existsSync(filePath)) {
         throw new Error("File Excel không tồn tại");
+      }
+      // Kiểm tra ghi_de là 0 hoặc 1
+      if (ghi_de != 0 && ghi_de != 1) {
+        throw new Error("Tham số ghi_de phải có giá trị là 0 hoặc 1");
       }
 
       // Kiểm tra lớp tồn tại
@@ -305,6 +318,9 @@ class SinhVienService {
       const dienThoaiIndex = headers.indexOf("điện thoại");
       const emailIndex = headers.indexOf("email");
       const ghiChuIndex = headers.indexOf("ghi chú");
+      const cccdIndex = headers.indexOf("cccd");
+      const ngayCapCCCDIndex = headers.indexOf("ngày cấp");
+      const noiCapCCCDIndex = headers.indexOf("nơi cấp");
 
       if (
         hoDemIndex === -1 ||
@@ -316,13 +332,15 @@ class SinhVienService {
         donViGuiDaoTaoIndex === -1 ||
         dienThoaiIndex === -1 ||
         emailIndex === -1 ||
-        ghiChuIndex === -1
+        ghiChuIndex === -1 ||
+        cccdIndex === -1
       ) {
         throw new Error("Không tìm thấy các cột hợp lệ trong file Excel");
       }
 
       const newSinhViens = [];
       const thongTinQuanNhanRecords = [];
+      let updateCount = 0; // Biến đếm số lượng sinh viên được cập nhật
 
       // Tính toán số thứ tự bắt đầu cho mã sinh viên
       const currentCount = await sinh_vien.count({ where: { lop_id }, transaction });
@@ -458,27 +476,123 @@ class SinhVienService {
             throw new Error(`Không thể xử lý email: ${JSON.stringify(emailRaw)} cho ${ho_dem} ${ten}. Lỗi: ${err.message}`);
           }
         }
-
-        // Tạo mã sinh viên
-        const ma_sinh_vien = `${lopCheck.ma_lop}${nextSeq.toString().padStart(2, "0")}`;
-        nextSeq++; // Tăng số thứ tự cho sinh viên tiếp theo
-
-        // Thêm sinh viên mới
-        newSinhViens.push({
-          ma_sinh_vien,
-          ho_dem,
-          ten,
-          ngay_sinh,
-          gioi_tinh,
-          que_quan,
-          doi_tuong_id,
-          so_dien_thoai,
-          email,
-          ghi_chu,
-          lop_id,
-          dang_hoc: 1, // Giả sử sinh viên đang học
-        });
-
+        
+        // Xử lý CCCD, ngày cấp và nơi cấp
+        let CCCD = null;
+        let ngay_cap_CCCD = null;
+        let noi_cap_CCCD = null;
+        
+        // Xử lý CCCD
+        if (cccdIndex !== -1 && row[cccdIndex]) {
+          CCCD = row[cccdIndex].toString().trim();
+        }
+        if (CCCD==null) throw new Error(`Không tồn tại cccd cho ${ho_dem} ${ten}`);
+        
+        // Xử lý ngày cấp CCCD
+        if (ngayCapCCCDIndex !== -1 && row[ngayCapCCCDIndex]) {
+          let date;
+          const ngayCapRaw = row[ngayCapCCCDIndex];
+          
+          // Trường hợp 1: Giá trị là đối tượng Date (từ Excel)
+          if (ngayCapRaw instanceof Date) {
+            date = ngayCapRaw;
+            if (!isNaN(date)) {
+              ngay_cap_CCCD = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
+            }
+          } else {
+            // Trường hợp 2: Giá trị là chuỗi
+            const ngayCapStr = ngayCapRaw.toString().trim();
+            // Hỗ trợ định dạng D/M/YYYY, DD/MM/YYYY, D-M-YYYY, DD-MM-YYYY
+            const regex = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/;
+            const match = ngayCapStr.match(regex);
+            if (match) {
+              let [_, day, month, year] = match.map(Number);
+              day = day.toString().padStart(2, "0");
+              month = month.toString().padStart(2, "0");
+              date = new Date(year, month - 1, day);
+              if (
+                !isNaN(date) &&
+                date.getDate() === Number(day) &&
+                date.getMonth() === Number(month) - 1 &&
+                date.getFullYear() === year
+              ) {
+                ngay_cap_CCCD = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
+              }
+            }
+          }
+        }
+        
+        // Xử lý nơi cấp CCCD
+        if (noiCapCCCDIndex !== -1 && row[noiCapCCCDIndex]) {
+          noi_cap_CCCD = row[noiCapCCCDIndex].toString().trim();
+        }
+        
+        // Kiểm tra sinh viên đã tồn tại theo CCCD
+        let existingSinhVien = null;
+        if (CCCD) {
+          existingSinhVien = await sinh_vien.findOne({
+            where: { CCCD },
+            transaction
+          });
+        }
+        
+        // Xử lý theo tham số ghi_de
+        if (existingSinhVien) {
+          if (ghi_de == 1) {
+            // Cập nhật thông tin sinh viên đã tồn tại
+            await existingSinhVien.update({
+              ho_dem,
+              ten,
+              ngay_sinh,
+              gioi_tinh,
+              que_quan,
+              doi_tuong_id,
+              so_dien_thoai,
+              email,
+              ghi_chu,
+              CCCD,
+              ngay_cap_CCCD,
+              noi_cap_CCCD
+            }, { transaction });
+            updateCount++; // Tăng số đếm sinh viên được cập nhật
+            
+            // Cập nhật thông tin quân nhân nếu có
+            if (don_vi_cu_di_hoc) {
+              await thong_tin_quan_nhan.findOrCreate({
+                where: { sinh_vien_id: existingSinhVien.id },
+                defaults: {
+                  sinh_vien_id: existingSinhVien.id,
+                  don_vi_cu_di_hoc
+                },
+                transaction
+              });
+            }
+          }
+          // Nếu ghi_de = 0, bỏ qua bản ghi này
+        } else {
+          // Tạo mã sinh viên cho bản ghi mới
+          const ma_sinh_vien = `${lopCheck.ma_lop}${nextSeq.toString().padStart(2, "0")}`;
+          nextSeq++; // Tăng số thứ tự cho sinh viên tiếp theo
+          
+          // Thêm sinh viên mới
+          newSinhViens.push({
+            ma_sinh_vien,
+            ho_dem,
+            ten,
+            ngay_sinh,
+            gioi_tinh,
+            que_quan,
+            doi_tuong_id,
+            so_dien_thoai,
+            email,
+            ghi_chu,
+            lop_id,
+            CCCD,
+            ngay_cap_CCCD,
+            noi_cap_CCCD,
+            dang_hoc: 1, // Giả sử sinh viên đang học
+          });
+        }
         // Chuẩn bị thong_tin_quan_nhan
         if (don_vi_cu_di_hoc) {
           thongTinQuanNhanRecords.push({
@@ -494,23 +608,18 @@ class SinhVienService {
         validate: true, // Kích hoạt validation của model
       });
 
-      // Cập nhật sinh_vien_id cho thong_tin_quan_nhan
+      // Cập nhật sinh_vien_id cho thong_tin_quan_nhan, chỉ cho các sinh viên mới thêm vào
       const thongTinQuanNhanFinal = thongTinQuanNhanRecords.map((record, index) => ({
         ...record,
-        sinh_vien_id: createdSinhViens[index].id,
+        sinh_vien_id: createdSinhViens[index] ? createdSinhViens[index].id : null,
       }));
 
-      // Thêm thong_tin_quan_nhan
+      // Thêm thong_tin_quan_nhan cho các sinh viên mới
       if (thongTinQuanNhanFinal.length > 0) {
         await thong_tin_quan_nhan.bulkCreate(thongTinQuanNhanFinal, {
           transaction,
           validate: true,
         });
-      }
-
-      // Xóa file sau khi xử lý
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
       }
 
       // Commit transaction
@@ -519,13 +628,19 @@ class SinhVienService {
       return {
         message: "Nhập danh sách sinh viên thành công",
         newCount: createdSinhViens.length,
+        updateCount: updateCount, // Thêm số lượng sinh viên được cập nhật
         thongTinQuanNhanCount: thongTinQuanNhanFinal.length,
       };
     } catch (error) {
       // Rollback transaction nếu có lỗi
       await transaction.rollback();
       throw new Error("Lỗi khi nhập danh sách sinh viên: " + error.message);
-    }
+    } finally {
+        // Xóa file sau khi xử lý, bất kể thành công hay thất bại
+        if (filePath && fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
   }
   
   static async timSinhVienTheoMaHoacFilter(filters) {
@@ -584,6 +699,108 @@ class SinhVienService {
     } catch (error) {
       throw new Error(error.message);
     }
+  }
+
+  static async kiemTraTonTai({ lop_id, filePath }) {
+      const transaction = await sequelize.transaction(); // Bắt đầu transaction
+      try {
+        // Kiểm tra tham số đầu vào
+        if (!lop_id) {
+          throw new Error("Thiếu lop_id");
+        }
+        if (!filePath || !fs.existsSync(filePath)) {
+          throw new Error("File Excel không tồn tại");
+        }
+
+        // Kiểm tra lớp tồn tại
+        const lopCheck = await lop.findByPk(lop_id, { transaction });
+        if (!lopCheck) {
+          throw new Error(`Lớp với id ${lop_id} không tồn tại`);
+        }
+
+        // Đọc file Excel
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath);
+        const worksheet = workbook.getWorksheet(1); // Lấy worksheet đầu tiên
+
+        const rows = [];
+        worksheet.eachRow((row, rowNumber) => {
+          rows.push(row.values.slice(1)); // Bỏ cột đầu tiên nếu là index
+        });
+
+        if (rows.length === 0) {
+          throw new Error("File Excel rỗng");
+        }
+
+        // Tìm dòng tiêu đề
+        const headerRowIndex = rows.findIndex((row) =>
+          row.some((cell) => cell && cell.toString().toLowerCase().includes("họ đệm"))
+        );
+        if (headerRowIndex === -1) {
+          throw new Error("Không tìm thấy tiêu đề hợp lệ");
+        }
+
+        // Chuyển tiêu đề về chữ thường
+        const headers = rows[headerRowIndex].map((h) => h.toString().toLowerCase().trim());
+        const dataRows = rows.slice(headerRowIndex + 1);
+
+        // Xác định vị trí cột
+        const hoDemIndex = headers.indexOf("họ đệm");
+        const tenIndex = headers.indexOf("tên");
+        const cccdIndex = headers.indexOf("cccd");
+
+        if (hoDemIndex === -1 || tenIndex === -1 || cccdIndex === -1) {
+          throw new Error("Không tìm thấy các cột hợp lệ (họ đệm, tên, cccd) trong file Excel");
+        }
+
+        const existingStudents = [];
+
+        // Xử lý từng dòng dữ liệu
+        for (let row of dataRows) {
+          const ho_dem = row[hoDemIndex] ? row[hoDemIndex].toString().trim() : "";
+          const ten = row[tenIndex] ? row[tenIndex].toString().trim() : "";
+          const CCCD = row[cccdIndex] ? row[cccdIndex].toString().trim() : null;
+
+          if (!ho_dem || !ten || !CCCD) {
+            continue; // Bỏ qua dòng thiếu thông tin cần thiết
+          }
+
+          // Kiểm tra sinh viên đã tồn tại theo CCCD
+          const existingSinhVien = await sinh_vien.findOne({
+            where: { CCCD },
+            attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'CCCD', 'lop_id'],
+            transaction
+          });
+
+          if (existingSinhVien) {
+            existingStudents.push({
+              ma_sinh_vien: existingSinhVien.ma_sinh_vien,
+              ho_dem: existingSinhVien.ho_dem,
+              ten: existingSinhVien.ten,
+              CCCD: existingSinhVien.CCCD,
+              lop_id: existingSinhVien.lop_id
+            });
+          }
+        }
+
+        // Commit transaction
+        await transaction.commit();
+
+        return {
+          message: "Kiểm tra danh sách sinh viên thành công",
+          existingStudents: existingStudents,
+          existingCount: existingStudents.length
+        };
+      } catch (error) {
+        // Rollback transaction nếu có lỗi
+        await transaction.rollback();
+        throw new Error("Lỗi khi kiểm tra danh sách sinh viên: " + error.message);
+      } finally {
+        // Xóa file sau khi xử lý, bất kể thành công hay thất bại
+        if (filePath && fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
   }
 }
 
