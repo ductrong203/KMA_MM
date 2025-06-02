@@ -58,8 +58,10 @@ import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
 import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
 import PhuLucBangDiem from "../Dao Tao/PhuLucBangDiem";
-import ThongKeTotNghiep from "../Dao Tao/ThongKeTotNghiep";
+import ThongKeTotNghiep from "../Dao Tao/ThongKe";
 import QuanLyChungChi from "../QuanLyChungChi/QuanLyChungChi";
+import ThongKe from "../Dao Tao/ThongKe";
+import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
 
 
 // Mock data
@@ -167,6 +169,7 @@ function TrainingDashboard() {
             <Tab label="Quản lý học viên" />
             <Tab label="Quản lý môn học" />
             <Tab label="Thống kê và báo cáo" />
+            <Tab label="Xem danh sách điểm" />
           </Tabs>
 
           {currentTab === 0 && (
@@ -192,8 +195,8 @@ function TrainingDashboard() {
                 }}
               >
                 <Tab label="Hệ đào tạo" />
-                <Tab label="Quản lý khóa" />
-                <Tab label="Quản lý lớp" />
+                <Tab label="Quản lý khóa đào tạo" />
+                <Tab label="Quản lý lớp học" />
               </Tabs>
               {subTab === 0 && <QuanLyDaoTao />}
               {subTab === 1 && <QuanLyKhoa />}
@@ -225,14 +228,17 @@ function TrainingDashboard() {
             <Box>
               <Tabs value={subTab} onChange={handleSubTabChange}>
                 <Tab label="Phụ lục văn bằng" />
-                <Tab label="Thống kê tốt nghiệp" />
+                <Tab label="Thống kê" />
                 <Tab label="Báo cáo chi tiết" />
               </Tabs>
               <Grid container spacing={3} sx={{ mt: 2 }}>
                 {subTab === 0 && <PhuLucBangDiem />}
-                {subTab === 1 && <ThongKeTotNghiep />}
+                {subTab === 1 && <ThongKe />}
               </Grid>
             </Box>
+          )}
+          {currentTab === 4 && (
+            <XemDanhSachDiem />
           )}
         </Paper>
 
