@@ -78,12 +78,12 @@ const AssignRoles = () => {
     const [users, setUsers] = useState([]);
     const navigate = useNavigate(); // Hook điều hướng
     const roleMapping = {
-        1: "training",
-        2: "examination",
-        3: "student_manage",
-        4: "library",
-        5: "director",
-        6: "sv",
+        1: "đào tạo",
+        2: "khảo thí",
+        3: "quản lý sinh viên",
+        4: "thư viện",
+        5: "giám đốc",
+        6: "sinh viên",
         7: "admin",
     };
 
@@ -152,7 +152,7 @@ const AssignRoles = () => {
                             </li>
                         )}
                         renderInput={(params) => (
-                            <TextField {...params} label="Username" variant="outlined" fullWidth />
+                            <TextField {...params} label="Tên đăng nhập" variant="outlined" fullWidth />
                         )}
                     />
                 </Grid>
@@ -160,7 +160,7 @@ const AssignRoles = () => {
                 <Grid item xs={12} sm={6}>
                     <TextField
                         select
-                        label="Role"
+                        label="Vai trò"
                         variant="outlined"
                         fullWidth
                         value={role}

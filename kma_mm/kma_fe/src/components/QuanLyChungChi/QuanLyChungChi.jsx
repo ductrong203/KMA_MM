@@ -42,7 +42,7 @@ const TINH_TRANG_OPTIONS = [
 ];
 
 const INIT_NEW_DATA = {
-    sinh_vien_id: "",
+    // sinh_vien_id: "",
     ma_sinh_vien: "",
     ho_ten: "",
     diem_tb: "",
@@ -317,7 +317,8 @@ const QuanLyChungChi = () => {
             setUi(prev => ({ ...prev, isLoading: true }));
 
             const apiData = {
-                sinh_vien_id: parseInt(newData.sinh_vien_id) || 1,
+                //sinh_vien_id: parseInt(newData.sinh_vien_id) || 1,
+                ma_sinh_vien: newData.ma_sinh_vien,
                 diem_trung_binh: parseFloat(newData.diem_tb) || null,
                 xep_loai: newData.xep_loai || null,
                 ghi_chu: newData.ghi_chu || null,
