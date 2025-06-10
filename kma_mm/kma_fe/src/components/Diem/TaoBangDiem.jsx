@@ -35,7 +35,7 @@ import axios from 'axios';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
-import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
+import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import api from '../../Api_controller/Api_setup/axiosConfig';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { kiemTraBangDiemTonTai, layDanhSachSinhVienTheoTKB, taoBangDiemChoSinhVien, themSinhVienHocLai, timSinhVienTheoMaHoacFilter } from '../../Api_controller/Service/diemService';
@@ -94,52 +94,52 @@ function TaoBangDiem({ sampleStudents }) {
 
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearchStudents = async () => {
-    if (!batch || !classGroup || !semester || !course) {
-        toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
-        return;
-    }
-    setSearchMode(true);
-    setLoadingStudents(true);
-    try {
-        const response = await layDanhSachSinhVienTheoTKB(scheduleId);
-        console.log("searchResponse:", response);
-
-        const formattedStudents = await Promise.all(
-            response.data.map(async (student) => {
-                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                const maLop = lopInfo?.ma_lop || student.lop_id;
-
-                return {
-                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                    ho_dem: student.sinh_vien.ho_dem,
-                    ten: student.sinh_vien.ten,
-                    lop: maLop,
-                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                    diem: {
-                        TP1: student.diem?.TP1 || null,
-                        TP2: student.diem?.TP2 || null,
-                        CK1: student.diem?.CK1 || null,
-                        CK2: student.diem?.CK2 || null
-                    },
-                    retakeRegistered: student.retakeRegistered || false
-                };
-            })
-        );
-        console.log(formattedStudents);
-        setStudents(formattedStudents);
-
-        if (formattedStudents.length > 0) {
-            toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
-        } else {
-            toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+        if (!batch || !classGroup || !semester || !course) {
+            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+            return;
         }
-    } catch (error) {
-        console.error('Error searching students:', error);
-        toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
-    } finally {
-        setLoadingStudents(false);
-    }
-};
+        setSearchMode(true);
+        setLoadingStudents(true);
+        try {
+            const response = await layDanhSachSinhVienTheoTKB(scheduleId);
+            console.log("searchResponse:", response);
+
+            const formattedStudents = await Promise.all(
+                response.data.map(async (student) => {
+                    const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                    const maLop = lopInfo?.ma_lop || student.lop_id;
+
+                    return {
+                        ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                        ho_dem: student.sinh_vien.ho_dem,
+                        ten: student.sinh_vien.ten,
+                        lop: maLop,
+                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                        diem: {
+                            TP1: student.diem?.TP1 || null,
+                            TP2: student.diem?.TP2 || null,
+                            CK1: student.diem?.CK1 || null,
+                            CK2: student.diem?.CK2 || null
+                        },
+                        retakeRegistered: student.retakeRegistered || false
+                    };
+                })
+            );
+            console.log(formattedStudents);
+            setStudents(formattedStudents);
+
+            if (formattedStudents.length > 0) {
+                toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+            } else {
+                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            }
+        } catch (error) {
+            console.error('Error searching students:', error);
+            toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setLoadingStudents(false);
+        }
+    };
 
     // Sample education types - replace with API call
     useEffect(() => {
@@ -149,12 +149,7 @@ function TaoBangDiem({ sampleStudents }) {
                 setEducationTypeOptions(response);
             } catch (error) {
                 console.error('Error fetching education types:', error);
-                // Fallback to sample data
-                setEducationTypeOptions([
-                    { id: 'CQ', name: 'Chính quy' },
-                    { id: 'LT', name: 'Liên thông' },
-                    { id: 'VLVH', name: 'Vừa làm vừa học' }
-                ]);
+
             }
         };
 
@@ -175,12 +170,7 @@ function TaoBangDiem({ sampleStudents }) {
                 setBatchOptions(response);
             } catch (error) {
                 console.error('Error fetching batches:', error);
-                // Fallback to sample data
-                setBatchOptions([
-                    { id: 'K14', name: 'K14' },
-                    { id: 'K15', name: 'K15' },
-                    { id: 'K16', name: 'K16' }
-                ]);
+
             } finally {
                 setLoadingBatches(false);
             }
@@ -264,8 +254,8 @@ function TaoBangDiem({ sampleStudents }) {
                 const courseIds = response.map(course => course.mon_hoc_id);
                 console.log(courseIds);
                 // Gọi API /mon-hoc/details để lấy chi tiết các môn học
-                const courseDetailsResponse = await axios.get(`http://localhost:8000/mon-hoc/chitiet`, {
-                    params: { ids: courseIds.join(',') }
+                const courseDetailsResponse = await chiTietMonHoc({
+                    ids: courseIds.join(',')
                 });
 
                 // Gộp dữ liệu từ hai API
@@ -306,8 +296,6 @@ function TaoBangDiem({ sampleStudents }) {
                 setScheduleId(response.data[0].id);
             } catch (error) {
                 console.error('Error fetching schedule ID:', error);
-                // Mock schedule ID for testing
-                setScheduleId('SCH001');
             } finally {
                 setLoading(false);
             }
@@ -319,18 +307,49 @@ function TaoBangDiem({ sampleStudents }) {
     console.log("scheduleId:", scheduleId);
 
     const handleCreateGradeSheet = async () => {
-    if (!scheduleId) {
-        toast.error('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
-        return;
-    }
+        if (!scheduleId) {
+            toast.error('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
+            return;
+        }
 
-    setLoadingStudents(true);
-    try {
-        const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
-        console.log(existingGradeSheet);
-        if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
-            toast.warn('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
+        setLoadingStudents(true);
+        try {
+            const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
+            console.log(existingGradeSheet);
+            if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
+                toast.warn('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
+                const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+                const formattedStudents = await Promise.all(
+                    studentsResponse.data.map(async (student) => {
+                        const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                        const maLop = lopInfo?.ma_lop || student.lop_id;
+
+                        return {
+                            ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                            ho_dem: student.sinh_vien.ho_dem,
+                            ten: student.sinh_vien.ten,
+                            lop: maLop,
+                            lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                            diem: {
+                                TP1: student.diem_tp1 || null,
+                                TP2: student.diem_tp2 || null,
+                                CK1: student.diem_ck || null,
+                                CK2: student.diem_ck2 || null
+                            },
+                            retakeRegistered: student.retakeRegistered || false
+                        };
+                    })
+                );
+                setStudents(formattedStudents);
+                return;
+            }
+
+            const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
+            console.log('Grade sheet response:', gradeSheetResponse);
+
             const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+            console.log("studentsResponse:", studentsResponse);
+
             const formattedStudents = await Promise.all(
                 studentsResponse.data.map(async (student) => {
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
@@ -352,79 +371,48 @@ function TaoBangDiem({ sampleStudents }) {
                     };
                 })
             );
+            console.log(formattedStudents);
             setStudents(formattedStudents);
-            return;
+
+            if (formattedStudents.length > 0) {
+                toast.success(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
+            } else {
+                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+            }
+        } catch (error) {
+            console.error('Error creating grade sheet:', error);
+            toast.error('Có lỗi xảy ra khi tạo bảng điểm. Vui lòng thử lại sau.');
+
+            const allStudents = [
+                {
+                    id: 'SV001',
+                    name: 'Lê Hoài Nam',
+                    class: 'CT6',
+                    batch: 'K15',
+                    major: 'CNTT',
+                    educationType: 'CQ',
+                    status: 'Thi lần 1',
+                    examNumber: '1',
+                    diem: { TP1: null, TP2: null, CK1: null, CK2: null }
+                },
+            ];
+
+            let filteredStudents = [...allStudents];
+            if (classGroup && classGroup !== 'ALL') {
+                filteredStudents = filteredStudents.filter(student => student.class === classGroup);
+            }
+            if (batch) {
+                filteredStudents = filteredStudents.filter(student => student.batch === batch);
+            }
+            if (educationType) {
+                filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
+            }
+
+            setStudents(filteredStudents);
+        } finally {
+            setLoadingStudents(false);
         }
-
-        const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
-        console.log('Grade sheet response:', gradeSheetResponse);
-
-        const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
-        console.log("studentsResponse:", studentsResponse);
-
-        const formattedStudents = await Promise.all(
-            studentsResponse.data.map(async (student) => {
-                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                const maLop = lopInfo?.ma_lop || student.lop_id;
-
-                return {
-                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                    ho_dem: student.sinh_vien.ho_dem,
-                    ten: student.sinh_vien.ten,
-                    lop: maLop,
-                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                    diem: {
-                        TP1: student.diem_tp1 || null,
-                        TP2: student.diem_tp2 || null,
-                        CK1: student.diem_ck || null,
-                        CK2: student.diem_ck2 || null
-                    },
-                    retakeRegistered: student.retakeRegistered || false
-                };
-            })
-        );
-        console.log(formattedStudents);
-        setStudents(formattedStudents);
-
-        if (formattedStudents.length > 0) {
-            toast.success(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
-        } else {
-            toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
-        }
-    } catch (error) {
-        console.error('Error creating grade sheet:', error);
-        toast.error('Có lỗi xảy ra khi tạo bảng điểm. Vui lòng thử lại sau.');
-
-        const allStudents = [
-            {
-                id: 'SV001',
-                name: 'Lê Hoài Nam',
-                class: 'CT6',
-                batch: 'K15',
-                major: 'CNTT',
-                educationType: 'CQ',
-                status: 'Thi lần 1',
-                examNumber: '1',
-                diem: { TP1: null, TP2: null, CK1: null, CK2: null }
-            },
-        ];
-
-        let filteredStudents = [...allStudents];
-        if (classGroup && classGroup !== 'ALL') {
-            filteredStudents = filteredStudents.filter(student => student.class === classGroup);
-        }
-        if (batch) {
-            filteredStudents = filteredStudents.filter(student => student.batch === batch);
-        }
-        if (educationType) {
-            filteredStudents = filteredStudents.filter(student => student.educationType === educationType);
-        }
-
-        setStudents(filteredStudents);
-    } finally {
-        setLoadingStudents(false);
-    }
-};
+    };
 
     // Kiểm tra xem điểm giữa kỳ có đạt yêu cầu để nhập điểm cuối kỳ không
     const canEnterFinalExamScore = (student) => {
@@ -442,53 +430,53 @@ function TaoBangDiem({ sampleStudents }) {
         );
     };
 
-   const handleScoreChange = async (studentId, scoreType, value) => {
-    const numericValue = value === '' ? null : parseFloat(value);
+    const handleScoreChange = async (studentId, scoreType, value) => {
+        const numericValue = value === '' ? null : parseFloat(value);
 
-    setStudents(prevStudents =>
-        prevStudents.map(student => {
-            if (student.ma_sinh_vien === studentId) {
-                if ((scoreType === 'CK1' || scoreType === 'CK2') && !canEnterFinalExamScore(student)) {
-                    toast.error(`Không thể nhập điểm cuối kỳ cho sinh viên ${student.ho_dem} ${student.ten}. Điểm giữa kỳ (TP1 và TP2) phải lớn hơn hoặc bằng 4.0.`);
-                    return student;
-                }
-
-                return {
-                    ...student,
-                    diem: {
-                        ...student.diem,
-                        [scoreType]: numericValue
+        setStudents(prevStudents =>
+            prevStudents.map(student => {
+                if (student.ma_sinh_vien === studentId) {
+                    if ((scoreType === 'CK1' || scoreType === 'CK2') && !canEnterFinalExamScore(student)) {
+                        toast.error(`Không thể nhập điểm cuối kỳ cho sinh viên ${student.ho_dem} ${student.ten}. Điểm giữa kỳ (TP1 và TP2) phải lớn hơn hoặc bằng 4.0.`);
+                        return student;
                     }
-                };
-            }
-            return student;
-        })
-    );
-};
+
+                    return {
+                        ...student,
+                        diem: {
+                            ...student.diem,
+                            [scoreType]: numericValue
+                        }
+                    };
+                }
+                return student;
+            })
+        );
+    };
 
     const handleRetakeRegistration = async (studentId, checked) => {
-    setStudents(prevStudents =>
-        prevStudents.map(student => {
-            if (student.ma_sinh_vien === studentId) {
-                toast.success(checked ? 'Đã đăng ký học lại.' : 'Đã hủy đăng ký học lại.');
-                return { ...student, retakeRegistered: checked };
-            }
-            return student;
-        })
-    );
+        setStudents(prevStudents =>
+            prevStudents.map(student => {
+                if (student.ma_sinh_vien === studentId) {
+                    toast.success(checked ? 'Đã đăng ký học lại.' : 'Đã hủy đăng ký học lại.');
+                    return { ...student, retakeRegistered: checked };
+                }
+                return student;
+            })
+        );
 
-    if (gradeSheetId) {
-        try {
-            await axios.put(`${API_BASE_URL}/grade-sheets/${gradeSheetId}/students/${studentId}/retake`, {
-                retakeRegistered: checked
-            });
-            toast.success('Cập nhật đăng ký học lại thành công.');
-        } catch (error) {
-            console.error('Error updating retake registration:', error);
-            toast.error('Có lỗi xảy ra khi cập nhật đăng ký học lại. Vui lòng thử lại.');
+        if (gradeSheetId) {
+            try {
+                await axios.put(`${API_BASE_URL}/grade-sheets/${gradeSheetId}/students/${studentId}/retake`, {
+                    retakeRegistered: checked
+                });
+                toast.success('Cập nhật đăng ký học lại thành công.');
+            } catch (error) {
+                console.error('Error updating retake registration:', error);
+                toast.error('Có lỗi xảy ra khi cập nhật đăng ký học lại. Vui lòng thử lại.');
+            }
         }
-    }
-};
+    };
 
     const handleOpenDialog = () => {
         setOpenDialog(true);
@@ -591,90 +579,90 @@ function TaoBangDiem({ sampleStudents }) {
     }, [dialogBatch]);
 
     const handleAddRetakeStudent = async () => {
-    if (!studentId) {
-        toast.error('Vui lòng chọn sinh viên');
-        return;
-    }
-
-    console.log('studentId:', studentId);
-
-    try {
-        const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
-        if (isStudentExist) {
-            const existingStudent = students.find(student => student.ma_sinh_vien === studentId);
-            toast.warn(`Sinh viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
-            handleCloseDialog();
+        if (!studentId) {
+            toast.error('Vui lòng chọn sinh viên');
             return;
         }
 
-        const response = await themSinhVienHocLai({
-            thoi_khoa_bieu_id: scheduleId,
-            ma_sinh_vien: studentId,
-        });
+        console.log('studentId:', studentId);
 
-        console.log('API Response:', response);
-
-        if (response.success) {
-            const retakeData = response.data;
-            const sinhVienData = await timSinhVienTheoMaHoacFilter({
-                'ma_sinh_vien': studentId,
-            });
-
-            const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
-            console.log(sinhVienInfo);
-            if (!sinhVienInfo) {
-                throw new Error('Không tìm thấy thông tin sinh viên');
+        try {
+            const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
+            if (isStudentExist) {
+                const existingStudent = students.find(student => student.ma_sinh_vien === studentId);
+                toast.warn(`Sinh viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
+                handleCloseDialog();
+                return;
             }
 
-            const newStudent = {
-                ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
-                ho_dem: sinhVienInfo.ho_dem,
-                ten: sinhVienInfo.ten,
-                lop: sinhVienInfo.lop,
-                lan_hoc: retakeData.lan_hoc,
-                diem: {
-                    TP1: null,
-                    TP2: null,
-                    CK1: null,
-                    CK2: null,
-                },
-                retakeRegistered: true,
-            };
+            const response = await themSinhVienHocLai({
+                thoi_khoa_bieu_id: scheduleId,
+                ma_sinh_vien: studentId,
+            });
 
-            setStudents(prevStudents => [...prevStudents, newStudent]);
-            toast.success(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
-        } else {
-            toast.error(`Không thể thêm sinh viên: ${response.message || 'Lỗi không xác định'}`);
+            console.log('API Response:', response);
+
+            if (response.success) {
+                const retakeData = response.data;
+                const sinhVienData = await timSinhVienTheoMaHoacFilter({
+                    'ma_sinh_vien': studentId,
+                });
+
+                const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
+                console.log(sinhVienInfo);
+                if (!sinhVienInfo) {
+                    throw new Error('Không tìm thấy thông tin sinh viên');
+                }
+
+                const newStudent = {
+                    ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
+                    ho_dem: sinhVienInfo.ho_dem,
+                    ten: sinhVienInfo.ten,
+                    lop: sinhVienInfo.lop,
+                    lan_hoc: retakeData.lan_hoc,
+                    diem: {
+                        TP1: null,
+                        TP2: null,
+                        CK1: null,
+                        CK2: null,
+                    },
+                    retakeRegistered: true,
+                };
+
+                setStudents(prevStudents => [...prevStudents, newStudent]);
+                toast.success(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
+            } else {
+                toast.error(`Không thể thêm sinh viên: ${response.message || 'Lỗi không xác định'}`);
+            }
+        } catch (error) {
+            console.error('Error adding retake student:', error);
+            toast.error(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
         }
-    } catch (error) {
-        console.error('Error adding retake student:', error);
-        toast.error(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
-    }
 
-    handleCloseDialog();
-};
+        handleCloseDialog();
+    };
 
 
     // Thêm hàm xử lý tìm kiếm sinh viên trong Dialog
- const handleSearchStudentsInDialog = async () => {
-    try {
-        const filters = {};
-        if (studentId) filters.ma_sinh_vien = studentId;
-        if (dialogEducationType) filters.he_dao_tao_id = dialogEducationType;
-        if (dialogBatch) filters.khoa_id = dialogBatch;
-        if (dialogClass) filters.lop_id = dialogClass;
-        const response = await timSinhVienTheoMaHoacFilter(filters);
-        setFilteredStudents(response.data);
-        toast.success(`Đã tìm thấy ${response.data.length} sinh viên phù hợp.`);
-        if (response.data.length === 0) {
-            toast.warn('Không tìm thấy sinh viên phù hợp.');
+    const handleSearchStudentsInDialog = async () => {
+        try {
+            const filters = {};
+            if (studentId) filters.ma_sinh_vien = studentId;
+            if (dialogEducationType) filters.he_dao_tao_id = dialogEducationType;
+            if (dialogBatch) filters.khoa_id = dialogBatch;
+            if (dialogClass) filters.lop_id = dialogClass;
+            const response = await timSinhVienTheoMaHoacFilter(filters);
+            setFilteredStudents(response.data);
+            toast.success(`Đã tìm thấy ${response.data.length} sinh viên phù hợp.`);
+            if (response.data.length === 0) {
+                toast.warn('Không tìm thấy sinh viên phù hợp.');
+            }
+        } catch (error) {
+            console.error('Error searching students:', error);
+            toast.error('Không tìm thấy sinh viên.');
+            setFilteredStudents([]);
         }
-    } catch (error) {
-        console.error('Error searching students:', error);
-        toast.error('Không tìm thấy sinh viên.');
-        setFilteredStudents([]);
-    }
-};
+    };
     const handleSelectStudent = (id) => {
         setStudentId(id);
     };
@@ -682,41 +670,41 @@ function TaoBangDiem({ sampleStudents }) {
     console.log(classGroup);
 
     const exportExcel = (lopId, monHocId) => {
-    const courseInfo = courseOptions.find(option => option.id === monHocId);
-    const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+        const courseInfo = courseOptions.find(option => option.id === monHocId);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
 
-    const classInfo = classOptions.find(option => option.id === lopId);
-    const maLop = classInfo?.ma_lop || 'Unknown';
+        const classInfo = classOptions.find(option => option.id === lopId);
+        const maLop = classInfo?.ma_lop || 'Unknown';
 
-    const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
 
-    const data = {
-        lop_id: lopId,
-        mon_hoc_id: monHocId
-    };
+        const data = {
+            lop_id: lopId,
+            mon_hoc_id: monHocId
+        };
 
-    exportDanhSachDiemGK(data)
-        .then(response => {
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        exportDanhSachDiemGK(data)
+            .then(response => {
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast.success('Xuất file Excel thành công!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
             });
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            toast.success('Xuất file Excel thành công!');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            toast.error('Không thể tải xuống file Excel. Vui lòng thử lại sau.');
-        });
-};
+    };
 
     return (
         <Paper sx={{ p: 3 }}>
@@ -892,113 +880,113 @@ function TaoBangDiem({ sampleStudents }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-    {loadingStudents ? (
-        <TableRow>
-            <TableCell colSpan={10} align="center">
-                <CircularProgress />
-            </TableCell>
-        </TableRow>
-    ) : students.length > 0 ? (
-        students
-            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            .map((student) => {
-                const canEnterFinal = canEnterFinalExamScore(student);
-                const isRetakeStudent = student.lan_hoc !== 'Học lần 1';
+                        {loadingStudents ? (
+                            <TableRow>
+                                <TableCell colSpan={10} align="center">
+                                    <CircularProgress />
+                                </TableCell>
+                            </TableRow>
+                        ) : students.length > 0 ? (
+                            students
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((student) => {
+                                    const canEnterFinal = canEnterFinalExamScore(student);
+                                    const isRetakeStudent = student.lan_hoc !== 'Học lần 1';
 
-                return (
-                    <TableRow key={student.ma_sinh_vien}>
-                        <TableCell>{student.ma_sinh_vien}</TableCell>
-                        <TableCell>{student.ho_dem}</TableCell>
-                        <TableCell>{student.ten}</TableCell>
-                        <TableCell>{student.lop}</TableCell>
-                        <TableCell>{student.lan_hoc}</TableCell>
-                        <TableCell>
-                            <TextField
-                                type="number"
-                                inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                value={student.diem.TP1 === null ? '' : student.diem.TP1}
-                                onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'TP1', e.target.value)}
-                                sx={{ width: '70px' }}
-                                disabled
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <TextField
-                                type="number"
-                                inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                value={student.diem.TP2 === null ? '' : student.diem.TP2}
-                                onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'TP2', e.target.value)}
-                                sx={{ width: '70px' }}
-                                disabled
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <Tooltip title={!canEnterFinal ? "Điểm giữa kỳ TP1 và TP2 phải ≥ 4.0 để nhập điểm cuối kỳ" : ""}>
-                                <span>
-                                    <TextField
-                                        type="number"
-                                        inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                        value={student.diem.CK1 === null ? '' : student.diem.CK1}
-                                        onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'CK1', e.target.value)}
-                                        sx={{ width: '70px' }}
-                                        disabled={!canEnterFinal}
-                                        error={!canEnterFinal && student.diem.CK1 !== null}
-                                    />
-                                </span>
-                            </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                            <Tooltip title={!canEnterFinal ? "Điểm giữa kỳ TP1 và TP2 phải ≥ 4.0 để nhập điểm cuối kỳ" : ""}>
-                                <span>
-                                    <TextField
-                                        type="number"
-                                        inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                        value={student.diem.CK2 === null ? '' : student.diem.CK2}
-                                        onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'CK2', e.target.value)}
-                                        sx={{ width: '70px' }}
-                                        disabled={!canEnterFinal}
-                                        error={!canEnterFinal && student.diem.CK2 !== null}
-                                    />
-                                </span>
-                            </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                            {isRetakeStudent ? (
-                                <Tooltip title="Chỉ sinh viên học lại mới có thể đăng ký">
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={student.retakeRegistered || false}
-                                                onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
-                                            />
-                                        }
-                                        label=""
-                                    />
-                                </Tooltip>
-                            ) : (
-                                <Tooltip title="Sinh viên học lần đầu không thể đăng ký học lại">
-                                    <span>
-                                        <FormControlLabel
-                                            control={<Checkbox disabled />}
-                                            label=""
-                                        />
-                                    </span>
-                                </Tooltip>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                );
-            })
-    ) : (
-        <TableRow>
-            <TableCell colSpan={10} align="center">
-                <Typography variant="body1" color="textSecondary">
-                    Chưa có dữ liệu. Vui lòng tạo bảng điểm trước.
-                </Typography>
-            </TableCell>
-        </TableRow>
-    )}
-</TableBody>
+                                    return (
+                                        <TableRow key={student.ma_sinh_vien}>
+                                            <TableCell>{student.ma_sinh_vien}</TableCell>
+                                            <TableCell>{student.ho_dem}</TableCell>
+                                            <TableCell>{student.ten}</TableCell>
+                                            <TableCell>{student.lop}</TableCell>
+                                            <TableCell>{student.lan_hoc}</TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.diem.TP1 === null ? '' : student.diem.TP1}
+                                                    onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'TP1', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                    disabled
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                    value={student.diem.TP2 === null ? '' : student.diem.TP2}
+                                                    onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'TP2', e.target.value)}
+                                                    sx={{ width: '70px' }}
+                                                    disabled
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Tooltip title={!canEnterFinal ? "Điểm giữa kỳ TP1 và TP2 phải ≥ 4.0 để nhập điểm cuối kỳ" : ""}>
+                                                    <span>
+                                                        <TextField
+                                                            type="number"
+                                                            inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                            value={student.diem.CK1 === null ? '' : student.diem.CK1}
+                                                            onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'CK1', e.target.value)}
+                                                            sx={{ width: '70px' }}
+                                                            disabled={!canEnterFinal}
+                                                            error={!canEnterFinal && student.diem.CK1 !== null}
+                                                        />
+                                                    </span>
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Tooltip title={!canEnterFinal ? "Điểm giữa kỳ TP1 và TP2 phải ≥ 4.0 để nhập điểm cuối kỳ" : ""}>
+                                                    <span>
+                                                        <TextField
+                                                            type="number"
+                                                            inputProps={{ min: 0, max: 10, step: 0.1 }}
+                                                            value={student.diem.CK2 === null ? '' : student.diem.CK2}
+                                                            onChange={(e) => handleScoreChange(student.ma_sinh_vien, 'CK2', e.target.value)}
+                                                            sx={{ width: '70px' }}
+                                                            disabled={!canEnterFinal}
+                                                            error={!canEnterFinal && student.diem.CK2 !== null}
+                                                        />
+                                                    </span>
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell>
+                                                {isRetakeStudent ? (
+                                                    <Tooltip title="Chỉ sinh viên học lại mới có thể đăng ký">
+                                                        <FormControlLabel
+                                                            control={
+                                                                <Checkbox
+                                                                    checked={student.retakeRegistered || false}
+                                                                    onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
+                                                                />
+                                                            }
+                                                            label=""
+                                                        />
+                                                    </Tooltip>
+                                                ) : (
+                                                    <Tooltip title="Sinh viên học lần đầu không thể đăng ký học lại">
+                                                        <span>
+                                                            <FormControlLabel
+                                                                control={<Checkbox disabled />}
+                                                                label=""
+                                                            />
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={10} align="center">
+                                    <Typography variant="body1" color="textSecondary">
+                                        Chưa có dữ liệu. Vui lòng tạo bảng điểm trước.
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
                 </Table>
                 {students.length > 0 && (
                     <TablePagination

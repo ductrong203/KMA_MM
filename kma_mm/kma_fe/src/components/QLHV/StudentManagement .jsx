@@ -30,6 +30,7 @@ import {
   Box,
   Chip,
   Alert,
+  DialogContentText,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -56,6 +57,7 @@ import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
 import { toast } from "react-toastify";
 import PageHeader from "../../layout/PageHeader";
+import { checkExistingStudents } from "../../Api_controller/Service/sinhVienService";
 
 const StudentManagement = () => {
   const [students, setStudents] = useState([]);
@@ -160,6 +162,9 @@ const StudentManagement = () => {
   // State cho bộ lọc mới
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [displayStudents, setDisplayStudents] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false); // State cho dialog
+  const [existingCount, setExistingCount] = useState(0); // Lưu số lượng sinh viên tồn tại
+  const [importData, setImportData] = useState(null); // Lưu dữ liệu để import
   const role = localStorage.getItem("role") || "";
 
   const handleCloseMiPopup = () => {
@@ -801,30 +806,202 @@ const StudentManagement = () => {
   };
 
   // handleImportFromExcel (giữ nguyên, chỉ thêm refresh data)
-  const handleImportFromExcel = async (event) => {
+  // const handleImportFromExcel = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file || !lopFilter) {
+  //     toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
+  //     return;
+  //   }
+
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("file", file);
+  //     formData.append("lop_id", lopFilter);
+
+  //     const response = await importStudentsFromExcel(formData);
+  //     const result = response.data;
+  //     if (result.success) {
+  //       toast.success(
+  //         `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
+  //       );
+
+  //       // Lấy dữ liệu mới và update
+  //       const updatedStudents = await getAllStudent();
+  //       setStudents(updatedStudents);
+
+  //       // THAY ĐỔI: Update displayStudents với dữ liệu mới
+  //       if (isFilterApplied) {
+  //         let filtered = updatedStudents;
+
+  //         if (searchTerm) {
+  //           filtered = filtered.filter((student) => {
+  //             const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+  //             const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+  //             const matchesSearch =
+  //               searchWords.every((word) => fullName.includes(word)) ||
+  //               student.ma_sinh_vien.includes(searchTerm);
+  //             return matchesSearch;
+  //           });
+  //         }
+
+  //         if (lopFilter) {
+  //           filtered = filtered.filter(student => student.lop_id === lopFilter);
+  //         }
+
+  //         setDisplayStudents(filtered);
+  //       }
+  //     } else {
+  //       throw new Error(result.message || "Nhập danh sách không thành công");
+  //     }
+  //   } catch (error) {
+  //     console.error("Lỗi khi nhập danh sách học viên:", error);
+  //     toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
+  //   }
+  // };
+//  const handleImportFromExcel = async (event) => {
+//   const file = event.target.files[0];
+//   if (!file || !lopFilter) {
+//     toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
+//     return;
+//   }
+
+//   try {
+//     // Bước 1: Kiểm tra sinh viên tồn tại
+//     const checkFormData = new FormData();
+//     checkFormData.append("file", file);
+//     checkFormData.append("lop_id", lopFilter);
+
+//     const checkResponse = await checkExistingStudents(checkFormData);
+//     const checkResult = checkResponse.data;
+
+//     if (!checkResult.success) {
+//       throw new Error(checkResult.message || "Kiểm tra sinh viên thất bại");
+//     }
+
+//     const { existingCount } = checkResult.data;
+
+//     let proceedWithImport = true;
+//     let ghi_de = 0;
+
+//     // Nếu có sinh viên tồn tại, hỏi người dùng
+//     if (existingCount > 0) {
+//       const confirmMessage = `Có ${existingCount} sinh viên đã tồn tại. Bạn có muốn ghi đè dữ liệu không?`;
+//       proceedWithImport = window.confirm(confirmMessage);
+//       ghi_de = proceedWithImport ? 1 : 0;
+//     }
+
+//     // Bước 2: Tiến hành import nếu người dùng đồng ý
+//     if (proceedWithImport) {
+//       const importFormData = new FormData();
+//       importFormData.append("file", file);
+//       importFormData.append("lop_id", lopFilter);
+//       importFormData.append("ghi_de", ghi_de);
+
+//       const importResponse = await importStudentsFromExcel(importFormData);
+//       const importResult = importResponse.data;
+
+//       if (importResult.success) {
+//         toast.success(
+//           `${importResult.data.message}\nSố học viên mới: ${importResult.data.newCount}\nSố thông tin quân nhân: ${importResult.data.thongTinQuanNhanCount}`
+//         );
+
+//         // Lấy dữ liệu mới và update
+//         const updatedStudents = await getAllStudent();
+//         setStudents(updatedStudents);
+
+//         // Update displayStudents với dữ liệu mới
+//         if (isFilterApplied) {
+//           let filtered = updatedStudents;
+
+//           if (searchTerm) {
+//             filtered = filtered.filter((student) => {
+//               const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+//               const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+//               const matchesSearch =
+//                 searchWords.every((word) => fullName.includes(word)) ||
+//                 student.ma_sinh_vien.includes(searchTerm);
+//               return matchesSearch;
+//             });
+//           }
+
+//           if (lopFilter) {
+//             filtered = filtered.filter((student) => student.lop_id === lopFilter);
+//           }
+
+//           setDisplayStudents(filtered);
+//         }
+//       } else {
+//         throw new Error(importResult.message || "Nhập danh sách không thành công");
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Lỗi khi nhập danh sách học viên:", error);
+//     toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
+//   } finally {
+//     event.target.value = null; // Reset input file trong mọi trường hợp
+//   }
+// };
+
+ const handleImportFromExcel = async (event) => {
     const file = event.target.files[0];
     if (!file || !lopFilter) {
-      toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
+      toast.warn('Vui lòng chọn file Excel và lớp để nhập!');
       return;
     }
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("lop_id", lopFilter);
+      // Bước 1: Kiểm tra sinh viên tồn tại
+      const checkFormData = new FormData();
+      checkFormData.append('file', file);
+      checkFormData.append('lop_id', lopFilter);
 
-      const response = await importStudentsFromExcel(formData);
-      const result = response.data;
-      if (result.success) {
+      const checkResponse = await checkExistingStudents(checkFormData);
+      const checkResult = checkResponse.data;
+
+      if (!checkResult.success) {
+        throw new Error(checkResult.message || 'Kiểm tra sinh viên thất bại');
+      }
+
+      const { existingCount } = checkResult.data;
+
+      if (existingCount > 0) {
+        // Lưu dữ liệu và mở dialog
+        setExistingCount(existingCount);
+        setImportData({ file, lopFilter });
+        setOpenDialog(true);
+        event.target.value = null;
+      } else {
+        // Không có sinh viên tồn tại, import trực tiếp với ghi_de = 0
+        await performImport(file, lopFilter, 0, event);
+        event.target.value = null;
+      }
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra sinh viên:', error);
+      toast.error(`Có lỗi xảy ra khi kiểm tra file Excel: ${error.message || error}`);
+      event.target.value = null; // Reset input file
+    }
+  };
+
+  const performImport = async (file, lop_id, ghi_de, event) => {
+    try {
+      const importFormData = new FormData();
+      importFormData.append('file', file);
+      importFormData.append('lop_id', lop_id);
+      importFormData.append('ghi_de', ghi_de);
+
+      const importResponse = await importStudentsFromExcel(importFormData);
+      const importResult = importResponse.data;
+
+      if (importResult.success) {
         toast.success(
-          `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
+          `${importResult.data.message}\nSố học viên mới: ${importResult.data.newCount}\nSố thông tin quân nhân: ${importResult.data.thongTinQuanNhanCount}`
         );
 
         // Lấy dữ liệu mới và update
         const updatedStudents = await getAllStudent();
         setStudents(updatedStudents);
 
-        // THAY ĐỔI: Update displayStudents với dữ liệu mới
+        // Update displayStudents với dữ liệu mới
         if (isFilterApplied) {
           let filtered = updatedStudents;
 
@@ -840,18 +1017,31 @@ const StudentManagement = () => {
           }
 
           if (lopFilter) {
-            filtered = filtered.filter(student => student.lop_id === lopFilter);
+            filtered = filtered.filter((student) => student.lop_id === lopFilter);
           }
 
           setDisplayStudents(filtered);
         }
       } else {
-        throw new Error(result.message || "Nhập danh sách không thành công");
+        throw new Error(importResult.message || 'Nhập danh sách không thành công');
       }
     } catch (error) {
-      console.error("Lỗi khi nhập danh sách học viên:", error);
+      console.error('Lỗi khi nhập danh sách học viên:', error);
       toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
+    } finally {
+      event.target.value = null; // Reset input file
     }
+  };
+
+  const handleDialogClose = (action, event) => {
+    setOpenDialog(false);
+    if (action === 'ghi_de') {
+      performImport(importData.file, importData.lopFilter, 1, event);
+    } else if (action === 'them_moi') {
+      performImport(importData.file, importData.lopFilter, 0, event);
+    }
+    // Nếu chọn Hủy, không làm gì, chỉ reset input file
+    event.target.value = null;
   };
 
   return (
@@ -996,6 +1186,30 @@ const StudentManagement = () => {
               onChange={handleImportFromExcel}
             />
           </Button>
+           <Dialog
+        open={openDialog}
+        onClose={() => handleDialogClose('huy', event)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Sinh viên đã tồn tại</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Có {existingCount} sinh viên đã tồn tại. Bạn muốn làm gì?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleDialogClose('huy')} color="inherit">
+            Hủy
+          </Button>
+          <Button onClick={() => handleDialogClose('them_moi')} color="primary">
+            Thêm mới
+          </Button>
+          <Button onClick={() => handleDialogClose('ghi_de')} color="primary" variant="contained">
+            Ghi đè
+          </Button>
+        </DialogActions>
+      </Dialog>
         </Box>
 
         <Button
@@ -1215,7 +1429,7 @@ const StudentManagement = () => {
             </Grid>
             {[
               { label: "Lớp", key: "lop_id", type: "api", options: danhSachLop, optionLabel: "ma_lop", required: true },
-              { label: "Đối tượng", key: "doi_tuong_id", type: "api", options: danhSachDoiTuongQL, optionLabel: "chi_tiet_doi_tuong", required: true },
+              { label: "Đối tượng", key: "doi_tuong_id", type: "api", options: danhSachDoiTuongQL, optionLabel: "ten_doi_tuong", required: true },
               { label: "Đang học", key: "dang_hoc", type: "select", options: [{ value: 1, label: "Có" }, { value: 0, label: "Không" }] },
               { label: "Ghi chú", key: "ghi_chu" },
               { label: "Kỳ nhập học", key: "ky_nhap_hoc" },

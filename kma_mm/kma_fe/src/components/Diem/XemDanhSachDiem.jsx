@@ -31,13 +31,13 @@ import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { styled } from '@mui/material/styles';
-import {toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import QuanLyDiem from '../Diem/QuanLyDiem';
 import TaoBangDiem from '../Diem/TaoBangDiem';
 import { layDanhSachSinhVienTheoTKB, nhapDiem } from '../../Api_controller/Service/diemService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
-import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
+import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
@@ -83,7 +83,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching education types:', error);
         toast.error('Không thể tải danh sách hệ đào tạo.');
-  
+
       }
     };
     fetchEducationTypes();
@@ -103,7 +103,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching batches:', error);
         toast.error('Không thể tải danh sách khóa.');
-     
+
       } finally {
         setLoadingBatches(false);
       }
@@ -124,7 +124,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching classes:', error);
         toast.error('Không thể tải danh sách lớp.');
-       
+
       } finally {
         setLoadingClasses(false);
       }
@@ -144,8 +144,8 @@ function XemDanhSachDiem() {
           ky_hoc: semester,
         });
         const courseIds = response.map((course) => course.mon_hoc_id);
-        const courseDetailsResponse = await axios.get(`http://localhost:8000/mon-hoc/chitiet`, {
-          params: { ids: courseIds.join(',') },
+        const courseDetailsResponse = await chiTietMonHoc({
+          ids: courseIds.join(',')
         });
         const coursesWithDetails = response.map((course) => {
           const details = courseDetailsResponse.data.data.find((detail) => detail.id === course.mon_hoc_id);
@@ -158,7 +158,7 @@ function XemDanhSachDiem() {
       } catch (error) {
         console.error('Error fetching courses:', error);
         toast.error('Không thể tải danh sách học phần.');
-        
+
       } finally {
         setLoadingCourses(false);
       }
