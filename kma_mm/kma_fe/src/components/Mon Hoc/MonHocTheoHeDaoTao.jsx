@@ -6,7 +6,17 @@ import {
   Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import {
+  DndContext,
+  closestCenter,
+  closestCorners,
+  rectIntersection,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  MouseSensor,
+  TouchSensor
+} from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -201,11 +211,15 @@ const MonHocTheoHeDaoTao = () => {
   const handleResetSemester = () => setSelectedSemester('');
 
   const DraggableSubject = ({ subject, semester }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: subject.id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: subject.id
+    });
+
     const style = {
       transform: CSS.Transform.toString(transform),
       transition,
-      cursor: 'grab'
+      opacity: isDragging ? 0.7 : 1,
+      zIndex: isDragging ? 1000 : 'auto'
     };
 
     const handleDelete = (e) => {
@@ -218,29 +232,62 @@ const MonHocTheoHeDaoTao = () => {
       <ListItem
         ref={setNodeRef}
         style={style}
+        sx={{
+          border: isDragging ? '2px solid #1976d2' : '1px solid transparent',
+          borderRadius: 1,
+          backgroundColor: isDragging ? 'rgba(25, 118, 210, 0.1)' : 'inherit',
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            cursor: 'grab'
+          },
+          py: 0.5,
+          px: 1
+        }}
         secondaryAction={
           <IconButton
             edge="end"
             onClick={handleDelete}
+            size="small"
             sx={{
-              pointerEvents: 'auto',
-              zIndex: 10
+              opacity: 0.7,
+              '&:hover': {
+                opacity: 1,
+                backgroundColor: 'rgba(244, 67, 54, 0.1)'
+              }
             }}
           >
-            <DeleteIcon />
+            <DeleteIcon fontSize="small" />
           </IconButton>
         }
       >
-        <div
+        <Box
           {...attributes}
           {...listeners}
-          style={{ width: '100%', display: 'flex', alignItems: 'center' }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            py: 1,
+            borderRadius: 1
+          }}
         >
           <ListItemText
-            primary={subject.ten_mon_hoc}
-            secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+            primary={
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {subject.ten_mon_hoc}
+              </Typography>
+            }
+            secondary={
+              <Chip
+                label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`}
+                size="small"
+                color={subject.bat_buoc ? 'primary' : 'default'}
+                sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
+              />
+            }
           />
-        </div>
+        </Box>
       </ListItem>
     );
   };
@@ -255,34 +302,152 @@ const MonHocTheoHeDaoTao = () => {
       }
     });
 
-    const style = {
-      backgroundColor: isOver ? '#e0f7fa' : 'white',
-    };
-
     return (
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <Paper ref={setNodeRef} style={style} sx={{ p: 2, height: "100%", borderRadius: 3, elevation: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0" }}>
+        <Paper
+          ref={setNodeRef}
+          sx={{
+            p: 2,
+            minHeight: 280,
+            borderRadius: 3,
+            elevation: isOver ? 6 : 3,
+            border: isOver ? '3px solid #1976d2' : '1px solid #e0e0e0',
+            backgroundColor: isOver ? '#e3f2fd' : 'white',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            '&::after': isOver ? {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(25, 118, 210, 0.1)',
+              borderRadius: 3,
+              pointerEvents: 'none',
+              zIndex: 1
+            } : {}
+          }}
+        >
+          <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0", mb: 2 }}>
             Học kỳ {semester}
           </Typography>
           <Divider sx={{ mb: 2 }} />
-          {subjects.length > 0 ? (
-            <List>
-              {subjects.map(subject => (
-                <DraggableSubject key={subject.id} subject={subject} semester={semester} />
-              ))}
-            </List>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
-              Chưa có môn học
-            </Typography>
+
+          {isOver && subjects.length > 0 && (
+            <Box sx={{
+              position: 'absolute',
+              top: 50,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'primary.main',
+              color: 'white',
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              zIndex: 2,
+              boxShadow: 2
+            }}>
+              📚 Thả môn học vào đây
+            </Box>
           )}
+
+          <Box sx={{ position: 'relative', minHeight: 200 }}>
+            {subjects.length > 0 ? (
+              <>
+                <List dense sx={{
+                  pb: 3,
+                  '& .MuiListItem-root': {
+                    mb: 1
+                  }
+                }}>
+                  {subjects.map(subject => (
+                    <DraggableSubject key={subject.id} subject={subject} semester={semester} />
+                  ))}
+                </List>
+
+                <Box sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 40,
+                  backgroundColor: isOver ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
+                  border: isOver ? '2px dashed #1976d2' : '2px dashed transparent',
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}>
+                  {isOver && (
+                    <Typography variant="body2" color="primary.main" fontWeight="bold">
+                      Thả vào đây
+                    </Typography>
+                  )}
+                </Box>
+              </>
+            ) : (
+              <Box sx={{
+                height: 200,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: "center",
+                border: isOver ? '2px dashed #1976d2' : '2px dashed #e0e0e0',
+                borderRadius: 2,
+                backgroundColor: isOver ? 'rgba(25, 118, 210, 0.05)' : 'transparent',
+                transition: 'all 0.2s ease'
+              }}>
+                {isOver ? (
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: 'primary.main',
+                        fontWeight: 'bold',
+                        mb: 1
+                      }}
+                    >
+                      📚
+                    </Typography>
+                    <Typography variant="body1" color="primary.main" fontWeight="bold">
+                      Thả môn học vào đây
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    Chưa có môn học
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
         </Paper>
       </Grid>
     );
   };
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100,
+        tolerance: 8,
+      },
+    })
+  );
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -443,8 +608,13 @@ const MonHocTheoHeDaoTao = () => {
           </Box>
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
             onDragEnd={handleDragEnd}
+            onDragOver={({ over }) => {
+              if (over) {
+                console.log('Dragging over:', over.id);
+              }
+            }}
           >
             <Grid container spacing={2}>
               {selectedSemester ? (
