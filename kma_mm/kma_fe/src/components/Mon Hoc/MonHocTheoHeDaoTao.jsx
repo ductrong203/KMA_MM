@@ -40,14 +40,14 @@ const MonHocTheoHeDaoTao = () => {
     bat_buoc: 0
   });
   const [changedSubjects, setChangedSubjects] = useState([]);
- const role = localStorage.getItem("role") || "";
+  const role = localStorage.getItem("role") || "";
   useEffect(() => {
     const fetchCurriculums = async () => {
       try {
         const data = await getAllTrainingSystems();
         setCurriculums(data);
       } catch (error) {
-       toast.error('Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại!');
+        toast.error('Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại!');
       }
     };
     fetchCurriculums();
@@ -138,7 +138,14 @@ const MonHocTheoHeDaoTao = () => {
   const handleSemesterChange = (event) => setSelectedSemester(event.target.value);
 
   const handleRemoveSubject = async (semester, subjectId) => {
+    if (!semester || !subjectId) {
+      console.error('Thiếu tham số:', { semester, subjectId });
+      toast.error('Lỗi: Thiếu thông tin cần thiết để xóa môn học');
+      return;
+    }
+
     try {
+      console.log('Đang xóa môn học:', { semester, subjectId });
       await deleteSubjectPlan(subjectId);
       setSubjectsBySemester(prev => ({
         ...prev,
@@ -150,7 +157,7 @@ const MonHocTheoHeDaoTao = () => {
       }));
       toast.success('Xóa môn học khỏi kế hoạch thành công!');
     } catch (error) {
-      console.error('Lỗi khi xóa môn học:', error);
+      console.error('Chi tiết lỗi khi xóa môn học:', error);
       toast.error('Không thể xóa môn học. Vui lòng thử lại!');
     }
   };
@@ -201,22 +208,39 @@ const MonHocTheoHeDaoTao = () => {
       cursor: 'grab'
     };
 
+    const handleDelete = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleRemoveSubject(semester, subject.id);
+    };
+
     return (
       <ListItem
         ref={setNodeRef}
         style={style}
-        {...attributes}
-        {...listeners}
         secondaryAction={
-          <IconButton edge="end" onClick={() => handleRemoveSubject(semester, subject.id)}>
+          <IconButton
+            edge="end"
+            onClick={handleDelete}
+            sx={{
+              pointerEvents: 'auto',
+              zIndex: 10
+            }}
+          >
             <DeleteIcon />
           </IconButton>
         }
       >
-        <ListItemText
-          primary={subject.ten_mon_hoc}
-          secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
-        />
+        <div
+          {...attributes}
+          {...listeners}
+          style={{ width: '100%', display: 'flex', alignItems: 'center' }}
+        >
+          <ListItemText
+            primary={subject.ten_mon_hoc}
+            secondary={<Chip label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`} size="small" color={subject.bat_buoc ? 'primary' : 'default'} />}
+          />
+        </div>
       </ListItem>
     );
   };
@@ -224,7 +248,11 @@ const MonHocTheoHeDaoTao = () => {
   const SemesterDroppable = ({ semester, subjects }) => {
     const { setNodeRef, isOver } = useDroppable({
       id: `droppable-${semester}`,
-      data: { semester }
+      data: {
+        current: {
+          semester: parseInt(semester)
+        }
+      }
     });
 
     const style = {
@@ -261,7 +289,17 @@ const MonHocTheoHeDaoTao = () => {
     if (!over) return;
 
     const activeId = active.id;
-    const overSemester = over.id.replace('droppable-', '');
+
+    let overSemester;
+    if (typeof over.id === 'string') {
+      overSemester = over.id.replace('droppable-', '');
+    } else if (over.data?.current?.semester) {
+      overSemester = over.data.current.semester;
+    } else {
+      console.error('Không thể xác định kỳ học đích', over);
+      return;
+    }
+
     const activeSemester = Object.keys(subjectsBySemester).find(sem =>
       subjectsBySemester[sem].some(subject => subject.id === activeId)
     );
@@ -273,7 +311,8 @@ const MonHocTheoHeDaoTao = () => {
         [activeSemester]: prev[activeSemester].filter(s => s.id !== activeId),
         [overSemester]: [...(prev[overSemester] || []), { ...subjectToMove, ky_hoc: parseInt(overSemester) }]
       }));
-      setChangedSubjects(prev => [...prev.filter(s => s.id !== subjectToMove.id), { ...subjectToMove, ky_hoc: parseInt(overSemester) }]);
+      setChangedSubjects(prev => [...prev.filter(s => s.id !== subjectToMove.id),
+      { ...subjectToMove, ky_hoc: parseInt(overSemester) }]);
     }
   };
 
