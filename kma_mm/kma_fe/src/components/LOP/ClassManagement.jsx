@@ -487,7 +487,7 @@ function QuanLyLop() {
                                         <strong>Mã lớp sẽ được tạo:</strong> {taoMaLop(thongTinLop.khoa_dao_tao_id)}
                                     </Typography>
                                     <Typography variant="caption" sx={{ fontStyle: 'italic', mt: 1, display: 'block' }}>
-                                        Mã lớp được tạo tự động theo định dạng: [MÃ KHÓA ĐÀO TẠO]-[SỐ THỨ TỰ]
+                                        Mã lớp được tạo tự động theo định dạng: [MÃ KHÓA ĐÀO TẠO][SỐ THỨ TỰ]
                                     </Typography>
                                 </Box>
                             </Grid>

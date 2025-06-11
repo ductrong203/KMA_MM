@@ -150,12 +150,12 @@ class ChungChiService {
 
   static async taoChungChi(data) {
     try {
-      const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
 
-      // Kiểm tra sinh_vien_id có tồn tại
-      const sinhVien = await sinh_vien.findByPk(sinh_vien_id);
+      // Kiểm tra ma_sinh_vien có tồn tại
+      const sinhVien = await sinh_vien.findOne({ where: { ma_sinh_vien } });
       if (!sinhVien) {
-        throw new Error(`Sinh viên với id ${sinh_vien_id} không tồn tại`);
+        throw new Error(`Sinh viên với mã ${ma_sinh_vien} không tồn tại`);
       }
 
       // Kiểm tra tinh_trang hợp lệ
@@ -172,7 +172,7 @@ class ChungChiService {
 
       // Tạo chứng chỉ mới
       const chungChiMoi = await chung_chi.create({
-        sinh_vien_id,
+        sinh_vien_id: sinhVien.id, // Sử dụng id của sinh viên tìm được
         diem_trung_binh,
         xep_loai,
         ghi_chu,
@@ -223,7 +223,7 @@ class ChungChiService {
 
   static async chinhSuaChungChi(id, data) {
     try {
-      const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
 
       // Kiểm tra chứng chỉ tồn tại
       const chungChi = await chung_chi.findByPk(id);
@@ -231,12 +231,14 @@ class ChungChiService {
         throw new Error(`Chứng chỉ với id ${id} không tồn tại`);
       }
 
-      // Kiểm tra sinh_vien_id (nếu có)
-      if (sinh_vien_id) {
-        const sinhVien = await sinh_vien.findByPk(sinh_vien_id);
+      // Kiểm tra ma_sinh_vien (nếu có)
+      let sinhVienId = chungChi.sinh_vien_id;
+      if (ma_sinh_vien) {
+        const sinhVien = await sinh_vien.findOne({ where: { ma_sinh_vien } });
         if (!sinhVien) {
-          throw new Error(`Sinh viên với id ${sinh_vien_id} không tồn tại`);
+          throw new Error(`Sinh viên với mã ${ma_sinh_vien} không tồn tại`);
         }
+        sinhVienId = sinhVien.id; // Cập nhật sinh_vien_id nếu ma_sinh_vien hợp lệ
       }
 
       // Kiểm tra tinh_trang (nếu có)
@@ -258,7 +260,7 @@ class ChungChiService {
 
       // Cập nhật chứng chỉ
       await chungChi.update({
-        sinh_vien_id: sinh_vien_id !== undefined ? sinh_vien_id : chungChi.sinh_vien_id,
+        sinh_vien_id: sinhVienId, // Sử dụng sinhVienId đã xác định
         diem_trung_binh: diem_trung_binh !== undefined ? diem_trung_binh : chungChi.diem_trung_binh,
         xep_loai: xep_loai !== undefined ? xep_loai : chungChi.xep_loai,
         ghi_chu: ghi_chu !== undefined ? ghi_chu : chungChi.ghi_chu,
@@ -269,7 +271,7 @@ class ChungChiService {
       });
 
       // Lấy thông tin sinh viên và các bảng liên quan để trả về
-      const sinhVien = await sinh_vien.findByPk(chungChi.sinh_vien_id);
+      const sinhVien = await sinh_vien.findByPk(sinhVienId);
       const lopSv = await lop.findByPk(sinhVien.lop_id, {
         attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
       });

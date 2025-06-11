@@ -44,3 +44,8 @@ export const xoaThoiKhoaBieu = async (id) => {
     const response = await api.delete(`/thoikhoabieu/${id}`)
     return response.data
 }
+
+export const chiTietMonHoc = async (data) => {
+    const response = await api.get(`/mon-hoc/chitiet`, { params: data })
+    return response
+}
