@@ -771,7 +771,7 @@ const StudentManagement = () => {
 
   // THAY ĐỔI: handleExportToExcel - chỉ xuất dữ liệu đã lọc
   const handleExportToExcel = async () => {
-    if (!isFilterApplied || displayStudents.length === 0) {
+    if (!isFilterApplied ) {
       toast.warning("Vui lòng áp dụng bộ lọc và có dữ liệu trước khi xuất Excel.");
       return;
     }
@@ -1217,7 +1217,7 @@ const StudentManagement = () => {
           color="success"
           startIcon={<DownloadIcon />}
           onClick={handleExportToExcel}
-          disabled={!isFilterApplied || displayStudents.length === 0}
+          disabled={!isFilterApplied }
         >
           Xuất Excel
         </Button>
