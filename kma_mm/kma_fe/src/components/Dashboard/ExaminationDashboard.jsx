@@ -44,7 +44,7 @@ import QuanLyKhenKyLuat from '../QLHV/khen_kyLuat';
 import QuanLyChungChi from '../QuanLyChungChi/QuanLyChungChi';
 import QuanLyMonHoc from '../Mon Hoc/QuanLyMonHoc';
 import PhuLucBangDiem from '../Dao Tao/PhuLucBangDiem';
-import ThongKeTotNghiep from '../Dao Tao/ThongKeTotNghiep';
+import ThongKeTotNghiep from '../Dao Tao/ThongKe';
 
 // Styled component for file upload
 const VisuallyHiddenInput = styled('input')({

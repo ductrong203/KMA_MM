@@ -55,12 +55,12 @@ exports.layDanhSachChungChiTheoHeKhoaLop = async (req, res) => {
 
 exports.taoChungChi = async (req, res) => {
   try {
-    const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
+    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
 
     // Kiểm tra dữ liệu đầu vào
-    if (!sinh_vien_id || isNaN(sinh_vien_id) || sinh_vien_id <= 0) {
+    if (!ma_sinh_vien || typeof ma_sinh_vien !== 'string' || ma_sinh_vien.trim() === '') {
       return res.status(400).json({
-        thongBao: 'Tham số sinh_vien_id là bắt buộc và phải là số nguyên dương',
+        thongBao: 'Tham số ma_sinh_vien là bắt buộc và phải là chuỗi không rỗng',
       });
     }
 
@@ -88,7 +88,7 @@ exports.taoChungChi = async (req, res) => {
 
     // Tạo đối tượng dữ liệu
     const data = {
-      sinh_vien_id: parseInt(sinh_vien_id),
+      ma_sinh_vien,
       diem_trung_binh: diem_trung_binh !== null ? parseFloat(diem_trung_binh) : null,
       xep_loai: xep_loai || null,
       ghi_chu: ghi_chu || null,
@@ -116,7 +116,7 @@ exports.taoChungChi = async (req, res) => {
 exports.chinhSuaChungChi = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { sinh_vien_id, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
+    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
 
     // Kiểm tra id hợp lệ
     if (!id || isNaN(id) || id <= 0) {
@@ -125,10 +125,10 @@ exports.chinhSuaChungChi = async (req, res) => {
       });
     }
 
-    // Kiểm tra sinh_vien_id (nếu có)
-    if (sinh_vien_id !== undefined && (isNaN(sinh_vien_id) || sinh_vien_id <= 0)) {
+    // Kiểm tra ma_sinh_vien (nếu có)
+    if (ma_sinh_vien !== undefined && (typeof ma_sinh_vien !== 'string' || ma_sinh_vien.trim() === '')) {
       return res.status(400).json({
-        thongBao: 'Tham số sinh_vien_id phải là số nguyên dương',
+        thongBao: 'Tham số ma_sinh_vien phải là chuỗi không rỗng',
       });
     }
 
@@ -158,7 +158,7 @@ exports.chinhSuaChungChi = async (req, res) => {
 
     // Tạo đối tượng dữ liệu
     const data = {
-      sinh_vien_id,
+      ma_sinh_vien,
       diem_trung_binh,
       xep_loai,
       ghi_chu,

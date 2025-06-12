@@ -35,7 +35,7 @@ import React, { act, useEffect, useRef, useState } from 'react';
 import { layDanhSachSinhVienTheoTKB, layDSSVTheoKhoaVaMonHoc, nhapDiem } from '../../Api_controller/Service/diemService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
-import { getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
+import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
@@ -195,10 +195,12 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 const courseIds = response.map(course => course.mon_hoc_id);
                 console.log(courseIds)
                 // Gọi API /mon-hoc/details để lấy chi tiết các môn học
-                const courseDetailsResponse = await axios.get(`http://localhost:8000/mon-hoc/chitiet`, {
-                    params: { ids: courseIds.join(',') }
+                // const courseDetailsResponse = await axios.get(`http://localhost:8000/mon-hoc/chitiet`, {
+                //     params: { ids: courseIds.join(',') }
+                // });
+                const courseDetailsResponse = await chiTietMonHoc( {
+                     ids: courseIds.join(',') 
                 });
-
                 // Gộp dữ liệu từ hai API
                 const coursesWithDetails = response.map(course => {
                     const details = courseDetailsResponse.data.data.find(

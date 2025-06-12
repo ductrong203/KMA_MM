@@ -57,7 +57,7 @@ const QuanLyKhoa = () => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
   // State cho bộ lọc
   const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
@@ -249,7 +249,7 @@ const QuanLyKhoa = () => {
   return (
     <Container maxWidth="" sx={{ mt: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <PageHeader title="Danh sách khóa" />
+        <PageHeader title="Danh sách khóa đào tạo" />
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenForm}>
           Thêm khóa đào tạo mới
         </Button>
@@ -328,12 +328,12 @@ const QuanLyKhoa = () => {
           </TableBody>
         </Table>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 15]}
+          rowsPerPageOptions={[15, 25, 50]}
           component="div"
           count={filteredKhoa.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          labelRowsPerPage="Số dòng mỗi trang"
+          labelRowsPerPage="Số hàng mỗi trang"
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           labelDisplayedRows={({ from, to, count }) => `${from}–${to} trong ${count !== -1 ? count : `hơn ${to}`}`}

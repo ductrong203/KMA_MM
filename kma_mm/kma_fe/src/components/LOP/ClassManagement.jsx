@@ -26,15 +26,14 @@ function QuanLyLop() {
     const [thongTinLop, setThongTinLop] = useState({
         khoa_dao_tao_id: ""
     });
+    const [heDaoTaoDuocChon, setHeDaoTaoDuocChon] = useState(""); // Thêm state cho hệ đào tạo
     const [khoaMoRong, setKhoaMoRong] = useState(null);
     const [dangTai, setDangTai] = useState(true);
     const [xemSinhVien, setXemSinhVien] = useState(false);
     const [lopDangChon, setLopDangChon] = useState(null);
     const [danhSachSinhVien, setDanhSachSinhVien] = useState([]);
     const [dangTaiSinhVien, setDangTaiSinhVien] = useState(false);
-    // Pagination state for each course
     const [pagination, setPagination] = useState({});
-    // Filter by training system
     const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
 
     useEffect(() => {
@@ -55,12 +54,10 @@ function QuanLyLop() {
         fetchData();
     }, []);
 
-    // Fetch class list
     const layDanhSachLop = async () => {
         try {
             const ketQua = await getDanhSachLop();
             setDanhSachLop(ketQua || []);
-            // Merge existing pagination with new course IDs
             setPagination(prev => {
                 const updatedPagination = { ...prev };
                 ketQua.forEach(lop => {
@@ -69,8 +66,6 @@ function QuanLyLop() {
                         updatedPagination[khoaId] = { page: 0, rowsPerPage: 5 };
                     }
                 });
-                // Debug: Log updated pagination
-                console.log("Updated pagination after fetching classes:", updatedPagination);
                 return updatedPagination;
             });
         } catch (error) {
@@ -79,26 +74,21 @@ function QuanLyLop() {
         }
     };
 
-    // Fetch course list
     const layDanhSachKhoa = async () => {
         try {
             const ketQua = await fetchDanhSachKhoa();
             setDanhSachKhoa(ketQua || []);
-            // Initialize pagination for all courses
             const initialPagination = {};
             ketQua.forEach(khoa => {
                 initialPagination[khoa.id] = { page: 0, rowsPerPage: 5 };
             });
             setPagination(initialPagination);
-            // Debug: Log pagination initialization
-            console.log("Initial pagination:", initialPagination);
         } catch (error) {
             toast.error("Không thể lấy danh sách khóa. Vui lòng thử lại!");
             setDanhSachKhoa([]);
         }
     };
 
-    // Fetch training system list
     const layDanhSachHeDaoTao = async () => {
         try {
             const ketQua = await fetchDanhSachHeDaoTao();
@@ -109,7 +99,6 @@ function QuanLyLop() {
         }
     };
 
-    // Fetch student list for a class
     const layDanhSachSinhVien = async (lopId) => {
         setDangTaiSinhVien(true);
         try {
@@ -123,25 +112,25 @@ function QuanLyLop() {
         }
     };
 
-    // Open form (Add or Edit)
     const moFormLop = (index = null) => {
         if (index !== null) {
             setIndexChinhSua(index);
             const lopDuocChon = danhSachLop[index];
+            const khoaDuocChon = danhSachKhoa.find(k => k.id === lopDuocChon.khoa_dao_tao_id);
             setThongTinLop({
                 khoa_dao_tao_id: lopDuocChon.khoa_dao_tao_id
             });
+            setHeDaoTaoDuocChon(khoaDuocChon?.he_dao_tao_id || ""); // Điền sẵn hệ đào tạo
         } else {
             setIndexChinhSua(null);
             setThongTinLop({ khoa_dao_tao_id: "" });
+            setHeDaoTaoDuocChon("");
         }
         setMoForm(true);
     };
 
-    // Close form
     const dongForm = () => setMoForm(false);
 
-    // Handle course selection
     const xuLyChonKhoa = (event, khoaDuocChon) => {
         if (khoaDuocChon) {
             setThongTinLop({
@@ -153,7 +142,12 @@ function QuanLyLop() {
         }
     };
 
-    // Generate class code
+    const xuLyChonHeDaoTao = (event) => {
+        const heDaoTaoId = event.target.value;
+        setHeDaoTaoDuocChon(heDaoTaoId);
+        setThongTinLop({ ...thongTinLop, khoa_dao_tao_id: "" }); // Reset khóa khi đổi hệ đào tạo
+    };
+
     const taoMaLop = (khoaId) => {
         const khoa = danhSachKhoa.find(k => k.id === khoaId);
         if (!khoa) return "LOP-MOID";
@@ -162,7 +156,6 @@ function QuanLyLop() {
         let soThuTu = lopThuocKhoa.length + 1;
         let maLop = `${khoa.ma_khoa}-${soThuTu.toString().padStart(2, '0')}`;
 
-        // Ensure unique class code
         while (lopThuocKhoa.some(l => l.ma_lop === maLop)) {
             soThuTu++;
             maLop = `${khoa.ma_khoa}-${soThuTu.toString().padStart(2, '0')}`;
@@ -171,8 +164,11 @@ function QuanLyLop() {
         return maLop;
     };
 
-    // Save or update class
     const luuLop = async () => {
+        if (!heDaoTaoDuocChon) {
+            toast.error("Vui lòng chọn hệ đào tạo!");
+            return;
+        }
         if (!thongTinLop.khoa_dao_tao_id) {
             toast.error("Vui lòng chọn khóa đào tạo!");
             return;
@@ -189,30 +185,25 @@ function QuanLyLop() {
                 await updateLop(danhSachLop[indexChinhSua].id, duLieuLuu);
                 toast.success("Cập nhật lớp thành công!");
             }
-            await layDanhSachLop(); // Refresh list and pagination
+            await layDanhSachLop();
             dongForm();
         } catch (error) {
             toast.error("Lỗi khi lưu lớp. Vui lòng thử lại!");
         }
     };
 
-    // Get course name
     const layTenKhoa = (khoaId) => {
         const khoa = danhSachKhoa.find(k => k.id === khoaId);
         return khoa ? `${khoa.ma_khoa} - ${khoa.ten_khoa}` : "Khóa chưa xác định";
     };
 
-    // Get course code
     const layMaKhoa = (khoaId) => {
         const khoa = danhSachKhoa.find(k => k.id === khoaId);
         return khoa ? khoa.ma_khoa : "N/A";
     };
 
-    // Group classes by course
     const nhomLopTheoKhoa = () => {
         const danhSachNhom = {};
-
-        // Filter courses by training system
         const filteredKhoa = danhSachKhoa.filter(khoa =>
             filterHeDaoTao ? khoa.he_dao_tao_id === filterHeDaoTao : true
         );
@@ -241,24 +232,20 @@ function QuanLyLop() {
         return Object.values(danhSachNhom).filter(nhom => nhom.danhSachLop.length > 0);
     };
 
-    // Handle accordion toggle
     const xuLyDoiTrangThaiAccordion = (khoaId) => (event, isExpanded) => {
         setKhoaMoRong(isExpanded ? khoaId : null);
     };
 
-    // View student list
     const xemDanhSachSinhVien = (lop) => {
         setLopDangChon(lop);
         layDanhSachSinhVien(lop.id);
         setXemSinhVien(true);
     };
 
-    // Close student list dialog
     const dongDanhSachSinhVien = () => {
         setXemSinhVien(false);
     };
 
-    // Handle pagination change
     const handleChangePage = (khoaId, newPage) => {
         setPagination(prev => ({
             ...prev,
@@ -266,7 +253,6 @@ function QuanLyLop() {
         }));
     };
 
-    // Handle rows per page change
     const handleChangeRowsPerPage = (khoaId, event) => {
         setPagination(prev => ({
             ...prev,
@@ -274,17 +260,20 @@ function QuanLyLop() {
         }));
     };
 
-    // Handle training system filter change
     const handleFilterHeDaoTaoChange = (event) => {
         setFilterHeDaoTao(event.target.value);
-        setKhoaMoRong(null); // Collapse all accordions
-        // Reset pagination for all courses
+        setKhoaMoRong(null);
         const newPagination = {};
         danhSachKhoa.forEach(khoa => {
             newPagination[khoa.id] = { page: 0, rowsPerPage: 5 };
         });
         setPagination(newPagination);
     };
+
+    // Lọc danh sách khóa theo hệ đào tạo trong form
+    const danhSachKhoaLocTheoHe = heDaoTaoDuocChon
+        ? danhSachKhoa.filter(khoa => khoa.he_dao_tao_id === heDaoTaoDuocChon)
+        : danhSachKhoa;
 
     const danhSachLopTheoKhoa = nhomLopTheoKhoa();
 
@@ -305,7 +294,6 @@ function QuanLyLop() {
                         </Button>
                     </Box>
 
-                    {/* Training System Filter */}
                     <Box mb={3}>
                         <FormControl variant="outlined" sx={{ minWidth: 300 }}>
                             <InputLabel id="filter-he-dao-tao-label">Lọc theo hệ đào tạo</InputLabel>
@@ -371,7 +359,7 @@ function QuanLyLop() {
                                                             <TableHead>
                                                                 <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.02)' }}>
                                                                     <TableCell>Mã lớp</TableCell>
-                                                                    <TableCell>Thuộc khóa</TableCell>
+                                                                    <TableCell>Thuộc khóa đào tạo</TableCell>
                                                                     <TableCell align="right">Hành động</TableCell>
                                                                 </TableRow>
                                                             </TableHead>
@@ -419,7 +407,7 @@ function QuanLyLop() {
                                                 </>
                                             ) : (
                                                 <Typography variant="body2" sx={{ fontStyle: 'italic', p: 2 }}>
-                                                    Không có lớp nào trong khóa này
+                                                    Không có lớp nào trong khóa đào tạo này
                                                 </Typography>
                                             )}
                                         </AccordionDetails>
@@ -451,19 +439,42 @@ function QuanLyLop() {
                 <DialogContent sx={{ pt: 3, pb: 3, mt: 2 }}>
                     <Grid container spacing={3}>
                         <Grid item xs={12}>
+                            <FormControl fullWidth variant="outlined">
+                                <InputLabel id="he-dao-tao-label">Hệ đào tạo</InputLabel>
+                                <Select
+                                    labelId="he-dao-tao-label"
+                                    id="he-dao-tao"
+                                    value={heDaoTaoDuocChon}
+                                    onChange={xuLyChonHeDaoTao}
+                                    label="Hệ đào tạo"
+                                    required
+                                >
+                                    <MenuItem value="">
+                                        <em>Chọn hệ đào tạo</em>
+                                    </MenuItem>
+                                    {danhSachHeDaoTao.map((heDaoTao) => (
+                                        <MenuItem key={heDaoTao.id} value={heDaoTao.id}>
+                                            {heDaoTao.ten_he_dao_tao}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
                             <FormControl fullWidth>
                                 <Autocomplete
-                                    options={danhSachKhoa}
+                                    options={danhSachKhoaLocTheoHe}
                                     getOptionLabel={(option) => `${option.ma_khoa} - ${option.ten_khoa}`}
                                     value={danhSachKhoa.find(k => k.id === thongTinLop.khoa_dao_tao_id) || null}
                                     onChange={xuLyChonKhoa}
+                                    disabled={!heDaoTaoDuocChon} // Vô hiệu hóa nếu chưa chọn hệ đào tạo
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Chọn khóa"
+                                            label="Chọn khóa đào tạo"
                                             variant="outlined"
                                             required
-                                            helperText="Vui lòng chọn khóa cho lớp này"
+                                            helperText="Vui lòng chọn khóa đào tạo cho lớp này"
                                         />
                                     )}
                                 />
@@ -476,7 +487,7 @@ function QuanLyLop() {
                                         <strong>Mã lớp sẽ được tạo:</strong> {taoMaLop(thongTinLop.khoa_dao_tao_id)}
                                     </Typography>
                                     <Typography variant="caption" sx={{ fontStyle: 'italic', mt: 1, display: 'block' }}>
-                                        Mã lớp được tạo tự động theo định dạng: [MÃ KHÓA][SỐ THỨ TỰ]
+                                        Mã lớp được tạo tự động theo định dạng: [MÃ KHÓA ĐÀO TẠO][SỐ THỨ TỰ]
                                     </Typography>
                                 </Box>
                             </Grid>
@@ -494,7 +505,7 @@ function QuanLyLop() {
                         variant="contained"
                         color="primary"
                         onClick={luuLop}
-                        disabled={!thongTinLop.khoa_dao_tao_id}
+                        disabled={!heDaoTaoDuocChon || !thongTinLop.khoa_dao_tao_id}
                     >
                         {indexChinhSua === null ? "Tạo lớp" : "Lưu thay đổi"}
                     </Button>
@@ -524,7 +535,7 @@ function QuanLyLop() {
                                     <strong>Mã lớp:</strong> {lopDangChon?.ma_lop}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Thuộc khóa:</strong> {lopDangChon ? layTenKhoa(lopDangChon.khoa_dao_tao_id) : ''}
+                                    <strong>Thuộc khóa đào tạo:</strong> {lopDangChon ? layTenKhoa(lopDangChon.khoa_dao_tao_id) : ''}
                                 </Typography>
                             </Box>
 
