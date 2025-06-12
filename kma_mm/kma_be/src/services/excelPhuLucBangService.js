@@ -222,7 +222,7 @@ class ExcelPhuLucBangService {
             });
 
 
-
+            //Phần header đầu
             worksheet.mergeCells("D1", "F1");
             worksheet.getCell("D1").value = "BAN CƠ YẾU CHÍNH PHỦ";
             worksheet.getCell("D1").font = { name: 'Times New Roman',bold: false };
@@ -250,50 +250,36 @@ class ExcelPhuLucBangService {
             worksheet.getCell("A6").value = "I. THÔNG TIN VỀ VĂN BẰNG";
             worksheet.getCell("A6").font = { name: 'Times New Roman',bold: true };
         
-            worksheet.getCell("A7").value = "Họ và tên:";
-            worksheet.getCell("A8").value = "Ngày sinh:";
-            worksheet.getCell("A9").value = "Nơi sinh:";
-            worksheet.getCell("A10").value = "Mã số sinh viên:";
-            worksheet.getCell("A11").value = "Khóa:";
-            worksheet.getCell("A12").value = "Chuyên ngành đào tạo:";
-            worksheet.getCell("A13").value = "Hình thức đào tạo:";
+
+            //thông tin bên trái
+            worksheet.getCell("A7").value = "Họ và tên: Nguyễn Linh";
+            worksheet.getCell("A8").value = "Ngày sinh: 16/07/2004";
+            worksheet.getCell("A9").value = "Nơi sinh: Thanh Hoá";
+            worksheet.getCell("A10").value = "Mã số sinh viên: CT0703";
+            worksheet.getCell("A11").value = "Khóa: 19";
+            worksheet.getCell("A12").value = "Chuyên ngành đào tạo: An toàn thông tin mạng";
+            worksheet.getCell("A13").value = "Hình thức đào tạo: Chính quy";
             worksheet.getCell("A14").value = "Ngày nhập học:";
             worksheet.getCell("A15").value = "Trình độ đào tạo:";
             worksheet.getCell("A16").value = "Số hiệu văn bằng:";
           
-            worksheet.getCell("J7").value = "Giới tính:"; 
-            worksheet.getCell("J11").value = "Lớp:"; 
-            worksheet.getCell("J13").value = "Ngôn ngữ đào tạo:";            
-            worksheet.getCell("J14").value = "Thời gian đào tạo:";
-            worksheet.getCell("J15").value = "Xếp hạng tốt nghiệp:";
-            worksheet.getCell("J16").value = "Số vào sổ gốc:";
-
-            //thông tin bên trái
-            worksheet.getCell("E7").value = "Nguyễn Linh"; // giá trị họ tên
-            worksheet.getCell("E8").value = "CT0703"; // giá trị mã số sinh viên
-            worksheet.getCell("E8").value = "16/04/1999"; //giá trị ngày sinh 
-            worksheet.getCell("E9").value = "Bình Xuyên - Vĩnh Phúc"; // giá trị nơi sinh
-            worksheet.getCell("E11").value = "14"; // giá trị khoá
-            worksheet.getCell("E12").value = "An toàn thông tin mạng" ; //giá trị chuyên ngành đào tạo
-            worksheet.getCell("E13").value = "Chính quy"; // giá trị hình thức đào tạo
-
-            
             //thông tin bên phải
-            worksheet.getCell("M11").value = "AT14BT"; // giá trị lớp
-            worksheet.getCell("M7").value = "Nữ"; // giá trị giới tính
-            worksheet.getCell("M13").value = "Tiếng Việt"; //giá trị ngôn ngữ đào tạo
-            worksheet.getCell("M14").value = "2017-2025"; //giá trị thời gian đào tạo
-            worksheet.getCell("M15").value = "Khá"; //giá trị xếp hạng tốt nghiệp
-          
-          
+            worksheet.getCell("H7").value = "Giới tính: Nữ"; 
+            worksheet.getCell("H11").value = "Lớp: AT14BT"; 
+            worksheet.getCell("H13").value = "Ngôn ngữ đào tạo: Tiếng Việt";            
+            worksheet.getCell("H14").value = "Thời gian đào tạo: 2017-2025";
+            worksheet.getCell("H15").value = "Xếp hạng tốt nghiệp: Khá";
+            worksheet.getCell("H16").value = "Số vào sổ gốc:";
+
+        
+
+            worksheet.addRow([]);
+
+
             // --- Phần II ---
-            worksheet.getCell("C17").value = "II. ĐIỂM TOÀN KHÓA HỌC";
-            worksheet.getCell("C17").font = { name: 'Times New Roman',bold: true };
-          
+            worksheet.getCell("A18").value = "II. ĐIỂM TOÀN KHÓA HỌC";
+            worksheet.getCell("A18").font = { name: 'Times New Roman',bold: true };
 
-
-
-            
             // Thiết lập độ rộng cột
             worksheet.getColumn('A').width = 4.5;      // STT
             worksheet.getColumn('B').width = 1;    // Tên học phần (bắt đầu)
@@ -308,22 +294,7 @@ class ExcelPhuLucBangService {
             worksheet.getColumn('K').width = 5.5;    // Ghi chú
             worksheet.getColumn('L').width = 6.5;    // Ghi chú
             
-            // // Thiết lập header cho worksheet
-            // // worksheet.headerFooter.firstHeader = `BẢNG ĐIỂM HỌC TẬP CỦA SINH VIÊN: ${sinhVien.ho_dem} ${sinhVien.ten}`;
-            // // worksheet.headerFooter.firstFooter = `Lớp: ${sinhVien.lop?.ma_lop || 'N/A'}`;
-            // // Dòng 1: Tiêu đề chính
-            // const titleRow = worksheet.addRow([`BẢNG ĐIỂM HỌC TẬP CỦA SINH VIÊN: ${sinhVien.ho_dem} ${sinhVien.ten}`]);
-            // worksheet.mergeCells(`A1:L1`);
-            // titleRow.getCell(1).font = { name: 'Times New Roman', size: 14, bold: true };
-            // titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-            // titleRow.height = 30;
-
-            // // Dòng 2: Thông tin lớp
-            // const classRow = worksheet.addRow([`Lớp: ${sinhVien.lop?.ma_lop || 'N/A'}`]);
-            // worksheet.mergeCells(`A2:L2`);
-            // classRow.getCell(1).font = { name: 'Times New Roman', size: 12 };
-            // classRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-            // classRow.height = 25;
+         
 
             // // Thêm dòng trống để tách biệt
             worksheet.addRow([]);
@@ -457,11 +428,11 @@ class ExcelPhuLucBangService {
             // Thêm chân trang
             const footerRow1 = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
             
-            const footerRow2 = worksheet.addRow(['', '', '', '', '', '', '', '', '', 'Hà Nội, ngày ... tháng ... năm ...', '', '']);
+            const footerRow2 = worksheet.addRow(['', '', '', '', '', '', '', '', 'Hà Nội, ngày ... tháng ... năm ...', '', '']);
             const footerRow2Idx = worksheet.rowCount;
-            worksheet.mergeCells(`J${footerRow2Idx}:L${footerRow2Idx}`);
-            footerRow2.getCell('J').alignment = { horizontal: 'center', vertical: 'middle' };
-            footerRow2.getCell('J').font = { name: 'Times New Roman', size: 11, italic: true };
+            worksheet.mergeCells(`I${footerRow2Idx}:M${footerRow2Idx}`);
+            footerRow2.getCell('I').alignment = { horizontal: 'center', vertical: 'middle' };
+            footerRow2.getCell('I').font = { name: 'Times New Roman', size: 11, italic: true };
             
             const footerRow3 = worksheet.addRow(['', '', '', '', '', '', '', '', '', 'NGƯỜI LẬP BẢNG', '', '']);
             const footerRow3Idx = worksheet.rowCount;
@@ -471,6 +442,7 @@ class ExcelPhuLucBangService {
             
             // Trả về workbook
             return workbook;
+
         } catch (error) {
             console.error("Lỗi khi xuất file Excel phụ lục bảng:", error);
             throw error;

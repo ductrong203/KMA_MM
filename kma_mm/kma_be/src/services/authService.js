@@ -1,20 +1,10 @@
-<<<<<<< HEAD
-const { User } = require("../models");
-console.log(require("../models/user"))
-=======
 const { users } = require("../models");
->>>>>>> ea621ed487c7e2b3798747fd560dc920f83c2dee
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
 const user = require("../models/user");
 
 const register = async (newUser) => {
-<<<<<<< HEAD
-  const { username, password, confirmPassword, role} = newUser;
-  // console.log(username);
-=======
   const { username, password, confirmPassword, role, ho_ten } = newUser;
->>>>>>> ea621ed487c7e2b3798747fd560dc920f83c2dee
   if (password !== confirmPassword) {
     return {
       status: "ERR",
