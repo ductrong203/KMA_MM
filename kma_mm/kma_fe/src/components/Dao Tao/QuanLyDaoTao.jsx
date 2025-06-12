@@ -18,7 +18,7 @@ function QuanLyDaoTao() {
     const [trainingTypes, setTrainingTypes] = useState([]);
     // Thêm trạng thái cho phân trang
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rowsPerPage, setRowsPerPage] = useState(15);
 
     // Fetch training types from API on component mount
     useEffect(() => {
@@ -43,7 +43,7 @@ function QuanLyDaoTao() {
     const handleAddTraining = async () => {
         // Validate code length
         if (newTraining.code.length > 5) {
-            toast.error('Ký hiệu hệ đào tạo không được vượt quá 5 ký tự!');
+            toast.error('Mã hệ đào tạo không được vượt quá 5 ký tự!');
             return;
         }
 
@@ -124,20 +124,20 @@ function QuanLyDaoTao() {
 
     return (
         <Box>
-            <PageHeader
-                title="Hệ đào tạo"
-
-
-            />
-            <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenAddTraining(true)}
-                sx={{ mb: 3 }}
-                disabled={loading}
-            >
-                Thêm hệ đào tạo
-            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <PageHeader
+                    title="Hệ đào tạo"
+                />
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setOpenAddTraining(true)}
+                    sx={{ mb: 3 }}
+                    disabled={loading}
+                >
+                    Thêm hệ đào tạo
+                </Button>
+            </Box>
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -149,7 +149,7 @@ function QuanLyDaoTao() {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell style={{ fontWeight: 'bold' }}>Ký hiệu</TableCell>
+                                    <TableCell style={{ fontWeight: 'bold' }}>Mã hệ đào tạo</TableCell>
                                     <TableCell style={{ fontWeight: 'bold' }}>Tên hệ đào tạo</TableCell>
                                     <TableCell style={{ fontWeight: 'bold' }}>Thao tác</TableCell>
                                 </TableRow>
@@ -182,7 +182,7 @@ function QuanLyDaoTao() {
                     </TableContainer>
                     {/* Thêm TablePagination */}
                     <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
+                        rowsPerPageOptions={[15, 25, 50]}
                         component="div"
                         count={trainingTypes.length}
                         rowsPerPage={rowsPerPage}
@@ -208,9 +208,9 @@ function QuanLyDaoTao() {
                     {editingTraining ? 'Sửa hệ đào tạo' : 'Thêm hệ đào tạo'}
                 </DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: '500px' }}>
-                    <FormLabel component="legend">Mã ký hiệu hệ đào tạo</FormLabel>
+                    <FormLabel component="legend">Mã hệ đào tạo</FormLabel>
                     <TextField
-                        label="Ký hiệu"
+                        label="Mã hệ đào tạo"
                         fullWidth
                         margin=""
                         value={newTraining.code}

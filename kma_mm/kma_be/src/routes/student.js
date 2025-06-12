@@ -6,6 +6,7 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 
 router.post("/import", upload.single("file"), SinhVienController.importSinhVien);
+router.post("/kiem-tra-ton-tai", upload.single("file"), SinhVienController.kiemTraTonTai);
 router.post("/", SinhVienController.create);
 router.get("/all", SinhVienController.getAllPhanTrang); 
 router.get("/", SinhVienController.getAll);

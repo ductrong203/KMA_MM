@@ -22,6 +22,7 @@ import MonHocForm from './MonHocForm';
 import MonHocTheoHeDaoTao from './MonHocTheoHeDaoTao';
 import { createMonHoc, getMonHoc, updateMonHoc } from '../../Api_controller/Service/monHocService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
+import PageHeader from '../../layout/PageHeader';
 
 const QuanLyMonHoc = () => {
   const [subjects, setSubjects] = useState([]);
@@ -34,7 +35,7 @@ const QuanLyMonHoc = () => {
   const [filteredSubjects, setFilteredSubjects] = useState([]);
   const [heDaoTaoFilter, setHeDaoTaoFilter] = useState('');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(15);
   const role = localStorage.getItem("role") || "";
 
   useEffect(() => {
@@ -219,7 +220,7 @@ const QuanLyMonHoc = () => {
       {tabValue === 0 && (
         <Paper sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">Danh sách môn học</Typography>
+            <PageHeader title="Quản lý môn học" />
             {role !== 'examination' && (
               <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenSubjectForm}>
                 Thêm môn học
@@ -246,7 +247,7 @@ const QuanLyMonHoc = () => {
                 getRowId={(row) => row.id}
                 columns={subjectColumns}
                 pagination
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[15,25, 50]}
                 rowCount={filteredSubjects.length}
                 paginationMode="client"
                 paginationModel={{ page, pageSize }}

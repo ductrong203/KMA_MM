@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { 
-  Grid, 
-  Paper, 
-  Typography, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  Grid,
+  Paper,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Button,
   Table,
   TableBody,
@@ -24,6 +24,7 @@ import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingServ
 import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
 import { getDanhSachSinhVienTheoLop } from '../../Api_controller/Service/sinhVienService';
 import { exportPhuLucBangDiem } from '../../Api_controller/Service/excelService';
+import PageHeader from '../../layout/PageHeader';
 
 
 const PhuLucBangDiem = () => {
@@ -33,12 +34,12 @@ const PhuLucBangDiem = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  
+
   // State cho danh sách dữ liệu
   const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
   const [danhSachKhoa, setDanhSachKhoa] = useState([]);
   const [danhSachLop, setDanhSachLop] = useState([]);
-  
+
   // Loading state cho từng dropdown
   const [loadingHeDaoTao, setLoadingHeDaoTao] = useState(false);
   const [loadingKhoa, setLoadingKhoa] = useState(false);
@@ -69,7 +70,7 @@ const PhuLucBangDiem = () => {
         setDanhSachKhoa([]);
         return;
       }
-      
+
       setLoadingKhoa(true);
       try {
         const data = await getDanhSachKhoaTheoDanhMucDaoTao(selectedHeDaoTao);
@@ -92,7 +93,7 @@ const PhuLucBangDiem = () => {
         setDanhSachLop([]);
         return;
       }
-      
+
       setLoadingLop(true);
       try {
         const data = await getDanhSachLopTheoKhoaDaoTao(selectedKhoa);
@@ -115,7 +116,7 @@ const PhuLucBangDiem = () => {
         setStudents([]);
         return;
       }
-      
+
       setLoading(true);
       try {
         const response = await getDanhSachSinhVienTheoLop(selectedClass);
@@ -150,55 +151,54 @@ const PhuLucBangDiem = () => {
     setSelectedClass(event.target.value);
   };
 
- const handleExportReport = async (studentId) => {
-  if (!studentId) {
-    alert('Không tìm thấy mã sinh viên.');
-    return;
-  }
-
-  setExportLoading(true);
-
-  try {
-    
-    const response = await exportPhuLucBangDiem(studentId);
-
-    if (!response || !response.data) {
-      throw new Error('Không có dữ liệu trả về từ server.');
+  const handleExportReport = async (studentId) => {
+    if (!studentId) {
+      alert('Không tìm thấy mã sinh viên.');
+      return;
     }
 
-    const blob = new Blob([response.data], {
-      type: response.headers['content-type'] || 'application/octet-stream',
-    });
+    setExportLoading(true);
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    try {
 
-    link.href = url;
-    link.download = `phu-luc-bang-diem-${studentId}.xlsx`;
+      const response = await exportPhuLucBangDiem(studentId);
 
-    document.body.appendChild(link);
-    link.click();
+      if (!response || !response.data) {
+        throw new Error('Không có dữ liệu trả về từ server.');
+      }
 
-    // Giải phóng tài nguyên
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error exporting report:', error);
-    alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
-  } finally {
-    setExportLoading(false);
-  }
-};
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/octet-stream',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `phu-luc-bang-diem-${studentId}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Giải phóng tài nguyên
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
 
   return (
     <Grid item xs={12} md={12}>
       <Paper sx={{ p: 3, borderRadius: 2 }}>
-        <Typography variant="h6" marginBottom={2}>
-          Phụ lục văn bằng
-        </Typography>
-        
-         <Stack direction="row" spacing={2} mb={3}>
+        <PageHeader title="Phụ lục văn bằng" />
+
+
+        <Stack direction="row" spacing={2} mb={3}>
           <FormControl sx={{ width: '33%' }}>
             <InputLabel>Hệ đào tạo</InputLabel>
             <Select
@@ -219,12 +219,12 @@ const PhuLucBangDiem = () => {
               </Box>
             )}
           </FormControl>
-          
+
           <FormControl sx={{ width: '33%' }} disabled={!selectedHeDaoTao || loadingKhoa}>
-            <InputLabel>Khóa</InputLabel>
+            <InputLabel>Khóa đào tạo</InputLabel>
             <Select
               value={selectedKhoa}
-              label="Khóa"
+              label="Khóa đào tạo"
               onChange={handleKhoaChange}
             >
               {danhSachKhoa.map(khoa => (
@@ -239,7 +239,7 @@ const PhuLucBangDiem = () => {
               </Box>
             )}
           </FormControl>
-          
+
           <FormControl sx={{ width: '33%' }} disabled={!selectedKhoa || loadingLop}>
             <InputLabel>Lớp</InputLabel>
             <Select
@@ -288,10 +288,10 @@ const PhuLucBangDiem = () => {
                     <TableCell>{new Date(student.ngay_sinh).toLocaleDateString('vi-VN')}</TableCell>
                     <TableCell>{student.gioi_tinh == 1 ? 'Nam' : 'Nữ'}</TableCell>
                     <TableCell>
-                      <Box 
-                        sx={{ 
-                          p: 0.5, 
-                          borderRadius: 1, 
+                      <Box
+                        sx={{
+                          p: 0.5,
+                          borderRadius: 1,
                           display: 'inline-block',
                           bgcolor: student.dang_hoc === 1 ? 'success.light' : 'warning.light',
                           color: 'white'
