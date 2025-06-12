@@ -153,6 +153,12 @@ const MonHocTheoHeDaoTao = () => {
       toast.error('Lỗi: Thiếu thông tin cần thiết để xóa môn học');
       return;
     }
+    // Thêm alert xác nhận trước khi xóa
+    const isConfirmed = window.confirm('Bạn có muốn xóa môn học này không?');
+
+    if (!isConfirmed) {
+      return; // Nếu người dùng chọn Cancel thì không thực hiện xóa
+    }
 
     try {
       console.log('Đang xóa môn học:', { semester, subjectId });
