@@ -1,5 +1,6 @@
 import { Autocomplete, Box, Button, Card, CardContent, FormControl, Grid, Paper, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material'
 import React, { useState } from 'react'
+import PageHeader from '../../layout/PageHeader';
 
 const mockStudents = [
     {
@@ -28,13 +29,13 @@ const mockStudents = [
 
 function DieuKienTotNghiep() {
     const [activeStep, setActiveStep] = useState(0);
-     const [openAddClass, setOpenAddClass] = useState(false);
-    
-        const [loading, setLoading] = useState(false);
-        const [openAddStudent, setOpenAddStudent] = useState(false);
-        const [openGraduationCheck, setOpenGraduationCheck] = useState(false);
-        const [openDegreeIssue, setOpenDegreeIssue] = useState(false);
-        const [selectedStudent, setSelectedStudent] = useState(null);
+    const [openAddClass, setOpenAddClass] = useState(false);
+
+    const [loading, setLoading] = useState(false);
+    const [openAddStudent, setOpenAddStudent] = useState(false);
+    const [openGraduationCheck, setOpenGraduationCheck] = useState(false);
+    const [openDegreeIssue, setOpenDegreeIssue] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
@@ -59,9 +60,7 @@ function DieuKienTotNghiep() {
             <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
                     <Paper sx={{ p: 3, borderRadius: 2 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Xét điều kiện tốt nghiệp
-                        </Typography>
+                        <PageHeader title="Xét tốt nghiệp" />
 
                         <Stepper activeStep={activeStep} sx={{ mt: 3, mb: 4 }}>
                             {graduationSteps.map((label) => (

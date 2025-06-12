@@ -1,6 +1,5 @@
 import { Add as AddIcon, Edit as EditIcon } from "@mui/icons-material";
 import {
-  Alert,
   Autocomplete,
   Box,
   Button,
@@ -16,7 +15,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -25,15 +23,18 @@ import {
   TableRow,
   TextField,
   Typography,
+  TablePagination,
 } from "@mui/material";
-import { TablePagination } from "@mui/material";
 import React, { useEffect, useState } from "react";
+
 import {
   createKhoa,
   fetchDanhSachKhoa,
   updateKhoa,
 } from "../../Api_controller/Service/khoaService";
 import { fetchDanhSachHeDaoTao } from "../../Api_controller/Service/trainingService";
+import { toast } from 'react-toastify';
+import PageHeader from "../../layout/PageHeader";
 
 // Component chính quản lý danh sách khóa
 const QuanLyKhoa = () => {
@@ -52,16 +53,11 @@ const QuanLyKhoa = () => {
   });
   const [selectedHeDaoTao, setSelectedHeDaoTao] = useState(null);
 
-  // State xử lý loading và thông báo
+  // State xử lý loading và phân trang
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-  const [page, setPage] = useState(0); // Trang hiện tại (bắt đầu từ 0)
-  const [rowsPerPage, setRowsPerPage] = useState(5); // Số dòng mỗi trang
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // State cho bộ lọc
   const [filterHeDaoTao, setFilterHeDaoTao] = useState("");
@@ -80,7 +76,7 @@ const QuanLyKhoa = () => {
       setDanhSachKhoa(response);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách khóa:", error);
-      showSnackbar("Không thể lấy danh sách khóa. Vui lòng thử lại sau.", "error");
+      toast.error("Không thể lấy danh sách khóa. Vui lòng thử lại sau.");
     } finally {
       setLoadingData(false);
     }
@@ -93,18 +89,8 @@ const QuanLyKhoa = () => {
       setDanhSachHeDaoTao(response);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách hệ đào tạo:", error);
-      showSnackbar("Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.", "error");
+      toast.error("Không thể lấy danh sách hệ đào tạo. Vui lòng thử lại sau.");
     }
-  };
-
-  // Hiển thị thông báo
-  const showSnackbar = (message, severity = "success") => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  // Đóng thông báo
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
   };
 
   // Xử lý mở form thêm khóa
@@ -158,19 +144,19 @@ const QuanLyKhoa = () => {
       !formData.nam_ket_thuc ||
       !formData.so_ky_hoc
     ) {
-      showSnackbar("Vui lòng điền đầy đủ thông tin!", "error");
+      toast.error("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
     // Kiểm tra năm bắt đầu < năm kết thúc
     if (parseInt(formData.nam_bat_dau) >= parseInt(formData.nam_ket_thuc)) {
-      showSnackbar("Năm bắt đầu phải nhỏ hơn năm kết thúc!", "error");
+      toast.error("Năm bắt đầu phải nhỏ hơn năm kết thúc!");
       return;
     }
 
     // Kiểm tra số kỳ học là số dương
     if (parseInt(formData.so_ky_hoc) <= 0) {
-      showSnackbar("Số kỳ học phải là số dương!", "error");
+      toast.error("Số kỳ học phải là số dương!");
       return;
     }
 
@@ -182,22 +168,22 @@ const QuanLyKhoa = () => {
       nam_hoc: convertToNamHoc(formData.nam_bat_dau, formData.nam_ket_thuc),
       so_ky_hoc: formData.so_ky_hoc,
     };
-console.log(dataToSubmit)
+
     setLoading(true);
     try {
       if (selectedKhoa) {
         await updateKhoa(selectedKhoa.id, dataToSubmit);
-        showSnackbar("Cập nhật khóa thành công!");
+        toast.success("Cập nhật khóa thành công!");
       } else {
         await createKhoa(dataToSubmit);
-        showSnackbar("Thêm khóa mới thành công!");
+        toast.success("Thêm khóa mới thành công!");
       }
       const updatedData = await fetchDanhSachKhoa();
       setDanhSachKhoa(updatedData);
       handleCloseForm();
     } catch (error) {
       console.error("Lỗi khi xử lý dữ liệu khóa:", error);
-      showSnackbar("Không thể lưu dữ liệu. Vui lòng thử lại sau.", "error");
+      toast.error("Không thể lưu dữ liệu. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -261,13 +247,11 @@ console.log(dataToSubmit)
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="" sx={{ mt: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Danh sách khóa
-        </Typography>
+        <PageHeader title="Danh sách khóa" />
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenForm}>
-          Thêm khóa
+          Thêm khóa đào tạo mới
         </Button>
       </Box>
 
@@ -299,13 +283,13 @@ console.log(dataToSubmit)
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell width="5%">STT</TableCell>
-              <TableCell width="15%">Mã khóa</TableCell>
-              <TableCell width="20%">Tên khóa</TableCell>
-              <TableCell width="20%">Hệ đào tạo</TableCell>
-              <TableCell width="15%">Niên khóa</TableCell>
-              <TableCell width="10%">Số kỳ học</TableCell>
-              <TableCell width="15%">Thao tác</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="5%">STT</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Mã khóa đào tạo</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="20%">Tên khóa</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="20%">Hệ đào tạo</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Niên khóa</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="10%">Số kỳ học</TableCell>
+              <TableCell style={{ fontWeight: 'bold' }} width="15%">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -357,10 +341,14 @@ console.log(dataToSubmit)
       </TableContainer>
 
       {/* Form thêm/cập nhật khóa */}
-      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedKhoa ? "Chỉnh sửa khóa" : "Thêm khóa mới"}</DialogTitle>
+
+      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedKhoa ? "Chỉnh sửa khóa đào tạo" : "Thêm khóa đào tạo mới"}</DialogTitle>
         <DialogContent>
           <Box py={2}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Hệ đào tạo
+            </Typography>
             <Autocomplete
               options={danhSachHeDaoTao}
               getOptionLabel={(option) => option.ten_he_dao_tao}
@@ -370,6 +358,10 @@ console.log(dataToSubmit)
                 <TextField {...params} label="Hệ đào tạo" margin="normal" variant="outlined" fullWidth />
               )}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Mã ký hiệu khóa đào tạo
+            </Typography>
             <TextField
               fullWidth
               label="Mã khóa"
@@ -379,6 +371,10 @@ console.log(dataToSubmit)
               margin="normal"
               variant="outlined"
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Tên khóa đào tạo
+            </Typography>
             <TextField
               fullWidth
               label="Tên khóa"
@@ -388,6 +384,10 @@ console.log(dataToSubmit)
               margin="normal"
               variant="outlined"
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Năm bắt đầu
+            </Typography>
             <TextField
               fullWidth
               label="Năm bắt đầu"
@@ -399,6 +399,10 @@ console.log(dataToSubmit)
               type="number"
               inputProps={{ min: 2000, max: 2100 }}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Năm kết thúc
+            </Typography>
             <TextField
               fullWidth
               label="Năm kết thúc"
@@ -410,6 +414,10 @@ console.log(dataToSubmit)
               type="number"
               inputProps={{ min: 2000, max: 2100 }}
             />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Số kỳ học
+            </Typography>
             <TextField
               fullWidth
               label="Số kỳ học"
@@ -438,18 +446,6 @@ console.log(dataToSubmit)
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Snackbar hiển thị thông báo */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };
