@@ -35,7 +35,7 @@ const QuanLyMonHoc = () => {
   const [filteredSubjects, setFilteredSubjects] = useState([]);
   const [heDaoTaoFilter, setHeDaoTaoFilter] = useState('');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(15);
   const role = localStorage.getItem("role") || "";
 
   useEffect(() => {
@@ -247,7 +247,7 @@ const QuanLyMonHoc = () => {
                 getRowId={(row) => row.id}
                 columns={subjectColumns}
                 pagination
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[15,25, 50]}
                 rowCount={filteredSubjects.length}
                 paginationMode="client"
                 paginationModel={{ page, pageSize }}
