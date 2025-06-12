@@ -260,18 +260,59 @@ POST http://localhost:8000/student/export-excel // có 1 trong 3 trường truy�
 
 import danh sách sinh viên
 
-POST http://localhost:8000/student/import //
+POST http://localhost:8000/student/import 
 form-data
     file 
     lop_id
+    ghi_de
+
     
 json trả về
 {
     "success": true,
     "data": {
         "message": "Nhập danh sách sinh viên thành công",
-        "newCount": 2,
-        "thongTinQuanNhanCount": 1
+        "newCount": 1,
+        "updateCount": 1,
+        "thongTinQuanNhanCount": 0
+    }
+}
+
+Kiểm tra sinh viên tồn tại
+POST http://localhost:8000/student/kiem-tra-ton-tai
+    file 
+    lop_id
+json trả về 
+{
+    "success": true,
+    "data": {
+        "message": "Kiểm tra danh sách sinh viên thành công",
+        "existingStudents": [
+            {
+                "ma_sinh_vien": "L103",
+                "ho_dem": "Trần Trung",
+                "ten": "An",
+                "CCCD": "1234566464",
+                "lop_id": 1
+            },
+            {
+                "ma_sinh_vien": "L106",
+                "ho_dem": "Nguyễn Thị",
+                "ten": "Anh",
+                "CCCD": "2312432525",
+                "lop_id": 1
+            }
+        ],
+        "existingCount": 2
+    }
+}
+trường hợp 2
+{
+    "success": true,
+    "data": {
+        "message": "Kiểm tra danh sách sinh viên thành công",
+        "existingStudents": [],
+        "existingCount": 0
     }
 }
 
