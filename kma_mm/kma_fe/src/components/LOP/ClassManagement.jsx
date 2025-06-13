@@ -555,7 +555,7 @@ function QuanLyLop() {
                                                 <TableRow key={sinhVien.id_sinh_vien} hover>
                                                     <TableCell>{sinhVien.ma_sinh_vien}</TableCell>
                                                     <TableCell>{sinhVien.ho_dem}</TableCell>
-                                                    <TableCell>{sinhVien.name}</TableCell>
+                                                    <TableCell>{sinhVien.ten}</TableCell>
                                                     <TableCell>
                                                         {sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : 'N/A'}
                                                     </TableCell>

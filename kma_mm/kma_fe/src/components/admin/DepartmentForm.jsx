@@ -36,8 +36,8 @@ const DepartmentForm = ({ department, onClose, onSubmit }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.code) newErrors.code = 'Department code is required';
-    if (!formData.name) newErrors.name = 'Department name is required';
+    if (!formData.code) newErrors.code = 'Vui lòng nhập mã phòng ban';
+    if (!formData.name) newErrors.name = 'Vui lòng nhập tên phòng ban';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -78,13 +78,13 @@ console.log(formData)
   return (
     <form onSubmit={handleSubmit}>
       <DialogTitle>
-        {department ? 'Edit Department' : 'Create New Department'}
+        {department ? 'Sửa phòng ban' : 'Tạo phòng ban mới'}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
           <TextField
             name="code"
-            label="Department Code"
+            label="Mã phòng ban"
             value={formData.code}
             onChange={handleChange}
             error={!!errors.code}
@@ -94,7 +94,7 @@ console.log(formData)
           />
           <TextField
             name="name"
-            label="Department Name"
+            label="Tên phòng ban"
             value={formData.name}
             onChange={handleChange}
             error={!!errors.name}
@@ -120,7 +120,7 @@ console.log(formData)
           </Grid>
           <TextField
             name="notes"
-            label="Notes"
+            label="Ghi chú"
             value={formData.notes}
             onChange={handleChange}
             multiline
@@ -130,9 +130,9 @@ console.log(formData)
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>Hủy</Button>
         <Button type="submit" variant="contained" color="primary">
-          {department ? 'Update' : 'Create'}
+          {department ? 'Cập nhật' : 'Tạo mới'}
         </Button>
       </DialogActions>
     </form>
