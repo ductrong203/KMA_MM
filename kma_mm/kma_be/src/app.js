@@ -16,6 +16,7 @@ app.use(morgan("dev"));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
+
 routes(app);
 db.sequelize
   .authenticate()
