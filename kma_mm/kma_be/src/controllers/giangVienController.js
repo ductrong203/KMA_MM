@@ -4,7 +4,7 @@ const giangVienService = require("../services/giangVienService");
 const createGiangVien = async (req, res) => {
   try {
     console.log(req.body);
-    const { maGiangVien, username, hoTen, email, thuocKhoa, laGiangVienMoi, maPhongBan } = req.body;
+    const { maGiangVien, username, hoTen, thuocKhoa, laGiangVienMoi, maPhongBan } = req.body;
 
     // Kiểm tra các trường bắt buộc
     const missingFields = [];
@@ -12,7 +12,6 @@ const createGiangVien = async (req, res) => {
     if (!maGiangVien) missingFields.push('maGiangVien');
     if (!username) missingFields.push('username');
     if (!hoTen) missingFields.push('hoTen');
-    if (!email) missingFields.push('email');
 
     // Nếu không phải giảng viên mới thì phải có thuocKhoa và maPhongBan
     if (laGiangVienMoi === 0) {
