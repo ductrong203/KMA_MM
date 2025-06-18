@@ -62,6 +62,7 @@ import ThongKeTotNghiep from "../Dao Tao/ThongKe";
 import QuanLyChungChi from "../QuanLyChungChi/QuanLyChungChi";
 import ThongKe from "../Dao Tao/ThongKe";
 import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
+import ThongKeDiem from "../Dao Tao/ThongKeDiem";
 
 
 // Mock data
@@ -229,11 +230,13 @@ function TrainingDashboard() {
               <Tabs value={subTab} onChange={handleSubTabChange}>
                 <Tab label="Phụ lục văn bằng" />
                 <Tab label="Thống kê" />
+                <Tab label="Thống kê điểm" />
                 <Tab label="Báo cáo chi tiết" />
               </Tabs>
               <Grid container spacing={3} sx={{ mt: 2 }}>
                 {subTab === 0 && <PhuLucBangDiem />}
                 {subTab === 1 && <ThongKe />}
+                {subTab === 2 && <ThongKeDiem />}
               </Grid>
             </Box>
           )}
