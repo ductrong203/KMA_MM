@@ -1271,12 +1271,8 @@ const StudentManagement = () => {
           )}
           {isFilterApplied && (
             <Alert severity="info" sx={{ my: 2 }}>
-<<<<<<< HEAD
               Vui lòng chọn xuất excel để lấy form nhập danh sách học viên nếu chưa có sinh viên!
               File xuất Excel cũng là file mẫu để điền thông tin cho file nhập Excel.
-=======
-              Vui lòng chọn xuất excel để lấy form nhập danh sách học viên nếu chưa có học viên!
->>>>>>> a7a96a9b130396d48327fb327e5a36b50c74c7eb
             </Alert>
           )}
           <Button
