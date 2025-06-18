@@ -95,7 +95,7 @@ function TaoBangDiem({ sampleStudents }) {
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearchStudents = async () => {
         if (!batch || !classGroup || !semester || !course) {
-            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên');
             return;
         }
         setSearchMode(true);
@@ -129,13 +129,13 @@ function TaoBangDiem({ sampleStudents }) {
             setStudents(formattedStudents);
 
             if (formattedStudents.length > 0) {
-                toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+                toast.success(`Đã tìm thấy ${formattedStudents.length} học viên.`);
             } else {
-                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
             }
         } catch (error) {
             console.error('Error searching students:', error);
-            toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+            toast.error('Có lỗi xảy ra khi tìm kiếm học viên. Vui lòng thử lại sau.');
         } finally {
             setLoadingStudents(false);
         }
@@ -375,9 +375,9 @@ function TaoBangDiem({ sampleStudents }) {
             setStudents(formattedStudents);
 
             if (formattedStudents.length > 0) {
-                toast.success(`Đã tạo bảng điểm với ${formattedStudents.length} sinh viên.`);
+                toast.success(`Đã tạo bảng điểm với ${formattedStudents.length} học viên.`);
             } else {
-                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
             }
         } catch (error) {
             console.error('Error creating grade sheet:', error);
@@ -437,7 +437,7 @@ function TaoBangDiem({ sampleStudents }) {
             prevStudents.map(student => {
                 if (student.ma_sinh_vien === studentId) {
                     if ((scoreType === 'CK1' || scoreType === 'CK2') && !canEnterFinalExamScore(student)) {
-                        toast.error(`Không thể nhập điểm cuối kỳ cho sinh viên ${student.ho_dem} ${student.ten}. Điểm giữa kỳ (TP1 và TP2) phải lớn hơn hoặc bằng 4.0.`);
+                        toast.error(`Không thể nhập điểm cuối kỳ cho học viên ${student.ho_dem} ${student.ten}. Điểm giữa kỳ (TP1 và TP2) phải lớn hơn hoặc bằng 4.0.`);
                         return student;
                     }
 
@@ -580,7 +580,7 @@ function TaoBangDiem({ sampleStudents }) {
 
     const handleAddRetakeStudent = async () => {
         if (!studentId) {
-            toast.error('Vui lòng chọn sinh viên');
+            toast.error('Vui lòng chọn học viên');
             return;
         }
 
@@ -590,7 +590,7 @@ function TaoBangDiem({ sampleStudents }) {
             const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
             if (isStudentExist) {
                 const existingStudent = students.find(student => student.ma_sinh_vien === studentId);
-                toast.warn(`Sinh viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
+                toast.warn(`học viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
                 handleCloseDialog();
                 return;
             }
@@ -611,7 +611,7 @@ function TaoBangDiem({ sampleStudents }) {
                 const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
                 console.log(sinhVienInfo);
                 if (!sinhVienInfo) {
-                    throw new Error('Không tìm thấy thông tin sinh viên');
+                    throw new Error('Không tìm thấy thông tin học viên');
                 }
 
                 const newStudent = {
@@ -630,20 +630,20 @@ function TaoBangDiem({ sampleStudents }) {
                 };
 
                 setStudents(prevStudents => [...prevStudents, newStudent]);
-                toast.success(`Đã thêm sinh viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
+                toast.success(`Đã thêm học viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
             } else {
-                toast.error(`Không thể thêm sinh viên: ${response.message || 'Lỗi không xác định'}`);
+                toast.error(`Không thể thêm học viên: ${response.message || 'Lỗi không xác định'}`);
             }
         } catch (error) {
             console.error('Error adding retake student:', error);
-            toast.error(`Có lỗi xảy ra khi thêm sinh viên học lại: ${error.message || 'Vui lòng thử lại.'}`);
+            toast.error(`Có lỗi xảy ra khi thêm học viên: ${error.message || 'Vui lòng thử lại.'}`);
         }
 
         handleCloseDialog();
     };
 
 
-    // Thêm hàm xử lý tìm kiếm sinh viên trong Dialog
+    // Thêm hàm xử lý tìm kiếm học viên trong Dialog
     const handleSearchStudentsInDialog = async () => {
         try {
             const filters = {};
@@ -653,13 +653,13 @@ function TaoBangDiem({ sampleStudents }) {
             if (dialogClass) filters.lop_id = dialogClass;
             const response = await timSinhVienTheoMaHoacFilter(filters);
             setFilteredStudents(response.data);
-            toast.success(`Đã tìm thấy ${response.data.length} sinh viên phù hợp.`);
+            toast.success(`Đã tìm thấy ${response.data.length} học viên phù hợp.`);
             if (response.data.length === 0) {
-                toast.warn('Không tìm thấy sinh viên phù hợp.');
+                toast.warn('Không tìm thấy học viên phù hợp.');
             }
         } catch (error) {
             console.error('Error searching students:', error);
-            toast.error('Không tìm thấy sinh viên.');
+            toast.error('Không tìm thấy học viên.');
             setFilteredStudents([]);
         }
     };
@@ -857,9 +857,9 @@ function TaoBangDiem({ sampleStudents }) {
                     color="primary"
                     startIcon={<PersonAddIcon />}
                     onClick={handleOpenDialog}
-                    disabled={students.length === 0} // Chỉ vô hiệu hóa khi không có sinh viên
+                    disabled={students.length === 0} // Chỉ vô hiệu hóa khi không có học viên
                 >
-                    Thêm Sinh Viên Học Lại
+                    Thêm học viên
                 </Button>
             </Box>
 
@@ -952,7 +952,7 @@ function TaoBangDiem({ sampleStudents }) {
                                             </TableCell>
                                             <TableCell>
                                                 {isRetakeStudent ? (
-                                                    <Tooltip title="Chỉ sinh viên học lại mới có thể đăng ký">
+                                                    <Tooltip title="Chỉ học viên học lại mới có thể đăng ký">
                                                         <FormControlLabel
                                                             control={
                                                                 <Checkbox
@@ -964,7 +964,7 @@ function TaoBangDiem({ sampleStudents }) {
                                                         />
                                                     </Tooltip>
                                                 ) : (
-                                                    <Tooltip title="Sinh viên học lần đầu không thể đăng ký học lại">
+                                                    <Tooltip title="học viên học lần đầu không thể đăng ký học lại">
                                                         <span>
                                                             <FormControlLabel
                                                                 control={<Checkbox disabled />}
@@ -1004,15 +1004,15 @@ function TaoBangDiem({ sampleStudents }) {
                 )}
             </TableContainer>
 
-            {/* Dialog thêm sinh viên học lại */}
+            {/* Dialog thêm học viên học lại */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-                <DialogTitle>Thêm Sinh Viên Học Lại</DialogTitle>
+                <DialogTitle>Thêm học viên</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mb: 3, mt: 1 }}>
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
-                                label="Mã Sinh Viên"
+                                label="Mã học viên"
                                 value={studentId}
                                 onChange={(e) => setStudentId(e.target.value)}
                             />
@@ -1141,7 +1141,7 @@ function TaoBangDiem({ sampleStudents }) {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={6} align="center">
-                                            Không tìm thấy sinh viên phù hợp
+                                            Không tìm thấy học viên phù hợp
                                         </TableCell>
                                     </TableRow>
                                 )}

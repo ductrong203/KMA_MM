@@ -1170,6 +1170,7 @@ const StudentManagement = () => {
           {isFilterApplied && (
             <Alert severity="info" sx={{ my: 2 }}>
               Vui lòng chọn xuất excel để lấy form nhập danh sách học viên nếu chưa có sinh viên!
+              File xuất Excel cũng là file mẫu để điền thông tin cho file nhập Excel.
             </Alert>
           )}
           <Button
@@ -1227,7 +1228,7 @@ const StudentManagement = () => {
       {!isFilterApplied && (
         <Box sx={{ mb: 2, p: 2, bgcolor: '', borderRadius: 1 }}>
           <Typography variant="body2" color="gray">
-            💡 Vui lòng chọn bộ lọc và nhấn "Áp dụng bộ lọc" để hiển thị danh sách học viên.
+            💡 Vui lòng chọn HỆ ĐÀO TẠO, KHÓA ĐÀO TẠO và LỚP trước khi thêm học viên hoặc nhập Excel.
           </Typography>
         </Box>
       )}

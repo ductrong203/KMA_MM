@@ -23,6 +23,7 @@ import MonHocTheoHeDaoTao from './MonHocTheoHeDaoTao';
 import { createMonHoc, getMonHoc, updateMonHoc } from '../../Api_controller/Service/monHocService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import PageHeader from '../../layout/PageHeader';
+import QuanLyChuongTrinhDaoTao from '../Dao Tao/QuanLyChuongTrinhDaoTao';
 
 const QuanLyMonHoc = () => {
   const [subjects, setSubjects] = useState([]);
@@ -212,6 +213,7 @@ const QuanLyMonHoc = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="Danh sách môn học" />
+          <Tab label="Quản lý chương trình đào tạo" />
           <Tab label="Phân bổ môn học theo CTĐT" />
           <Tab label="Thời khóa biểu" />
         </Tabs>
@@ -247,7 +249,7 @@ const QuanLyMonHoc = () => {
                 getRowId={(row) => row.id}
                 columns={subjectColumns}
                 pagination
-                pageSizeOptions={[15,25, 50]}
+                pageSizeOptions={[15, 25, 50]}
                 rowCount={filteredSubjects.length}
                 paginationMode="client"
                 paginationModel={{ page, pageSize }}
@@ -270,12 +272,18 @@ const QuanLyMonHoc = () => {
 
       {tabValue === 1 && (
         <Paper sx={{ p: 2, mb: 2 }}>
+          <QuanLyChuongTrinhDaoTao/>
+        </Paper>
+      )}
+
+      {tabValue === 2 && (
+        <Paper sx={{ p: 2, mb: 2 }}>
           <MonHocTheoHeDaoTao
           />
         </Paper>
       )}
 
-      {tabValue === 2 && (
+      {tabValue === 3 && (
         <Paper sx={{ p: 2, mb: 2 }}>
           <ThoiKhoaBieu />
         </Paper>

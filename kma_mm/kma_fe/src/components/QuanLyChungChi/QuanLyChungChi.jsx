@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container,
@@ -22,18 +21,20 @@ import {
     suaChungChi,
     xoaChungChi
 } from "../../Api_controller/Service/chungChiService";
+import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService"; // Thêm API lấy học viên
 import { toast } from "react-toastify";
 
 // Constants
 const DEFAULT_CHUNG_CHI_OPTIONS = [
     { value: "Chuẩn đầu ra TA", label: "Chuẩn đầu ra TA" },
-    { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" }
+    { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" },
+    { value: "Chứng chỉ GDQP", label: "Chứng chỉ GDQP" }
 ];
 
 const TRANG_THAI_OPTIONS = [
-    { value: "all", label: "Tất cả sinh viên" },
-    { value: "Bình thường", label: "Sinh viên đang học" },
-    { value: "Tốt nghiệp", label: "Sinh viên đã tốt nghiệp" }
+    { value: "all", label: "Tất cả học viên" },
+    { value: "Bình thường", label: "Học viên đang học" },
+    { value: "Tốt nghiệp", label: "Học viên đã tốt nghiệp" }
 ];
 
 const TINH_TRANG_OPTIONS = [
@@ -42,7 +43,6 @@ const TINH_TRANG_OPTIONS = [
 ];
 
 const INIT_NEW_DATA = {
-    // sinh_vien_id: "",
     ma_sinh_vien: "",
     ho_ten: "",
     diem_tb: "",
@@ -51,7 +51,10 @@ const INIT_NEW_DATA = {
     so_quyet_dinh: "",
     ngay_ky_qd: "",
     tinh_trang: "Bình thường",
-    loai_chung_chi: ""
+    loai_chung_chi: "",
+    heDaoTao: "", // Thêm hệ đào tạo
+    khoaDaoTao: "", // Thêm khóa đào tạo
+    lopId: "" // Thêm lớp
 };
 
 const theme = createTheme({
@@ -80,13 +83,15 @@ const QuanLyChungChi = () => {
         lopList: [],
         originalLopList: [],
         sinhVienList: [],
-        loaiChungChiList: DEFAULT_CHUNG_CHI_OPTIONS
+        loaiChungChiList: DEFAULT_CHUNG_CHI_OPTIONS,
+        sinhVienTheoLop: [] // Thêm danh sách học viên theo lớp
     });
 
     // UI states
     const [ui, setUi] = useState({
         isLoading: false,
         openDialog: false,
+        openEditDialog: false,
         page: 1,
         pageSize: 10,
         totalPages: 1
@@ -94,43 +99,28 @@ const QuanLyChungChi = () => {
 
     // Form data
     const [newData, setNewData] = useState(INIT_NEW_DATA);
+    const [editData, setEditData] = useState(INIT_NEW_DATA);
     const [filteredSinhVien, setFilteredSinhVien] = useState([]);
 
-    // Memoized filtered data - XÓA DEPENDENCY LOOP
+    // Memoized filtered data
     const processFilteredData = useMemo(() => {
-        console.log("🎯 processFilteredData called with:", {
-            dataLength: data.sinhVienList.length,
-            currentFilters: filters,
-            sampleData: data.sinhVienList[0]
-        });
-
         if (!data.sinhVienList || data.sinhVienList.length === 0) {
-            console.log("📋 No data to filter");
             setFilteredSinhVien([]);
             setUi(prev => ({ ...prev, totalPages: 1 }));
             return [];
         }
 
         let filtered = [...data.sinhVienList];
-        console.log("📊 Initial data count:", filtered.length);
-
-        // Apply filters
         filtered = filtered.filter(sv => sv.loai_chung_chi === filters.loaiChungChi);
-        console.log(`🔍 After loaiChungChi filter (${filters.loaiChungChi}):`, filtered.length);
 
-        // Filter by tinh_trang
         if (filters.trangThai === 'Bình thường') {
             filtered = filtered.filter(sv =>
-                sv.tinh_trang === 'Bình thường' ||
-                sv.tinh_trang === 'bình thường'
+                sv.tinh_trang === 'Bình thường' || sv.tinh_trang === 'bình thường'
             );
-            console.log("🔍 After trangThai filter (Bình thường):", filtered.length);
         } else if (filters.trangThai === 'Tốt nghiệp') {
             filtered = filtered.filter(sv =>
-                sv.tinh_trang === 'Tốt nghiệp' ||
-                sv.tinh_trang === 'tốt nghiệp'
+                sv.tinh_trang === 'Tốt nghiệp' || sv.tinh_trang === 'tốt nghiệp'
             );
-            console.log("🔍 After trangThai filter (Tốt nghiệp):", filtered.length);
         }
 
         if (filters.searchTerm) {
@@ -139,12 +129,8 @@ const QuanLyChungChi = () => {
                 sv.ho_ten.toLowerCase().includes(search) ||
                 sv.ma_sinh_vien.toLowerCase().includes(search)
             );
-            console.log(`🔍 After search filter (${filters.searchTerm}):`, filtered.length);
         }
 
-        console.log("📋 Final filtered data:", filtered);
-
-        // Pagination
         const totalPages = Math.ceil(filtered.length / ui.pageSize);
         setUi(prev => ({ ...prev, totalPages }));
 
@@ -152,34 +138,20 @@ const QuanLyChungChi = () => {
         const endIndex = startIndex + ui.pageSize;
         const paginatedData = filtered.slice(startIndex, endIndex);
 
-        console.log("📄 Paginated data:", {
-            page: ui.page,
-            pageSize: ui.pageSize,
-            startIndex,
-            endIndex,
-            paginatedCount: paginatedData.length
-        });
-
         setFilteredSinhVien(paginatedData);
         return paginatedData;
     }, [data.sinhVienList, filters.loaiChungChi, filters.trangThai, filters.searchTerm, ui.page, ui.pageSize]);
 
     // API calls
     const fetchChungChiData = useCallback(async () => {
-        console.log("🔍 fetchChungChiData called with filters:", filters);
-
         if (!filters.lopId && !filters.khoaDaoTao && !filters.heDaoTao) {
-            console.log("📋 Using empty data - no filters applied");
             setData(prev => ({ ...prev, sinhVienList: [] }));
             return;
         }
 
         try {
             setUi(prev => ({ ...prev, isLoading: true }));
-            console.log("🌐 Calling API with filters:", filters);
-
             const chungChiRes = await getChungChiByFilters(filters);
-            console.log("📤 API Response:", chungChiRes);
 
             let chungChiList = [];
             if (chungChiRes?.thongBao === "Lấy danh sách chứng chỉ thành công" && chungChiRes.data?.length > 0) {
@@ -196,15 +168,11 @@ const QuanLyChungChi = () => {
                     lop_id: filters.lopId,
                     loai_chung_chi: item.loaiChungChi
                 }));
-                console.log("🔄 Converted data:", chungChiList);
-            } else {
-                console.log("⚠️ API response not valid or empty:", chungChiRes);
             }
 
-            console.log("💾 Setting data to state:", chungChiList);
             setData(prev => ({ ...prev, sinhVienList: chungChiList }));
         } catch (error) {
-            console.error("❌ Lỗi khi lấy danh sách chứng chỉ:", error);
+            console.error("Lỗi khi lấy danh sách chứng chỉ:", error);
             toast.error("Không thể lấy danh sách chứng chỉ");
             setData(prev => ({ ...prev, sinhVienList: [] }));
         } finally {
@@ -221,12 +189,17 @@ const QuanLyChungChi = () => {
             ]);
 
             let loaiChungChiList = DEFAULT_CHUNG_CHI_OPTIONS;
-            if (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0) {
-                loaiChungChiList = loaiChungChiRes.data.map(item => ({
-                    value: item,
-                    label: item
-                }));
-            }
+          if (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0) {
+            const apiChungChiList = loaiChungChiRes.data.map(item => ({
+                value: item,
+                label: item
+            }));
+            // Kết hợp danh sách API với mặc định, loại bỏ trùng lặp
+            loaiChungChiList = [
+                ...DEFAULT_CHUNG_CHI_OPTIONS,
+                ...apiChungChiList.filter(item => !DEFAULT_CHUNG_CHI_OPTIONS.some(defaultItem => defaultItem.value === item.value))
+            ];
+        }
 
             setData(prev => ({
                 ...prev,
@@ -244,8 +217,9 @@ const QuanLyChungChi = () => {
 
     const fetchKhoaDaoTao = useCallback(async (heDaoTaoId) => {
         if (!heDaoTaoId) {
-            setData(prev => ({ ...prev, khoaDaoTao: [], lopList: prev.originalLopList }));
+            setData(prev => ({ ...prev, khoaDaoTao: [], lopList: prev.originalLopList, sinhVienTheoLop: [] }));
             setFilters(prev => ({ ...prev, khoaDaoTao: "", lopId: "" }));
+            setNewData(prev => ({ ...prev, khoaDaoTao: "", lopId: "", ma_sinh_vien: "", ho_ten: "" }));
             return;
         }
 
@@ -260,8 +234,9 @@ const QuanLyChungChi = () => {
 
     const fetchLopByKhoa = useCallback(async (khoaDaoTaoId) => {
         if (!khoaDaoTaoId) {
-            setData(prev => ({ ...prev, lopList: prev.originalLopList }));
+            setData(prev => ({ ...prev, lopList: prev.originalLopList, sinhVienTheoLop: [] }));
             setFilters(prev => ({ ...prev, lopId: "" }));
+            setNewData(prev => ({ ...prev, lopId: "", ma_sinh_vien: "", ho_ten: "" }));
             return;
         }
 
@@ -274,6 +249,34 @@ const QuanLyChungChi = () => {
         }
     }, []);
 
+    const fetchSinhVienTheoLop = useCallback(async (lopId) => {
+        if (!lopId) {
+            setData(prev => ({ ...prev, sinhVienTheoLop: [] }));
+            setNewData(prev => ({ ...prev, ma_sinh_vien: "", ho_ten: "" }));
+            return;
+        }
+
+        try {
+            setUi(prev => ({ ...prev, isLoading: true }));
+            const response = await getDanhSachSinhVienTheoLop(lopId);
+            const sinhVienList = Array.isArray(response.data) ? response.data.map(sv => ({
+                id: sv.id,
+                ma_sinh_vien: sv.ma_sinh_vien,
+                ho_dem:sv.ho_dem,
+                ten: sv.ten
+            })) : [];
+            setData(prev => ({ ...prev, sinhVienTheoLop: sinhVienList }));
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách học viên:", error);
+            toast.error("Không thể lấy danh sách học viên");
+            setData(prev => ({ ...prev, sinhVienTheoLop: [] }));
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
+        }
+    }, []);
+
+    console.log(filteredSinhVien)
+    console.log(data)
     // Event handlers
     const handleFilterChange = useCallback((filterName, value) => {
         setFilters(prev => ({ ...prev, [filterName]: value }));
@@ -285,8 +288,26 @@ const QuanLyChungChi = () => {
         }
     }, [fetchKhoaDaoTao, fetchLopByKhoa]);
 
+    const handleNewDataChange = useCallback((name, value) => {
+        setNewData(prev => ({ ...prev, [name]: value }));
+        if (name === 'heDaoTao') {
+            fetchKhoaDaoTao(value);
+            setNewData(prev => ({ ...prev, khoaDaoTao: "", lopId: "", ma_sinh_vien: "", ho_ten: "" }));
+        } else if (name === 'khoaDaoTao') {
+            fetchLopByKhoa(value);
+            setNewData(prev => ({ ...prev, lopId: "", ma_sinh_vien: "", ho_ten: "" }));
+        } else if (name === 'lopId') {
+            fetchSinhVienTheoLop(value);
+            setNewData(prev => ({ ...prev, ma_sinh_vien: "", ho_ten: "" }));
+        } else if (name === 'sinhVien') {
+            setNewData(prev => ({
+                ...prev,
+                ma_sinh_vien: value ? value.ma_sinh_vien : "",
+                ho_ten: value ? value.ho_ten : ""
+            }));
+        }
+    }, [fetchKhoaDaoTao, fetchLopByKhoa, fetchSinhVienTheoLop]);
 
-    // Thêm handler cho autocomplete
     const handleAutocompleteChange = useCallback((name, value) => {
         setNewData(prev => ({ ...prev, [name]: value }));
     }, []);
@@ -317,7 +338,6 @@ const QuanLyChungChi = () => {
             setUi(prev => ({ ...prev, isLoading: true }));
 
             const apiData = {
-                //sinh_vien_id: parseInt(newData.sinh_vien_id) || 1,
                 ma_sinh_vien: newData.ma_sinh_vien,
                 diem_trung_binh: parseFloat(newData.diem_tb) || null,
                 xep_loai: newData.xep_loai || null,
@@ -378,13 +398,9 @@ const QuanLyChungChi = () => {
         setNewData(prev => ({ ...prev, loai_chung_chi: filters.loaiChungChi || "" }));
     }, [filters.loaiChungChi]);
 
-
-
-    // Thêm handlers cho edit
     const handleEdit = useCallback((sv) => {
         setEditData({
             id: sv.id,
-            sinh_vien_id: sv.sinh_vien_id || "",
             ma_sinh_vien: sv.ma_sinh_vien,
             ho_ten: sv.ho_ten,
             diem_tb: sv.diem_tb,
@@ -397,13 +413,6 @@ const QuanLyChungChi = () => {
         });
         setUi(prev => ({ ...prev, openEditDialog: true }));
     }, []);
-
-
-
-    // Thêm states cho edit
-    const [editData, setEditData] = useState(INIT_NEW_DATA);
-    const [isEditMode, setIsEditMode] = useState(false);
-
 
     const handleCloseEditDialog = useCallback(() => {
         setUi(prev => ({ ...prev, openEditDialog: false }));
@@ -423,10 +432,9 @@ const QuanLyChungChi = () => {
         try {
             setUi(prev => ({ ...prev, isLoading: true }));
 
-            // Tách ID ra và không đưa vào body data
             const chungChiId = editData.id;
             const apiData = {
-                sinh_vien_id: parseInt(editData.sinh_vien_id) || 1,
+                ma_sinh_vien: editData.ma_sinh_vien,
                 diem_trung_binh: parseFloat(editData.diem_tb) || null,
                 xep_loai: editData.xep_loai || null,
                 ghi_chu: editData.ghi_chu || null,
@@ -436,7 +444,6 @@ const QuanLyChungChi = () => {
                 tinh_trang: editData.tinh_trang === "Bình thường" ? "bình thường" : "tốt nghiệp"
             };
 
-            // Truyền ID và data riêng biệt
             const result = await suaChungChi(chungChiId, apiData);
 
             if (result?.thongBao === "Chỉnh sửa chứng chỉ thành công") {
@@ -455,8 +462,6 @@ const QuanLyChungChi = () => {
         }
     }, [editData, fetchChungChiData]);
 
-
-
     const handleCloseDialog = useCallback(() => {
         setUi(prev => ({ ...prev, openDialog: false }));
         setNewData(INIT_NEW_DATA);
@@ -469,7 +474,7 @@ const QuanLyChungChi = () => {
         [filters.heDaoTao, filters.khoaDaoTao, filters.lopId, filters.searchTerm]
     );
 
-    // Effects - ĐƠN GIẢN HÓA
+    // Effects
     useEffect(() => {
         fetchInitialData();
     }, []);
@@ -486,7 +491,6 @@ const QuanLyChungChi = () => {
         }
     }, [filters.khoaDaoTao, fetchLopByKhoa]);
 
-    // Reset page khi thay đổi filter
     useEffect(() => {
         if (ui.page > 1) {
             setUi(prev => ({ ...prev, page: 1 }));
@@ -507,7 +511,6 @@ const QuanLyChungChi = () => {
                         >
                             Thêm học viên
                         </Button>
-
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Button
                                 variant="contained"
@@ -545,7 +548,6 @@ const QuanLyChungChi = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-
                             <Grid item xs={12} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Hệ đào tạo</InputLabel>
@@ -563,7 +565,6 @@ const QuanLyChungChi = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-
                             <Grid item xs={12} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Khóa đào tạo</InputLabel>
@@ -582,7 +583,6 @@ const QuanLyChungChi = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-
                             <Grid item xs={12} md={3}>
                                 <FormControl fullWidth size="small" variant="outlined">
                                     <InputLabel>Lớp</InputLabel>
@@ -600,12 +600,11 @@ const QuanLyChungChi = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-
                             <Grid item xs={12} md={8}>
                                 <TextField
                                     fullWidth
                                     size="small"
-                                    placeholder="Tìm kiếm theo tên hoặc mã sinh viên..."
+                                    placeholder="Tìm kiếm theo tên hoặc mã học viên..."
                                     value={filters.searchTerm}
                                     onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
                                     InputProps={{
@@ -617,7 +616,6 @@ const QuanLyChungChi = () => {
                                     }}
                                 />
                             </Grid>
-
                             <Grid item xs={12} md={4}>
                                 <FormControl fullWidth size="small">
                                     <InputLabel>Trạng thái</InputLabel>
@@ -634,7 +632,6 @@ const QuanLyChungChi = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-
                             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
                                 <Button
                                     variant="contained"
@@ -644,7 +641,6 @@ const QuanLyChungChi = () => {
                                 >
                                     Áp dụng
                                 </Button>
-
                                 <Button
                                     variant="outlined"
                                     color="secondary"
@@ -665,7 +661,7 @@ const QuanLyChungChi = () => {
                         </Box>
                     ) : filteredSinhVien.length === 0 ? (
                         <Typography variant="body1" color="textSecondary" textAlign="center" sx={{ my: 4, fontStyle: 'italic' }}>
-                            {hasActiveFilters ? "Không tìm thấy sinh viên nào" : "Vui lòng chọn bộ lọc để hiển thị danh sách"}
+                            {hasActiveFilters ? "Không tìm thấy học viên nào" : "Vui lòng chọn bộ lọc để hiển thị danh sách"}
                         </Typography>
                     ) : (
                         <TableContainer component={Paper} sx={{ mt: 4, overflowX: 'auto' }}>
@@ -725,7 +721,6 @@ const QuanLyChungChi = () => {
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </TableCell>
-
                                             <TableCell align="center">
                                                 <IconButton
                                                     color="error"
@@ -764,30 +759,92 @@ const QuanLyChungChi = () => {
                 <DialogTitle>Thêm học viên đạt chứng chỉ</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
-
                         <Grid item xs={12} md={6}>
-                            <TextField
-                                name="ma_sinh_vien"
-                                label="Mã sinh viên"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                                value={newData.ma_sinh_vien}
-                                onChange={handleInputChange}
+                            <FormControl fullWidth size="small" variant="outlined">
+                                <InputLabel>Hệ đào tạo</InputLabel>
+                                <Select
+                                    value={newData.heDaoTao}
+                                    onChange={(e) => handleNewDataChange('heDaoTao', e.target.value)}
+                                    label="Hệ đào tạo"
+                                    disabled={ui.isLoading}
+                                >
+                                    <MenuItem value="">Chọn hệ đào tạo</MenuItem>
+                                    {data.heDaoTao.map((item) => (
+                                        <MenuItem key={item.id} value={item.id}>
+                                            {item.ten_he_dao_tao}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth size="small" variant="outlined">
+                                <InputLabel>Khóa đào tạo</InputLabel>
+                                <Select
+                                    value={newData.khoaDaoTao}
+                                    onChange={(e) => handleNewDataChange('khoaDaoTao', e.target.value)}
+                                    label="Khóa đào tạo"
+                                    disabled={!newData.heDaoTao || ui.isLoading}
+                                >
+                                    <MenuItem value="">Chọn khóa đào tạo</MenuItem>
+                                    {data.khoaDaoTao.map((item) => (
+                                        <MenuItem key={item.id} value={item.id}>
+                                            {item.ten_khoa}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth size="small" variant="outlined">
+                                <InputLabel>Lớp</InputLabel>
+                                <Select
+                                    value={newData.lopId}
+                                    onChange={(e) => handleNewDataChange('lopId', e.target.value)}
+                                    label="Lớp"
+                                    disabled={!newData.khoaDaoTao || ui.isLoading}
+                                >
+                                    <MenuItem value="">Chọn lớp</MenuItem>
+                                    {data.lopList.map((item) => (
+                                        <MenuItem key={item.id} value={item.id}>
+                                            {item.ma_lop}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Autocomplete
+                                options={data.sinhVienTheoLop}
+                                getOptionLabel={(option) => `${option.ho_dem} ${option.ten} (${option.ma_sinh_vien})`}
+                                value={data.sinhVienTheoLop.find(sv => sv.ma_sinh_vien === newData.ma_sinh_vien) || null}
+                                onChange={(event, newValue) => handleNewDataChange('sinhVien', newValue)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Học viên"
+                                        variant="outlined"
+                                        size="small"
+                                        fullWidth
+                                        helperText="Chọn học viên từ danh sách"
+                                    />
+                                )}
+                                renderOption={(props, option) => (
+                                    <Box component="li" {...props}>
+                                        {option.ho_dem} {option.ten} ({option.ma_sinh_vien})
+                                    </Box>
+                                )}
+                                noOptionsText="Không tìm thấy học viên"
+                                disabled={!newData.lopId || ui.isLoading}
                             />
                         </Grid>
-
-                        {/* Thêm trường Loại chứng chỉ */}
                         <Grid item xs={12} md={6}>
                             <Autocomplete
                                 freeSolo
                                 options={data.loaiChungChiList.map(option => option.label)}
                                 value={newData.loai_chung_chi}
-                                onChange={(event, newValue) => {
-                                    handleAutocompleteChange('loai_chung_chi', newValue || '');
-                                }}
+                                onChange={(event, newValue) => handleAutocompleteChange('loai_chung_chi', newValue || '')}
                                 onInputChange={(event, newInputValue) => {
-                                    // Chỉ cho phép thay đổi nếu người dùng đang gõ (không phải chọn từ dropdown)
                                     if (event && event.type === 'change') {
                                         handleAutocompleteChange('loai_chung_chi', newInputValue);
                                     }
@@ -813,9 +870,6 @@ const QuanLyChungChi = () => {
                                 handleHomeEndKeys
                             />
                         </Grid>
-
-
-
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="diem_tb"
@@ -908,14 +962,12 @@ const QuanLyChungChi = () => {
                         variant="contained"
                         onClick={handleSubmitNew}
                         color="primary"
-                        disabled={ui.isLoading}
+                        disabled={ui.isLoading || !newData.ma_sinh_vien || !newData.loai_chung_chi}
                     >
                         {ui.isLoading ? <CircularProgress size={20} /> : "Thêm"}
                     </Button>
                 </DialogActions>
             </Dialog>
-
-
 
             {/* Dialog chỉnh sửa học viên */}
             <Dialog open={ui.openEditDialog} onClose={handleCloseEditDialog} fullWidth maxWidth="md">
@@ -925,25 +977,21 @@ const QuanLyChungChi = () => {
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="ma_sinh_vien"
-                                label="Mã sinh viên"
+                                label="Mã học viên"
                                 variant="outlined"
                                 fullWidth
                                 size="small"
                                 value={editData.ma_sinh_vien}
                                 onChange={handleEditInputChange}
-                                disabled // Không cho sửa mã sinh viên
+                                disabled
                             />
                         </Grid>
-
-                        {/* Trường Loại chứng chỉ */}
                         <Grid item xs={12} md={6}>
                             <Autocomplete
                                 freeSolo
                                 options={data.loaiChungChiList.map(option => option.label)}
                                 value={editData.loai_chung_chi}
-                                onChange={(event, newValue) => {
-                                    handleEditAutocompleteChange('loai_chung_chi', newValue || '');
-                                }}
+                                onChange={(event, newValue) => handleEditAutocompleteChange('loai_chung_chi', newValue || '')}
                                 onInputChange={(event, newInputValue) => {
                                     if (event && event.type === 'change') {
                                         handleEditAutocompleteChange('loai_chung_chi', newInputValue);
@@ -970,7 +1018,6 @@ const QuanLyChungChi = () => {
                                 handleHomeEndKeys
                             />
                         </Grid>
-
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="diem_tb"
@@ -983,7 +1030,6 @@ const QuanLyChungChi = () => {
                                 onChange={handleEditInputChange}
                             />
                         </Grid>
-
                         <Grid item xs={12} md={6}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Xếp loại</InputLabel>
@@ -1000,7 +1046,6 @@ const QuanLyChungChi = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="so_quyet_dinh"
@@ -1012,7 +1057,6 @@ const QuanLyChungChi = () => {
                                 onChange={handleEditInputChange}
                             />
                         </Grid>
-
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="ngay_ky_qd"
@@ -1026,7 +1070,6 @@ const QuanLyChungChi = () => {
                                 InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
-
                         <Grid item xs={12} md={6}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Tình trạng</InputLabel>
@@ -1044,7 +1087,6 @@ const QuanLyChungChi = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-
                         <Grid item xs={12}>
                             <TextField
                                 name="ghi_chu"
@@ -1074,41 +1116,8 @@ const QuanLyChungChi = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
         </ThemeProvider>
     );
 };
 
 export default QuanLyChungChi;
-
-
-
-
-
-
-{/* <Grid item xs={12} md={6}>
-                            <TextField
-                                name="sinh_vien_id"
-                                label="ID Sinh viên"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                                type="number"
-                                value={newData.sinh_vien_id}
-                                onChange={handleInputChange}
-                                helperText="Nhập ID sinh viên thực từ database"
-                            />
-                        </Grid> */}
-
-
-{/* <Grid item xs={12} md={6}>
-                            <TextField
-                                name="ho_ten"
-                                label="Họ và tên"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                                value={newData.ho_ten}
-                                onChange={handleInputChange}
-                            />
-                        </Grid> */}

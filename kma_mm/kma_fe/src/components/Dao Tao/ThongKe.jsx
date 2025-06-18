@@ -19,9 +19,38 @@ import { getDanhSachLop } from '../../Api_controller/Service/lopService';
 // Đăng ký các thành phần của Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-// Giả lập API thống kê
-const fetchThongKeXepLoai = async (heDaoTaoId, khoaId, lopId) => {
+// Giả lập API mới
+const fetchDanhSachNamHoc = async () => {
   // Thay bằng API thật
+  return [
+    { id: '2020', ten_nam_hoc: '2020-2021' },
+    { id: '2021', ten_nam_hoc: '2021-2022' },
+    { id: '2022', ten_nam_hoc: '2022-2023' },
+    { id: '2023', ten_nam_hoc: '2023-2024' },
+    { id: '2024', ten_nam_hoc: '2024-2025' }
+  ];
+};
+
+const fetchDanhSachKyHoc = async () => {
+  // Thay bằng API thật
+  return [
+    { id: '1', ten_ky: 'Kỳ 1' },
+    { id: '2', ten_ky: 'Kỳ 2' }
+  ];
+};
+
+const fetchDanhSachMonHoc = async () => {
+  // Thay bằng API thật
+  return [
+    { id: '1', ten_mon_hoc: 'Toán rời rạc' },
+    { id: '2', ten_mon_hoc: 'Cấu trúc dữ liệu' },
+    { id: '3', ten_mon_hoc: 'Lập trình hướng đối tượng' }
+  ];
+};
+
+// Cập nhật API thống kê để hỗ trợ các bộ lọc mới
+const fetchThongKeXepLoai = async (heDaoTaoId, khoaId, lopId, namHocId, kyHocId, monHocId) => {
+  // Thay bằng API thật, gửi thêm tham số namHocId, kyHocId, monHocId
   return {
     data: [
       { xepLoai: 'Xuất sắc', soLuong: 10 },
@@ -37,13 +66,12 @@ const fetchThongKeXepLoai = async (heDaoTaoId, khoaId, lopId) => {
         khoa_dao_tao: 'K2020',
         lop: 'CNTT01',
         xep_loai: 'Xuất sắc'
-      },
-      // ... thêm dữ liệu mẫu
+      }
     ]
   };
 };
 
-const fetchThongKeTotNghiep = async (heDaoTaoId, khoaId) => {
+const fetchThongKeTotNghiep = async (heDaoTaoId, khoaId, namHocId) => {
   // Thay bằng API thật
   return {
     totNghiep: 50,
@@ -51,7 +79,7 @@ const fetchThongKeTotNghiep = async (heDaoTaoId, khoaId) => {
   };
 };
 
-const fetchThongKeDoAn = async (heDaoTaoId, khoaId) => {
+const fetchThongKeDoAn = async (heDaoTaoId, khoaId, namHocId) => {
   // Thay bằng API thật
   return {
     duDieuKien: 40,
@@ -63,9 +91,15 @@ const ThongKe = () => {
   const [heDaoTao, setHeDaoTao] = useState([]);
   const [khoa, setKhoa] = useState([]);
   const [lop, setLop] = useState([]);
+  const [namHoc, setNamHoc] = useState([]);
+  const [kyHoc, setKyHoc] = useState([]);
+  const [monHoc, setMonHoc] = useState([]);
   const [filterHeDaoTao, setFilterHeDaoTao] = useState('');
   const [filterKhoa, setFilterKhoa] = useState('');
   const [filterLop, setFilterLop] = useState('');
+  const [filterNamHoc, setFilterNamHoc] = useState('');
+  const [filterKyHoc, setFilterKyHoc] = useState('');
+  const [filterMonHoc, setFilterMonHoc] = useState('');
   const [thongKeXepLoai, setThongKeXepLoai] = useState([]);
   const [sinhVienXepLoai, setSinhVienXepLoai] = useState([]);
   const [thongKeTotNghiep, setThongKeTotNghiep] = useState({});
@@ -76,12 +110,18 @@ const ThongKe = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [heDaoTaoData, khoaData] = await Promise.all([
+        const [heDaoTaoData, khoaData, namHocData, kyHocData, monHocData] = await Promise.all([
           fetchDanhSachHeDaoTao(),
-          getDanhSachKhoaDaoTao()
+          getDanhSachKhoaDaoTao(),
+          fetchDanhSachNamHoc(),
+          fetchDanhSachKyHoc(),
+          fetchDanhSachMonHoc()
         ]);
         setHeDaoTao(heDaoTaoData || []);
         setKhoa(khoaData || []);
+        setNamHoc(namHocData || []);
+        setKyHoc(kyHocData || []);
+        setMonHoc(monHocData || []);
       } catch (error) {
         toast.error('Không thể tải dữ liệu ban đầu!');
       } finally {
@@ -105,7 +145,7 @@ const ThongKe = () => {
       } else {
         setLop([]);
       }
-      setFilterLop(''); // Reset lớp khi đổi khóa
+      setFilterLop('');
     };
     fetchLop();
   }, [filterKhoa]);
@@ -114,9 +154,9 @@ const ThongKe = () => {
     setLoading(true);
     try {
       const [xepLoaiData, totNghiepData, doAnData] = await Promise.all([
-        fetchThongKeXepLoai(filterHeDaoTao, filterKhoa, filterLop),
-        fetchThongKeTotNghiep(filterHeDaoTao, filterKhoa),
-        fetchThongKeDoAn(filterHeDaoTao, filterKhoa)
+        fetchThongKeXepLoai(filterHeDaoTao, filterKhoa, filterLop, filterNamHoc, filterKyHoc, filterMonHoc),
+        fetchThongKeTotNghiep(filterHeDaoTao, filterKhoa, filterNamHoc),
+        fetchThongKeDoAn(filterHeDaoTao, filterKhoa, filterNamHoc)
       ]);
       setThongKeXepLoai(xepLoaiData.data || []);
       setSinhVienXepLoai(xepLoaiData.sinhVien || []);
@@ -252,6 +292,63 @@ const ThongKe = () => {
                   {lop.map((item) => (
                     <MenuItem key={item.id} value={item.id}>
                       {item.ma_lop}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>Năm học</InputLabel>
+                <Select
+                  value={filterNamHoc}
+                  onChange={(e) => {
+                    setFilterNamHoc(e.target.value);
+                    setFilterKyHoc('');
+                    setFilterMonHoc('');
+                  }}
+                  label="Năm học"
+                >
+                  <MenuItem value=""><em>Tất cả</em></MenuItem>
+                  {namHoc.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.ten_nam_hoc}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>Kỳ học</InputLabel>
+                <Select
+                  value={filterKyHoc}
+                  onChange={(e) => setFilterKyHoc(e.target.value)}
+                  label="Kỳ học"
+                  disabled={!filterNamHoc}
+                >
+                  <MenuItem value=""><em>Tất cả</em></MenuItem>
+                  {kyHoc.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.ten_ky}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>Môn học</InputLabel>
+                <Select
+                  value={filterMonHoc}
+                  onChange={(e) => setFilterMonHoc(e.target.value)}
+                  label="Môn học"
+                  disabled={!filterNamHoc}
+                >
+                  <MenuItem value=""><em>Tất cả</em></MenuItem>
+                  {monHoc.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.ten_mon_hoc}
                     </MenuItem>
                   ))}
                 </Select>
