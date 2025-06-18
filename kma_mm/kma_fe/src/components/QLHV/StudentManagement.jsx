@@ -1330,11 +1330,7 @@ const StudentManagement = () => {
       {!isFilterApplied && (
         <Box sx={{ mb: 2, p: 2, bgcolor: '', borderRadius: 1 }}>
           <Typography variant="body2" color="gray">
-<<<<<<< HEAD
             💡 Vui lòng chọn HỆ ĐÀO TẠO, KHÓA ĐÀO TẠO và LỚP trước khi thêm học viên hoặc nhập Excel.
-=======
-            💡 Vui lòng chọn bộ lọc và nhấn "Áp dụng bộ lọc" để hiển thị danh sách học viên hoặc điền thông tin đầy đủ vào bộ lọc để tiến hành thêm học viên.
->>>>>>> a7a96a9b130396d48327fb327e5a36b50c74c7eb
           </Typography>
         </Box>
       )}

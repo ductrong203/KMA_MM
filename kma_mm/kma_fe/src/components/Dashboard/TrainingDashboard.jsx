@@ -47,7 +47,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import React, { useState, useEffect } from 'react';
-import StudentManagement from '../QLHV/StudentManagement ';
+import StudentManagement from '../QLHV/StudentManagement';
 import ClassManagement from '../LOP/ClassManagement';
 import QuanLyKhoa from '../Khoa/QuanLyKhoa';
 import QuanLyLop from '../LOP/ClassManagement';

@@ -31,14 +31,12 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedChuongTrinh, setSelectedChuongTrinh] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [shouldFetchChuongTrinh, setShouldFetchChuongTrinh] = useState(false);
-  const [isInitialFetch, setIsInitialFetch] = useState(true);
-  const [page, setPage] = useState(0); // State cho trang của DataGrid chính
-  const [pageSize, setPageSize] = useState(10); // State cho kích thước trang của DataGrid chính
-  const [dialogPage, setDialogPage] = useState(0); // State cho trang của DataGrid trong Dialog
-  const [dialogPageSize, setDialogPageSize] = useState(10); // State cho kích thước trang của DataGrid trong Dialog
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [dialogPage, setDialogPage] = useState(0);
+  const [dialogPageSize, setDialogPageSize] = useState(10);
 
-  // Hàm fetchData thông thường
+  // Hàm fetchData
   async function fetchData(filters = {}) {
     setLoading(true);
     try {
@@ -48,14 +46,14 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
         fetchDanhSachHeDaoTao(),
       ];
 
-      // Chỉ gọi getChuongTrinhDaoTao nếu cả hai bộ lọc có giá trị
-      if (he_dao_tao_id && khoa_dao_tao_id) {
+      // Gọi getChuongTrinhDaoTao nếu có he_dao_tao_id
+      if (he_dao_tao_id) {
         promises.push(getChuongTrinhDaoTao({ he_dao_tao_id, khoa_dao_tao_id }));
       }
 
       const [subjectsRes, curriculumsRes, chuongTrinhRes] = await Promise.all(promises);
 
-      console.log('Curriculums from API:', curriculumsRes); // Debug API response
+      console.log('Curriculums from API:', curriculumsRes);
       setSubjects(subjectsRes);
       setCurriculums(Array.isArray(curriculumsRes) ? curriculumsRes : []);
       if (!curriculumsRes || curriculumsRes.length === 0) {
@@ -74,32 +72,36 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
               ngay_ra_quyet_dinh: item.ngay_ra_quyet_dinh.split('T')[0],
               khoa: item.khoaDaoTao?.ten_khoa || 'Unknown',
               mon_hoc_ids: [item.mon_hoc_id],
+              he_dao_tao_id: item.he_dao_tao_id, // Lưu he_dao_tao_id để lọc
             });
           }
           return acc;
         }, []);
 
         setChuongTrinhList(normalizedChuongTrinh);
-        setFilteredChuongTrinhList(normalizedChuongTrinh);
-        setPage(0); // Reset trang khi dữ liệu thay đổi
+        // Lọc theo khoaFilter nếu có
+        const filtered = khoa_dao_tao_id
+          ? normalizedChuongTrinh.filter((ct) => ct.khoa === khoaList.find((k) => k.id === parseInt(khoa_dao_tao_id))?.ten_khoa)
+          : normalizedChuongTrinh;
+        setFilteredChuongTrinhList(filtered);
+        setPage(0);
       } else {
         setChuongTrinhList([]);
         setFilteredChuongTrinhList([]);
-        setPage(0); // Reset trang khi không có dữ liệu
+        setPage(0);
       }
     } catch (error) {
       toast.error('Lỗi khi tải dữ liệu: ' + error.message);
     } finally {
       setLoading(false);
-      setShouldFetchChuongTrinh(false); // Reset sau khi fetch
     }
   }
 
-  // Hàm fetchKhoa thông thường
+  // Fetch khóa khi heDaoTaoFilter thay đổi
   async function fetchKhoa(heDaoTaoId) {
     try {
       const khoaRes = await getDanhSachKhoaTheoDanhMucDaoTao(heDaoTaoId);
-      console.log('Khoa from API:', khoaRes); // Debug API response
+      console.log('Khoa from API:', khoaRes);
       setKhoaList(Array.isArray(khoaRes) ? khoaRes : []);
       if (!khoaRes || khoaRes.length === 0) {
         toast.info('Không có khóa đào tạo nào cho hệ này');
@@ -113,23 +115,26 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
   // Initial fetch khi component mount
   useEffect(() => {
     console.log('Initial useEffect triggered, propChuongTrinhList:', propChuongTrinhList);
-    if (isInitialFetch && propChuongTrinhList.length === 0) {
+    if (propChuongTrinhList.length === 0) {
       fetchData();
-      setIsInitialFetch(false); // Chỉ fetch một lần
-    } else if (propChuongTrinhList.length > 0) {
+    } else {
       setChuongTrinhList(propChuongTrinhList);
       setFilteredChuongTrinhList(propChuongTrinhList);
-      setPage(0); // Reset trang khi prop thay đổi
+      setPage(0);
     }
-  }, [propChuongTrinhList, isInitialFetch]);
+  }, [propChuongTrinhList]);
 
-  // Fetch chương trình đào tạo khi cả hai bộ lọc được chọn
+  // Fetch chương trình đào tạo khi heDaoTaoFilter thay đổi
   useEffect(() => {
-    console.log('ChuongTrinh useEffect triggered:', { shouldFetchChuongTrinh, heDaoTaoFilter, khoaFilter });
-    if (shouldFetchChuongTrinh && heDaoTaoFilter && khoaFilter) {
-      fetchData({ he_dao_tao_id: heDaoTaoFilter, khoa_dao_tao_id: khoaFilter });
+    console.log('ChuongTrinh useEffect triggered:', { heDaoTaoFilter, khoaFilter });
+    if (heDaoTaoFilter) {
+      fetchData({ he_dao_tao_id: heDaoTaoFilter, khoa_dao_tao_id: khoaFilter || undefined });
+    } else {
+      setChuongTrinhList([]);
+      setFilteredChuongTrinhList([]);
+      setPage(0);
     }
-  }, [heDaoTaoFilter, khoaFilter, shouldFetchChuongTrinh]);
+  }, [heDaoTaoFilter, khoaFilter]);
 
   // Fetch khóa khi heDaoTaoFilter thay đổi
   useEffect(() => {
@@ -139,7 +144,6 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
     } else {
       setKhoaList([]);
       setKhoaFilter('');
-      setShouldFetchChuongTrinh(false);
     }
   }, [heDaoTaoFilter]);
 
@@ -147,29 +151,25 @@ const DanhSachChuongTrinhDaoTao = ({ chuongTrinhList: propChuongTrinhList = [] }
     const value = event.target.value;
     setHeDaoTaoFilter(value);
     setKhoaFilter('');
-    setShouldFetchChuongTrinh(false); // Không fetch khi chỉ chọn hệ
-    setPage(0); // Reset trang khi thay đổi bộ lọc
+    setPage(0);
   };
 
   const handleKhoaFilterChange = (event) => {
     const value = event.target.value;
     setKhoaFilter(value);
-    if (value) {
-      setShouldFetchChuongTrinh(true); // Chỉ fetch khi cả hệ và khóa được chọn
-    }
-    setPage(0); // Reset trang khi thay đổi bộ lọc
+    setPage(0);
   };
 
   const handleViewDetails = (chuongTrinh) => {
     setSelectedChuongTrinh(chuongTrinh);
     setOpenDialog(true);
-    setDialogPage(0); // Reset trang của Dialog khi mở
+    setDialogPage(0);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedChuongTrinh(null);
-    setDialogPage(0); // Reset trang của Dialog khi đóng
+    setDialogPage(0);
   };
 
   const subjectColumns = [
