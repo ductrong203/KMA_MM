@@ -22,6 +22,7 @@ import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingServ
 import { fetchDanhSachKhoa } from '../../Api_controller/Service/khoaService';
 import { getDanhSachSinhVienTheoLop } from '../../Api_controller/Service/sinhVienService';
 import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
+import { kiemTraTotNghiep } from '../../Api_controller/Service/sinhVienService';
 
 function DieuKienTotNghiep() {
   const [activeStep, setActiveStep] = useState(0);
@@ -29,6 +30,7 @@ function DieuKienTotNghiep() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [graduationInfo, setGraduationInfo] = useState(null);
   const [trainingSystems, setTrainingSystems] = useState([]);
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -49,14 +51,13 @@ function DieuKienTotNghiep() {
       try {
         const response = await fetchDanhSachHeDaoTao();
         console.log('Danh sách hệ đào tạo:', response);
-        // Giả định response có dạng { data: [...] }
         const data = Array.isArray(response) ? response : [];
         setTrainingSystems(data);
       } catch (error) {
         console.error('Lỗi khi tải hệ đào tạo:', error);
         setSnackbar({
           open: true,
-          message: 'Lỗi khi tải danh sách hệ đào tạo',
+          message: error.response?.data?.message || 'Lỗi khi tải danh sách hệ đào tạo',
           severity: 'error',
         });
         setTrainingSystems([]);
@@ -82,11 +83,12 @@ function DieuKienTotNghiep() {
           setSelectedCourse(null);
           setSelectedClass(null);
           setSelectedStudent(null);
+          setGraduationInfo(null);
         } catch (error) {
           console.error('Lỗi khi tải khóa đào tạo:', error);
           setSnackbar({
             open: true,
-            message: 'Lỗi khi tải danh sách khóa đào tạo',
+            message: error.response?.data?.message || 'Lỗi khi tải danh sách khóa đào tạo',
             severity: 'error',
           });
           setCourses([]);
@@ -102,6 +104,7 @@ function DieuKienTotNghiep() {
       setSelectedCourse(null);
       setSelectedClass(null);
       setSelectedStudent(null);
+      setGraduationInfo(null);
     }
   }, [selectedTrainingSystem]);
 
@@ -118,11 +121,12 @@ function DieuKienTotNghiep() {
           setStudents([]);
           setSelectedClass(null);
           setSelectedStudent(null);
+          setGraduationInfo(null);
         } catch (error) {
           console.error('Lỗi khi tải lớp:', error);
           setSnackbar({
             open: true,
-            message: 'Lỗi khi tải danh sách lớp',
+            message: error.response?.data?.message || 'Lỗi khi tải danh sách lớp',
             severity: 'error',
           });
           setClasses([]);
@@ -136,6 +140,7 @@ function DieuKienTotNghiep() {
       setStudents([]);
       setSelectedClass(null);
       setSelectedStudent(null);
+      setGraduationInfo(null);
     }
   }, [selectedCourse]);
 
@@ -150,11 +155,12 @@ function DieuKienTotNghiep() {
           const data = Array.isArray(response.data) ? response.data : [];
           setStudents(data);
           setSelectedStudent(null);
+          setGraduationInfo(null);
         } catch (error) {
           console.error('Lỗi khi tải sinh viên:', error);
           setSnackbar({
             open: true,
-            message: 'Lỗi khi tải danh sách sinh viên',
+            message: error.response?.data?.message || 'Lỗi khi tải danh sách sinh viên',
             severity: 'error',
           });
           setStudents([]);
@@ -166,8 +172,36 @@ function DieuKienTotNghiep() {
     } else {
       setStudents([]);
       setSelectedStudent(null);
+      setGraduationInfo(null);
     }
   }, [selectedClass]);
+
+  // Kiểm tra điều kiện tốt nghiệp khi chọn sinh viên
+  useEffect(() => {
+    if (selectedStudent) {
+      const fetchGraduationInfo = async () => {
+        setLoading(true);
+        try {
+          const response = await kiemTraTotNghiep(selectedStudent.sinh_vien_id || selectedStudent.id);
+          console.log('Thông tin tốt nghiệp:', response);
+          setGraduationInfo(response.data);
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra tốt nghiệp:', error);
+          setSnackbar({
+            open: true,
+            message: error.response?.data?.message || 'Lỗi khi kiểm tra điều kiện tốt nghiệp',
+            severity: 'error',
+          });
+          setGraduationInfo(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchGraduationInfo();
+    } else {
+      setGraduationInfo(null);
+    }
+  }, [selectedStudent]);
 
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
@@ -182,15 +216,14 @@ function DieuKienTotNghiep() {
   };
 
   // Kiểm tra điều kiện tốt nghiệp
-  const isEligibleForGraduation = (student) => {
+  const isEligibleForGraduation = (graduationInfo) => {
     return (
-      student &&
-      student.credits >= 130 &&
-      student.gpa >= 2.0 &&
-      student.hasDegree // Phải hoàn thành chứng chỉ
+      graduationInfo &&
+      graduationInfo.tong_tin_chi >= 130 &&
+      graduationInfo.dieu_kien_tot_nghiep?.du_tin_chi
     );
   };
-console.log(selectedStudent)
+
   return (
     <Box>
       <Snackbar
@@ -275,47 +308,49 @@ console.log(selectedStudent)
                       />
                     </FormControl>
 
-                    {selectedStudent && (
+                    {selectedStudent && graduationInfo && (
                       <Card sx={{ mt: 2 }}>
                         <CardContent>
                           <Grid container spacing={2}>
                             <Grid item xs={6}>
                               <Typography color="textSecondary">Mã sinh viên</Typography>
-                              <Typography variant="h6">{selectedStudent.ma_sinh_vien || selectedStudent.code || ''}</Typography>
+                              <Typography variant="h6">{graduationInfo.ma_sinh_vien || ''}</Typography>
                             </Grid>
                             <Grid item xs={6}>
                               <Typography color="textSecondary">Họ tên</Typography>
-                              <Typography variant="h6">
-                                {`${selectedStudent.ho_dem || ''} ${selectedStudent.ten || selectedStudent.name || ''}`.trim()}
-                              </Typography>
+                              <Typography variant="h6">{graduationInfo.ho_ten || ''}</Typography>
                             </Grid>
                             <Grid item xs={6}>
                               <Typography color="textSecondary">Số tín chỉ tích lũy</Typography>
+                              <Typography variant="h6">{graduationInfo.tong_tin_chi || 0}/130</Typography>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <Typography color="textSecondary">Trạng thái tín chỉ</Typography>
                               <Typography variant="h6">
-                                {selectedStudent.credits || 0}/130
+                                {graduationInfo.dieu_kien_tot_nghiep?.du_tin_chi ? 'Đủ tín chỉ' : 'Chưa đủ tín chỉ'}
                               </Typography>
                             </Grid>
                             <Grid item xs={6}>
-                              <Typography color="textSecondary">GPA</Typography>
+                              <Typography color="textSecondary">Có chứng chỉ</Typography>
                               <Typography variant="h6">
-                                {selectedStudent.gpa || 0}/4.0
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Hoàn thành chứng chỉ</Typography>
-                              <Typography variant="h6">
-                                {selectedStudent.hasDegree ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
+                                {graduationInfo.dieu_kien_tot_nghiep?.co_chung_chi ? 'Đã có' : 'Chưa có'}
                               </Typography>
                             </Grid>
                             <Grid item xs={6}>
                               <Typography color="textSecondary">Đủ điều kiện tốt nghiệp</Typography>
                               <Typography variant="h6">
-                                {isEligibleForGraduation(selectedStudent) ? 'Đủ điều kiện' : 'Không đủ điều kiện'}
+                                {isEligibleForGraduation(graduationInfo) ? 'Đủ điều kiện' : 'Không đủ điều kiện'}
                               </Typography>
                             </Grid>
                           </Grid>
                         </CardContent>
                       </Card>
+                    )}
+
+                    {!loading && students.length === 0 && selectedClass && (
+                      <Typography color="textSecondary" sx={{ mt: 2 }}>
+                        Không tìm thấy sinh viên trong lớp này.
+                      </Typography>
                     )}
                   </Box>
                 )}
@@ -323,10 +358,9 @@ console.log(selectedStudent)
                 {activeStep === 1 && (
                   <Box>
                     <Typography variant="h6">Xét duyệt tốt nghiệp</Typography>
-                    {selectedStudent && (
+                    {selectedStudent && graduationInfo && (
                       <Typography>
-                        Xác nhận xét tốt nghiệp cho sinh viên: {selectedStudent.ma_sinh_vien || selectedStudent.code || ''} -{' '}
-                        {`${selectedStudent.ho_dem || ''} ${selectedStudent.ten || selectedStudent.name || ''}`.trim()}
+                        Xác nhận xét tốt nghiệp cho sinh viên: {graduationInfo.ma_sinh_vien || ''} - {graduationInfo.ho_ten || ''}.
                       </Typography>
                     )}
                   </Box>
@@ -336,8 +370,7 @@ console.log(selectedStudent)
                   <Box>
                     <Typography variant="h6">Hoàn thành</Typography>
                     <Typography>
-                      Quá trình xét tốt nghiệp cho sinh viên{' '}
-                      {selectedStudent?.ma_sinh_vien || selectedStudent?.code || ''} đã hoàn tất.
+                      Quá trình xét tốt nghiệp cho sinh viên {graduationInfo?.ma_sinh_vien || ''} đã hoàn tất.
                     </Typography>
                   </Box>
                 )}
@@ -353,7 +386,8 @@ console.log(selectedStudent)
                     onClick={handleNext}
                     disabled={
                       !selectedStudent ||
-                      !isEligibleForGraduation(selectedStudent) ||
+                      !graduationInfo ||
+                      !isEligibleForGraduation(graduationInfo) ||
                       activeStep >= graduationSteps.length - 1
                     }
                   >
@@ -375,10 +409,7 @@ console.log(selectedStudent)
                 • Tích lũy đủ 130 tín chỉ
               </Typography>
               <Typography variant="body2" gutterBottom>
-                • GPA tổng ≥ 2.0
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                • Hoàn thành tất cả chứng chỉ bắt buộc
+                • Đạt trạng thái đủ tín chỉ (theo quy định của chương trình)
               </Typography>
             </Box>
           </Paper>

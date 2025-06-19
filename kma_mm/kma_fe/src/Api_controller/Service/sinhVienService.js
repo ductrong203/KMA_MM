@@ -18,3 +18,14 @@ export const checkExistingStudents = async (formData) => {
     throw error.response?.data || new Error('Không thể kiểm tra sinh viên tồn tại');
   }
 };
+
+// Api_controller/Service/sinhVienService.js
+export const kiemTraTotNghiep = async (sinhVienId) => {
+  try {
+    const response = await api.get(`student/kiem-tra-tot-nghiep/${sinhVienId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi khi gọi API kiểm tra tốt nghiệp:', error);
+    throw error;
+  }
+};
