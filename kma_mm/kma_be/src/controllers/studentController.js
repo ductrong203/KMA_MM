@@ -188,6 +188,23 @@ class SinhVienController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
+  static async checkGraduationConditions(req, res) {
+    try {
+      const sinhVienId = req.params.sinhVienId;
+      const result = await SinhVienService.checkGraduationConditions(sinhVienId);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Kiểm tra điều kiện tốt nghiệp thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = SinhVienController;
