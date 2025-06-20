@@ -45,6 +45,7 @@ import QuanLyChungChi from '../QuanLyChungChi/QuanLyChungChi';
 import QuanLyMonHoc from '../Mon Hoc/QuanLyMonHoc';
 import PhuLucBangDiem from '../Dao Tao/PhuLucBangDiem';
 import ThongKeTotNghiep from '../Dao Tao/ThongKe';
+import ThongKeDiem from '../Dao Tao/ThongKeDiem';
 
 // Styled component for file upload
 const VisuallyHiddenInput = styled('input')({
@@ -382,11 +383,14 @@ const GradeImportSystem = () => {
                     {currentTab === 3 && (
                         <Box>
                             <Tabs value={subTab} onChange={handleSubTabChange}>
-                                <Tab label="Thống kê tốt nghiệp" />
+                                <Tab label="Thống kê" />
+                                <Tab label="Thống kê điểm" />
                                 <Tab label="Báo cáo chi tiết" />
                             </Tabs>
                             <Grid container spacing={3} sx={{ mt: 2 }}>
                                 {subTab === 0 && <ThongKeTotNghiep />}
+                                {subTab === 1 && <ThongKeDiem />}
+
                             </Grid>
                         </Box>
                     )}

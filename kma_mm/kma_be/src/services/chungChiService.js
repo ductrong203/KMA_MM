@@ -88,7 +88,7 @@ class ChungChiService {
           where: {
             sinh_vien_id: sinhVienIds,
           },
-          order: [['id', 'DESC']],
+          order: [['id', 'ASC']],
         });
       }
 

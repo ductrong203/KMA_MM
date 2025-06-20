@@ -188,7 +188,7 @@ function XemDanhSachDiem() {
   // Hàm xử lý tìm kiếm
   const handleSearch = async () => {
     if (!batch || !classGroup || !semester || !course) {
-      toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên.');
+      toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên.');
       return;
     }
     setLoadingStudents(true);
@@ -217,10 +217,10 @@ function XemDanhSachDiem() {
         })
       );
       setStudents(formattedStudents);
-      toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+      toast.success(`Đã tìm thấy ${formattedStudents.length} học viên.`);
     } catch (error) {
       console.error('Error searching students:', error);
-      toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại.');
+      toast.error('Có lỗi xảy ra khi tìm kiếm học viên. Vui lòng thử lại.');
     } finally {
       setLoadingStudents(false);
     }
@@ -300,7 +300,7 @@ function XemDanhSachDiem() {
       setUploading(false);
       setFile(null);
       setFileName('');
-      handleSearch(); // Cập nhật danh sách sinh viên
+      handleSearch(); // Cập nhật danh sách học viên
     } catch (error) {
       clearInterval(interval);
       console.error('Error:', error);

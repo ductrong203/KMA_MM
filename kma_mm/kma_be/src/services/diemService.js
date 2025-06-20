@@ -77,7 +77,7 @@ class DiemService {
   
     const rows = await diem.findAll({
       where: whereClause,
-      order: [['id', 'DESC']],
+      order: [['id', 'ASC']],
       include: [
         {
           model: sinh_vien,

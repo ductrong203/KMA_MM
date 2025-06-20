@@ -30,6 +30,7 @@ const diemRoute = require('./diem');
 const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
 const chungChiRoute = require('./chungChi');
+const chuongTrinhDaoTaoRoute = require('./chuongTrinhDaoTao');
 
 const routes = (app) => {
   app.use("/auth", authRouter);
@@ -54,14 +55,7 @@ const routes = (app) => {
   app.use('/excel', excelRoute);
   app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
   app.use('/chung-chi', chungChiRoute);
+  app.use('/chuong-trinh-dao-tao', chuongTrinhDaoTaoRoute);
 
-
-  //   app.use("student", studentRouter);
-
-  //   app.use("teacher", teacherRouter);
-  //   app.use("exam", examRouter);
-  //   app.use("schedule", scheduleRouter);
-  //   app.use("library", libraryRouter);
-  //   app.use("statistic", statisticRouter);
 };
 module.exports = routes;

@@ -258,7 +258,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearch = async () => {
         if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
-            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm sinh viên');
+            toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên');
             return;
         }
         setLoadingStudents(true);
@@ -297,24 +297,24 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             setStudents(formattedStudents);
 
             if (formattedStudents.length > 0) {
-                toast.success(`Đã tìm thấy ${formattedStudents.length} sinh viên.`);
+                toast.success(`Đã tìm thấy ${formattedStudents.length} học viên.`);
             } else {
-                toast.warn('Không tìm thấy sinh viên nào phù hợp với các tiêu chí đã chọn.');
+                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
             }
         } catch (error) {
             console.error('Error searching students:', error);
-            toast.error('Có lỗi xảy ra khi tìm kiếm sinh viên. Vui lòng thử lại sau.');
+            toast.error('Có lỗi xảy ra khi tìm kiếm học viên. Vui lòng thử lại sau.');
         } finally {
             setLoadingStudents(false);
         }
     };
 
-    // Sinh viên đủ điều kiện thi CK khi điểm TP1 >= 4.0
+    // học viên đủ điều kiện thi CK khi điểm TP1 >= 4.0
     const canTakeFinalExam = (student) => {
         return student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 >= 4.0;
     };
 
-    // Sinh viên đủ điều kiện thi lại khi điểm CK1 < 4.0
+    // học viên đủ điều kiện thi lại khi điểm CK1 < 4.0
     const eligibleForRetake = (student) => {
         return student.diem.CK1 !== null && student.diem.CK1 !== undefined && student.diem.CK1 < 4.0;
     };
@@ -337,13 +337,13 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 if (student.ma_sinh_vien === studentId) {
                     // Kiểm tra điều kiện dự thi cuối kỳ
                     if (!canTakeFinalExam(student)) {
-                        alert(`Không thể nhập điểm cuối kỳ cho sinh viên ${student.name}. Điểm giữa kỳ (TP1) phải lớn hơn hoặc bằng 4.0.`);
+                        alert(`Không thể nhập điểm cuối kỳ cho học viên ${student.name}. Điểm giữa kỳ (TP1) phải lớn hơn hoặc bằng 4.0.`);
                         return student;
                     }
 
                     // Kiểm tra điều kiện thi lại (CK2)
                     if (scoreType === 'CK2' && !eligibleForRetake(student)) {
-                        alert(`Không thể nhập điểm thi lại cho sinh viên ${student.name}. Điểm thi lần 1 (CK1) phải nhỏ hơn 4.0.`);
+                        alert(`Không thể nhập điểm thi lại cho học viên ${student.name}. Điểm thi lần 1 (CK1) phải nhỏ hơn 4.0.`);
                         return student;
                     }
 
@@ -358,7 +358,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             prevStudents.map(student => {
                 if (student.ma_sinh_vien === studentId) {
                     if (!eligibleForRetake(student) && checked) {
-                        toast.error('Sinh viên không đủ điều kiện đăng ký thi lại (CK1 phải < 4.0).');
+                        toast.error('học viên không đủ điều kiện đăng ký thi lại (CK1 phải < 4.0).');
                         return student;
                     }
                     return { ...student, retakeRegistered: checked };
@@ -399,15 +399,15 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             toast.error('Có lỗi xảy ra khi lưu điểm. Vui lòng thử lại.');
         }
     };
-    // Tính toán các danh sách sinh viên cho các tab
+    // Tính toán các danh sách học viên cho các tab
     const studentsForFinalExam = students.filter(student => canTakeFinalExam(student));
     const eligibleStudentCount = studentsForFinalExam.length;
     const studentsAwaitingMidtermScores = students.filter(student => !canTakeFinalExam(student));
 
-    // Sinh viên đủ điều kiện thi lại
+    // học viên đủ điều kiện thi lại
     const studentsEligibleForRetake = studentsForFinalExam.filter(student => eligibleForRetake(student));
 
-    // Tính toán điểm trung bình cho một sinh viên
+    // Tính toán điểm trung bình cho một học viên
     const calculateAverageScore = (student) => {
         // Lấy điểm cuối kỳ (ưu tiên CK2 nếu có)
         const finalScore = student.diem.CK2 !== null ? student.diem.CK2 : student.diem.CK1;
@@ -579,7 +579,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     //             setUploading(false);
     //             setFile(null); // Reset file sau khi import
     //             setFileName(''); // Reset tên file
-    //             // Gọi lại handleSearch để cập nhật danh sách sinh viên
+    //             // Gọi lại handleSearch để cập nhật danh sách học viên
     //             handleSearch();
     //         })
     //         .catch(error => {
@@ -634,7 +634,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     //             setUploading(false);
     //             setFile(null); // Reset file
     //             setFileName(''); // Reset tên file
-    //             handleSearch(); // Cập nhật danh sách sinh viên
+    //             handleSearch(); // Cập nhật danh sách học viên
     //         })
     //         .catch((error) => {
     //             console.error('Error:', error);
@@ -692,7 +692,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 setUploading(false);
                 setFile(null); // Reset file
                 setFileName(''); // Reset tên file
-                handleSearch(); // Cập nhật danh sách sinh viên
+                handleSearch(); // Cập nhật danh sách học viên
             })
             .catch((error) => {
                 clearInterval(interval); // Dừng tiến trình giả lập
@@ -1012,10 +1012,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             <Divider sx={{ my: 2 }} />
 
             <Tabs value={activeTab} onChange={handleTabChange} aria-label="grade management tabs">
-                <Tab label={<Badge badgeContent={students.length} color="primary" icon={<PersonIcon />}>Danh sách sinh viên</Badge>} />
-                <Tab label={<Badge badgeContent={eligibleStudentCount} color="success" icon={<AssignmentIcon />}>Sinh viên đủ điều kiện thi</Badge>} />
-                <Tab label={<Badge badgeContent={studentsAwaitingMidtermScores.length} color="warning" icon={<AssessmentIcon />}>Sinh viên chưa đủ điều kiện</Badge>} />
-                <Tab label={<Badge badgeContent={studentsEligibleForRetake.length} color="error" icon={<AssessmentIcon />}>Sinh viên thi lại</Badge>} />
+                <Tab label={<Badge badgeContent={students.length} color="primary" icon={<PersonIcon />}>Danh sách học viên</Badge>} />
+                <Tab label={<Badge badgeContent={eligibleStudentCount} color="success" icon={<AssignmentIcon />}>học viên đủ điều kiện thi</Badge>} />
+                <Tab label={<Badge badgeContent={studentsAwaitingMidtermScores.length} color="warning" icon={<AssessmentIcon />}>học viên chưa đủ điều kiện</Badge>} />
+                <Tab label={<Badge badgeContent={studentsEligibleForRetake.length} color="error" icon={<AssessmentIcon />}>học viên thi lại</Badge>} />
             </Tabs>
 
             {activeTab === 0 && (
@@ -1030,7 +1030,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     {activeGradeTab === 0 && (
                         <>
                             <Alert severity="info" sx={{ my: 2 }}>
-                                Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ 4.0 là điều kiện để sinh viên được thi cuối kỳ.
+                                Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ 4.0 là điều kiện để học viên được thi cuối kỳ.
                             </Alert>
                             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
                                 <Button
@@ -1145,9 +1145,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     {activeGradeTab === 1 && (
                         <>
                             <Alert severity="info" sx={{ my: 2 }}>
-                                Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho sinh viên có điểm TP1 ≥ 4.0.
+                                Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho học viên có điểm TP1 ≥ 4.0.
                                 {examNumber === "2" ? " Đang nhập điểm thi lại (lần 2)." : " Đang nhập điểm thi lần 1."}
-                                {examNumber === "2" && " Chỉ sinh viên có điểm CK1 < 4.0 mới đủ điều kiện thi lại."}
+                                {examNumber === "2" && " Chỉ học viên có điểm CK1 < 4.0 mới đủ điều kiện thi lại."}
                             </Alert>
 
                             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -1242,7 +1242,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         {componentScore !== null ? componentScore : '-'}
                                                     </TableCell> {/* Hiển thị điểm thành phần */}
                                                     <TableCell align="center">
-                                                        <Tooltip title={!canTakeFinalExam(student) ? 'Sinh viên phải có điểm TP1 ≥ 4.0' : ''}>
+                                                        <Tooltip title={!canTakeFinalExam(student) ? 'học viên phải có điểm TP1 ≥ 4.0' : ''}>
                                                             <span>
                                                                 <TextField
                                                                     type="number"
@@ -1256,7 +1256,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         </Tooltip>
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        <Tooltip title={!canRetake ? 'Sinh viên phải có điểm CK1 < 4.0 để thi lại' : ''}>
+                                                        <Tooltip title={!canRetake ? 'học viên phải có điểm CK1 < 4.0 để thi lại' : ''}>
                                                             <span>
                                                                 <TextField
                                                                     type="number"
@@ -1283,7 +1283,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                     </TableCell>
                                                     <TableCell align="center">
                                                         <Tooltip title={
-                                                            !eligibleForRetake(student) ? 'Sinh viên phải có điểm CK1 < 4.0 để đăng ký thi lại.' :
+                                                            !eligibleForRetake(student) ? 'học viên phải có điểm CK1 < 4.0 để đăng ký thi lại.' :
                                                                 student.diem.CK2 !== null ? 'Đã có điểm thi lại (CK2), không thể thay đổi.' : ''
                                                         }>
                                                             <span>
@@ -1314,7 +1314,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 1 && (
                 <>
                     <Alert severity="success" sx={{ my: 2 }}>
-                        {eligibleStudentCount} sinh viên đủ điều kiện thi cuối kỳ (TP1 ≥ 4.0)
+                        {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ 4.0)
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="eligible students table">
@@ -1374,7 +1374,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 2 && (
                 <>
                     <Alert severity="warning" sx={{ my: 2 }}>
-                        {studentsAwaitingMidtermScores.length} sinh viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ 4.0)
+                        {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ 4.0)
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="ineligible students table">
@@ -1424,7 +1424,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 3 && (
                 <>
                     <Alert severity="error" sx={{ my: 2 }}>
-                        {`${studentsEligibleForRetake.length} sinh viên cần thi lại (Điểm CK1 < 4.0)`}
+                        {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < 4.0)`}
                     </Alert>
                     <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
                         <Button

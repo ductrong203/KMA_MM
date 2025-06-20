@@ -66,9 +66,9 @@ const ManageDepartments = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Department Management</Typography>
+        <Typography variant="h4">Quản lý phòng ban</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenForm(true)}>
-          Add Department
+          Thêm phòng ban
         </Button>
       </Box>
 
