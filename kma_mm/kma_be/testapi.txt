@@ -88,6 +88,27 @@ get
     http://localhost:8000/kehoachmonhoc/getbykhoavaky/1/9
     http://localhost:8000/kehoachmonhoc/getbykhoavaky/1
     
+lấy ds kế hoạch môn học theo khoá
+GET: http://localhost:8000/kehoachmonhoc/khoa/3
+
+copy ds kế hoạch môn học theo khoá
+POST: http://localhost:8000/kehoachmonhoc/copy
+body:
+{
+  "fromKhoaDaoTaoId": 2,
+  "toKhoaDaoTaoId": 3,
+  "heDaoTaoId": 1
+}
+trả về:
+{
+    "success": true,
+    "data": {
+        "message": "Sao chép kế hoạch môn học thành công!",
+        "copied": 2,
+        "skipped": 0,
+        "total": 2
+    }
+}
 =================================================================
 Thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
 ==============
