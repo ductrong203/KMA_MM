@@ -27,7 +27,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/Download";
 import PrintIcon from "@mui/icons-material/Print";
-import StudentManagement from "../QLHV/StudentManagement ";
+import StudentManagement from "../QLHV/StudentManagement";
 import StudentRequests from "../QLHV/StudentRequest";
 import ReportForms from "../QLHV/ReportForm";
 import ScoreManagement from "../QLHV/ScoreManagement";

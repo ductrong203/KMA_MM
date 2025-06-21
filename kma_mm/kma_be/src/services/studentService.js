@@ -2,6 +2,7 @@ const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
 const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao } = models;
+const { chung_chi } = require('../models');
 const ExcelJS = require('exceljs');
 const fs = require("fs");
 
@@ -801,6 +802,55 @@ class SinhVienService {
           fs.unlinkSync(filePath);
         }
       }
+  }
+
+  static async checkGraduationConditions(sinhVienId) {
+    try {
+      // Tìm sinh viên theo ID
+      const sinhVien = await sinh_vien.findByPk(sinhVienId);
+      if (!sinhVien) {
+        throw new Error("Sinh viên không tồn tại");
+      }
+
+      // Lấy tổng tín chỉ từ bảng sinh_vien
+      const tongTinChi = sinhVien.tong_tin_chi || 0;
+
+      // Kiểm tra điều kiện tín chỉ
+      const isTinChiValid = tongTinChi >= 130;
+
+      // Lấy danh sách chứng chỉ có tinh_trang "tốt nghiệp"
+      const chungChiList = await chung_chi.findAll({
+        where: {
+          sinh_vien_id: sinhVienId,
+          tinh_trang: 'tốt nghiệp',
+        },
+        attributes: ['id', 'loai_chung_chi', 'tinh_trang', 'diem_trung_binh', 'xep_loai', 'so_quyet_dinh', 'ngay_ky_quyet_dinh'],
+      });
+
+      // Kiểm tra điều kiện chứng chỉ
+      const isChungChiValid = chungChiList.length > 0;
+
+      // Xác định điều kiện tốt nghiệp
+      const isEligible = isTinChiValid && isChungChiValid;
+
+      // Trả về kết quả
+      const result = {
+        sinh_vien_id: sinhVien.id,
+        ma_sinh_vien: sinhVien.ma_sinh_vien,
+        ho_ten: `${sinhVien.ho_dem || ''} ${sinhVien.ten || ''}`.trim(),
+        tong_tin_chi: tongTinChi,
+        chung_chi_tot_nghiep: chungChiList.map((cc) => cc.toJSON()),
+        dieu_kien_tot_nghiep: {
+          du_tin_chi: isTinChiValid,
+          co_chung_chi: isChungChiValid,
+          du_dieu_kien: isEligible,
+        },
+      };
+
+      return result;
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 }
 

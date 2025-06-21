@@ -19,18 +19,18 @@ import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/k
 import { getChuongTrinhDaoTao, updateChuongTrinhDaoTao } from '../../Api_controller/Service/chuongTrinhDaoTaoService';
 
 const getMonHocInChuongTrinh = async (he_dao_tao_id, khoa_dao_tao_id) => {
-  console.log('getMonHocInChuongTrinh called with:', { he_dao_tao_id, khoa_dao_tao_id });
   try {
     const response = await getChuongTrinhDaoTao({ he_dao_tao_id, khoa_dao_tao_id });
-    console.log('API response:', response.data);
-    const monHocIds = response.data.map((item) => Number(item.mon_hoc_id));
-    console.log('monHocIds:', monHocIds);
-    return monHocIds;
+    if (!response?.data) {
+      return [];
+    }
+    return response.data.map((item) => Number(item.mon_hoc_id)) || [];
   } catch (error) {
-    console.error('Error in getMonHocInChuongTrinh:', error.response || error.message);
-    throw new Error('Lỗi khi lấy danh sách môn học trong chương trình: ' + error.message);
+    console.error('Error in getMonHocInChuongTrinh:', error);
+    return [];
   }
 };
+
 const ThemChuongTrinhDaoTao = () => {
   const [subjects, setSubjects] = useState([]);
   const [curriculums, setCurriculums] = useState([]);
@@ -48,23 +48,22 @@ const ThemChuongTrinhDaoTao = () => {
   const role = localStorage.getItem('role') || '';
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const subjectsRes = await getMonHoc();
+        setSubjects(subjectsRes);
+        const curriculumsRes = await fetchDanhSachHeDaoTao();
+        setCurriculums(curriculumsRes);
+        setFilteredSubjects(subjectsRes);
+      } catch (error) {
+        toast.error('Lỗi khi tải dữ liệu: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
   }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const subjectsRes = await getMonHoc();
-      setSubjects(subjectsRes);
-      const curriculumsRes = await fetchDanhSachHeDaoTao();
-      setCurriculums(curriculumsRes);
-      setFilteredSubjects(subjectsRes);
-    } catch (error) {
-      toast.error('Lỗi khi tải dữ liệu: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const fetchKhoaByHeDaoTao = async () => {
@@ -88,58 +87,95 @@ const ThemChuongTrinhDaoTao = () => {
     fetchKhoaByHeDaoTao();
   }, [heDaoTaoId]);
 
-  useEffect(() => {
-    const fetchSubjectsAndExisting = async () => {
-      setLoading(true);
-      try {
-        let filtered = subjects;
-        console.log('subjects:', subjects);
-        if (heDaoTaoId) {
-          filtered = subjects.filter((subject) => subject.he_dao_tao_id === parseInt(heDaoTaoId));
-          console.log('filteredSubjects:', filtered);
-          setFilteredSubjects(filtered);
-          if (filtered.length === 0 && subjects.length > 0) {
-            toast.info('Không có môn học nào thuộc hệ đào tạo này');
-          }
-        } else {
-          setFilteredSubjects(subjects);
-        }
-
-        if (heDaoTaoId && khoaId) {
-          const existingIds = await getMonHocInChuongTrinh(heDaoTaoId, khoaId);
-          console.log('existingIds:', existingIds);
-          setExistingSubjectIds(existingIds || []);
-          setSelectedSubjectIds(existingIds || []);
-          console.log('selectedSubjectIds:', existingIds);
-        } else {
-          setExistingSubjectIds([]);
-          setSelectedSubjectIds([]);
-        }
-
-        setPage(0);
-      } catch (error) {
-        toast.error('Lỗi khi xử lý dữ liệu: ' + error.message);
-      } finally {
-        setLoading(false);
+ useEffect(() => {
+  const fetchSubjectsAndExisting = async () => {
+    setLoading(true);
+    try {
+      // Lọc môn học theo hệ đào tạo
+      const filtered = heDaoTaoId
+        ? subjects.filter((subject) => subject.he_dao_tao_id === parseInt(heDaoTaoId))
+        : subjects;
+      setFilteredSubjects(filtered);
+      if (heDaoTaoId && filtered.length === 0 && subjects.length > 0) {
+        toast.info('Không có môn học nào thuộc hệ đào tạo này');
       }
-    };
-    fetchSubjectsAndExisting();
-  }, [subjects, heDaoTaoId, khoaId]);
+
+      // Lấy chương trình đào tạo của khóa hiện tại hoặc khóa trước
+      if (heDaoTaoId && khoaId) {
+        let monHocIds = await getMonHocInChuongTrinh(heDaoTaoId, khoaId);
+
+        // Nếu không có chương trình cho khóa hiện tại, tìm khóa gần nhất có chương trình
+        if (monHocIds.length === 0) {
+          // Sắp xếp theo ma_khoa
+          const sortedKhoaList = [...khoaList].sort((a, b) => {
+            if (!a.ma_khoa || !b.ma_khoa) {
+              console.warn('ma_khoa không hợp lệ:', a, b);
+              return a.id - b.id; // Dự phòng
+            }
+            return a.ma_khoa.localeCompare(b.ma_khoa);
+          });
+          const currentKhoaIndex = sortedKhoaList.findIndex((khoa) => khoa.id === parseInt(khoaId));
+          if (currentKhoaIndex === -1) {
+            toast.error('Không tìm thấy khóa đào tạo hiện tại');
+            return;
+          }
+          if (currentKhoaIndex > 0) {
+            // Duyệt ngược từ khóa trước để tìm khóa có chương trình đào tạo
+            for (let i = currentKhoaIndex - 1; i >= 0; i--) {
+              const previousKhoa = sortedKhoaList[i];
+              const previousMonHocIds = await getMonHocInChuongTrinh(heDaoTaoId, previousKhoa.id);
+              if (previousMonHocIds.length > 0) {
+               
+                toast.info(`Đã tải chương trình đào tạo từ khóa ${previousKhoa.ten_khoa}`);
+                monHocIds = previousMonHocIds;
+                break;
+              }
+            }
+            if (monHocIds.length === 0) {
+              toast.info('Không có khóa trước nào có chương trình đào tạo để kế thừa');
+            }
+          } else {
+            toast.info('Không có khóa trước để kế thừa chương trình đào tạo');
+          }
+        }
+
+        setExistingSubjectIds(monHocIds);
+        setSelectedSubjectIds(monHocIds);
+      } else {
+        setExistingSubjectIds([]);
+        setSelectedSubjectIds([]);
+      }
+
+      setPage(0);
+    } catch (error) {
+      toast.error('Lỗi khi xử lý dữ liệu: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchSubjectsAndExisting();
+}, [subjects, heDaoTaoId, khoaId, khoaList]);
 
   const handleHeDaoTaoChange = (event) => {
     if (selectedSubjectIds.length > 0) {
-      toast.warn('Danh sách môn học đã chọn sẽ bị xóa khi thay đổi hệ đào tạo');
+      const confirm = window.confirm(
+        'Danh sách môn học đã chọn sẽ bị xóa khi thay đổi hệ đào tạo. Bạn có muốn tiếp tục?'
+      );
+      if (!confirm) return;
     }
     setHeDaoTaoId(event.target.value);
     setSelectedSubjectIds([]);
     setExistingSubjectIds([]);
+    setKhoaId('');
+    setSoQuyetDinh('');
+    setNgayRaQuyetDinh(null);
     setPage(0);
   };
 
   const handleKhoaChange = (event) => {
     setKhoaId(event.target.value);
-    setSelectedSubjectIds([]);
-    setExistingSubjectIds([]);
+    setSoQuyetDinh('');
+    setNgayRaQuyetDinh(null);
     setPage(0);
   };
 
@@ -159,6 +195,7 @@ const ThemChuongTrinhDaoTao = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const chuongTrinhData = {
         he_dao_tao_id: parseInt(heDaoTaoId),
@@ -167,17 +204,14 @@ const ThemChuongTrinhDaoTao = () => {
         ngay_ra_quyet_dinh: ngayRaQuyetDinh.toISOString().split('T')[0],
         mon_hoc_ids: selectedSubjectIds,
       };
-      console.log('Saving chuong trinh dao tao:', chuongTrinhData);
       await updateChuongTrinhDaoTao(chuongTrinhData);
       toast.success('Lưu chương trình đào tạo thành công!');
-      setHeDaoTaoId('');
       setSoQuyetDinh('');
       setNgayRaQuyetDinh(null);
-      setKhoaId('');
-      setSelectedSubjectIds([]);
-      setExistingSubjectIds([]);
     } catch (error) {
       toast.error('Lỗi khi lưu chương trình đào tạo: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -275,25 +309,6 @@ const ThemChuongTrinhDaoTao = () => {
         </Grid>
       </Box>
 
-      {/* <Box sx={{ mb: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel sx={{ fontSize: '1.1rem' }}>Lọc môn học theo hệ đào tạo</InputLabel>
-          <Select
-            value={heDaoTaoId}
-            label="Lọc môn học theo hệ đào tạo"
-            onChange={handleHeDaoTaoChange}
-            sx={inputFieldSx}
-          >
-            <MenuItem value="">Tất cả hệ đào tạo</MenuItem>
-            {curriculums.map((curriculum) => (
-              <MenuItem key={curriculum.id} value={curriculum.id}>
-                {curriculum.ten_he_dao_tao}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box> */}
-
       <DataGrid
         rows={filteredSubjects}
         getRowId={(row) => row.id}
@@ -315,8 +330,13 @@ const ThemChuongTrinhDaoTao = () => {
       />
 
       {role !== 'examination' && (
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Lưu chương trình đào tạo
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSave}
+          disabled={loading}
+        >
+          {loading ? 'Đang lưu...' : 'Lưu chương trình đào tạo'}
         </Button>
       )}
     </Paper>

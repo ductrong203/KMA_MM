@@ -179,6 +179,11 @@ module.exports = function(sequelize, DataTypes) {
     username: {
       type: DataTypes.STRING(50),
       allowNull: true
+    },
+    tong_tin_chi: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
     }
   }, {
     sequelize,

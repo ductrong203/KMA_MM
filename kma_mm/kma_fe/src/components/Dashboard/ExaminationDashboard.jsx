@@ -33,7 +33,7 @@ import { styled } from '@mui/material/styles';
 import QuanLyDiem from '../Diem/QuanLyDiem';
 import TaoBangDiem from '../Diem/TaoBangDiem';
 import XemDanhSachDiem from '../Diem/XemDanhSachDiem';
-import StudentManagement from '../QLHV/StudentManagement ';
+import StudentManagement from '../QLHV/StudentManagement';
 import MonHocTheoHeDaoTao from '../Mon Hoc/MonHocTheoHeDaoTao';
 import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
 import QuanLyKhoa from '../Khoa/QuanLyKhoa';
