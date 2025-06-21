@@ -28,8 +28,11 @@ import {
   getSubjectPlansByBatch,
   createSubjectPlan,
   deleteSubjectPlan,
-  updateSubjectPlan
+  updateSubjectPlan,
+  copySubjectPlans
 } from '../../Api_controller/Service/keHoachMonHoc';
+import AddIcon from '@mui/icons-material/Add';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 const MonHocTheoHeDaoTao = () => {
   const [selectedCurriculum, setSelectedCurriculum] = useState('');
@@ -50,6 +53,12 @@ const MonHocTheoHeDaoTao = () => {
     bat_buoc: 0
   });
   const [changedSubjects, setChangedSubjects] = useState([]);
+  const [openCopyDialog, setOpenCopyDialog] = useState(false);
+  const [copyData, setCopyData] = useState({
+    fromKhoaDaoTaoId: '',
+    toKhoaDaoTaoId: '',
+    heDaoTaoId: ''
+  });
   const role = localStorage.getItem("role") || "";
   useEffect(() => {
     const fetchCurriculums = async () => {
@@ -506,68 +515,229 @@ const MonHocTheoHeDaoTao = () => {
     setChangedSubjects([]);
   };
 
-  return (
-    <Box sx={{ p: 2 }}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={4}>
-          <FormControl fullWidth>
-            <InputLabel>Hệ đào tạo</InputLabel>
-            <Select value={selectedCurriculum} label="Hệ đào tạo" onChange={handleCurriculumChange}>
-              {curriculums.map((curriculum) => (
-                <MenuItem key={curriculum.id} value={curriculum.id}>
-                  {curriculum.ten_he_dao_tao}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={4}>
-          <FormControl fullWidth disabled={!selectedCurriculum}>
-            <InputLabel>Khóa đào tạo</InputLabel>
-            <Select value={selectedBatch} label="Khóa đào tạo" onChange={handleBatchChange}>
-              {batches.map((batch) => (
-                <MenuItem key={batch.id} value={batch.id}>
-                  {batch.ten_khoa}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={2}>
-          <FormControl fullWidth disabled={!selectedBatch}>
-            <InputLabel>Kỳ học</InputLabel>
-            <Select value={selectedSemester} label="Kỳ học" onChange={handleSemesterChange}>
-              {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
-                <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={2}>
-          {(role !== "examination" && role !== "student_manage") && (
-            <Button variant="contained" onClick={handleOpenForm} disabled={!selectedBatch}>
-              Tạo kế hoạch
-            </Button>
-          )}
-        </Grid>
-      </Grid>
+  const handleOpenCopyDialog = () => {
+    setCopyData({
+      fromKhoaDaoTaoId: selectedBatch,
+      toKhoaDaoTaoId: '',
+      heDaoTaoId: selectedCurriculum
+    });
+    setOpenCopyDialog(true);
+  };
 
-      <Dialog open={openForm} onClose={handleCloseForm}>
-        <DialogTitle>Thêm kế hoạch môn học</DialogTitle>
-        <DialogContent>
+  const handleCloseCopyDialog = () => {
+    setOpenCopyDialog(false);
+    setCopyData({
+      fromKhoaDaoTaoId: '',
+      toKhoaDaoTaoId: '',
+      heDaoTaoId: ''
+    });
+  };
+
+  const handleCopyFormChange = (event) => {
+    const { name, value } = event.target;
+    setCopyData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCopySubmit = async () => {
+    if (!copyData.fromKhoaDaoTaoId || !copyData.toKhoaDaoTaoId || !copyData.heDaoTaoId) {
+      toast.error('Vui lòng chọn đầy đủ thông tin!');
+      return;
+    }
+
+    if (copyData.fromKhoaDaoTaoId === copyData.toKhoaDaoTaoId) {
+      toast.error('Không thể sao chép trong cùng một khóa đào tạo!');
+      return;
+    }
+
+    try {
+      const result = await copySubjectPlans(
+        parseInt(copyData.fromKhoaDaoTaoId),
+        parseInt(copyData.toKhoaDaoTaoId),
+        parseInt(copyData.heDaoTaoId)
+      );
+
+      if (result.success) {
+        toast.success(`${result.data.message}. Đã sao chép ${result.data.copied}/${result.data.total} môn học!`);
+        handleCloseCopyDialog();
+      } else {
+        toast.error('Có lỗi xảy ra khi sao chép kế hoạch môn học!');
+      }
+    } catch (error) {
+      console.error('Lỗi khi sao chép kế hoạch:', error);
+      toast.error('Không thể sao chép kế hoạch môn học. Vui lòng thử lại!');
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: 'primary.main' }}>
+        Quản lý kế hoạch môn học theo hệ đào tạo
+      </Typography>
+
+      <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2, color: 'text.primary' }}>
+          Bộ lọc
+        </Typography>
+
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="medium">
+              <InputLabel>Hệ đào tạo</InputLabel>
+              <Select
+                value={selectedCurriculum}
+                label="Hệ đào tạo"
+                onChange={handleCurriculumChange}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              >
+                {curriculums.map((curriculum) => (
+                  <MenuItem key={curriculum.id} value={curriculum.id}>
+                    {curriculum.ten_he_dao_tao}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="medium" disabled={!selectedCurriculum}>
+              <InputLabel>Khóa đào tạo</InputLabel>
+              <Select
+                value={selectedBatch}
+                label="Khóa đào tạo"
+                onChange={handleBatchChange}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              >
+                {batches.map((batch) => (
+                  <MenuItem key={batch.id} value={batch.id}>
+                    {batch.ten_khoa}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={2}>
+            <FormControl fullWidth size="medium" disabled={!selectedBatch}>
+              <InputLabel>Kỳ học</InputLabel>
+              <Select
+                value={selectedSemester}
+                label="Kỳ học"
+                onChange={handleSemesterChange}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              >
+                {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((ky) => (
+                  <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Box sx={{
+              display: 'flex',
+              gap: 2,
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
+              flexWrap: 'wrap'
+            }}>
+              {(role !== "examination" && role !== "student_manage") && (
+                <>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleOpenForm}
+                    disabled={!selectedBatch}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 3,
+                      py: 1,
+                      boxShadow: 2,
+                      '&:hover': {
+                        boxShadow: 4,
+                        transform: 'translateY(-1px)'
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    Tạo kế hoạch
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    startIcon={<ContentCopyIcon />}
+                    onClick={handleOpenCopyDialog}
+                    disabled={!selectedBatch}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 3,
+                      py: 1,
+                      borderWidth: 2,
+                      '&:hover': {
+                        borderWidth: 2,
+                        transform: 'translateY(-1px)',
+                        boxShadow: 2
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    Sao chép kế hoạch
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <Dialog
+        open={openForm}
+        onClose={handleCloseForm}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3 }
+        }}
+      >
+        <DialogTitle sx={{
+          backgroundColor: 'primary.main',
+          color: 'white',
+          fontWeight: 600
+        }}>
+          Thêm kế hoạch môn học
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
           <form onSubmit={handleSubmit}>
             <FormControl fullWidth sx={{ mt: 2 }}>
               <InputLabel>Kỳ học</InputLabel>
-              <Select name="ky_hoc" value={formData.ky_hoc} onChange={handleFormChange} required>
+              <Select
+                name="ky_hoc"
+                value={formData.ky_hoc}
+                onChange={handleFormChange}
+                required
+                sx={{ borderRadius: 2 }}
+              >
                 <MenuItem value="">Chọn kỳ học</MenuItem>
                 {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
                   <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
                 ))}
               </Select>
             </FormControl>
+
             <FormControl fullWidth sx={{ mt: 2 }}>
               <InputLabel>Môn học</InputLabel>
-              <Select name="mon_hoc_id" value={formData.mon_hoc_id} onChange={handleFormChange} required>
+              <Select
+                name="mon_hoc_id"
+                value={formData.mon_hoc_id}
+                onChange={handleFormChange}
+                required
+                sx={{ borderRadius: 2 }}
+              >
                 <MenuItem value="">Chọn môn học</MenuItem>
                 {subjectsByCurriculum.map(subject => (
                   <MenuItem key={subject.id} value={subject.id}>
@@ -576,42 +746,198 @@ const MonHocTheoHeDaoTao = () => {
                 ))}
               </Select>
             </FormControl>
-            <Box sx={{ mt: 2 }}>
-              <Checkbox name="bat_buoc" checked={formData.bat_buoc === 1} onChange={handleFormChange} />
-              <Typography component="span">Bắt buộc</Typography>
+
+            <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
+              <Checkbox
+                name="bat_buoc"
+                checked={formData.bat_buoc === 1}
+                onChange={handleFormChange}
+                sx={{ mr: 1 }}
+              />
+              <Typography component="span" variant="body1">
+                Môn học bắt buộc
+              </Typography>
             </Box>
           </form>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseForm}>Hủy</Button>
-          <Button onClick={handleSubmit} variant="contained">Thêm</Button>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={handleCloseForm}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Thêm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openCopyDialog}
+        onClose={handleCloseCopyDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3 }
+        }}
+      >
+        <DialogTitle sx={{
+          fontWeight: 600,
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}>
+          Sao chép kế hoạch môn học
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Sao chép kế hoạch môn học từ khóa hiện tại sang khóa đào tạo khác
+          </Typography>
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Từ khóa đào tạo</InputLabel>
+            <Select
+              name="fromKhoaDaoTaoId"
+              value={copyData.fromKhoaDaoTaoId}
+              onChange={handleCopyFormChange}
+              disabled
+              sx={{
+                borderRadius: 2,
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'action.hover'
+                }
+              }}
+            >
+              {batches.map((batch) => (
+                <MenuItem key={batch.id} value={batch.id}>
+                  {batch.ten_khoa}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth sx={{ mt: 3 }}>
+            <InputLabel>Đến khóa đào tạo</InputLabel>
+            <Select
+              name="toKhoaDaoTaoId"
+              value={copyData.toKhoaDaoTaoId}
+              onChange={handleCopyFormChange}
+              required
+              sx={{
+                borderRadius: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2
+                }
+              }}
+            >
+              <MenuItem value="">Chọn khóa đào tạo đích</MenuItem>
+              {batches
+                .filter(batch => batch.id !== selectedBatch)
+                .map((batch) => (
+                  <MenuItem key={batch.id} value={batch.id}>
+                    {batch.ten_khoa}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+
+          <Box sx={{
+            mt: 3,
+            p: 2,
+            backgroundColor: 'grey.100',
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'grey.300'
+          }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+              <strong>Lưu ý:</strong> Các môn học đã tồn tại trong khóa đích sẽ được bỏ qua
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={handleCloseCopyDialog}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleCopySubmit}
+            variant="contained"
+            startIcon={<ContentCopyIcon />}
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Sao chép
+          </Button>
         </DialogActions>
       </Dialog>
 
       {selectedBatch && (
-        <Box sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
+        <Box sx={{ mt: 3 }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
               Danh sách môn học theo kỳ
             </Typography>
-            <Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {selectedSemester && (
-                <Button variant="outlined" onClick={handleResetSemester} sx={{ mr: 2 }}>
-                  Trở về trạng thái bình thường
+                <Button
+                  variant="outlined"
+                  onClick={handleResetSemester}
+                  size="small"
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 500
+                  }}
+                >
+                  Hiển thị tất cả kỳ
                 </Button>
               )}
               {changedSubjects.length > 0 && (
                 <>
-                  <Button variant="contained" onClick={handleConfirmChanges} sx={{ mr: 2 }}>
-                    Xác nhận thay đổi
+                  <Button
+                    variant="contained"
+                    onClick={handleConfirmChanges}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600
+                    }}
+                  >
+                    Xác nhận thay đổi ({changedSubjects.length})
                   </Button>
-                  <Button variant="outlined" color="error" onClick={handleCancelChanges}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleCancelChanges}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500
+                    }}
+                  >
                     Hủy thay đổi
                   </Button>
                 </>
               )}
             </Box>
           </Box>
+
           <DndContext
             sensors={sensors}
             collisionDetection={rectIntersection}

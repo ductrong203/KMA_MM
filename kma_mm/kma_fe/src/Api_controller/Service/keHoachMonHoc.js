@@ -47,3 +47,13 @@ export const updateSubjectPlan = async (planId, data) => {
     const response = await api.put(`/kehoachmonhoc/${planId}`, data);
     return response.data;
 };
+
+// Sao chép kế hoạch môn học từ khóa này sang khóa khác
+export const copySubjectPlans = async (fromKhoaDaoTaoId, toKhoaDaoTaoId, heDaoTaoId) => {
+    const response = await api.post('/kehoachmonhoc/copy', {
+        fromKhoaDaoTaoId,
+        toKhoaDaoTaoId,
+        heDaoTaoId
+    });
+    return response.data;
+};
