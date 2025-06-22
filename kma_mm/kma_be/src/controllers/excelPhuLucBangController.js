@@ -1,6 +1,7 @@
 const ExcelPhuLucBangService = require("../services/excelPhuLucBangService");
 const path = require("path");
 const fs = require("fs");
+const SinhVienService = require("../services/studentService");
 
 const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
 if (!fs.existsSync(exportDir)) {
@@ -122,6 +123,56 @@ class ExcelPhuLucBangController{
             return res.status(500).json({
                 success: false,
                 message: "Đã xảy ra lỗi khi xuất file Excel phụ lục bảng",
+                error: error.message
+            });
+        }
+    }
+
+    static async exportDocsPhuLucBang(req, res) {
+        // const path = require("path");
+        // const fs = require("fs");
+        // const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
+        
+        try {
+            const { sinh_vien_id } = req.query;
+        
+            if (!sinh_vien_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Thiếu thông tin sinh viên"
+                });
+            }
+        
+            // Tạo file docx từ dữ liệu sinh viên
+            // const sinhVien = await ExcelPhuLucBangService.exportDocsPhuLucBang(parseInt(sinh_vien_id));
+            // const sinhVienData = await ExcelPhuLucBangService.getStudentData(parseInt(sinh_vien_id));
+            const docxBuffer = await ExcelPhuLucBangService.generateDiplomaDocx(sinh_vien_id);
+            // Tạo đường dẫn và tên file
+            const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.docx`;
+            const filePath = path.join(exportDir, fileName);
+        
+            // Ghi file docx ra ổ đĩa
+            fs.writeFileSync(filePath, docxBuffer);
+        
+            // Trả file về client
+            res.download(filePath, fileName, (err) => {
+                if (err) {
+                    console.error("Lỗi khi gửi file:", err);
+                    return res.status(500).json({
+                        success: false,
+                        message: "Không thể tải file"
+                    });
+                }
+        
+                console.log("✅ File đã được lưu tại:", filePath);
+                // Bạn có thể thêm fs.unlinkSync(filePath) nếu muốn xóa sau khi gửi
+            });
+        
+        } catch (error) {
+            console.error("Lỗi khi xuất file DOCX phụ lục bảng:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Đã xảy ra lỗi khi xuất file DOCX phụ lục bảng",
                 error: error.message
             });
         }

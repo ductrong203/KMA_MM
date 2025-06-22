@@ -7,6 +7,9 @@ router.get('/data', ExcelPhuLucBangController.getDataPhuLucBang);
 // Lấy thông tin số kỳ học và khóa đào tạo
 router.get('/info', ExcelPhuLucBangController.getSoKyHocVaKhoa);
 // Xuất file Excel phụ lục bảng điểm
-router.get('/export', ExcelPhuLucBangController.exportExcelPhuLucBang);
+router.get('/export-excel', ExcelPhuLucBangController.exportExcelPhuLucBang);
+
+router.get('/export-docx', ExcelPhuLucBangController.exportDocsPhuLucBang);
+
 
 module.exports = router;
