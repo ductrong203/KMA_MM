@@ -1,7 +1,9 @@
-const { users } = require("../models");
+const { users, activity_logs } = require("../models");
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
 const user = require("../models/user");
+const { where, Op } = require("sequelize");
+
 
 const register = async (newUser) => {
   const { username, password, confirmPassword, role, ho_ten } = newUser;
@@ -186,6 +188,66 @@ const changePassword = async (id, oldPassword, newPassword) => {
     throw new Error(error.message);
   }
 };
+
+const get_logs = async (role, startDate, endDate) => {
+  try {
+    let logs= [] ; 
+   if (role) {
+     logs = await activity_logs.findAll({
+       where :{
+         role
+        }
+      })
+      // console.log(logs);
+    };
+
+// Result: "2025-06-17"
+   if (startDate && endDate){
+    if (role){
+      var bonus = await activity_logs.findAll({
+       where: {
+         created_at: {
+           [Op.gte]: startDate,
+           [Op.lte]: endDate,
+         },
+          role
+
+       }
+      })
+    }
+    else {
+       bonus = await activity_logs.findAll({
+        where: {
+          created_at: {
+            [Op.gte]: startDate,
+            [Op.lte]: endDate,
+            
+          },
+        }
+       })
+    }
+     logs.push(...bonus);
+
+   }
+   if (!role&&!startDate&&!endDate){
+    logs = await activity_logs.findAll();
+    
+   }
+    // const total_page = Math.ceil(count/limit);
+    // console.log("limit: " , page)
+    return {
+       status: "OK",
+       message: "get all activities",
+      //  current_page: page,
+      //  total_page,
+      //  total_items: count,
+       data: logs
+    }
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
   register,
   loginUser,
@@ -194,4 +256,6 @@ module.exports = {
   getDetailUser,
   updateUser,
   changePassword,
+  get_logs,
+
 };

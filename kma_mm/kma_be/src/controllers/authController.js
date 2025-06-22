@@ -154,6 +154,39 @@ const changePassword = async (req, res) => {
   }
 };
 
+const get_logs = async (req, res) => {
+  try {
+    // const page = parseInt(req.query.page) || 1 ;
+    // const limit = parseInt(req.query.limit) || 10;
+    // if (limit > 100) {
+    //   return res.status(400).json({
+    //     status: "ERR",
+    //     message: "Max limit"
+    //   })
+    // }
+    // const offset = (page -1 ) *limit;
+    
+    // const response = await UserService.get_logs(limit, offset, page);
+    const {role, startDate, endDate} = req.query;
+    
+    console.log(role,startDate, endDate);
+    if (startDate>endDate) {
+      throw new Error("Ngày bắt đầu phải nhỏ hơn ngày kết thúc.");
+
+    }
+    const response = await UserService.get_logs(role, startDate, endDate);
+    
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ 
+      status: "ERR",
+      message: error.message || "Error fetching logs" });
+  }
+
+
+}
+
 module.exports = {
   loginUser,
   refreshToken,
@@ -163,4 +196,6 @@ module.exports = {
   deleteUser,
   updateUser,
   changePassword,
+  get_logs,
+  
 };

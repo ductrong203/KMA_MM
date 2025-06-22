@@ -29,9 +29,13 @@ const thoiKhoaBieuRoute = require('./thoiKhoaBieu');
 const diemRoute = require('./diem');
 const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
+// const logActivity = require("../middelWare/logger");
+
 // const docsPhuLucBangRoute = require('./docsPhuLucBang');
 
 const routes = (app) => {
+  // app.use(logActivity);
+  
   app.use("/auth", authRouter);
   app.use("/lop", lopRouter);
   //app.use()
