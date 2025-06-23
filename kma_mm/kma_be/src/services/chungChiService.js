@@ -329,6 +329,51 @@ class ChungChiService {
       throw error;
     }
   }
+
+  static async taoLoaiChungChi(data) {
+    try {
+      const { loai_chung_chi } = data;
+
+      // Kiểm tra dữ liệu đầu vào
+      if (!loai_chung_chi || typeof loai_chung_chi !== 'string' || loai_chung_chi.trim() === '') {
+        throw new Error('Loại chứng chỉ không được để trống và phải là chuỗi hợp lệ');
+      }
+
+      // Kiểm tra xem loại chứng chỉ đã tồn tại chưa
+      const loaiChungChiTonTai = await chung_chi.findOne({
+        where: {
+          loai_chung_chi: loai_chung_chi.trim(),
+        },
+      });
+
+      if (loaiChungChiTonTai) {
+        throw new Error(`Loại chứng chỉ "${loai_chung_chi}" đã tồn tại`);
+      }
+
+      // Tạo loại chứng chỉ mới bằng cách tạo một bản ghi chứng chỉ với loai_chung_chi
+      const chungChiMoi = await chung_chi.create({
+        loai_chung_chi: loai_chung_chi.trim(),
+        // Các trường khác để null vì đây chỉ là bản ghi để lưu loại chứng chỉ
+        sinh_vien_id: null,
+        diem_trung_binh: null,
+        xep_loai: null,
+        ghi_chu: null,
+        so_quyet_dinh: null,
+        ngay_ky_quyet_dinh: null,
+        tinh_trang: 'bình thường',
+      });
+
+      // Trả về thông tin loại chứng chỉ vừa tạo
+      return {
+        data: {
+          loaiChungChi: chungChiMoi.loai_chung_chi,
+        },
+      };
+    } catch (error) {
+      console.error("Lỗi khi tạo loại chứng chỉ:", error);
+      throw error;
+    }
+  }
 }
 
 // Export class thay vì instance

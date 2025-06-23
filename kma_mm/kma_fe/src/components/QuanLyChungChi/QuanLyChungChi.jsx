@@ -28,7 +28,7 @@ import { toast } from "react-toastify";
 const DEFAULT_CHUNG_CHI_OPTIONS = [
     { value: "Chuẩn đầu ra TA", label: "Chuẩn đầu ra TA" },
     { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" },
-    { value: "Chứng chỉ GDQP", label: "Chứng chỉ GDQP" }
+    { value: "Chứng chỉ GDQP&AN", label: "Chứng chỉ GDQP&AN" }
 ];
 
 const TRANG_THAI_OPTIONS = [

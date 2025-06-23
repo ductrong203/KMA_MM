@@ -468,3 +468,18 @@ DELETE
         "id": 1
     }
 }
+
+tạo loại chứng chỉ
+POST
+http://localhost:8000/chung-chi/loai-chung-chi
+{
+    "loai_chung_chi": "Chuẩn đầu ra TA"
+}
+
+response:
+{
+    "success": true,
+    "data": {
+        "loaiChungChi": "Chuẩn đầu ra TA"
+    }
+}

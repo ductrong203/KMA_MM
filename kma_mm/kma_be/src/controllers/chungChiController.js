@@ -209,3 +209,18 @@ exports.xoaChungChi = async (req, res) => {
   }
 };
 
+exports.taoLoaiChungChi = async (req, res) => {
+    try {
+      const ketQua = await chungChiService.taoLoaiChungChi(req.body);
+      res.status(201).json({
+        success: true,
+        data: ketQua.data,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
