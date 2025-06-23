@@ -2,8 +2,6 @@ import {
   Autocomplete,
   Box,
   Button,
-  Card,
-  CardContent,
   FormControl,
   Grid,
   Paper,
@@ -15,6 +13,12 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import PageHeader from '../../layout/PageHeader';
@@ -29,12 +33,11 @@ function DieuKienTotNghiep() {
   const [selectedTrainingSystem, setSelectedTrainingSystem] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [graduationInfo, setGraduationInfo] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [graduationResults, setGraduationResults] = useState({});
   const [trainingSystems, setTrainingSystems] = useState([]);
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -50,11 +53,9 @@ function DieuKienTotNghiep() {
       setLoading(true);
       try {
         const response = await fetchDanhSachHeDaoTao();
-        console.log('Danh sách hệ đào tạo:', response);
         const data = Array.isArray(response) ? response : [];
         setTrainingSystems(data);
       } catch (error) {
-        console.error('Lỗi khi tải hệ đào tạo:', error);
         setSnackbar({
           open: true,
           message: error.response?.data?.message || 'Lỗi khi tải danh sách hệ đào tạo',
@@ -75,17 +76,14 @@ function DieuKienTotNghiep() {
         setLoading(true);
         try {
           const response = await fetchDanhSachKhoa(selectedTrainingSystem.id);
-          console.log('Danh sách khóa đào tạo:', response);
           const data = Array.isArray(response) ? response : [];
           setCourses(data);
           setClasses([]);
           setStudents([]);
           setSelectedCourse(null);
           setSelectedClass(null);
-          setSelectedStudent(null);
-          setGraduationInfo(null);
+          setGraduationResults({});
         } catch (error) {
-          console.error('Lỗi khi tải khóa đào tạo:', error);
           setSnackbar({
             open: true,
             message: error.response?.data?.message || 'Lỗi khi tải danh sách khóa đào tạo',
@@ -103,8 +101,7 @@ function DieuKienTotNghiep() {
       setStudents([]);
       setSelectedCourse(null);
       setSelectedClass(null);
-      setSelectedStudent(null);
-      setGraduationInfo(null);
+      setGraduationResults({});
     }
   }, [selectedTrainingSystem]);
 
@@ -115,15 +112,12 @@ function DieuKienTotNghiep() {
         setLoading(true);
         try {
           const response = await getDanhSachLopTheoKhoaDaoTao(selectedCourse.id);
-          console.log('Danh sách lớp:', response);
           const data = Array.isArray(response) ? response : [];
           setClasses(data);
           setStudents([]);
           setSelectedClass(null);
-          setSelectedStudent(null);
-          setGraduationInfo(null);
+          setGraduationResults({});
         } catch (error) {
-          console.error('Lỗi khi tải lớp:', error);
           setSnackbar({
             open: true,
             message: error.response?.data?.message || 'Lỗi khi tải danh sách lớp',
@@ -139,25 +133,32 @@ function DieuKienTotNghiep() {
       setClasses([]);
       setStudents([]);
       setSelectedClass(null);
-      setSelectedStudent(null);
-      setGraduationInfo(null);
+      setGraduationResults({});
     }
   }, [selectedCourse]);
 
-  // Lấy danh sách sinh viên khi chọn lớp
+  // Lấy danh sách sinh viên và kiểm tra điều kiện tốt nghiệp khi chọn lớp
   useEffect(() => {
     if (selectedClass) {
-      const fetchStudents = async () => {
+      const fetchStudentsAndCheckGraduation = async () => {
         setLoading(true);
         try {
           const response = await getDanhSachSinhVienTheoLop(selectedClass.id);
-          console.log('Danh sách sinh viên:', response);
           const data = Array.isArray(response.data) ? response.data : [];
           setStudents(data);
-          setSelectedStudent(null);
-          setGraduationInfo(null);
+
+          // Kiểm tra điều kiện tốt nghiệp cho từng sinh viên
+          const results = {};
+          for (const student of data) {
+            try {
+              const gradResponse = await kiemTraTotNghiep(student.sinh_vien_id || student.id);
+              results[student.sinh_vien_id || student.id] = gradResponse.data;
+            } catch (error) {
+              console.error(`Lỗi khi kiểm tra tốt nghiệp cho sinh viên ${student.sinh_vien_id}:`, error);
+            }
+          }
+          setGraduationResults(results);
         } catch (error) {
-          console.error('Lỗi khi tải sinh viên:', error);
           setSnackbar({
             open: true,
             message: error.response?.data?.message || 'Lỗi khi tải danh sách sinh viên',
@@ -168,40 +169,12 @@ function DieuKienTotNghiep() {
           setLoading(false);
         }
       };
-      fetchStudents();
+      fetchStudentsAndCheckGraduation();
     } else {
       setStudents([]);
-      setSelectedStudent(null);
-      setGraduationInfo(null);
+      setGraduationResults({});
     }
   }, [selectedClass]);
-
-  // Kiểm tra điều kiện tốt nghiệp khi chọn sinh viên
-  useEffect(() => {
-    if (selectedStudent) {
-      const fetchGraduationInfo = async () => {
-        setLoading(true);
-        try {
-          const response = await kiemTraTotNghiep(selectedStudent.sinh_vien_id || selectedStudent.id);
-          console.log('Thông tin tốt nghiệp:', response);
-          setGraduationInfo(response.data);
-        } catch (error) {
-          console.error('Lỗi khi kiểm tra tốt nghiệp:', error);
-          setSnackbar({
-            open: true,
-            message: error.response?.data?.message || 'Lỗi khi kiểm tra điều kiện tốt nghiệp',
-            severity: 'error',
-          });
-          setGraduationInfo(null);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchGraduationInfo();
-    } else {
-      setGraduationInfo(null);
-    }
-  }, [selectedStudent]);
 
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
@@ -220,8 +193,18 @@ function DieuKienTotNghiep() {
     return (
       graduationInfo &&
       graduationInfo.tong_tin_chi >= 130 &&
-      graduationInfo.dieu_kien_tot_nghiep?.du_tin_chi
+      graduationInfo.dieu_kien_tot_nghiep?.du_tin_chi &&
+      graduationInfo.dieu_kien_tot_nghiep?.co_chung_chi
     );
+  };
+
+  // Hiển thị danh sách chứng chỉ
+  const renderCertificates = (certificates) => {
+    if (!certificates || certificates.length === 0) return 'Chưa có';
+    return certificates
+      .filter((cert) => cert.tinh_trang === 'tốt nghiệp')
+      .map((cert) => `${cert.loai_chung_chi} (${cert.diem_trung_binh}, ${cert.xep_loai})`)
+      .join(', ');
   };
 
   return (
@@ -294,57 +277,47 @@ function DieuKienTotNghiep() {
                       />
                     </FormControl>
 
-                    {/* Chọn sinh viên */}
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <Autocomplete
-                        options={students}
-                        getOptionLabel={(option) =>
-                          `${option.ma_sinh_vien || option.code || ''} - ${option.ho_dem || ''} ${option.ten || option.name || ''}`.trim()
-                        }
-                        renderInput={(params) => <TextField {...params} label="Chọn sinh viên" />}
-                        onChange={(event, newValue) => setSelectedStudent(newValue)}
-                        value={selectedStudent}
-                        disabled={!selectedClass}
-                      />
-                    </FormControl>
-
-                    {selectedStudent && graduationInfo && (
-                      <Card sx={{ mt: 2 }}>
-                        <CardContent>
-                          <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Mã sinh viên</Typography>
-                              <Typography variant="h6">{graduationInfo.ma_sinh_vien || ''}</Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Họ tên</Typography>
-                              <Typography variant="h6">{graduationInfo.ho_ten || ''}</Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Số tín chỉ tích lũy</Typography>
-                              <Typography variant="h6">{graduationInfo.tong_tin_chi || 0}/130</Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Trạng thái tín chỉ</Typography>
-                              <Typography variant="h6">
-                                {graduationInfo.dieu_kien_tot_nghiep?.du_tin_chi ? 'Đủ tín chỉ' : 'Chưa đủ tín chỉ'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Có chứng chỉ</Typography>
-                              <Typography variant="h6">
-                                {graduationInfo.dieu_kien_tot_nghiep?.co_chung_chi ? 'Đã có' : 'Chưa có'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography color="textSecondary">Đủ điều kiện tốt nghiệp</Typography>
-                              <Typography variant="h6">
-                                {isEligibleForGraduation(graduationInfo) ? 'Đủ điều kiện' : 'Không đủ điều kiện'}
-                              </Typography>
-                            </Grid>
-                          </Grid>
-                        </CardContent>
-                      </Card>
+                    {/* Danh sách sinh viên */}
+                    {selectedClass && students.length > 0 && (
+                      <TableContainer component={Paper} sx={{ mt: 2 }}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Mã SV</TableCell>
+                              <TableCell>Họ tên</TableCell>
+                              <TableCell>Số tín chỉ</TableCell>
+                              <TableCell>Chứng chỉ</TableCell>
+                              <TableCell>Trạng thái</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {students.map((student) => {
+                              const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
+                              return (
+                                <TableRow key={student.sinh_vien_id || student.id}>
+                                  <TableCell>{student.ma_sinh_vien || student.code}</TableCell>
+                                  <TableCell>{`${student.ho_dem || ''} ${student.ten || ''}`}</TableCell>
+                                  <TableCell>
+                                    {graduationInfo ? `${graduationInfo.tong_tin_chi || 0}/130` : '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    {graduationInfo
+                                      ? renderCertificates(graduationInfo.chung_chi_tot_nghiep)
+                                      : '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    {graduationInfo
+                                      ? isEligibleForGraduation(graduationInfo)
+                                        ? 'Đủ điều kiện'
+                                        : 'Không đủ'
+                                      : '-'}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
                     )}
 
                     {!loading && students.length === 0 && selectedClass && (
@@ -358,11 +331,9 @@ function DieuKienTotNghiep() {
                 {activeStep === 1 && (
                   <Box>
                     <Typography variant="h6">Xét duyệt tốt nghiệp</Typography>
-                    {selectedStudent && graduationInfo && (
-                      <Typography>
-                        Xác nhận xét tốt nghiệp cho sinh viên: {graduationInfo.ma_sinh_vien || ''} - {graduationInfo.ho_ten || ''}.
-                      </Typography>
-                    )}
+                    <Typography>
+                      Xác nhận xét tốt nghiệp cho các sinh viên đủ điều kiện trong lớp {selectedClass?.ma_lop}.
+                    </Typography>
                   </Box>
                 )}
 
@@ -370,7 +341,7 @@ function DieuKienTotNghiep() {
                   <Box>
                     <Typography variant="h6">Hoàn thành</Typography>
                     <Typography>
-                      Quá trình xét tốt nghiệp cho sinh viên {graduationInfo?.ma_sinh_vien || ''} đã hoàn tất.
+                      Quá trình xét tốt nghiệp cho lớp {selectedClass?.ma_lop} đã hoàn tất.
                     </Typography>
                   </Box>
                 )}
@@ -385,9 +356,8 @@ function DieuKienTotNghiep() {
                     variant="contained"
                     onClick={handleNext}
                     disabled={
-                      !selectedStudent ||
-                      !graduationInfo ||
-                      !isEligibleForGraduation(graduationInfo) ||
+                      !selectedClass ||
+                      students.length === 0 ||
                       activeStep >= graduationSteps.length - 1
                     }
                   >
@@ -410,6 +380,9 @@ function DieuKienTotNghiep() {
               </Typography>
               <Typography variant="body2" gutterBottom>
                 • Đạt trạng thái đủ tín chỉ (theo quy định của chương trình)
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                • Có chứng chỉ theo yêu cầu
               </Typography>
             </Box>
           </Paper>
