@@ -97,10 +97,10 @@ class ExcelPhuLucBangController{
             }
             
             // Lấy thông tin sinh viên
-            const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang(parseInt(sinh_vien_id));
+            const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang_v2(parseInt(sinh_vien_id));
             
             // Lưu file vào thư mục exports/phulucbang
-            const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.xlsx`;
+            const fileName = `phu_luc_bang_sinh_vien_${sinh_vien_id}.xlsx`;
             const filePath = path.join(exportDir, fileName);
 
             await sinhVien.xlsx.writeFile(filePath);

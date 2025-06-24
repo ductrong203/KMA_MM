@@ -39,7 +39,7 @@ class KeHoachMonHocService {
 
       const danhSachMonHoc = await mon_hoc.findAll({
         where: { id: monHocIds },
-        attributes: ["id", "ma_mon_hoc", "ten_mon_hoc", "so_tin_chi"],
+        attributes: ["id", "ma_mon_hoc", "ten_mon_hoc", "so_tin_chi","tinh_diem"],
       });
 
       return danhSachMonHoc;
