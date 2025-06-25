@@ -129,9 +129,6 @@ class ExcelPhuLucBangController{
     }
 
     static async exportDocsPhuLucBang(req, res) {
-        // const path = require("path");
-        // const fs = require("fs");
-        // const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
         
         try {
             const { sinh_vien_id } = req.query;
@@ -143,18 +140,12 @@ class ExcelPhuLucBangController{
                 });
             }
         
-            // Tạo file docx từ dữ liệu sinh viên
-            // const sinhVien = await ExcelPhuLucBangService.exportDocsPhuLucBang(parseInt(sinh_vien_id));
-            // const sinhVienData = await ExcelPhuLucBangService.getStudentData(parseInt(sinh_vien_id));
-            const docxBuffer = await ExcelPhuLucBangService.generateDiplomaDocx(sinh_vien_id);
-            // Tạo đường dẫn và tên file
+            const docxBuffer = await ExcelPhuLucBangService.docxPhuLucBang(sinh_vien_id);
             const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.docx`;
             const filePath = path.join(exportDir, fileName);
         
-            // Ghi file docx ra ổ đĩa
             fs.writeFileSync(filePath, docxBuffer);
         
-            // Trả file về client
             res.download(filePath, fileName, (err) => {
                 if (err) {
                     console.error("Lỗi khi gửi file:", err);
@@ -164,8 +155,7 @@ class ExcelPhuLucBangController{
                     });
                 }
         
-                console.log("✅ File đã được lưu tại:", filePath);
-                // Bạn có thể thêm fs.unlinkSync(filePath) nếu muốn xóa sau khi gửi
+                console.log("File đã được lưu tại:", filePath);
             });
         
         } catch (error) {

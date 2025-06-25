@@ -1,6 +1,6 @@
 const ExcelJS = require("exceljs");
 const fs = require("fs");
-const { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, UnderlineType } = require("docx");
+const { Document, Packer, Paragraph, Table, TableCell, BorderStyle, VerticalAlign, TableRow, TextRun, WidthType, AlignmentType, UnderlineType, PageBreak } = require("docx");
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
@@ -658,38 +658,8 @@ class ExcelPhuLucBangService {
     }
   }
 
-
   //xuất bản docx
-  static async getStudentData(sinhVienId) {
-    const currentDate = new Date();
-    return {
-      hoVaTen: `Sinh Vien ${sinhVienId}`,
-      ngaySinh: '01/01/2000',
-      noiSinh: 'Ha Noi',
-      gioiTinh: 'Nam',
-      maHocVien: `HV${sinhVienId}`,
-      noiDaoTao: 'Hoc vien Ky thuat Mat ma',
-      ngayVaoHoc: '01/09/2020',
-      ngayTotNghiep: '01/06/2024',
-      soHieuVanBang: `VB${sinhVienId}2024`,
-      soThuTu: '001',
-      tongTC: 120,
-      diemTB: 8.5,
-      ngay: currentDate.getDate().toString(),
-      thang: (currentDate.getMonth() + 1).toString(),
-      nam: currentDate.getFullYear().toString(),
-      subjects: Array.from({ length: 50 }, (_, i) => ({
-        tt: i + 1,
-        hocPhan: `Mon ${i + 1}`,
-        soTC: i % 2 === 0 ? 2 : 3,
-        he4: (i + 1) * 0.1,
-        he10: (i + 1) * 0.3,
-        diemChu: i % 5 === 0 ? 'A' : ''
-      })),
-    };
-  }
-
-  static async generateDiplomaDocx(sinh_vien_id) {
+  static async docxPhuLucBang(sinh_vien_id) {
     try {
       // Lấy thông tin số kỳ học và khóa đào tạo của sinh viên
       const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
@@ -716,228 +686,310 @@ class ExcelPhuLucBangService {
         throw new Error("Không tìm thấy thông tin sinh viên");
       }
 
-    const rowHead = new TableRow({
-      children: [
-        new TableCell({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.LEFT,
-              children: [
-                new TextRun({ text: '       BAN CƠ YẾU CHÍNH PHỦ', size: 24, font: 'Times New Roman' }),
-              ],
-
-            }),
-            new Paragraph({
-              alignment: AlignmentType.LEFT,
-              children: [
-                new TextRun({ text: 'HỌC VIỆN KỸ THUẬT MẬT MÃ', bold: true, size: 24, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
-              ],
-            }),
-          ],
-          borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, size: 24, font: 'Times New Roman' }),
-              ],
-            }),
-
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              indent: { right: 720 },
-              children: [
-                new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 26, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
-              ],
-            }),
-
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              indent: { right: 720 },
-              children: [
-                new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
-                new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
-              ],
-
-            }),
-          ],
-          borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
-        }),
-      ],
-    });
-
-    const rowTitle = new TableRow({
-      children: [
-        new TableCell({
-          children: [
-            new Paragraph({
-              spacing: { line: 300 },
-              children: [
-                new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman'}),
-                new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman' , break: 1 }),
-                new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1  }),
-                new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Ngành đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({text:'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
-                new TextRun({text:'Ngày nhập học: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `${sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({text:'Ngôn ngữ đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `Tiếng việt`, size: 24, font: 'Times New Roman' }),
-                new TextRun({text:'Số hiệu văn bằng: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
-                
-              ],
-              alignment: AlignmentType.LEFT,
-
-            }),
-          ],
-          borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              spacing: { line: 300 },
-              alignment: AlignmentType.LEFT, 
-              children: [
-                new TextRun({ text: 'Ngày sinh: ', size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Giới tính: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Chuyên ngành: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ma_khoa || ''}`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Thời gian đào tạo: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `2025-2030`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Xếp hạng tốt nghiệp: ', size: 24, font: 'Times New Roman', break:1 }),
-                new TextRun({ text: `Giỏi`, size: 24, font: 'Times New Roman' }),
-                new TextRun({ text: 'Số vào sổ cấp bằng: ', size: 24, font: 'Times New Roman', break:1 }),               
-
-              ],         
-            }),
-          ],
-          borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
-        }),
-      ], 
-    });
-
-    const doc = new Document({
-      sections: [{
-        properties: {
-          page: {
-            margin: {
-              top: 720, // 0.5 inch
-              right: 720,
-              bottom: 720,
-              left: 720,
-            },
-          }
-        },
+      // Header
+      const rowHead = new TableRow({
         children: [
-          new Table({
-            rows: [rowHead],
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { size: 0, color: "FFFFFF" },
-              bottom: { size: 0, color: "FFFFFF" },
-              left: { size: 0, color: "FFFFFF" },
-              right: { size: 0, color: "FFFFFF" },
-              insideHorizontal: { size: 0, color: "FFFFFF" },
-              insideVertical: { size: 0, color: "FFFFFF" },
-            },
-          }),
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
+          new TableCell({
             children: [
-              new TextRun({ text: 'PHỤ LỤC VĂN BẰNG', bold: true, size: 28, font: 'Times New Roman', break: 1 }),
-            ],
-          }),
-
-          // PHẦN 1 LỚN
-          new Paragraph({
-            text: "I. Thông tin chung",
-            heading: "Heading1",
-            spacing: { after: 100 },
-         
-          }),
-          new Table({
-            rows: [rowTitle],
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { size: 0, color: "FFFFFF" },
-              bottom: { size: 0, color: "FFFFFF" },
-              left: { size: 0, color: "FFFFFF" },
-              right: { size: 0, color: "FFFFFF" },
-              insideHorizontal: { size: 0, color: "FFFFFF" },
-              insideVertical: { size: 0, color: "FFFFFF" },
-            },
-          }),
-         
-
-          // PHẦN 2 LỚN
-          new Paragraph({
-            text: "II. Kết quả đào tạo",
-            heading: "Heading1",
-            spacing: { after: 100 },
-            children: [new TextRun({break:1})],
-          }),
-        
-          // Bảng kết quả
-          new Table({
-            borders: {
-              top: { size: 0, color: "FFFFFF" },
-              bottom: { size: 0, color: "FFFFFF" },
-              left: { size: 0, color: "FFFFFF" },
-              right: { size: 0, color: "FFFFFF" },
-              insideHorizontal: { size: 0, color: "FFFFFF" },
-              insideVertical: { size: 0, color: "FFFFFF" },
-            },
-            rows: [
-              new TableRow({
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
                 children: [
-                  new TableCell({
-                    width: {size: 8000, type: WidthType.DXA},
-                    children:  [this.generateSubTable(0,25), this.generateSubTable(50,56)], // bảng trái
+                  new TextRun({ text: '       BAN CƠ YẾU CHÍNH PHỦ', size: 24, font: 'Times New Roman' }),
+                ],
 
-                  }),
-                  new TableCell({
-                    width: { size: 500, type: WidthType.DXA }, 
-                    children: [new Paragraph({})], 
-                  }),
-
-                  new TableCell({
-                    width: {size: 8000, type: WidthType.DXA},
-                    children:  [this.generateSubTable(25,50), this.generateSubTable(56,62)], // bảng phải
-                  })                   
+              }),
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'HỌC VIỆN KỸ THUẬT MẬT MÃ', bold: true, size: 24, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
                 ],
               }),
             ],
-            
-
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
           }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, size: 24, font: 'Times New Roman' }),
+                ],
+              }),
 
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 26, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
+                ],
+              }),
+
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
+                ],
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
         ],
-      }],
-    });
+      });
 
-    
+      //Thông tin chung
+      const rowTitle = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                children: [
+                  new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngành đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngày nhập học: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngôn ngữ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Tiếng việt`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Số hiệu văn bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
+
+                ],
+                alignment: AlignmentType.LEFT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'Ngày sinh: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Giới tính: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Chuyên ngành: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ma_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Thời gian đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `2025-2030`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Xếp hạng tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Giỏi`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Số vào sổ cấp bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
+
+                ],
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+        ],
+      });
+
+      const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
+      
+      //thông tin tổng
+      const rowTotal = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                children: [
+                  new TextRun({ text: 'Tổng số tín chỉ tích luỹ: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${totalCredits}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 4): ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${gpa}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 10): ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Xếp loại tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+
+                ],
+                alignment: AlignmentType.LEFT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'Giáo dục thể chất: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Giáo dục Quốc phòng và an ninh:', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Chuẩn đầu ra Tiếng anh: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+
+                ],
+              }),
+              new Paragraph({
+                spacing: { after: 50 },
+                children: [
+                  new TextRun({ text: 'Hà Nội, ngày      tháng   năm 202', size: 26, italics: true, break: 1 }),
+                ],
+                alignment: AlignmentType.RIGHT,
+
+              }),
+              new Paragraph({
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'KT. GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
+                  new TextRun({ text: 'PHÓ GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
+
+                ],
+                alignment: AlignmentType.RIGHT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+        ],
+      });
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 720, // 0.5 inch
+                right: 720,
+                bottom: 720,
+                left: 720,
+              },
+            }
+          },
+          children: [
+            new Table({
+              rows: [rowHead],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+              children: [
+                new TextRun({ text: 'PHỤ LỤC VĂN BẰNG', bold: true, size: 28, font: 'Times New Roman', break: 1 }),
+              ],
+            }),
+
+            // PHẦN 1 LỚN
+            new Paragraph({
+              spacing: { after: 50 },
+              children: [new TextRun({ text: 'I. Thông tin chung', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
+
+            }),
+            new Table({
+              rows: [rowTitle],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+
+
+            // PHẦN 2 LỚN
+            new Paragraph({
+              spacing: { after: 50 },
+              children: [new TextRun({ text: 'II. Kết quả đào tạo', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
+
+            }),
+
+            // Bảng kết quả
+            new Table({
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 8000, type: WidthType.DXA },
+                      children: [this.generateSubTable(0, 25), this.generateSubTable(50, 56)], // bảng trái
+
+                    }),
+                    new TableCell({
+                      width: { size: 500, type: WidthType.DXA },
+                      children: [new Paragraph({})],
+                    }),
+
+                    new TableCell({
+                      width: { size: 8000, type: WidthType.DXA },
+                      children: [this.generateSubTable(25, 50), this.generateSubTable(56, 62)], // bảng phải
+                    })
+                  ],
+                }),
+              ],
+
+            }),
+            new Paragraph({
+              spacing: { after: 100 },
+              children: [new TextRun({ text: '', break: 1 })],
+
+            }),
+            //footer
+            new Table({
+              rows: [rowTotal],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+          ],
+        }],
+      });
+
       const buffer = await Packer.toBuffer(doc);
-      console.log('Buffer generated successfully, length:', buffer.length); // Debug log
+      console.log('Buffer generated successfully, length:', buffer.length);
       return buffer;
     } catch (error) {
       console.error('Error generating buffer:', error);
@@ -945,48 +997,70 @@ class ExcelPhuLucBangService {
     }
   }
 
-  static generateSubTable(start, end) {
-    
+  static  generateSubTable(start, end) {
     console.log(start)
+    // const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
+
+    // for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
+    //   // Lấy dữ liệu điểm cho kỳ học hiện tại
+    //   const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
+    //   // Nếu kỳ học không có dữ liệu, bỏ qua
+    //   if (!dataDiem || dataDiem.length === 0) {
+    //     continue;
+    //   }
+      
+
+    // }
+
     return new Table({
       rows: [
         new TableRow({
           children: [
             new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'TT', size: 20, font: 'Times New Roman',  bold: true})],
-              alignment: AlignmentType.CENTER })],
-
-              margins: { top: 100, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'TT', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 100, bottom: 0, left: 50, right: 50 },
               rowSpan: 2,
             }),
             new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Học phần', size: 20, font: 'Times New Roman', bold: true})], 
-              alignment: AlignmentType.CENTER })],
-
-              margins: { top: 100, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
-              width: { size: 3000, type: WidthType.DXA },
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Học phần', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              width: { size: 50000, type: WidthType.DXA },
               rowSpan: 2,
             }),
             new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Số TC', size: 20, font: 'Times New Roman', bold: true})], 
-              alignment: AlignmentType.CENTER })],
-              margins: { top: 100, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
-              
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Số TC', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
               rowSpan: 2
             }),
             new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Điểm số', size: 20, font: 'Times New Roman', bold: true})], 
-              alignment: AlignmentType.CENTER })],
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Điểm số', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+
               columnSpan: 2,
             }),
             new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Điểm chữ', size: 20, font: 'Times New Roman', bold: true})], 
-              alignment: AlignmentType.CENTER })],
-              margins: { top: 100, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
-              rowSpan:2,
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Điểm chữ', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              rowSpan: 2,
 
             }),
-            
+
           ],
 
         }),
@@ -994,77 +1068,76 @@ class ExcelPhuLucBangService {
         new TableRow({
           children: [
             new TableCell({
-              children: [ new Paragraph({ children: [ new TextRun({ text: 'Hệ 10', size: 20, font: 'Times New Roman', bold: true,})],
-                                          alignment: AlignmentType.CENTER,
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Hệ 10', size: 20, font: 'Times New Roman', bold: true, })],
+                alignment: AlignmentType.CENTER,
+                verticalAlign: VerticalAlign.CENTER,
 
-            })],
-            margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+              })],
+              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
 
             }),
 
             new TableCell({
-              children: [ new Paragraph({ children: [ new TextRun({ text: 'Hệ 4', size: 20, font: 'Times New Roman', bold: true,})],
-                                          alignment: AlignmentType.CENTER,
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Hệ 4', size: 20, font: 'Times New Roman', bold: true, })],
+                alignment: AlignmentType.CENTER,
+                verticalAlign: VerticalAlign.CENTER,
 
-            })],
-            margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+              })],
+              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
 
             }),
-          ]
+          ],
+          tableHeader: true
+
         }),
-        ...Array.from({ length: end - start }, (_, index)=> {
+        ...Array.from({ length: end - start }, (_, index) => {
           let i = start + index;
-          const subjects = [
-            { hocPhan: 'Toán cao cấp A1', soTC: 2, he10: 7.0, he4: 3.0, diemChu: 'A+' },
-            { hocPhan: 'Nhập môn LCB của CNMLN (HP1)', soTC: 2, he10: 7.1, he4: 3.1, diemChu: 'A' },
-            { hocPhan: 'Tin học đại cương', soTC: 2, he10: 7.2, he4: 3.2, diemChu: 'A+' },
-            { hocPhan: 'Kỹ năng mềm', soTC: 2, he10: 7.3, he4: 3.3, diemChu: 'A' },
-            { hocPhan: 'Lập trình căn bản', soTC: 2, he10: 7.4, he4: 3.4, diemChu: 'A+' },
-            { hocPhan: 'Nhập môn LCB của CNMLN', soTC: 2, he10: 7.5, he4: 3.5, diemChu: 'A' },
-            { hocPhan: 'Môn 26 tiến hành chuyên ngành', soTC: 2, he10: 9.5, he4: 5.5, diemChu: 'A' },
-            { hocPhan: 'Môn 27 tiến hành chuyên ngành', soTC: 2, he10: 9.6, he4: 5.6, diemChu: 'A+' },
-            { hocPhan: 'Môn 28 tiến hành chuyên ngành', soTC: 2, he10: 9.7, he4: 5.7, diemChu: 'A' },
-            { hocPhan: 'Môn 29 tiến hành chuyên ngành', soTC: 2, he10: 9.8, he4: 5.8, diemChu: 'A+' },
-            { hocPhan: 'Môn 30 tiến hành chuyên ngành', soTC: 2, he10: 9.8, he4: 5.8, diemChu: 'A+' },
-          ];
-       console.log(i)
-       const hocPhanText = subjects[i]?.hocPhan.length > 12 ? [new TextRun({ text: subjects[i]?.hocPhan.slice(0, 12) }), new TextRun({ break: 1 }), new TextRun({ text: subjects[i]?.hocPhan.slice(12) })] : [new TextRun({ text: subjects[i]?.hocPhan })];
-       return new TableRow({
+
+          return new TableRow({
             children: [
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: `${i+1}`, size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })],
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: `${i + 1}`, size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })],
               }),
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: hocPhanText, size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })],
-              margins: { top: 50, bottom: 50, left: 50, right: 50 }, 
-              width: { size: 3000, type: WidthType.DXA },
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: "", size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })],
+                margins: { top: 50, bottom: 50, left: 50, right: 50 },
+                width: { size: 9000, type: WidthType.DXA },
               }),
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: `2`, size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })]
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: `2`, size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
               }),
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: (7.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })]
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: (7.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
               }),
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: (3.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })]
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: (3.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
               }),
-              new TableCell({ 
-                children: [new Paragraph({ children: [ new TextRun({ text: i % 2 === 0 ? 'A+' : 'A', size: 20, font: 'Times New Roman' })], 
-                                           alignment: AlignmentType.CENTER,
-              })]
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: i % 2 === 0 ? 'A+' : 'A', size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
               }),
 
-            ]
+            ],
+
           })
         })
       ],
