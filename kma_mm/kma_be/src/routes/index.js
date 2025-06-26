@@ -29,6 +29,7 @@ const thoiKhoaBieuRoute = require('./thoiKhoaBieu');
 const diemRoute = require('./diem');
 const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
+const  exportDocx = require('./exportDocx');
 // const logActivity = require("../middelWare/logger");
 
 // const docsPhuLucBangRoute = require('./docsPhuLucBang');
@@ -57,6 +58,7 @@ const routes = (app) => {
   app.use('/diem', diemRoute);
   app.use('/excel', excelRoute);
   app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
+  app.use('/excel-docs', exportDocx);
 
   // app.use('/docs-phu-luc-bang', docsPhuLucBangRoute);
 
