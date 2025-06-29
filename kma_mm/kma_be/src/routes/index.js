@@ -31,6 +31,7 @@ const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
 const chungChiRoute = require('./chungChi');
 const chuongTrinhDaoTaoRoute = require('./chuongTrinhDaoTao');
+const exportExcelRoute = require('./exportExcel');
 
 const routes = (app) => {
   app.use("/auth", authRouter);
@@ -56,6 +57,6 @@ const routes = (app) => {
   app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
   app.use('/chung-chi', chungChiRoute);
   app.use('/chuong-trinh-dao-tao', chuongTrinhDaoTaoRoute);
-
+  app.use('/export-excel', exportExcelRoute);
 };
 module.exports = routes;
