@@ -307,6 +307,10 @@ const MonHocTheoHeDaoTao = () => {
     );
   };
 
+  const getTotalSubjects = () => {
+    return Object.values(subjectsBySemester).reduce((total, subjects) => total + subjects.length, 0);
+  };
+
   const SemesterDroppable = ({ semester, subjects }) => {
     const { setNodeRef, isOver } = useDroppable({
       id: `droppable-${semester}`,
@@ -344,9 +348,26 @@ const MonHocTheoHeDaoTao = () => {
             } : {}
           }}
         >
-          <Typography variant="h6" gutterBottom sx={{ textAlign: "center", fontWeight: 600, color: "#1565C0", mb: 2 }}>
-            Học kỳ {semester}
-          </Typography>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1565C0" }}>
+              Học kỳ {semester}
+            </Typography>
+            <Chip
+              label={`${subjects.length} môn`}
+              size="small"
+              sx={{
+                backgroundColor: subjects.length > 0 ? '#e3f2fd' : '#f5f5f5',
+                color: subjects.length > 0 ? '#1565C0' : '#757575',
+                fontWeight: 600,
+                fontSize: '0.75rem'
+              }}
+            />
+          </Box>
           <Divider sx={{ mb: 2 }} />
 
           {isOver && subjects.length > 0 && (
@@ -888,9 +909,23 @@ const MonHocTheoHeDaoTao = () => {
             flexWrap: 'wrap',
             gap: 2
           }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-              Danh sách môn học theo kỳ
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                📚 Tổng số môn học
+              </Typography>
+              <Chip
+                label={`${getTotalSubjects()} môn học`}
+                variant="outlined"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  '& .MuiChip-label': {
+                    px: 1
+                  }
+                }}
+              />
+            </Box>
+
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {selectedSemester && (
                 <Button
