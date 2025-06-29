@@ -116,3 +116,16 @@ export const getChungChiByFilters = async (filters) => {
         throw error;
     }
 };
+
+// Thêm các API mới cho quản lý loại chứng chỉ
+export const taoLoaiChungChi = async (loaiChungChi) => {
+    try {
+        const response = await api.post("/chung-chi/loai-chung-chi", {
+            loai_chung_chi: loaiChungChi
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating chung chi type:", error);
+        throw error;
+    }
+};
