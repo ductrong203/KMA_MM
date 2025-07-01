@@ -29,3 +29,18 @@ export const kiemTraTotNghiep = async (sinhVienId) => {
     throw error;
   }
 };
+
+export const getDanhSachSinhVienTheoKhoa = async (maKhoa) => {
+    const response = await api.get(`student/khoa/${maKhoa}`)
+    return response.data
+}
+
+export const capNhatSinhVien = async (id, formData) => {
+    const response = await api.put(`student/${id}`, formData)
+    return response.data
+}
+
+export const capNhatDanhSachSinhVien = async (khoa_dao_tao_id, sinh_vien_list) => {
+    const response = await api.put(`student/khoa/${khoa_dao_tao_id}`, { sinh_vien_list });
+    return response.data;
+}

@@ -14,123 +14,39 @@ import {
   getDanhSachKhoaDaoTao
 } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLop } from '../../Api_controller/Service/lopService';
+import { fetchThongKeDiem } from '../../Api_controller/Service/diemService';
 import React from 'react';
 
 // Đăng ký Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-// Giả lập API
-const fetchDanhSachKyHoc = async () => {
-  return [
-    { id: 'all', ten_ky: 'Tất cả' },
-    { id: '1', ten_ky: 'Kỳ 1' },
-    { id: '2', ten_ky: 'Kỳ 2' }
-  ];
-};
-
-const fetchThongKeDiem = async (heDaoTaoId, khoaId, lopId, kyHocId) => {
-  const isAllKy = kyHocId === 'all';
-  const monHocList = [
-    'Tin học đại cương', 'Toán CC A1', 'Toán CC A3', 'Công nghệ mạng MT',
-    'KTCT Mác-Lênin', 'Triết học Mác-Lênin', 'Tiếng Anh1'
-  ];
-
-  const sampleData = [
-    {
-      ma_sinh_vien: 'SV001',
-      ho_ten: 'Trần Xuân An',
-      gioi_tinh: 'Nam',
-      diem_tb_ky: isAllKy ? { 'Kỳ 1': 7.41, 'Kỳ 2': 7.21 } : { [kyHocId]: 7.41 },
-      diem_tb_tich_luy_he10: 7.41,
-      diem_tb_tich_luy_he4: 3.0,
-      chi_tiet: [
-        {
-          ky_hoc: 'Kỳ 1',
-          mon_hoc: {
-            'Tin học đại cương': { tp1: 10, tp2: 9, diem_thi_ktph: 6, diem_hp: 7.1 },
-            'Toán CC A1': { tp1: 10, tp2: 5, diem_thi_ktph: 5.8, diem_hp: 8 },
-            'Toán CC A3': { tp1: 9, tp2: 8.5, diem_thi_ktph: 8.4, diem_hp: 10 },
-            'Công nghệ mạng MT': { tp1: 9, tp2: 8.5, diem_thi_ktph: 8.9, diem_hp: 8.7 },
-            'KTCT Mác-Lênin': { tp1: 8, tp2: 7, diem_thi_ktph: 7.4, diem_hp: 8.3 },
-            'Triết học Mác-Lênin': { tp1: 8, tp2: 6, diem_thi_ktph: 6.7, diem_hp: 7.21 },
-            'Tiếng Anh1': { tp1: 10, tp2: 8.3, diem_thi_ktph: 8.5, diem_hp: 8.5 }
-          },
-          diem_tb_ky_he10: 7.41,
-          diem_tb_ky_he4: 3.0
-        }
-      ]
-    },
-    {
-      ma_sinh_vien: 'SV002',
-      ho_ten: 'Tưởng Cao Bằng',
-      gioi_tinh: 'Nam',
-      diem_tb_ky: isAllKy ? { 'Kỳ 1': 7.01, 'Kỳ 2': 6.67 } : { [kyHocId]: 7.01 },
-      diem_tb_tich_luy_he10: 7.01,
-      diem_tb_tich_luy_he4: 2.8,
-      chi_tiet: [
-        {
-          ky_hoc: 'Kỳ 1',
-          mon_hoc: {
-            'Tin học đại cương': { tp1: 8, tp2: 8.5, diem_thi_ktph: 5.2, diem_hp: 6.1 },
-            'Toán CC A1': { tp1: 8, tp2: 8, diem_thi_ktph: 7.7, diem_hp: 8.6 },
-            'Toán CC A3': { tp1: 8.5, tp2: 7.8, diem_thi_ktph: 8, diem_hp: 8 },
-            'Công nghệ mạng MT': { tp1: 8.5, tp2: 7.8, diem_thi_ktph: 7.9, diem_hp: 8.5 },
-            'KTCT Mác-Lênin': { tp1: 7, tp2: 7, diem_thi_ktph: 7.3, diem_hp: 8.3 },
-            'Triết học Mác-Lênin': { tp1: 7, tp2: 1, diem_thi_ktph: 3.1, diem_hp: 6.67 },
-            'Tiếng Anh1': { tp1: 8, tp2: 8.8, diem_thi_ktph: 8.8, diem_hp: 8.8 }
-          },
-          diem_tb_ky_he10: 7.01,
-          diem_tb_ky_he4: 2.8
-        }
-      ]
-    }
-  ];
-
-  return {
-    thongKeTongQuan: sampleData.map(item => ({
-      ma_sinh_vien: item.ma_sinh_vien,
-      ho_ten: item.ho_ten,
-      gioi_tinh: item.gioi_tinh,
-      diem_tb_ky: item.diem_tb_ky,
-      diem_tb_tich_luy_he10: item.diem_tb_tich_luy_he10,
-      diem_tb_tich_luy_he4: item.diem_tb_tich_luy_he4
-    })),
-    chiTietMonHoc: sampleData.flatMap(item => item.chi_tiet.map(chiTiet => ({
-      ma_sinh_vien: item.ma_sinh_vien,
-      ho_ten: item.ho_ten,
-      ky_hoc: chiTiet.ky_hoc,
-      mon_hoc: chiTiet.mon_hoc,
-      diem_tb_ky_he10: chiTiet.diem_tb_ky_he10,
-      diem_tb_ky_he4: chiTiet.diem_tb_ky_he4
-    })))
-  };
-};
-
 const ThongKeDiem = () => {
   const [heDaoTao, setHeDaoTao] = useState([]);
   const [khoa, setKhoa] = useState([]);
   const [lop, setLop] = useState([]);
-  const [kyHoc, setKyHoc] = useState([]);
+  const [semesterOptions, setSemesterOptions] = useState([]);
+  const [numberOfSemesters, setNumberOfSemesters] = useState(null);
   const [filterHeDaoTao, setFilterHeDaoTao] = useState('');
   const [filterKhoa, setFilterKhoa] = useState('');
   const [filterLop, setFilterLop] = useState(null);
   const [filterKyHoc, setFilterKyHoc] = useState('');
+  const [filterType, setFilterType] = useState('lop');
   const [thongKeTongQuan, setThongKeTongQuan] = useState([]);
   const [chiTietMonHoc, setChiTietMonHoc] = useState([]);
+  const [monHocList, setMonHocList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingSemester, setLoadingSemester] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [heDaoTaoData, khoaData, kyHocData] = await Promise.all([
+        const [heDaoTaoData, khoaData] = await Promise.all([
           fetchDanhSachHeDaoTao(),
-          getDanhSachKhoaDaoTao(),
-          fetchDanhSachKyHoc()
+          getDanhSachKhoaDaoTao()
         ]);
         setHeDaoTao(heDaoTaoData || []);
         setKhoa(khoaData || []);
-        setKyHoc(kyHocData || []);
       } catch (error) {
         toast.error('Không thể tải dữ liệu ban đầu!');
       } finally {
@@ -159,16 +75,70 @@ const ThongKeDiem = () => {
     fetchLop();
   }, [filterKhoa]);
 
+  // Lấy số kỳ học dựa trên khóa đào tạo
+  useEffect(() => {
+    if (!filterKhoa) {
+      setNumberOfSemesters(null);
+      setSemesterOptions([]);
+      setFilterKyHoc('');
+      return;
+    }
+    const selectedKhoa = khoa.find((k) => k.id === filterKhoa);
+    if (selectedKhoa) {
+      setNumberOfSemesters(selectedKhoa.so_ky_hoc || 0);
+    } else {
+      setNumberOfSemesters(null);
+      setSemesterOptions([]);
+      setFilterKyHoc('');
+    }
+  }, [filterKhoa, khoa]);
+
+  // Tạo danh sách kỳ học dựa trên số kỳ
+  useEffect(() => {
+    if (!filterKhoa || !numberOfSemesters) {
+      setSemesterOptions([]);
+      setFilterKyHoc('');
+      return;
+    }
+    const fetchSemesters = async () => {
+      setLoadingSemester(true);
+      setFilterKyHoc('');
+      try {
+        const semesters = [
+          { id: 'all', name: 'Tất cả' },
+          ...Array.from({ length: numberOfSemesters }, (_, i) => ({
+            id: (i + 1).toString(),
+            name: `Kỳ ${i + 1}`
+          }))
+        ];
+        setSemesterOptions(semesters);
+      } catch (error) {
+        console.error('Error fetching semesters:', error);
+        toast.error('Không thể tải danh sách học kỳ.');
+        setSemesterOptions([]);
+      } finally {
+        setLoadingSemester(false);
+      }
+    };
+    fetchSemesters();
+  }, [filterKhoa, numberOfSemesters]);
+
   const handleFilterChange = async () => {
-    if (!filterLop) {
+    if (filterType === 'lop' && !filterLop) {
       toast.error('Vui lòng chọn lớp!');
+      return;
+    }
+    if (!filterKhoa) {
+      toast.error('Vui lòng chọn khóa!');
       return;
     }
     setLoading(true);
     try {
-      const thongKeData = await fetchThongKeDiem(filterHeDaoTao, filterKhoa, filterLop.id, filterKyHoc);
+      const lopId = filterType === 'lop' ? filterLop?.id : null;
+      const thongKeData = await fetchThongKeDiem(filterHeDaoTao, filterKhoa, lopId, filterKyHoc);
       setThongKeTongQuan(thongKeData.thongKeTongQuan || []);
       setChiTietMonHoc(thongKeData.chiTietMonHoc || []);
+      setMonHocList(thongKeData.monHocList || []);
     } catch (error) {
       toast.error('Không thể tải dữ liệu thống kê!');
     } finally {
@@ -177,20 +147,19 @@ const ThongKeDiem = () => {
   };
 
   const handleResetFilter = () => {
+    setFilterType('lop');
     setFilterHeDaoTao('');
     setFilterKhoa('');
     setFilterLop(null);
     setFilterKyHoc('');
     setThongKeTongQuan([]);
     setChiTietMonHoc([]);
+    setMonHocList([]);
+    setSemesterOptions([]);
+    setNumberOfSemesters(null);
   };
 
   const exportToExcel = () => {
-    const monHocList = [
-      'Tin học đại cương', 'Toán CC A1', 'Toán CC A3', 'Công nghệ mạng MT',
-      'KTCT Mác-Lênin', 'Triết học Mác-Lênin', 'Tiếng Anh1'
-    ];
-
     const worksheetData = chiTietMonHoc.map(item => {
       const row = {
         'Mã SV': item.ma_sinh_vien,
@@ -199,10 +168,10 @@ const ThongKeDiem = () => {
       };
       monHocList.forEach(mon => {
         const diem = item.mon_hoc[mon] || {};
-        row[`${mon}_TP1`] = diem.tp1 || '-';
-        row[`${mon}_TP2`] = diem.tp2 || '-';
-        row[`${mon}_Điểm thi KTPH`] = diem.diem_thi_ktph || '-';
-        row[`${mon}_Điểm HP`] = diem.diem_hp || '-';
+        row[`${mon}_TP1`] = diem.tp1 ?? '-';
+        row[`${mon}_TP2`] = diem.tp2 ?? '-';
+        row[`${mon}_Điểm thi KTPH`] = diem.diem_thi_ktph ?? '-';
+        row[`${mon}_Điểm HP`] = diem.diem_hp ?? '-';
       });
       row['ĐTB kỳ (hệ 10)'] = item.diem_tb_ky_he10;
       row['ĐTB kỳ (hệ 4)'] = item.diem_tb_ky_he4;
@@ -214,7 +183,7 @@ const ThongKeDiem = () => {
         const diemTbKy = filterKyHoc === 'all'
           ? Object.keys(sv.diem_tb_ky).reduce((acc, ky) => ({
               ...acc,
-              [`ĐTB ${ky}`]: sv.diem_tb_ky[ky]
+              [`ĐTB Kỳ ${ky}`]: sv.diem_tb_ky[ky]
             }), {})
           : { 'ĐTB Kỳ': sv.diem_tb_ky[filterKyHoc] };
         return {
@@ -237,9 +206,9 @@ const ThongKeDiem = () => {
   const chartData = {
     labels: thongKeTongQuan.map(sv => sv.ho_ten),
     datasets: filterKyHoc === 'all'
-      ? kyHoc.filter(ky => ky.id !== 'all').map((ky, index) => ({
-          label: ky.ten_ky,
-          data: thongKeTongQuan.map(sv => sv.diem_tb_ky[ky.ten_ky] || 0),
+      ? semesterOptions.filter(ky => ky.id !== 'all').map((ky, index) => ({
+          label: ky.name,
+          data: thongKeTongQuan.map(sv => sv.diem_tb_ky[ky.id] || 0),
           backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'][index % 3],
           borderColor: ['#FF6384', '#36A2EB', '#FFCE56'][index % 3],
           borderWidth: 1
@@ -275,7 +244,7 @@ const ThongKeDiem = () => {
 
   const renderTongQuanTable = () => {
     const isAllKy = filterKyHoc === 'all';
-    const kyHocList = isAllKy ? kyHoc.filter(ky => ky.id !== 'all').map(ky => ky.ten_ky) : [];
+    const kyHocList = isAllKy ? semesterOptions.filter(ky => ky.id !== 'all').map(ky => ky.id) : [];
     return (
       <TableContainer component={Paper} sx={{ mb: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <Table>
@@ -285,7 +254,7 @@ const ThongKeDiem = () => {
               <TableCell sx={{ fontWeight: 'bold' }}>Họ tên</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Giới tính</TableCell>
               {isAllKy ? kyHocList.map(ky => (
-                <TableCell key={ky} sx={{ fontWeight: 'bold' }}>ĐTB {ky}</TableCell>
+                <TableCell key={ky} sx={{ fontWeight: 'bold' }}>ĐTB Kỳ {ky}</TableCell>
               )) : <TableCell sx={{ fontWeight: 'bold' }}>ĐTB Kỳ</TableCell>}
               <TableCell sx={{ fontWeight: 'bold' }}>ĐTB tích lũy (hệ 10)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>ĐTB tích lũy (hệ 4)</TableCell>
@@ -311,11 +280,6 @@ const ThongKeDiem = () => {
   };
 
   const renderChiTietTable = () => {
-    const monHocList = [
-      'Tin học đại cương', 'Toán CC A1', 'Toán CC A3', 'Công nghệ mạng MT',
-      'KTCT Mác-Lênin', 'Triết học Mác-Lênin', 'Tiếng Anh1'
-    ];
-
     return (
       <TableContainer component={Paper} sx={{ maxHeight: 600, overflowX: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <Table stickyHeader size="small">
@@ -353,10 +317,10 @@ const ThongKeDiem = () => {
                   const diem = item.mon_hoc[mon] || {};
                   return (
                     <React.Fragment key={mon}>
-                      <TableCell>{diem.tp1 || '-'}</TableCell>
-                      <TableCell>{diem.tp2 || '-'}</TableCell>
-                      <TableCell>{diem.diem_thi_ktph || '-'}</TableCell>
-                      <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{diem.diem_hp || '-'}</TableCell>
+                      <TableCell>{diem.tp1 ?? '-'}</TableCell>
+                      <TableCell>{diem.tp2 ?? '-'}</TableCell>
+                      <TableCell>{diem.diem_thi_ktph ?? '-'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{diem.diem_hp ?? '-'}</TableCell>
                     </React.Fragment>
                   );
                 })}
@@ -377,6 +341,7 @@ const ThongKeDiem = () => {
         <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <Typography variant="h6" gutterBottom>Bộ lọc thống kê điểm</Typography>
           <Grid container spacing={2}>
+            
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Hệ đào tạo</InputLabel>
@@ -423,15 +388,34 @@ const ThongKeDiem = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>
-              <Autocomplete
-                options={lop}
-                getOptionLabel={(option) => option.ma_lop || ''}
-                value={filterLop}
-                onChange={(e, newValue) => setFilterLop(newValue)}
-                disabled={!filterKhoa}
-                renderInput={(params) => <TextField {...params} label="Lớp" />}
-              />
+              <FormControl fullWidth>
+                <InputLabel>Loại lọc</InputLabel>
+                <Select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setFilterLop(null);
+                    setFilterKyHoc('');
+                  }}
+                  label="Loại lọc"
+                >
+                  <MenuItem value="lop">Theo lớp</MenuItem>
+                  <MenuItem value="khoa">Theo khóa</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
+            {filterType === 'lop' && (
+              <Grid item xs={12} sm={3}>
+                <Autocomplete
+                  options={lop}
+                  getOptionLabel={(option) => option.ma_lop || ''}
+                  value={filterLop}
+                  onChange={(e, newValue) => setFilterLop(newValue)}
+                  disabled={!filterKhoa}
+                  renderInput={(params) => <TextField {...params} label="Lớp" />}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Kỳ học</InputLabel>
@@ -439,11 +423,11 @@ const ThongKeDiem = () => {
                   value={filterKyHoc}
                   onChange={(e) => setFilterKyHoc(e.target.value)}
                   label="Kỳ học"
-                  disabled={!filterLop}
+                  disabled={!filterKhoa || loadingSemester}
                 >
-                  {kyHoc.map((item) => (
+                  {semesterOptions.map((item) => (
                     <MenuItem key={item.id} value={item.id}>
-                      {item.ten_ky}
+                      {item.name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -453,7 +437,7 @@ const ThongKeDiem = () => {
               <Button
                 variant="contained"
                 onClick={handleFilterChange}
-                disabled={loading || !filterLop}
+                disabled={loading || !filterKhoa || (filterType === 'lop' && !filterLop) || loadingSemester}
               >
                 Xem thống kê
               </Button>
