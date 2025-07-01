@@ -852,6 +852,124 @@ class SinhVienService {
       throw new Error(error.message);
     }
   }
+
+  static async getStudentsByKhoaDaoTaoId(khoaDaoTaoId) {
+    try {
+        // Kiểm tra khóa đào tạo có tồn tại
+        const khoaCheck = await khoa_dao_tao.findByPk(khoaDaoTaoId);
+        if (!khoaCheck) {
+            throw new Error("Khóa đào tạo không tồn tại");
+        }
+
+        // Lấy danh sách sinh viên thuộc các lớp của khóa đào tạo
+        const sinhViens = await sinh_vien.findAll({
+            include: [
+                {
+                    model: lop,
+                    as: 'lop',
+                    attributes: ['ma_lop'],
+                    required: true,
+                    where: {
+                        khoa_dao_tao_id: khoaDaoTaoId
+                    }
+                },
+                {
+                    model: doi_tuong_quan_ly,
+                    as: 'doi_tuong',
+                    attributes: ['ten_doi_tuong', 'ma_doi_tuong'],
+                    required: false
+                }
+            ],
+            order: [['ten', 'ASC']],
+        });
+
+        if (!sinhViens || sinhViens.length === 0) {
+            return { message: "Không tìm thấy sinh viên thuộc khóa đào tạo này", students: [], total: 0 };
+        }
+
+        return {
+            students: sinhViens,
+            total: sinhViens.length
+        };
+    } catch (error) {
+        throw new Error("Lỗi khi lấy danh sách sinh viên theo khóa đào tạo: " + error.message);
+    }
+}
+static async updateSinhVienByKhoaDaoTao(khoaDaoTaoId, sinhVienList) {
+    const transaction = await sequelize.transaction();
+    try {
+      // Kiểm tra khóa đào tạo tồn tại
+      const khoaCheck = await khoa_dao_tao.findByPk(khoaDaoTaoId, { transaction });
+      if (!khoaCheck) {
+        throw new Error("Khóa đào tạo không tồn tại");
+      }
+
+      // Kiểm tra danh sách sinh viên đầu vào
+      if (!sinhVienList || !Array.isArray(sinhVienList) || sinhVienList.length === 0) {
+        throw new Error("Danh sách sinh viên không hợp lệ hoặc rỗng");
+      }
+
+      const updatedSinhViens = [];
+      const errors = [];
+
+      // Xử lý từng sinh viên
+      for (const sv of sinhVienList) {
+        const { id, bao_ve_do_an } = sv;
+        if (!id || typeof bao_ve_do_an !== 'boolean') {
+          errors.push(`Dữ liệu không hợp lệ cho sinh viên ID ${id || 'không xác định'}`);
+          continue;
+        }
+
+        // Kiểm tra sinh viên tồn tại và thuộc khóa đào tạo
+        const sinhVien = await sinh_vien.findOne({
+          where: { id },
+          include: [{
+            model: lop,
+            as: 'lop',
+            attributes: [],
+            where: { khoa_dao_tao_id: khoaDaoTaoId }
+          }],
+          transaction
+        });
+
+        if (!sinhVien) {
+          errors.push(`Sinh viên ID ${id} không tồn tại hoặc không thuộc khóa đào tạo`);
+          continue;
+        }
+
+        // Cập nhật sinh viên
+        await sinhVien.update({
+          bao_ve_do_an,
+          thi_tot_nghiep: !bao_ve_do_an
+        }, { transaction });
+
+        updatedSinhViens.push(sinhVien);
+      }
+
+      if (errors.length > 0 && updatedSinhViens.length === 0) {
+        throw new Error(`Không thể cập nhật sinh viên: ${errors.join('; ')}`);
+      }
+
+      await transaction.commit();
+
+      return {
+        message: "Cập nhật danh sách sinh viên thành công",
+        updatedCount: updatedSinhViens.length,
+        updatedSinhViens: updatedSinhViens.map(sv => ({
+          id: sv.id,
+          ma_sinh_vien: sv.ma_sinh_vien,
+          ho_dem: sv.ho_dem,
+          ten: sv.ten,
+          bao_ve_do_an: sv.bao_ve_do_an,
+          thi_tot_nghiep: sv.thi_tot_nghiep
+        })),
+        errors: errors.length > 0 ? errors : undefined
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw new Error("Lỗi khi cập nhật danh sách sinh viên: " + error.message);
+    }
+  }
 }
 
 module.exports = SinhVienService;

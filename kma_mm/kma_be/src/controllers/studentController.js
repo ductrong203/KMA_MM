@@ -205,6 +205,40 @@ class SinhVienController {
       });
     }
   }
+
+  static async getByKhoaDaoTaoId(req, res) {
+    try {
+        const { khoa_dao_tao_id } = req.params;
+        if (!khoa_dao_tao_id) {
+            return res.status(400).json({ success: false, message: "Thiếu khoa_dao_tao_id" });
+        }
+
+        const result = await SinhVienService.getStudentsByKhoaDaoTaoId(khoa_dao_tao_id);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+ static async updateSinhVienByKhoaDaoTao(req, res) {
+    try {
+      const { khoa_dao_tao_id } = req.params;
+      const { sinh_vien_list } = req.body;
+
+      if (!khoa_dao_tao_id || isNaN(khoa_dao_tao_id)) {
+        return res.status(400).json({ message: "Khóa đào tạo ID không hợp lệ" });
+      }
+
+      if (!sinh_vien_list || !Array.isArray(sinh_vien_list)) {
+        return res.status(400).json({ message: "Danh sách sinh viên không hợp lệ" });
+      }
+
+      const result = await SinhVienService.updateSinhVienByKhoaDaoTao(khoa_dao_tao_id, sinh_vien_list);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
 }
 
 module.exports = SinhVienController;
