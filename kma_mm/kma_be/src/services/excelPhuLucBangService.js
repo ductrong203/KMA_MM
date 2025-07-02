@@ -1592,6 +1592,12 @@ class ExcelPhuLucBangService {
         throw new Error("Không tìm thấy thông tin sinh viên");
       }
 
+      // Format ngày tháng
+      const today = new Date();
+      const day = today.getDate();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
+
       // Header
       const rowHead = new TableRow({
         children: [
@@ -1625,19 +1631,17 @@ class ExcelPhuLucBangService {
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
                 indent: { right: 720 },
+                spacing: { after: 130 },
                 children: [
                   new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 26, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
                 ],
               }),
-
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
                 indent: { right: 720 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
+                  new TextRun({ text: `Hà Nội, ngày ${day} tháng ${month} năm ${year}`, italics: true, size: 26, font: 'Times New Roman' }),
                 ],
-
               }),
             ],
             borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
@@ -1656,17 +1660,17 @@ class ExcelPhuLucBangService {
                   new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : (sinhVien.que_quan || '')}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien || ''}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Ngành đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `Đại học`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Ngày nhập học: ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `${sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Ngôn ngữ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `Tiếng việt`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `Tiếng Việt`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Số hiệu văn bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
 
@@ -1688,16 +1692,17 @@ class ExcelPhuLucBangService {
                   new TextRun({ text: 'Giới tính: ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.lop?.ma_lop || ''}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Chuyên ngành: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ma_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Thời gian đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `2025-2030`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Xếp hạng tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `Giỏi`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Số vào sổ cấp bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
 
                 ],
               }),
@@ -1708,6 +1713,20 @@ class ExcelPhuLucBangService {
       });
 
       const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
+      
+      // Lấy tất cả dữ liệu từ tất cả kỳ học
+      let allData = [];
+      for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
+          const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
+          if (dataDiem && dataDiem.length > 0) {
+              allData = allData.concat(dataDiem);
+          }
+      }
+
+      // Chia dữ liệu thành 2 cột và cân bằng
+      const midPoint = Math.ceil(allData.length / 2);
+      const leftData = allData.slice(0, midPoint);
+      const rightData = allData.slice(midPoint);
       
       //thông tin tổng
       const rowTotal = new TableRow({
@@ -1722,9 +1741,9 @@ class ExcelPhuLucBangService {
                   new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 4): ', size: 24, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `${gpa}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 10): ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${(gpa * 2.5).toFixed(2)}`, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Xếp loại tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
 
                 ],
                 alignment: AlignmentType.LEFT,
@@ -1740,31 +1759,28 @@ class ExcelPhuLucBangService {
                 alignment: AlignmentType.LEFT,
                 children: [
                   new TextRun({ text: 'Giáo dục thể chất: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Giáo dục Quốc phòng và an ninh:', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
                   new TextRun({ text: 'Chuẩn đầu ra Tiếng anh: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
 
                 ],
               }),
               new Paragraph({
-                spacing: { after: 50 },
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 200 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày      tháng   năm 202', size: 26, italics: true, break: 1 }),
+                  new TextRun({ text: `Hà Nội, ngày ${day} tháng ${month} năm ${year}`, size: 26, italics: true }),
                 ],
-                alignment: AlignmentType.RIGHT,
-
               }),
               new Paragraph({
-                indent: { right: 720 },
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 100 },
                 children: [
                   new TextRun({ text: 'KT. GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
                   new TextRun({ text: 'PHÓ GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
-
                 ],
-                alignment: AlignmentType.RIGHT,
-
               }),
             ],
             borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
@@ -1829,12 +1845,10 @@ class ExcelPhuLucBangService {
               },
             }),
 
-
             // PHẦN 2 LỚN
             new Paragraph({
-              spacing: { after: 50 },
-              children: [new TextRun({ text: 'II. Kết quả đào tạo', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
-
+              spacing: { before: 30, after: 50 },
+              children: [new TextRun({ text: 'II. Kết quả đào tạo', bold: true, size: 24, font: 'Times New Roman' })],
             }),
 
             // Bảng kết quả
@@ -1852,7 +1866,7 @@ class ExcelPhuLucBangService {
                   children: [
                     new TableCell({
                       width: { size: 8000, type: WidthType.DXA },
-                      children: [this.generateSubTable(0, 25), this.generateSubTable(50, 56)], // bảng trái
+                      children: [this.generateSubTable(leftData, 0)], // bảng trái
 
                     }),
                     new TableCell({
@@ -1862,7 +1876,7 @@ class ExcelPhuLucBangService {
 
                     new TableCell({
                       width: { size: 8000, type: WidthType.DXA },
-                      children: [this.generateSubTable(25, 50), this.generateSubTable(56, 62)], // bảng phải
+                      children: [this.generateSubTable(rightData, leftData.length)], // bảng phải
                     })
                   ],
                 }),
@@ -1903,24 +1917,13 @@ class ExcelPhuLucBangService {
     }
   }
 
-  static  generateSubTable(start, end) {
-    console.log(start)
-    // const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
-
-    // for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
-    //   // Lấy dữ liệu điểm cho kỳ học hiện tại
-    //   const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
-    //   // Nếu kỳ học không có dữ liệu, bỏ qua
-    //   if (!dataDiem || dataDiem.length === 0) {
-    //     continue;
-    //   }
-      
-
-    // }
-
-    return new Table({
-      rows: [
+  static generateSubTable(data, startIndex = 0) {
+    // Hàm tạo header row
+    const createHeaderRows = () => {
+      return [
+        // Header row 1
         new TableRow({
+          height: { value: 300, rule: "exact" },
           children: [
             new TableCell({
               children: [new Paragraph({
@@ -1928,8 +1931,14 @@ class ExcelPhuLucBangService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 100, bottom: 0, left: 50, right: 50 },
+              margins: { top: 100, bottom: 100, left: 50, right: 50 },
               rowSpan: 2,
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
             new TableCell({
               children: [new Paragraph({
@@ -1939,6 +1948,12 @@ class ExcelPhuLucBangService {
               verticalAlign: VerticalAlign.CENTER,
               width: { size: 50000, type: WidthType.DXA },
               rowSpan: 2,
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
             new TableCell({
               children: [new Paragraph({
@@ -1946,7 +1961,13 @@ class ExcelPhuLucBangService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
-              rowSpan: 2
+              rowSpan: 2,
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
             new TableCell({
               children: [new Paragraph({
@@ -1954,8 +1975,13 @@ class ExcelPhuLucBangService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
-
               columnSpan: 2,
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
             new TableCell({
               children: [new Paragraph({
@@ -1964,92 +1990,168 @@ class ExcelPhuLucBangService {
               })],
               verticalAlign: VerticalAlign.CENTER,
               rowSpan: 2,
-
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
-
           ],
-
         }),
-
+        // Header row 2
         new TableRow({
+          height: { value: 550, rule: "exact" },
           children: [
             new TableCell({
               children: [new Paragraph({
                 children: [new TextRun({ text: 'Hệ 10', size: 20, font: 'Times New Roman', bold: true, })],
                 alignment: AlignmentType.CENTER,
                 verticalAlign: VerticalAlign.CENTER,
-
               })],
-              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
-
+              margins: { top: 100, bottom: 100, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
-
             new TableCell({
               children: [new Paragraph({
                 children: [new TextRun({ text: 'Hệ 4', size: 20, font: 'Times New Roman', bold: true, })],
                 alignment: AlignmentType.CENTER,
                 verticalAlign: VerticalAlign.CENTER,
-
               })],
-              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
-
+              margins: { top: 100, bottom: 100, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
             }),
           ],
-          tableHeader: true
-
-        }),
-        ...Array.from({ length: end - start }, (_, index) => {
-          let i = start + index;
-
-          return new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: `${i + 1}`, size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })],
-              }),
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: "", size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })],
-                margins: { top: 50, bottom: 50, left: 50, right: 50 },
-                width: { size: 9000, type: WidthType.DXA },
-              }),
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: `2`, size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })]
-              }),
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: (7.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })]
-              }),
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: (3.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })]
-              }),
-              new TableCell({
-                children: [new Paragraph({
-                  children: [new TextRun({ text: i % 2 === 0 ? 'A+' : 'A', size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
-                })]
-              }),
-
-            ],
-
-          })
         })
-      ],
+      ];
+    };
 
-    })
+    // Tạo header ban đầu
+    const rows = createHeaderRows();
+
+    // Add data rows với chiều cao cố định và header mới sau mỗi 25 dòng
+    if (data && data.length > 0) {
+      data.forEach((item, index) => {
+        // Thêm header mới sau mỗi 25 dòng (ngoại trừ dòng đầu tiên)
+        if (index > 0 && (index % 25 === 0)) {
+          const newHeaderRows = createHeaderRows();
+          rows.push(...newHeaderRows);
+        }
+
+        rows.push(new TableRow({
+          height: { value: 300, rule: "exact" }, // Chiều cao cố định cho data rows
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: (startIndex + index + 1).toString(), size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+              },
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: item.ten_mon_hoc || '', size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.LEFT
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+              },
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: item.so_tin_chi?.toString() || '', size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+              },
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: item.diem_he_10 !== null ? item.diem_he_10.toString() : '', size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+              },
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: item.diem_he_4 !== null ? item.diem_he_4.toString() : '', size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+              },
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: item.diem_chu || '', size: 18, font: 'Times New Roman' })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 50, bottom: 50, left: 50, right: 50 },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                bottom: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                left: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+                right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+              },
+            }),
+          ],
+        }));
+      });
+    }
+
+    return new Table({
+      rows: rows,
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+        bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+        left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+        right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+        insideVertical: { style: BorderStyle.SINGLE, size: 5, color: "000000" },
+      },
+    });
   }
 }
 
-module.exports = ExcelPhuLucBangService
+module.exports = ExcelPhuLucBangService;
