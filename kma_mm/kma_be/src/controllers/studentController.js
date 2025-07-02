@@ -92,6 +92,24 @@ class SinhVienController {
     }
   }
 
+  static async timSinhVienTheoMaHoacFilter(req, res) {
+    try {
+      const filters = req.query; // Lấy tất cả query params
+      console.log(filters)
+      const sinhVienList = await SinhVienService.timSinhVienTheoMaHoacFilter(filters);
+
+      res.status(200).json({
+        success: true,
+        data: sinhVienList,
+      });
+    } catch (error) {
+      console.error('Error in timSinhVienTheoMaHoacFilter:', error);
+      res.status(error.message === 'Không tìm thấy sinh viên phù hợp' ? 404 : 500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
   // static async exportToExcel(req, res) {
   //   try {
   //     const sinhVienData = await SinhVienService.getDanhSachSinhVienExcel(req.body);
@@ -168,6 +186,57 @@ class SinhVienController {
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async checkGraduationConditions(req, res) {
+    try {
+      const sinhVienId = req.params.sinhVienId;
+      const result = await SinhVienService.checkGraduationConditions(sinhVienId);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Kiểm tra điều kiện tốt nghiệp thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+  }
+
+  static async getByKhoaDaoTaoId(req, res) {
+    try {
+        const { khoa_dao_tao_id } = req.params;
+        if (!khoa_dao_tao_id) {
+            return res.status(400).json({ success: false, message: "Thiếu khoa_dao_tao_id" });
+        }
+
+        const result = await SinhVienService.getStudentsByKhoaDaoTaoId(khoa_dao_tao_id);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+ static async updateSinhVienByKhoaDaoTao(req, res) {
+    try {
+      const { khoa_dao_tao_id } = req.params;
+      const { sinh_vien_list } = req.body;
+
+      if (!khoa_dao_tao_id || isNaN(khoa_dao_tao_id)) {
+        return res.status(400).json({ message: "Khóa đào tạo ID không hợp lệ" });
+      }
+
+      if (!sinh_vien_list || !Array.isArray(sinh_vien_list)) {
+        return res.status(400).json({ message: "Danh sách sinh viên không hợp lệ" });
+      }
+
+      const result = await SinhVienService.updateSinhVienByKhoaDaoTao(khoa_dao_tao_id, sinh_vien_list);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
     }
   }
 }

@@ -88,6 +88,27 @@ get
     http://localhost:8000/kehoachmonhoc/getbykhoavaky/1/9
     http://localhost:8000/kehoachmonhoc/getbykhoavaky/1
     
+lấy ds kế hoạch môn học theo khoá
+GET: http://localhost:8000/kehoachmonhoc/khoa/3
+
+copy ds kế hoạch môn học theo khoá
+POST: http://localhost:8000/kehoachmonhoc/copy
+body:
+{
+  "fromKhoaDaoTaoId": 2,
+  "toKhoaDaoTaoId": 3,
+  "heDaoTaoId": 1
+}
+trả về:
+{
+    "success": true,
+    "data": {
+        "message": "Sao chép kế hoạch môn học thành công!",
+        "copied": 2,
+        "skipped": 0,
+        "total": 2
+    }
+}
 =================================================================
 Thời khoá biểu: "lop_id","mon_hoc_id" bắt buộc
 ==============
@@ -316,6 +337,153 @@ trường hợp 2
     }
 }
 
-export phụ lục bằng
+export excel phụ lục bằng
 GET 
 http://localhost:8000/excel-phu-luc-bang/export/?sinh_vien_id=1
+
+export excel kỳ học
+http://localhost:8000/export-excel/ket-qua-ky-hoc/?sinh_vien_id=2&so_ky_hoc=1
+
+export excel năm học
+http://localhost:8000/export-excel/ket-qua-nam-hoc/?sinh_vien_id=2&nam_hoc=2021-2022
+
+api lấy danh sách chứng chỉ
+http://localhost:8000/chung-chi?heDaoTaoId=1&khoaDaoTaoId=1&lopId=1
+{
+    "thongBao": "Lấy danh sách chứng chỉ thành công",
+    "data": [
+        {
+            "id": 2,
+            "maSinhVien": "CT060111",
+            "hoTen": "Trần Anh",
+            "lop": "LT2001",
+            "khoaDaoTao": "Liên Thông 20",
+            "chuongTrinhDaoTao": "Liên thông",
+            "diemTrungBinh": 4,
+            "xepLoai": null,
+            "ghiChu": null,
+            "soQuyetDinh": null,
+            "ngayKyQuyetDinh": null,
+            "tinhTrang": "bình thường",
+            "loaiChungChi": "Chứng chỉ GDTC"
+        },
+        {
+            "id": 1,
+            "maSinhVien": "CT060110",
+            "hoTen": "Nguyễn Dương",
+            "lop": "LT2001",
+            "khoaDaoTao": "Liên Thông 20",
+            "chuongTrinhDaoTao": "Liên thông",
+            "diemTrungBinh": 6,
+            "xepLoai": null,
+            "ghiChu": null,
+            "soQuyetDinh": null,
+            "ngayKyQuyetDinh": null,
+            "tinhTrang": "bình thường",
+            "loaiChungChi": "Chuẩn đầu ra TA"
+        }
+    ]
+}
+
+api lấy loại chứng chỉ
+http://localhost:8000/chung-chi/loai-chung-chi
+{
+    "thongBao": "Lấy danh sách loại chứng chỉ thành công",
+    "data": [
+        "Chuẩn đầu ra TA",
+        "Chứng chỉ GDTC"
+    ]
+}
+
+thêm chứng chỉ
+http://localhost:8000/chung-chi/
+POST
+{
+  "sinh_vien_id": 2,
+  "diem_trung_binh": 8.5,
+  "xep_loai": "Giỏi",
+  "ghi_chu": "Chứng chỉ TOEIC Quốc tế",
+  "so_quyet_dinh": "QD123/2025",
+  "loai_chung_chi": "TOEIC",
+  "ngay_ky_quyet_dinh":"2025-09-25",
+  "tinh_trang":"tốt nghiệp"
+}
+
+response:
+{
+    "thongBao": "Tạo chứng chỉ thành công",
+    "duLieu": {
+        "id": 10,
+        "maSinhVien": "CT060111",
+        "hoTen": "Trần Anh",
+        "lop": "LT2001",
+        "khoaDaoTao": "Liên Thông 20",
+        "chuongTrinhDaoTao": "Liên thông",
+        "diemTrungBinh": 8.5,
+        "xepLoai": "Giỏi",
+        "ghiChu": "Chứng chỉ TOEIC Quốc tế",
+        "soQuyetDinh": "QD123/2025",
+        "ngayKyQuyetDinh": "2025-09-25",
+        "tinhTrang": "tốt nghiệp",
+        "loaiChungChi": "TOEIC"
+    }
+}
+
+sửa chứng chỉ
+http://localhost:8000/chung-chi/1
+POST
+{
+  "sinh_vien_id": 2,
+  "diem_trung_binh": 8.5,
+  "xep_loai": "Giỏi",
+  "ghi_chu": "Chứng chỉ TOEIC Quốc tế",
+  "so_quyet_dinh": "QD123/2025",
+  "loai_chung_chi": "TA đầu ra",
+  "ngay_ky_quyet_dinh":"2025-09-25",
+  "tinh_trang":"tốt nghiệp"
+}
+
+response:
+{
+    "thongBao": "Chỉnh sửa chứng chỉ thành công",
+    "duLieu": {
+        "id": 1,
+        "maSinhVien": "CT060111",
+        "hoTen": "Trần Anh",
+        "lop": "LT2001",
+        "khoaDaoTao": "Liên Thông 20",
+        "chuongTrinhDaoTao": "Liên thông",
+        "diemTrungBinh": 8.5,
+        "xepLoai": "Giỏi",
+        "ghiChu": "Chứng chỉ TOEIC Quốc tế",
+        "soQuyetDinh": "QD123/2045",
+        "ngayKyQuyetDinh": "2025-10-25",
+        "tinhTrang": "tốt nghiệp",
+        "loaiChungChi": "TA đầu ra"
+    }
+}
+
+xóa chứng chỉ
+http://localhost:8000/chung-chi/1
+DELETE
+{
+    "thongBao": "Xóa chứng chỉ thành công",
+    "duLieu": {
+        "id": 1
+    }
+}
+
+tạo loại chứng chỉ
+POST
+http://localhost:8000/chung-chi/loai-chung-chi
+{
+    "loai_chung_chi": "Chuẩn đầu ra TA"
+}
+
+response:
+{
+    "success": true,
+    "data": {
+        "loaiChungChi": "Chuẩn đầu ra TA"
+    }
+}

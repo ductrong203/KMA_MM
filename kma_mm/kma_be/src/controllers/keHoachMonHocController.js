@@ -91,8 +91,68 @@ class KeHoachMonHocController {
       return res.status(500).json({ message: error.message });
     }
   }
+
+  static async getAllByKhoaDaoTao(req, res) {
+    try {
+      const { khoa_dao_tao_id } = req.params;
+
+      if (!khoa_dao_tao_id) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Thiếu khoa_dao_tao_id" 
+        });
+      }
+
+      const data = await KeHoachMonHocService.getAllByKhoaDaoTao(khoa_dao_tao_id);
+      
+      return res.json({
+        success: true,
+        data: data,
+        total: data.length
+      });
+    } catch (error) {
+      return res.status(500).json({ 
+        success: false,
+        message: error.message 
+      });
+    }
+  }
+
+  static async copyKeHoachMonHoc(req, res) {
+    try {
+      const { fromKhoaDaoTaoId, toKhoaDaoTaoId, heDaoTaoId } = req.body;
+
+      // Validation input
+      if (!fromKhoaDaoTaoId || !toKhoaDaoTaoId || !heDaoTaoId) {
+        return res.status(400).json({ 
+          error: "Thiếu thông tin bắt buộc: fromKhoaDaoTaoId, toKhoaDaoTaoId, heDaoTaoId" 
+        });
+      }
+
+      // Kiểm tra không được sao chép từ chính nó
+      if (fromKhoaDaoTaoId === toKhoaDaoTaoId) {
+        return res.status(400).json({ 
+          error: "Không thể sao chép kế hoạch môn học từ chính khóa đào tạo đó" 
+        });
+      }
+
+      const result = await KeHoachMonHocService.copyKeHoachMonHoc(
+        fromKhoaDaoTaoId, 
+        toKhoaDaoTaoId, 
+        heDaoTaoId
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      res.status(400).json({ 
+        success: false,
+        error: error.message 
+      });
+    }
+  }
 }
-
-
 
 module.exports = KeHoachMonHocController;

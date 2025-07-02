@@ -4,9 +4,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
 import { useNavigate } from 'react-router-dom';
 
 const mockLogs = [
-    { id: 1, log: 'User admin logged in' },
-    { id: 2, log: 'User user1 updated their account' },
-    { id: 3, log: 'User admin created a new account' },
+    { id: 1, log: 'Người dùng admin đã đăng nhập' },
+    { id: 2, log: 'Người dùng user1 đã cập nhật tài khoản của họ' },
+    { id: 3, log: 'Người dùng admin đã tạo tài khoản mới' },
 ];
 
 const ActivityLogs = () => {
@@ -27,7 +27,7 @@ const ActivityLogs = () => {
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                <Typography variant="h5">Activity Logs</Typography>
+                <Typography variant="h5">Lịch sử hoạt động</Typography>
             </Box>
 
             {/* Danh sách hoạt động */}

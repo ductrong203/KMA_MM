@@ -1,7 +1,7 @@
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
-const { diem, sinh_vien, thoi_khoa_bieu, lop } = models;
+const { diem, sinh_vien, thoi_khoa_bieu, lop, mon_hoc, danh_muc_dao_tao, khoa_dao_tao } = models;
 
 const XLSX = require("xlsx");
 const fs = require("fs");
@@ -77,7 +77,7 @@ class DiemService {
   
     const rows = await diem.findAll({
       where: whereClause,
-      order: [['id', 'DESC']],
+      order: [['id', 'ASC']],
       include: [
         {
           model: sinh_vien,
@@ -355,25 +355,45 @@ class DiemService {
         let ho_va_ten = hoTenIndexes
           .map((idx) => row[idx])
           .filter((val) => val !== "")
-          .join(" ");
-
-        // Xử lý điểm thành phần 1
+          .join(" ");        
+        let ghi_chu = null;
         let diem_tp1 = null;
+        let diem_tp2 = null;
+        let diem_gk = null;
+        
+        // Lưu giá trị điểm thô để kiểm tra
+        let diem1Raw = null;
+        let diem2Raw = null;
+        let invalidScore = null;
+        
+        // Xử lý điểm thành phần 1
         if (diemTP1Index !== -1 && row[diemTP1Index] !== undefined) {
-          let diem1 = row[diemTP1Index].toString().replace(",", ".").trim();
-          diem_tp1 = !isNaN(Number(diem1)) ? parseFloat(Number(diem1).toFixed(2)) : null;
+          diem1Raw = row[diemTP1Index].toString().replace(",", ".").trim();
+          if (diem1Raw !== "" && !isNaN(Number(diem1Raw))) {
+            diem_tp1 = parseFloat(Number(diem1Raw).toFixed(2));
+          } else if (diem1Raw !== "") {
+            invalidScore = diem1Raw;
+          }
         }
 
         // Xử lý điểm thành phần 2
-        let diem_tp2 = null;
         if (diemTP2Index !== -1 && row[diemTP2Index] !== undefined) {
-          let diem2 = row[diemTP2Index].toString().replace(",", ".").trim();
-          diem_tp2 = !isNaN(Number(diem2)) ? parseFloat(Number(diem2).toFixed(2)) : null;
+          diem2Raw = row[diemTP2Index].toString().replace(",", ".").trim();
+          if (diem2Raw !== "" && !isNaN(Number(diem2Raw))) {
+            diem_tp2 = parseFloat(Number(diem2Raw).toFixed(2));
+          } else if (diem2Raw !== "") {
+            invalidScore = invalidScore || diem2Raw;
+          }
         }
 
-        // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
-        let diem_gk = null;
-        if (diem_tp1 !== null && diem_tp2 !== null) {
+        // Nếu có điểm không hợp lệ, gán tất cả điểm = 0 và lưu ghi chú
+        if (invalidScore) {
+          diem_tp1 = 0;
+          diem_tp2 = 0;
+          diem_gk = 0;
+          ghi_chu = invalidScore;
+        } else if (diem_tp1 !== null && diem_tp2 !== null) {
+          // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
           diem_gk = parseFloat((0.3 * diem_tp1 + 0.7 * diem_tp2).toFixed(2));
         }
 
@@ -391,6 +411,7 @@ class DiemService {
           diem_tp1,
           diem_tp2,
           diem_gk,
+          ghi_chu,
         });
       }
 
@@ -591,6 +612,378 @@ class DiemService {
       throw new Error("Lỗi xử lý file Excel: " + error.message);
     }
   }
+   static async themSinhVienHocLaiVaoLop(thoi_khoa_bieu_id, ma_sinh_vien) {
+    try {
+      // Tìm thông tin thời khóa biểu
+      const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id, {
+        attributes: ['id', 'mon_hoc_id'],
+      });
+      if (!tkb) {
+        throw new Error("Không tìm thấy thời khóa biểu!");
+      }
+
+      if (!tkb.mon_hoc_id) {
+        throw new Error("Thời khóa biểu không có thông tin môn học!");
+      }
+
+      // Kiểm tra sinh viên học lại tồn tại dựa trên ma_sinh_vien
+      const sinhVienHocLai = await sinh_vien.findOne({
+        where: { ma_sinh_vien },
+      });
+      if (!sinhVienHocLai) {
+        throw new Error("Sinh viên học lại không tồn tại!");
+      }
+
+      const sinh_vien_id = sinhVienHocLai.id;
+      const mon_hoc_id = tkb.mon_hoc_id;
+
+      // Đếm số lần học lại của sinh viên với môn học này
+      const soLanHoc = await diem.count({
+        include: [
+          {
+            model: thoi_khoa_bieu,
+            as: 'thoi_khoa_bieu', // Giả định alias trong quan hệ
+            where: { mon_hoc_id: mon_hoc_id },
+          },
+        ],
+        where: {
+          sinh_vien_id: sinh_vien_id,
+        },
+      });
+
+      // Tính lan_hoc mới, bắt đầu từ 2
+      const newLanHoc = soLanHoc + 1;
+
+      // Tạo bản ghi điểm mới cho sinh viên học lại
+      const newDiem = await diem.create({
+        sinh_vien_id: sinh_vien_id,
+        thoi_khoa_bieu_id: thoi_khoa_bieu_id,
+        lan_hoc: newLanHoc,
+        lan_thi: null,
+        diem_tp1: null,
+        diem_tp2: null,
+        diem_gk: null,
+        diem_ck: null,
+        diem_he_4: null,
+        diem_chu: null,
+        ngay_cap_nhat: null,
+        trang_thai: 'hoc_lai', // Luôn là học lại vì bắt đầu từ 2
+        diem_hp: null,
+      });
+
+      return {
+        message: `Thêm sinh viên học lại môn này lần ${newLanHoc} thành công!`,
+        data: newDiem
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+   
+static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id }) {
+  const convertToDiemHe4 = (diemHe10) => {
+    if (diemHe10 >= 9.0 && diemHe10 <= 10.0) return 4.0; // Xuất sắc
+    if (diemHe10 >= 8.5 && diemHe10 <= 8.9) return 3.8; // Giỏi
+    if (diemHe10 >= 7.8 && diemHe10 <= 8.4) return 3.5; // Khá (B+)
+    if (diemHe10 >= 7.0 && diemHe10 <= 7.7) return 3.0; // Khá (B)
+    if (diemHe10 >= 6.3 && diemHe10 <= 6.9) return 2.4; // Trung bình (C+)
+    if (diemHe10 >= 5.5 && diemHe10 <= 6.2) return 2.0; // Trung bình (C)
+    if (diemHe10 >= 4.8 && diemHe10 <= 5.4) return 1.5; // Trung bình yếu (D+)
+    if (diemHe10 >= 4.0 && diemHe10 <= 4.7) return 1.0; // Trung bình yếu (D)
+    return 0.0; // Kém (F)
+  };
+
+  try {
+    // Điều kiện lọc
+    const whereLop = {};
+    if (khoa_dao_tao_id) whereLop.khoa_dao_tao_id = khoa_dao_tao_id;
+    if (lop_id) whereLop.id = lop_id;
+
+    // Lấy danh sách lớp
+    const lops = await lop.findAll({
+      where: whereLop,
+      attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
+      include: [
+        {
+          model: khoa_dao_tao,
+          as: 'khoa_dao_tao',
+          attributes: ['ten_khoa'],
+        },
+      ],
+    });
+    const lopIds = lops.map(l => l.id);
+    if (!lopIds.length) {
+      return { thongKeTongQuan: [], chiTietMonHoc: [], monHocList: [], thongKeTheoLop: [], thongKeTheoKhoa: [] };
+    }
+
+    // Điều kiện thời khóa biểu
+    const whereTKB = { lop_id: lopIds };
+    if (ky_hoc_id && ky_hoc_id !== 'all') {
+      whereTKB.ky_hoc = ky_hoc_id;
+    }
+    if (he_dao_tao_id) {
+      whereTKB['$mon_hoc.he_dao_tao_id$'] = he_dao_tao_id;
+    }
+
+    // Lấy danh sách môn học
+    const monHocs = await thoi_khoa_bieu.findAll({
+      where: whereTKB,
+      attributes: [],
+      include: [
+        {
+          model: mon_hoc,
+          as: 'mon_hoc',
+          attributes: ['ten_mon_hoc'],
+          required: true,
+        },
+      ],
+      distinct: true,
+    });
+
+    // Tạo danh sách môn học
+    const monHocList = monHocs
+      .filter(m => m && m.mon_hoc && m.mon_hoc.ten_mon_hoc)
+      .map(m => m.mon_hoc.ten_mon_hoc)
+      .filter((value, index, self) => self.indexOf(value) === index);
+
+    // Lấy danh sách thời khóa biểu
+    const thoiKhoaBieus = await thoi_khoa_bieu.findAll({
+      where: whereTKB,
+      attributes: ['id', 'ky_hoc', 'mon_hoc_id', 'lop_id'],
+      include: [
+        {
+          model: mon_hoc,
+          as: 'mon_hoc',
+          attributes: ['ten_mon_hoc', 'so_tin_chi'],
+          required: true,
+        },
+      ],
+    });
+    const thoiKhoaBieuIds = thoiKhoaBieus.map(tkb => tkb.id);
+
+    // Lấy danh sách điểm
+    const diemRecords = await diem.findAll({
+      where: { thoi_khoa_bieu_id: thoiKhoaBieuIds },
+      include: [
+        {
+          model: sinh_vien,
+          as: 'sinh_vien',
+          attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'gioi_tinh', 'diem_trung_binh_tich_luy', 'diem_trung_binh_he_4'],
+        },
+        {
+          model: thoi_khoa_bieu,
+          as: 'thoi_khoa_bieu',
+          attributes: ['ky_hoc', 'lop_id'],
+          include: [
+            {
+              model: mon_hoc,
+              as: 'mon_hoc',
+              attributes: ['ten_mon_hoc', 'so_tin_chi'],
+              required: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    // Nhóm dữ liệu theo sinh viên
+    const sinhVienMap = new Map();
+    const lopMap = new Map(); // Map để lưu thống kê theo lớp
+    const khoaMap = new Map(); // Map để lưu thống kê theo khóa
+
+    for (const record of diemRecords) {
+      if (!record.thoi_khoa_bieu || !record.thoi_khoa_bieu.mon_hoc) {
+        console.warn(`Bản ghi điểm thiếu thoi_khoa_bieu hoặc mon_hoc: diem_id=${record.id}`);
+        continue; // Bỏ qua bản ghi không hợp lệ
+      }
+
+      const sv = record.sinh_vien;
+      const svId = sv.id;
+      const kyHoc = record.thoi_khoa_bieu.ky_hoc;
+      const lopId = record.thoi_khoa_bieu.lop_id;
+      const monHoc = record.thoi_khoa_bieu.mon_hoc?.ten_mon_hoc || 'Unknown';
+      const soTinChi = record.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
+
+      // Lấy thông tin lớp và khóa
+      const lopInfo = lops.find(l => l.id === lopId);
+      const khoaId = lopInfo?.khoa_dao_tao_id;
+      const maLop = lopInfo?.ma_lop || 'Unknown';
+      const tenKhoa = lopInfo?.khoa_dao_tao?.ten_khoa || 'Unknown';
+
+      // Khởi tạo dữ liệu sinh viên
+      if (!sinhVienMap.has(svId)) {
+        const allDiemRecords = await diem.findAll({
+          where: { sinh_vien_id: svId },
+          include: [
+            {
+              model: thoi_khoa_bieu,
+              as: 'thoi_khoa_bieu',
+              attributes: [],
+              include: [
+                {
+                  model: mon_hoc,
+                  as: 'mon_hoc',
+                  attributes: ['so_tin_chi'],
+                  required: true,
+                },
+              ],
+            },
+          ],
+        });
+
+        sinhVienMap.set(svId, {
+          ma_sinh_vien: sv.ma_sinh_vien,
+          ho_ten: `${sv.ho_dem || ''} ${sv.ten || ''}`.trim(),
+          gioi_tinh: sv.gioi_tinh === 1 ? 'Nam' : sv.gioi_tinh === 0 ? 'Nữ' : 'Khác',
+          diem_tb_ky: {},
+          diem_tb_tich_luy_he10: sv.diem_trung_binh_tich_luy || 0,
+          diem_tb_tich_luy_he4: sv.diem_trung_binh_he_4 || 0,
+          chi_tiet: [],
+        });
+      }
+
+      const svData = sinhVienMap.get(svId);
+
+      // Tính điểm trung bình kỳ cho sinh viên
+      if (!svData.chi_tiet.some(ct => ct.ky_hoc === kyHoc)) {
+        const diemKyRecords = diemRecords.filter(
+          r => r.sinh_vien.id === svId && r.thoi_khoa_bieu && r.thoi_khoa_bieu.ky_hoc === kyHoc
+        );
+
+        let tongDiemTinChiHe10 = 0;
+        let tongDiemTinChiHe4 = 0;
+        let tongTinChi = 0;
+        diemKyRecords.forEach(r => {
+          if (!r.thoi_khoa_bieu || !r.thoi_khoa_bieu.mon_hoc) return;
+          const diemHP = r.diem_hp;
+          const tinChi = r.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
+          if (diemHP !== null && !isNaN(diemHP) && tinChi > 0) {
+            const diemHe4 = convertToDiemHe4(diemHP);
+            tongDiemTinChiHe10 += diemHP * tinChi;
+            tongDiemTinChiHe4 += diemHe4 * tinChi;
+            tongTinChi += tinChi;
+          }
+        });
+
+        const diem_tb_ky_he10 = tongTinChi > 0
+          ? parseFloat((tongDiemTinChiHe10 / tongTinChi).toFixed(2))
+          : 0;
+        const diem_tb_ky_he4 = tongTinChi > 0
+          ? parseFloat((tongDiemTinChiHe4 / tongTinChi).toFixed(2))
+          : 0;
+
+        svData.diem_tb_ky[kyHoc] = diem_tb_ky_he10;
+        svData.chi_tiet.push({
+          ky_hoc: kyHoc,
+          mon_hoc: {},
+          diem_tb_ky_he10,
+          diem_tb_ky_he4,
+        });
+      }
+
+      // Thêm chi tiết môn học
+      const chiTietKy = svData.chi_tiet.find(ct => ct.ky_hoc === kyHoc);
+      chiTietKy.mon_hoc[monHoc] = {
+        tp1: record.diem_tp1 || null,
+        tp2: record.diem_tp2 || null,
+        diem_thi_ktph: record.diem_ck || null,
+        diem_hp: record.diem_hp || null,
+      };
+
+      // Tính thống kê theo lớp
+      if (!lopMap.has(lopId)) {
+        lopMap.set(lopId, {
+          ma_lop: maLop,
+          ky_hoc: kyHoc,
+          tong_diem_he10: 0,
+          tong_diem_he4: 0,
+          tong_tin_chi: 0,
+          so_sinh_vien: new Set(),
+        });
+      }
+      const lopData = lopMap.get(lopId);
+      if (record.diem_hp !== null && !isNaN(record.diem_hp) && soTinChi > 0) {
+        lopData.tong_diem_he10 += record.diem_hp * soTinChi;
+        lopData.tong_diem_he4 += convertToDiemHe4(record.diem_hp) * soTinChi;
+        lopData.tong_tin_chi += soTinChi;
+        lopData.so_sinh_vien.add(svId);
+      }
+
+      // Tính thống kê theo khóa
+      if (!khoaMap.has(khoaId)) {
+        khoaMap.set(khoaId, {
+          ten_khoa: tenKhoa,
+          ky_hoc: kyHoc,
+          tong_diem_he10: 0,
+          tong_diem_he4: 0,
+          tong_tin_chi: 0,
+          so_sinh_vien: new Set(),
+        });
+      }
+      const khoaData = khoaMap.get(khoaId);
+      if (record.diem_hp !== null && !isNaN(record.diem_hp) && soTinChi > 0) {
+        khoaData.tong_diem_he10 += record.diem_hp * soTinChi;
+        khoaData.tong_diem_he4 += convertToDiemHe4(record.diem_hp) * soTinChi;
+        khoaData.tong_tin_chi += soTinChi;
+        khoaData.so_sinh_vien.add(svId);
+      }
+    }
+
+    // Chuẩn bị dữ liệu trả về
+    const thongKeTongQuan = Array.from(sinhVienMap.values()).map(sv => ({
+      ma_sinh_vien: sv.ma_sinh_vien,
+      ho_ten: sv.ho_ten,
+      gioi_tinh: sv.gioi_tinh,
+      diem_tb_ky: sv.diem_tb_ky,
+      diem_tb_tich_luy_he10: sv.diem_tb_tich_luy_he10,
+      diem_tb_tich_luy_he4: sv.diem_tb_tich_luy_he4,
+    }));
+
+    const chiTietMonHoc = Array.from(sinhVienMap.values()).flatMap(sv =>
+      sv.chi_tiet.map(ct => ({
+        ma_sinh_vien: sv.ma_sinh_vien,
+        ho_ten: sv.ho_ten,
+        ky_hoc: ct.ky_hoc,
+        mon_hoc: ct.mon_hoc,
+        diem_tb_ky_he10: ct.diem_tb_ky_he10,
+        diem_tb_ky_he4: ct.diem_tb_ky_he4,
+      }))
+    );
+
+    // Thống kê theo lớp
+    const thongKeTheoLop = Array.from(lopMap.entries()).map(([lopId, data]) => ({
+      lop_id: lopId,
+      ma_lop: data.ma_lop,
+      ky_hoc: data.ky_hoc,
+      diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(2)) : 0,
+      diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(2)) : 0,
+      so_sinh_vien: data.so_sinh_vien.size,
+    }));
+
+    // Thống kê theo khóa
+    const thongKeTheoKhoa = Array.from(khoaMap.entries()).map(([khoaId, data]) => ({
+      khoa_dao_tao_id: khoaId,
+      ten_khoa: data.ten_khoa,
+      ky_hoc: data.ky_hoc,
+      diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(2)) : 0,
+      diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(2)) : 0,
+      so_sinh_vien: data.so_sinh_vien.size,
+    }));
+
+    return {
+      thongKeTongQuan,
+      chiTietMonHoc,
+      monHocList,
+      thongKeTheoLop,
+      thongKeTheoKhoa,
+    };
+  } catch (error) {
+    console.error('Lỗi khi lấy thống kê điểm:', error);
+    throw new Error('Không thể lấy thống kê điểm: ' + error.message);
+  }
 }
+}
+
 
 module.exports = DiemService;

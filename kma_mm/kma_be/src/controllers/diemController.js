@@ -121,6 +121,26 @@ class DiemController {
       res.status(500).json({ message: error.message });
     }
   }
+
+  static async getThongKeDiem(req, res) {
+    try {
+      const { he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id } = req.query;
+
+     
+
+      const data = await DiemService.getThongKeDiem({
+        he_dao_tao_id: he_dao_tao_id ? parseInt(he_dao_tao_id) : undefined,
+        khoa_dao_tao_id: khoa_dao_tao_id ? parseInt(khoa_dao_tao_id) : undefined,
+        lop_id: parseInt(lop_id),
+        ky_hoc_id: ky_hoc_id || 'all', // Mặc định là 'all' nếu không cung cấp
+      });
+
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error('Lỗi trong getThongKeDiem:', error);
+      return res.status(500).json({ error: error.message || 'Không thể lấy thống kê điểm' });
+    }
+  }
 }
 
 module.exports = DiemController;

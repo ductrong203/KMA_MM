@@ -27,7 +27,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/Download";
 import PrintIcon from "@mui/icons-material/Print";
-import StudentManagement from "../QLHV/StudentManagement ";
+import StudentManagement from "../QLHV/StudentManagement";
 import StudentRequests from "../QLHV/StudentRequest";
 import ReportForms from "../QLHV/ReportForm";
 import ScoreManagement from "../QLHV/ScoreManagement";
@@ -36,6 +36,8 @@ import QuanLyKhoa from "../Khoa/QuanLyKhoa";
 import QuanLyLop from "../LOP/ClassManagement";
 import QuanLyDaoTao from "../Dao Tao/QuanLyDaoTao";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
+import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
+import MonHocTheoHeDaoTao from "../Mon Hoc/MonHocTheoHeDaoTao";
 // Mock data
 const mockTrainingTypes = [
   { id: 1, code: "HT001", name: "Hệ Đào Tạo A", active: true },
@@ -83,36 +85,44 @@ export default function StudentManagementDashboard() {
           value={value}
           onChange={handleChange}
           aria-label="Quản lý học viên"
-          // indicatorColor="secondary"
-          textColor="inherit"
-          centered
+         sx={{
+                  mb: 2,
+                  '& .MuiTab-root': {
+                    fontWeight: 'normal',
+                    fontSize: '0.9rem',
+                    color: 'text.secondary',
+                    padding: '8px 16px',
+                  },
+                  '& .Mui-selected': {
+                    color: 'primary.main',
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                }}
         >
-          <Tab label="Hệ đào tạo" />
-          <Tab label="Quản lý khóa  " />
-          <Tab label="Quản lý lớp " />
+          
           <Tab label="Quản lý học viên" />
+          <Tab label="Xem danh sách môn học dự kiến" />
           <Tab label="Khen thưởng/ kỷ luật " />
           <Tab label="Đơn từ học viên" />
-          <Tab label="Biểu mẫu & xuất dữ liệu" />
-          <Tab label="Quản lý điểm số" />
+          <Tab label="Biểu mẫu" />
+          <Tab label="Xem danh sách điểm" />
           <Tab label="Thống kê báo cáo " />
         </Tabs>
       </Paper>
 
       <Box sx={{ mt: 3 }}>
-        {value === 0 && <QuanLyDaoTao />}
+  
+        {value === 0 && <StudentManagement />}
+        {value === 1 && <MonHocTheoHeDaoTao />}
+        {value === 2 && <QuanLyKhenKyLuat />}
 
-        {value === 1 && <QuanLyKhoa />}
+        {value === 3 && <StudentRequests />}
 
-        {value === 2 && <QuanLyLop />}
-        {value === 3 && <StudentManagement />}
-        {value === 4 && <QuanLyKhenKyLuat />}
-
-        {value === 5 && <StudentRequests />}
-
-        {value === 6 && <ReportForms />}
-        {value === 7 && <ScoreManagement />}
-        {value === 8 && <StatisticsReport />}
+        {value === 4 && <ReportForms />}
+        {value === 5 && <XemDanhSachDiem />}
+        {value === 6 && <StatisticsReport />}
       </Box>
     </Container>
   );

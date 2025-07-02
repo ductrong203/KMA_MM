@@ -83,6 +83,22 @@ module.exports = function(sequelize, DataTypes) {
     email: {
       type: DataTypes.STRING(50),
       allowNull: true
+    },
+    cccd: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    ngay_cap: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    noi_cap: {
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    noi_o_hien_nay: {
+      type: DataTypes.STRING(200),
+      allowNull: true
     }
   }, {
     sequelize,

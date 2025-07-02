@@ -47,7 +47,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import React, { useState, useEffect } from 'react';
-import StudentManagement from '../QLHV/StudentManagement ';
+import StudentManagement from '../QLHV/StudentManagement';
 import ClassManagement from '../LOP/ClassManagement';
 import QuanLyKhoa from '../Khoa/QuanLyKhoa';
 import QuanLyLop from '../LOP/ClassManagement';
@@ -57,6 +57,13 @@ import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
 import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
 import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
+import PhuLucBangDiem from "../Dao Tao/PhuLucBangDiem";
+import ThongKeTotNghiep from "../Dao Tao/ThongKe";
+import QuanLyChungChi from "../QuanLyChungChi/QuanLyChungChi";
+import ThongKe from "../Dao Tao/ThongKe";
+import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
+import ThongKeDiem from "../Dao Tao/ThongKeDiem";
+
 
 // Mock data
 const trainerInfo = {
@@ -136,7 +143,7 @@ function TrainingDashboard() {
 
   return (
     <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="" sx={{ py: 4 }}>
         <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
           {/* Tab chính */}
           <Tabs
@@ -160,9 +167,10 @@ function TrainingDashboard() {
             }}
           >
             <Tab label="Quản lý đào tạo" />
-            <Tab label="Thống kê và báo cáo" />
             <Tab label="Quản lý học viên" />
             <Tab label="Quản lý môn học" />
+            <Tab label="Thống kê và báo cáo" />
+            <Tab label="Xem danh sách điểm" />
           </Tabs>
 
           {currentTab === 0 && (
@@ -188,8 +196,8 @@ function TrainingDashboard() {
                 }}
               >
                 <Tab label="Hệ đào tạo" />
-                <Tab label="Quản lý khóa" />
-                <Tab label="Quản lý lớp" />
+                <Tab label="Quản lý khóa đào tạo" />
+                <Tab label="Quản lý lớp học" />
               </Tabs>
               {subTab === 0 && <QuanLyDaoTao />}
               {subTab === 1 && <QuanLyKhoa />}
@@ -200,68 +208,40 @@ function TrainingDashboard() {
           {currentTab === 1 && (
             <Box>
               <Tabs value={subTab} onChange={handleSubTabChange}>
-                <Tab label="Thống kê điểm" />
-                <Tab label="Thống kê tốt nghiệp" />
-                <Tab label="Báo cáo chi tiết" />
-              </Tabs>
-              {subTab == 0 && (
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Thống kê điểm theo lớp
-                    </Typography>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Lớp</InputLabel>
-                      <Select value="" label="Lớp">
-                        <MenuItem value="LT01">LT01</MenuItem>
-                        <MenuItem value="LT02">LT02</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <Button variant="outlined" startIcon={<FileDownloadIcon />}>
-                      Xuất báo cáo
-                    </Button>
-                  </Paper>
-                </Grid>
-              )}
-              {subTab == 1 && (
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Thống kê tốt nghiệp
-                    </Typography>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Khóa</InputLabel>
-                      <Select value="" label="Khóa">
-                        <MenuItem value="2020">2020</MenuItem>
-                        <MenuItem value="2021">2021</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <Button variant="outlined" startIcon={<BarChartIcon />}>
-                      Xem biểu đồ
-                    </Button>
-                  </Paper>
-                </Grid>
-              )}
-            </Box>
-          )}
-
-          {currentTab === 2 && (
-            <Box>
-              <Tabs value={subTab} onChange={handleSubTabChange}>
                 <Tab label="Danh sách học viên" />
                 <Tab label="Xét tốt nghiệp" />
                 <Tab label="Quản lý bằng cấp" />
                 <Tab label="Quản lý danh mục khen thưởng" />
+                <Tab label="Quản lý chứng chỉ" />
               </Tabs>
               {subTab === 0 && <StudentManagement />}
               {subTab === 1 && <DieuKienTotNghiep />}
               {subTab === 2 && <QuanLyBangCap />}
               {subTab === 3 && < QuanLyKhenKyLuat />}
+              {subTab === 4 && < QuanLyChungChi />}
             </Box>
           )}
 
-          {currentTab === 3 && (
+          {currentTab === 2 && (
             <QuanLyMonHoc />
+          )}
+          {currentTab === 3 && (
+            <Box>
+              <Tabs value={subTab} onChange={handleSubTabChange}>
+                <Tab label="Phụ lục văn bằng" />
+                <Tab label="Thống kê" />
+                <Tab label="Thống kê điểm" />
+                <Tab label="Báo cáo chi tiết" />
+              </Tabs>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {subTab === 0 && <PhuLucBangDiem />}
+                {subTab === 1 && <ThongKe />}
+                {subTab === 2 && <ThongKeDiem />}
+              </Grid>
+            </Box>
+          )}
+          {currentTab === 4 && (
+            <XemDanhSachDiem />
           )}
         </Paper>
 

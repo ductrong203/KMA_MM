@@ -1,0 +1,37 @@
+# Debug commit issue
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: quanlydaotao
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    build: ./kma_be
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: 123456
+      DB_DATABASE: quanlydaotao
+      DB_HOST: mysql
+      DB_DIALECT: mysql
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./kma_fe
+    restart: always
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
