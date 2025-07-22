@@ -1,111 +1,114 @@
 const ExcelJS = require("exceljs");
+const fs = require("fs");
+const { Document, Packer, Paragraph, Table, TableCell, BorderStyle, VerticalAlign, TableRow, TextRun, WidthType, AlignmentType, UnderlineType, PageBreak } = require("docx");
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
 const { sinh_vien, thoi_khoa_bieu, diem, lop, khoa_dao_tao } = models;
 const KeHoachMonHocService = require('../services/keHoachMonHocService');
+const { text } = require("body-parser");
 
 class ExcelPhuLucBangService {
-    static async getSoKyHocVaKhoa(sinh_vien_id) {
-        try {
-            // Find student by ID
-            const sinhVien = await sinh_vien.findOne({
-                where: { id: sinh_vien_id }
-            });
-            
-            if (!sinhVien) {
-                throw new Error("Không tìm thấy thông tin sinh viên");
-            }
-            
-            // Get lop_id from sinh_vien
-            const lop_id = sinhVien.lop_id;
-            
-            if (!lop_id) {
-                throw new Error("Sinh viên không có thông tin lớp");
-            }
-            
-            // Find class information by lop_id
-            const lopInfo = await lop.findOne({
-                where: { id: lop_id }
-            });
-            
-            if (!lopInfo) {
-                throw new Error("Không tìm thấy thông tin lớp");
-            }
-            
-            // Get khoa_dao_tao_id from lop
-            const khoa_dao_tao_id = lopInfo.khoa_dao_tao_id;
-            
-            if (!khoa_dao_tao_id) {
-                throw new Error("Lớp không có thông tin khóa đào tạo");
-            }
-            
-            // Find khoa_dao_tao by khoa_dao_tao_id
-            const khoaDaoTao = await khoa_dao_tao.findOne({
-                where: { id: khoa_dao_tao_id }
-            });
-            
-            if (!khoaDaoTao) {
-                throw new Error("Không tìm thấy thông tin khóa đào tạo");
-            }
-            
-            return {
-                so_ky_hoc: khoaDaoTao.so_ky_hoc,
-                khoa_dao_tao_id: khoa_dao_tao_id,
-            };
-        } catch (error) {
-            console.error("Error in getSoKyHoc:", error);
-            throw error;
-        }
+  static async getSoKyHocVaKhoa(sinh_vien_id) {
+    try {
+      // Find student by ID
+      const sinhVien = await sinh_vien.findOne({
+        where: { id: sinh_vien_id }
+      });
+
+      if (!sinhVien) {
+        throw new Error("Không tìm thấy thông tin sinh viên");
+      }
+
+      // Get lop_id from sinh_vien
+      const lop_id = sinhVien.lop_id;
+
+      if (!lop_id) {
+        throw new Error("Sinh viên không có thông tin lớp");
+      }
+
+      // Find class information by lop_id
+      const lopInfo = await lop.findOne({
+        where: { id: lop_id }
+      });
+
+      if (!lopInfo) {
+        throw new Error("Không tìm thấy thông tin lớp");
+      }
+
+      // Get khoa_dao_tao_id from lop
+      const khoa_dao_tao_id = lopInfo.khoa_dao_tao_id;
+
+      if (!khoa_dao_tao_id) {
+        throw new Error("Lớp không có thông tin khóa đào tạo");
+      }
+
+      // Find khoa_dao_tao by khoa_dao_tao_id
+      const khoaDaoTao = await khoa_dao_tao.findOne({
+        where: { id: khoa_dao_tao_id }
+      });
+
+      if (!khoaDaoTao) {
+        throw new Error("Không tìm thấy thông tin khóa đào tạo");
+      }
+
+      return {
+        so_ky_hoc: khoaDaoTao.so_ky_hoc,
+        khoa_dao_tao_id: khoa_dao_tao_id,
+      };
+    } catch (error) {
+      console.error("Error in getSoKyHoc:", error);
+      throw error;
     }
+  }
 
-    static async getDiemTongKet(sinh_vien_id, mon_hoc_id) {
-        try {
-            // Lấy danh sách thời khóa biểu có môn học được truyền vào
-            const danhSachTKB = await thoi_khoa_bieu.findAll({
-                where: { mon_hoc_id: mon_hoc_id }
-            });
+  static async getDiemTongKet(sinh_vien_id, mon_hoc_id) {
+    try {
+      // Lấy danh sách thời khóa biểu có môn học được truyền vào
+      const danhSachTKB = await thoi_khoa_bieu.findAll({
+        where: { mon_hoc_id: mon_hoc_id }
+      });
 
-            if (!danhSachTKB || danhSachTKB.length === 0) {
-                return null; // Không tìm thấy thời khóa biểu phù hợp
-            }
+      if (!danhSachTKB || danhSachTKB.length === 0) {
+        return null; // Không tìm thấy thời khóa biểu phù hợp
+      }
 
-            // Lấy các ID của thời khóa biểu
-            const tkbIds = danhSachTKB.map(tkb => tkb.id);
+      // Lấy các ID của thời khóa biểu
+      const tkbIds = danhSachTKB.map(tkb => tkb.id);
 
-            // Lấy tất cả điểm của sinh viên có thời khóa biểu thuộc môn học
-            const danhSachDiem = await diem.findAll({
-                where: {
-                    sinh_vien_id: sinh_vien_id,
-                    thoi_khoa_bieu_id: tkbIds
-                },
-                order: [['lan_hoc', 'DESC']] // Sắp xếp theo lần học giảm dần để lấy lần học lớn nhất
-            });
+      // Lấy tất cả điểm của sinh viên có thời khóa biểu thuộc môn học
+      const danhSachDiem = await diem.findAll({
+        where: {
+          sinh_vien_id: sinh_vien_id,
+          thoi_khoa_bieu_id: tkbIds
+        },
+        order: [['lan_hoc', 'DESC']] // Sắp xếp theo lần học giảm dần để lấy lần học lớn nhất
+      });
 
-            if (!danhSachDiem || danhSachDiem.length === 0) {
-                return null; // Không tìm thấy điểm phù hợp
-            }
+      if (!danhSachDiem || danhSachDiem.length === 0) {
+        return null; // Không tìm thấy điểm phù hợp
+      }
 
-            // Lấy bản ghi điểm có lần học cao nhất
-            const diemCaoNhat = danhSachDiem[0];
+      // Lấy bản ghi điểm có lần học cao nhất
+      const diemCaoNhat = danhSachDiem[0];
 
-            // Tính điểm tổng kết
-            let diem_tong_ket;
-            
-            if (diemCaoNhat.diem_ck2 !== null && diemCaoNhat.diem_ck2 !== undefined) {
-                // Nếu có điểm thi lại (diem_ck2)
-                diem_tong_ket = diemCaoNhat.diem_gk * 0.3 + diemCaoNhat.diem_ck2 * 0.7;
-            } else {
-                // Nếu không có điểm thi lại
-                diem_tong_ket = diemCaoNhat.diem_gk * 0.3 + diemCaoNhat.diem_ck * 0.7;
-            }
+      // Tính điểm tổng kết
+      let diem_tong_ket;
 
-            return diem_tong_ket;
-        } catch (error) {
-            console.error("Lỗi khi truy vấn điểm tổng kết:", error);
-            throw error;
-        }
+      if (diemCaoNhat.diem_ck2 !== null && diemCaoNhat.diem_ck2 !== undefined) {
+        // Nếu có điểm thi lại (diem_ck2)
+        diem_tong_ket = diemCaoNhat.diem_gk * 0.3 + diemCaoNhat.diem_ck2 * 0.7;
+      } else {
+        // Nếu không có điểm thi lại
+        diem_tong_ket = diemCaoNhat.diem_gk * 0.3 + diemCaoNhat.diem_ck * 0.7;
+      }
+
+      return diem_tong_ket;
+    } catch (error) {
+      console.error("Lỗi khi truy vấn điểm tổng kết:", error);
+      throw error;
     }
+  }
 
     static async getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id) {
         try {
@@ -318,283 +321,285 @@ class ExcelPhuLucBangService {
             worksheet.getCell("F2").font = { name: 'Times New Roman',bold: true, underline: 'single', size: 12 };
             worksheet.getCell("F2").alignment = { horizontal: "center" };
 
-            worksheet.getCell("A3").height = 5;
-            worksheet.mergeCells("A4", "L4");
-            worksheet.getCell("A4").value = "PHỤ LỤC VĂN BẰNG";
-            worksheet.getCell("A4").font = { name: 'Times New Roman',bold: true, size: 16 };
-            worksheet.getCell("A4").alignment = { horizontal: "center" };
-            worksheet.getCell("A5").height = 5;
-            // --- Phần thông tin văn bằng ---
-            worksheet.mergeCells('A6','L6');
-            worksheet.getCell("A6").value = "I. THÔNG TIN VỀ VĂN BẰNG";
-            worksheet.getCell("A6").font = { name: 'Times New Roman',size: 14,bold: true };
-            //thông tin bên trái
-            worksheet.getCell("A7").value = `Họ và tên: ${sinhVien.ho_dem} ${sinhVien.ten}`;
-            worksheet.getCell("A7").font = { name: 'Times New Roman', size: 14 };
-            
-            const ngaySinh = sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : '';
-            worksheet.getCell("A8").value = `Ngày sinh: ${ngaySinh}`;
-            worksheet.getCell("A8").font = { name: 'Times New Roman', size: 14 };
-            
-            const noiSinh = sinhVien.quan_huyen && sinhVien.tinh_thanh ? 
-                `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : '';
-            worksheet.getCell("A9").value = `Nơi sinh: ${noiSinh}`;
-            worksheet.getCell("A9").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("A10").value = `Mã số sinh viên: ${sinhVien.ma_sinh_vien || ''}`;
-            worksheet.getCell("A10").font = { name: 'Times New Roman', size: 14 };
-            
-            const khoaInfo = sinhVien.lop?.khoa_dao_tao?.ma_khoa || '';
-            worksheet.getCell("A11").value = `Khóa: ${khoaInfo}`;
-            worksheet.getCell("A11").font = { name: 'Times New Roman', size: 14 };
-            
-            const tenKhoa = sinhVien.lop?.khoa_dao_tao?.ten_khoa || '';
-            worksheet.getCell("A12").value = `Chuyên ngành đào tạo: ${tenKhoa}`;
-            worksheet.getCell("A12").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("A13").value = "Hình thức đào tạo:";
-            worksheet.getCell("A13").font = { name: 'Times New Roman', size: 14 };
-            
-            const ngayNhapHoc = sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : '';
-            worksheet.getCell("A14").value = `Ngày nhập học: ${ngayNhapHoc}`;
-            worksheet.getCell("A14").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("A15").value = "Trình độ đào tạo:";
-            worksheet.getCell("A15").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("A16").value = "Số hiệu văn bằng:";
-            worksheet.getCell("A16").font = { name: 'Times New Roman', size: 14 };
-          
-            //thông tin bên phải
-            const gioiTinh = sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ";
-            worksheet.getCell("H7").value = `Giới tính: ${gioiTinh}`;
-            worksheet.getCell("H7").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("H11").value = `Lớp: ${sinhVien.lop?.ma_lop || ''}`;
-            worksheet.getCell("H11").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("H13").value = "Ngôn ngữ đào tạo: Tiếng Việt";
-            worksheet.getCell("H13").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("H14").value = "Thời gian đào tạo:";
-            worksheet.getCell("H14").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("H15").value = "Xếp hạng tốt nghiệp: ";
-            worksheet.getCell("H15").font = { name: 'Times New Roman', size: 14 };
-            
-            worksheet.getCell("H16").value = "Số vào sổ gốc:";
-            worksheet.getCell("H16").font = { name: 'Times New Roman', size: 14 };
+      worksheet.getCell("A3").height = 5;
+      worksheet.mergeCells("A4", "L4");
+      worksheet.getCell("A4").value = "PHỤ LỤC VĂN BẰNG";
+      worksheet.getCell("A4").font = { name: 'Times New Roman', bold: true, size: 16 };
+      worksheet.getCell("A4").alignment = { horizontal: "center" };
+      worksheet.getCell("A5").height = 5;
 
-            worksheet.addRow([]);
+      // --- Phần thông tin văn bằng ---
+      worksheet.mergeCells('A6', 'L6');
+      worksheet.getCell("A6").value = "I. THÔNG TIN VỀ VĂN BẰNG";
+      worksheet.getCell("A6").font = { name: 'Times New Roman', size: 14, bold: true };
+      //thông tin bên trái
+      worksheet.getCell("A7").value = `Họ và tên: ${sinhVien.ho_dem} ${sinhVien.ten}`;
+      worksheet.getCell("A7").font = { name: 'Times New Roman', size: 14 };
 
-            // --- Phần II ---
-            worksheet.mergeCells('A18','L18');
-            worksheet.getCell("A18").value = "II. ĐIỂM TOÀN KHÓA HỌC";
-            worksheet.getCell("A18").font = { name: 'Times New Roman',size: 14,bold: true };
+      const ngaySinh = sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : '';
+      worksheet.getCell("A8").value = `Ngày sinh: ${ngaySinh}`;
+      worksheet.getCell("A8").font = { name: 'Times New Roman', size: 14 };
 
-            // Thêm dòng trống để tách biệt
-            worksheet.addRow([]);
-            
-            let stt = 1;
-            // Lặp qua từng kỳ học
-            for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
-                // Lấy dữ liệu điểm cho kỳ học hiện tại
-                const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
-                
-                // Tạo header cho kỳ học
-                // Dòng tiêu đề kỳ học
-                const kyHocRow = worksheet.addRow([`HỌC KỲ ${ky_hoc}`]);
-                const kyHocRowIdx = worksheet.rowCount;
-                worksheet.mergeCells(`A${kyHocRowIdx}:L${kyHocRowIdx}`);
-                kyHocRow.getCell('A').alignment = { horizontal: 'center', vertical: 'middle' };
-                kyHocRow.getCell('A').font = { name: 'Times New Roman', size: 11, bold: true };
-                kyHocRow.getCell('A').border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-                kyHocRow.height = 20;
-                
-                // Dòng header 1
-                const headerRow1 = worksheet.addRow(['STT', 'Tên học phần','', '', '', '', 'Số tín chỉ', 'Điểm', '', '', 'Ghi chú', '']);
-                const headerRow1Idx = worksheet.rowCount;
-                
-                // Dòng header 2
-                const headerRow2 = worksheet.addRow(['', '', '', '', '', '','', 'Hệ 10', 'Hệ 4', 'Hệ chữ', '', '']);
-                const headerRow2Idx = worksheet.rowCount;
-                
-                // Thực hiện merge các ô
-                worksheet.mergeCells(`A${headerRow1Idx}:A${headerRow2Idx}`);
-                worksheet.mergeCells(`B${headerRow1Idx}:F${headerRow2Idx}`);
-                worksheet.mergeCells(`G${headerRow1Idx}:G${headerRow2Idx}`);
-                worksheet.mergeCells(`H${headerRow1Idx}:J${headerRow1Idx}`);
-                worksheet.mergeCells(`K${headerRow1Idx}:L${headerRow2Idx}`);
-                
-                // Áp dụng style cho các ô header dòng 1
-                ['A', 'B', 'G', 'H', 'K'].forEach(col => {
-                    const cell = headerRow1.getCell(col);
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                    cell.font = { name: 'Times New Roman', size: 9, bold: true };
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-                
-                headerRow1.height = 13;
-                
-                // Áp dụng style cho các ô header dòng 2
-                ['H', 'I', 'J'].forEach(col => {
-                    const cell = headerRow2.getCell(col);
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                    cell.font = { name: 'Times New Roman', size: 9, bold: true };
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-                
-                // Thêm border cho các ô đã merged từ dòng trên
-                ['A', 'B', 'D', 'E', 'F', 'G', 'K', 'L'].forEach(col => {
-                    const cell = headerRow2.getCell(col);
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-                
-                headerRow2.height = 13;
-                
-                // Nếu kỳ học không có dữ liệu, bỏ qua
-                if (!dataDiem || dataDiem.length === 0) {
-                    continue;
-                }
+      const noiSinh = sinhVien.quan_huyen && sinhVien.tinh_thanh ?
+        `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : '';
+      worksheet.getCell("A9").value = `Nơi sinh: ${noiSinh}`;
+      worksheet.getCell("A9").font = { name: 'Times New Roman', size: 14 };
 
-                // Thêm dữ liệu điểm
-                for (const item of dataDiem) {
-                    const dataRow = worksheet.addRow([
-                        stt,
-                        item.ten_mon_hoc, // Tên học phần
-                        '',
-                        '',
-                        '', // Phần cuối của tên học phần
-                        '', // Phần cuối của tên học phần
-                        item.so_tin_chi,
-                        item.diem_he_10 !== null ? item.diem_he_10 : '',
-                        item.diem_he_4 !== null ? item.diem_he_4 : '',
-                        item.diem_chu !== null ? item.diem_chu : '',
-                        '', // Ghi chú
-                        '' // Ghi chú
-                    ]);
-                    
-                    const dataRowIdx = worksheet.rowCount;
-                    
-                    // Merge các cột tên học phần
-                    worksheet.mergeCells(`B${dataRowIdx}:F${dataRowIdx}`);
-                    worksheet.mergeCells(`K${dataRowIdx}:L${dataRowIdx}`);
-                    
-                    // Áp dụng style cho các ô dữ liệu
-                    dataRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                        cell.alignment = { 
-                            horizontal: colNumber === 4 ? 'left' : 'center', 
-                            vertical: 'middle',
-                            wrapText: true
-                        };
-                        cell.font = { name: 'Times New Roman', size: 11 };
-                        cell.border = {
-                            top: { style: 'thin' },
-                            left: { style: 'thin' },
-                            bottom: { style: 'thin' },
-                            right: { style: 'thin' }
-                        };
-                    });
-                    
-                    dataRow.height = 15;
-                    stt++;
-                }
-            }            // Tính toán tổng số tín chỉ và GPA
-            const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
-            
-            // Thêm dòng trống
-            worksheet.addRow();
-            
-            // Thêm thông tin tổng kết
-            // 1. Thêm dòng tổng số tín chỉ (merged A-D, Times New Roman 14, left aligned)
-            const summaryRow1 = worksheet.addRow(['Tổng số tín chỉ đã tích lũy:', totalCredits, '', '', '', '', '', '', '', '', '', '']);
-            const summaryRow1Idx = worksheet.rowCount;
-            worksheet.mergeCells(`A${summaryRow1Idx}:D${summaryRow1Idx}`);
-            summaryRow1.getCell('A').font = { name: 'Times New Roman', size: 14 };
-            summaryRow1.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
-            
-            // 2. Thêm dòng GPA (merged A-F, Times New Roman 14, left aligned)
-            const summaryRow2 = worksheet.addRow(['Điểm trung bình chung toàn khóa hệ 4:', gpa, '', '', '', '', '', '', '', '', '', '']);
-            const summaryRow2Idx = worksheet.rowCount;
-            worksheet.mergeCells(`A${summaryRow2Idx}:F${summaryRow2Idx}`);
-            summaryRow2.getCell('A').font = { name: 'Times New Roman', size: 14 };
-            summaryRow2.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
-            
-            // 3. Thêm dòng Giáo dục thể chất (merged A-D, Times New Roman 14, left aligned)
-            const gdtcRow = worksheet.addRow(['Giáo dục Thể chất:', '', '', '', '', '', '', '', '', '', '', '']);
-            const gdtcRowIdx = worksheet.rowCount;
-            worksheet.mergeCells(`A${gdtcRowIdx}:D${gdtcRowIdx}`);
-            gdtcRow.getCell('A').font = { name: 'Times New Roman', size: 14 };
-            gdtcRow.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
-            
-            // 4. Thêm dòng Quốc phòng (merged A-F, Times New Roman 14, left aligned)
-            const gdqpRow = worksheet.addRow(['Giáo dục Quốc phòng và An ninh: ', '', '', '', '', '', '', '', '', '', '', '']);
-            const gdqpRowIdx = worksheet.rowCount;
-            worksheet.mergeCells(`A${gdqpRowIdx}:F${gdqpRowIdx}`);
-            gdqpRow.getCell('A').font = { name: 'Times New Roman', size: 14 };
-            gdqpRow.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
-            
-            // Thêm dòng trống
-            worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
-            
-            // Format ngày tháng
-            const today = new Date();
-            const day = today.getDate();
-            const month = today.getMonth() + 1;
-            const year = today.getFullYear();
-            
-            // 5. Thêm dòng date footer 
-            const footerDateRow = worksheet.addRow(['', '', '', '', '', '', '', `Hà Nội, ngày ${day} tháng ${month} năm ${year}`, '', '', '', '']);
-            const footerDateRowIdx = worksheet.rowCount;
-            worksheet.mergeCells(`H${footerDateRowIdx}:L${footerDateRowIdx}`);
-            footerDateRow.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
-            footerDateRow.getCell('H').font = { name: 'Times New Roman', size: 12, italic: true };
-            
-            // 6. Thêm dòng signature line (merged H-L, Times New Roman 13, center aligned, bold)
-            const footerRow3 = worksheet.addRow(['', '', '', '', '', '', '', 'KT. GIÁM ĐỐC', '', '', '', '']);
-            const footerRow3Idx = worksheet.rowCount;
-            worksheet.mergeCells(`H${footerRow3Idx}:L${footerRow3Idx}`);
-            footerRow3.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
-            footerRow3.getCell('H').font = { name: 'Times New Roman', size: 13, bold: true };
+      worksheet.getCell("A10").value = `Mã số sinh viên: ${sinhVien.ma_sinh_vien || ''}`;
+      worksheet.getCell("A10").font = { name: 'Times New Roman', size: 14 };
 
-            const footerRow4 = worksheet.addRow(['', '', '', '', '', '', '', 'PHÓ GIÁM ĐỐC', '', '', '', '']);
-            const footerRow4Idx = worksheet.rowCount;
-            worksheet.mergeCells(`H${footerRow4Idx}:L${footerRow4Idx}`);
-            footerRow4.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
-            footerRow4.getCell('H').font = { name: 'Times New Roman', size: 13, bold: true };
-            
-            // Thêm dòng chữ ký
-            worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
-            worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
-            worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
-            
-            // Trả về workbook
-            return workbook;
-        } catch (error) {
-            console.error("Lỗi khi xuất file Excel phụ lục bảng:", error);
-            throw error;
+      const khoaInfo = sinhVien.lop?.khoa_dao_tao?.ma_khoa || '';
+      worksheet.getCell("A11").value = `Khóa: ${khoaInfo}`;
+      worksheet.getCell("A11").font = { name: 'Times New Roman', size: 14 };
+
+      const tenKhoa = sinhVien.lop?.khoa_dao_tao?.ten_khoa || '';
+      worksheet.getCell("A12").value = `Chuyên ngành đào tạo: ${tenKhoa}`;
+      worksheet.getCell("A12").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("A13").value = "Hình thức đào tạo:";
+      worksheet.getCell("A13").font = { name: 'Times New Roman', size: 14 };
+
+      const ngayNhapHoc = sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : '';
+      worksheet.getCell("A14").value = `Ngày nhập học: ${ngayNhapHoc}`;
+      worksheet.getCell("A14").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("A15").value = "Trình độ đào tạo:";
+      worksheet.getCell("A15").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("A16").value = "Số hiệu văn bằng:";
+      worksheet.getCell("A16").font = { name: 'Times New Roman', size: 14 };
+
+      //thông tin bên phải
+      const gioiTinh = sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ";
+      worksheet.getCell("H7").value = `Giới tính: ${gioiTinh}`;
+      worksheet.getCell("H7").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("H11").value = `Lớp: ${sinhVien.lop?.ma_lop || ''}`;
+      worksheet.getCell("H11").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("H13").value = "Ngôn ngữ đào tạo: Tiếng Việt";
+      worksheet.getCell("H13").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("H14").value = "Thời gian đào tạo:";
+      worksheet.getCell("H14").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("H15").value = "Xếp hạng tốt nghiệp: ";
+      worksheet.getCell("H15").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.getCell("H16").value = "Số vào sổ gốc:";
+      worksheet.getCell("H16").font = { name: 'Times New Roman', size: 14 };
+
+      worksheet.addRow([]);
+
+      // --- Phần II ---
+      worksheet.mergeCells('A18', 'L18');
+      worksheet.getCell("A18").value = "II. ĐIỂM TOÀN KHÓA HỌC";
+      worksheet.getCell("A18").font = { name: 'Times New Roman', size: 14, bold: true };
+
+      // Thêm dòng trống để tách biệt
+      worksheet.addRow([]);
+
+      let stt = 1;
+      // Lặp qua từng kỳ học
+      for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
+        // Lấy dữ liệu điểm cho kỳ học hiện tại
+        const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
+
+        // Tạo header cho kỳ học
+        // Dòng tiêu đề kỳ học
+        const kyHocRow = worksheet.addRow([`HỌC KỲ ${ky_hoc}`]);
+        const kyHocRowIdx = worksheet.rowCount;
+        worksheet.mergeCells(`A${kyHocRowIdx}:L${kyHocRowIdx}`);
+        kyHocRow.getCell('A').alignment = { horizontal: 'center', vertical: 'middle' };
+        kyHocRow.getCell('A').font = { name: 'Times New Roman', size: 11, bold: true };
+        kyHocRow.getCell('A').border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        kyHocRow.height = 20;
+
+        // Dòng header 1
+        const headerRow1 = worksheet.addRow(['STT', 'Tên học phần', '', '', '', '', 'Số tín chỉ', 'Điểm', '', '', 'Ghi chú', '']);
+        const headerRow1Idx = worksheet.rowCount;
+
+        // Dòng header 2
+        const headerRow2 = worksheet.addRow(['', '', '', '', '', '', '', 'Hệ 10', 'Hệ 4', 'Hệ chữ', '', '']);
+        const headerRow2Idx = worksheet.rowCount;
+
+        // Thực hiện merge các ô
+        worksheet.mergeCells(`A${headerRow1Idx}:A${headerRow2Idx}`);
+        worksheet.mergeCells(`B${headerRow1Idx}:F${headerRow2Idx}`);
+        worksheet.mergeCells(`G${headerRow1Idx}:G${headerRow2Idx}`);
+        worksheet.mergeCells(`H${headerRow1Idx}:J${headerRow1Idx}`);
+        worksheet.mergeCells(`K${headerRow1Idx}:L${headerRow2Idx}`);
+
+        // Áp dụng style cho các ô header dòng 1
+        ['A', 'B', 'G', 'H', 'K'].forEach(col => {
+          const cell = headerRow1.getCell(col);
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.font = { name: 'Times New Roman', size: 9, bold: true };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+
+        headerRow1.height = 13;
+
+        // Áp dụng style cho các ô header dòng 2
+        ['H', 'I', 'J'].forEach(col => {
+          const cell = headerRow2.getCell(col);
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.font = { name: 'Times New Roman', size: 9, bold: true };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+
+        // Thêm border cho các ô đã merged từ dòng trên
+        ['A', 'B', 'D', 'E', 'F', 'G', 'K', 'L'].forEach(col => {
+          const cell = headerRow2.getCell(col);
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+
+        headerRow2.height = 13;
+
+        // Nếu kỳ học không có dữ liệu, bỏ qua
+        if (!dataDiem || dataDiem.length === 0) {
+          continue;
         }
+
+        // Thêm dữ liệu điểm
+        for (const item of dataDiem) {
+          const dataRow = worksheet.addRow([
+            stt,
+            item.ten_mon_hoc, // Tên học phần
+            '',
+            '',
+            '', // Phần cuối của tên học phần
+            '', // Phần cuối của tên học phần
+            item.so_tin_chi,
+            item.diem_he_10 !== null ? item.diem_he_10 : '',
+            item.diem_he_4 !== null ? item.diem_he_4 : '',
+            item.diem_chu !== null ? item.diem_chu : '',
+            '', // Ghi chú
+            '' // Ghi chú
+          ]);
+
+          const dataRowIdx = worksheet.rowCount;
+
+          // Merge các cột tên học phần
+          worksheet.mergeCells(`B${dataRowIdx}:F${dataRowIdx}`);
+          worksheet.mergeCells(`K${dataRowIdx}:L${dataRowIdx}`);
+
+          // Áp dụng style cho các ô dữ liệu
+          dataRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            cell.alignment = {
+              horizontal: colNumber === 4 ? 'left' : 'center',
+              vertical: 'middle',
+              wrapText: true
+            };
+            cell.font = { name: 'Times New Roman', size: 11 };
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+          });
+
+          dataRow.height = 15;
+          stt++;
+        }
+      }            // Tính toán tổng số tín chỉ và GPA
+      const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
+
+      // Thêm dòng trống
+      worksheet.addRow();
+
+      // Thêm thông tin tổng kết
+      // 1. Thêm dòng tổng số tín chỉ (merged A-D, Times New Roman 14, left aligned)
+      const summaryRow1 = worksheet.addRow(['Tổng số tín chỉ đã tích lũy:', totalCredits, '', '', '', '', '', '', '', '', '', '']);
+      const summaryRow1Idx = worksheet.rowCount;
+      worksheet.mergeCells(`A${summaryRow1Idx}:D${summaryRow1Idx}`);
+      summaryRow1.getCell('A').font = { name: 'Times New Roman', size: 14 };
+      summaryRow1.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // 2. Thêm dòng GPA (merged A-F, Times New Roman 14, left aligned)
+      const summaryRow2 = worksheet.addRow(['Điểm trung bình chung toàn khóa hệ 4:', gpa, '', '', '', '', '', '', '', '', '', '']);
+      const summaryRow2Idx = worksheet.rowCount;
+      worksheet.mergeCells(`A${summaryRow2Idx}:F${summaryRow2Idx}`);
+      summaryRow2.getCell('A').font = { name: 'Times New Roman', size: 14 };
+      summaryRow2.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // 3. Thêm dòng Giáo dục thể chất (merged A-D, Times New Roman 14, left aligned)
+      const gdtcRow = worksheet.addRow(['Giáo dục Thể chất:', '', '', '', '', '', '', '', '', '', '', '']);
+      const gdtcRowIdx = worksheet.rowCount;
+      worksheet.mergeCells(`A${gdtcRowIdx}:D${gdtcRowIdx}`);
+      gdtcRow.getCell('A').font = { name: 'Times New Roman', size: 14 };
+      gdtcRow.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // 4. Thêm dòng Quốc phòng (merged A-F, Times New Roman 14, left aligned)
+      const gdqpRow = worksheet.addRow(['Giáo dục Quốc phòng và An ninh: ', '', '', '', '', '', '', '', '', '', '', '']);
+      const gdqpRowIdx = worksheet.rowCount;
+      worksheet.mergeCells(`A${gdqpRowIdx}:F${gdqpRowIdx}`);
+      gdqpRow.getCell('A').font = { name: 'Times New Roman', size: 14 };
+      gdqpRow.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // Thêm dòng trống
+      worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+
+      // Format ngày tháng
+      const today = new Date();
+      const day = today.getDate();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
+
+      // 5. Thêm dòng date footer 
+      const footerDateRow = worksheet.addRow(['', '', '', '', '', '', '', `Hà Nội, ngày ${day} tháng ${month} năm ${year}`, '', '', '', '']);
+      const footerDateRowIdx = worksheet.rowCount;
+      worksheet.mergeCells(`H${footerDateRowIdx}:L${footerDateRowIdx}`);
+      footerDateRow.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
+      footerDateRow.getCell('H').font = { name: 'Times New Roman', size: 12, italic: true };
+
+      // 6. Thêm dòng signature line (merged H-L, Times New Roman 13, center aligned, bold)
+      const footerRow3 = worksheet.addRow(['', '', '', '', '', '', '', 'KT. GIÁM ĐỐC', '', '', '', '']);
+      const footerRow3Idx = worksheet.rowCount;
+      worksheet.mergeCells(`H${footerRow3Idx}:L${footerRow3Idx}`);
+      footerRow3.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
+      footerRow3.getCell('H').font = { name: 'Times New Roman', size: 13, bold: true };
+
+      const footerRow4 = worksheet.addRow(['', '', '', '', '', '', '', 'PHÓ GIÁM ĐỐC', '', '', '', '']);
+      const footerRow4Idx = worksheet.rowCount;
+      worksheet.mergeCells(`H${footerRow4Idx}:L${footerRow4Idx}`);
+      footerRow4.getCell('H').alignment = { horizontal: 'center', vertical: 'middle' };
+      footerRow4.getCell('H').font = { name: 'Times New Roman', size: 13, bold: true };
+
+      // Thêm dòng chữ ký
+      worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+
+      // Trả về workbook
+      return workbook;
+
+    } catch (error) {
+      console.error("Lỗi khi xuất file Excel phụ lục bảng:", error);
+      throw error;
     }
+  }
 
     static async exportExcelPhuLucBang_v2(sinh_vien_id) {
         try {
@@ -1559,6 +1564,492 @@ class ExcelPhuLucBangService {
         }
     }
 
+  //xuất bản docx
+  static async docxPhuLucBang(sinh_vien_id) {
+    try {
+      // Lấy thông tin số kỳ học và khóa đào tạo của sinh viên
+      const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
+      // Lấy thông tin sinh viên
+      const sinhVien = await sinh_vien.findOne({
+        where: { id: sinh_vien_id },
+        include: [
+          {
+            model: lop,
+            as: 'lop',
+            attributes: ['ma_lop', 'id'],
+            include: [
+              {
+                model: khoa_dao_tao,
+                as: 'khoa_dao_tao',
+                attributes: ['ma_khoa', 'ten_khoa', 'nam_hoc']
+              }
+            ]
+          }
+        ]
+      });
+
+      if (!sinhVien) {
+        throw new Error("Không tìm thấy thông tin sinh viên");
+      }
+
+      // Header
+      const rowHead = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: '       BAN CƠ YẾU CHÍNH PHỦ', size: 24, font: 'Times New Roman' }),
+                ],
+
+              }),
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'HỌC VIỆN KỸ THUẬT MẬT MÃ', bold: true, size: 24, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
+                ],
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, size: 24, font: 'Times New Roman' }),
+                ],
+              }),
+
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 26, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE } }),
+                ],
+              }),
+
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
+                ],
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+        ],
+      });
+
+      //Thông tin chung
+      const rowTitle = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                children: [
+                  new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngành đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngày nhập học: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ngay_vao_truong ? new Date(sinhVien.ngay_vao_truong).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngôn ngữ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Tiếng việt`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Số hiệu văn bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: ``, size: 24, font: 'Times New Roman' }),
+
+                ],
+                alignment: AlignmentType.LEFT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'Ngày sinh: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Giới tính: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Chuyên ngành: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ma_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Thời gian đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `2025-2030`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Xếp hạng tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Giỏi`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Số vào sổ cấp bằng: ', size: 24, font: 'Times New Roman', break: 1 }),
+
+                ],
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+        ],
+      });
+
+      const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
+      
+      //thông tin tổng
+      const rowTotal = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                children: [
+                  new TextRun({ text: 'Tổng số tín chỉ tích luỹ: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${totalCredits}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 4): ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${gpa}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB tích luỹ toàn khoá (hệ 10): ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Xếp loại tốt nghiệp: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
+
+                ],
+                alignment: AlignmentType.LEFT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                spacing: { line: 300 },
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: 'Giáo dục thể chất: ', size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Giáo dục Quốc phòng và an ninh:', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Chuẩn đầu ra Tiếng anh: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+
+                ],
+              }),
+              new Paragraph({
+                spacing: { after: 50 },
+                children: [
+                  new TextRun({ text: 'Hà Nội, ngày      tháng   năm 202', size: 26, italics: true, break: 1 }),
+                ],
+                alignment: AlignmentType.RIGHT,
+
+              }),
+              new Paragraph({
+                indent: { right: 720 },
+                children: [
+                  new TextRun({ text: 'KT. GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
+                  new TextRun({ text: 'PHÓ GIÁM ĐỐC', size: 26, bold: true, break: 1 }),
+
+                ],
+                alignment: AlignmentType.RIGHT,
+
+              }),
+            ],
+            borders: { top: { size: 0 }, bottom: { size: 0 }, left: { size: 0 }, right: { size: 0 } },
+          }),
+        ],
+      });
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 720, // 0.5 inch
+                right: 720,
+                bottom: 720,
+                left: 720,
+              },
+            }
+          },
+          children: [
+            new Table({
+              rows: [rowHead],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+              children: [
+                new TextRun({ text: 'PHỤ LỤC VĂN BẰNG', bold: true, size: 28, font: 'Times New Roman', break: 1 }),
+              ],
+            }),
+
+            // PHẦN 1 LỚN
+            new Paragraph({
+              spacing: { after: 50 },
+              children: [new TextRun({ text: 'I. Thông tin chung', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
+
+            }),
+            new Table({
+              rows: [rowTitle],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+
+
+            // PHẦN 2 LỚN
+            new Paragraph({
+              spacing: { after: 50 },
+              children: [new TextRun({ text: 'II. Kết quả đào tạo', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
+
+            }),
+
+            // Bảng kết quả
+            new Table({
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 8000, type: WidthType.DXA },
+                      children: [this.generateSubTable(0, 25), this.generateSubTable(50, 56)], // bảng trái
+
+                    }),
+                    new TableCell({
+                      width: { size: 500, type: WidthType.DXA },
+                      children: [new Paragraph({})],
+                    }),
+
+                    new TableCell({
+                      width: { size: 8000, type: WidthType.DXA },
+                      children: [this.generateSubTable(25, 50), this.generateSubTable(56, 62)], // bảng phải
+                    })
+                  ],
+                }),
+              ],
+
+            }),
+            new Paragraph({
+              spacing: { after: 100 },
+              children: [new TextRun({ text: '', break: 1 })],
+
+            }),
+            //footer
+            new Table({
+              rows: [rowTotal],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { size: 0, color: "FFFFFF" },
+                bottom: { size: 0, color: "FFFFFF" },
+                left: { size: 0, color: "FFFFFF" },
+                right: { size: 0, color: "FFFFFF" },
+                insideHorizontal: { size: 0, color: "FFFFFF" },
+                insideVertical: { size: 0, color: "FFFFFF" },
+              },
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      console.log('Buffer generated successfully, length:', buffer.length);
+      return buffer;
+    } catch (error) {
+      console.error('Error generating buffer:', error);
+      throw error;
+    }
+  }
+
+  static  generateSubTable(start, end) {
+    console.log(start)
+    // const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
+
+    // for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
+    //   // Lấy dữ liệu điểm cho kỳ học hiện tại
+    //   const dataDiem = await this.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
+    //   // Nếu kỳ học không có dữ liệu, bỏ qua
+    //   if (!dataDiem || dataDiem.length === 0) {
+    //     continue;
+    //   }
+      
+
+    // }
+
+    return new Table({
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'TT', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 100, bottom: 0, left: 50, right: 50 },
+              rowSpan: 2,
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Học phần', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              width: { size: 50000, type: WidthType.DXA },
+              rowSpan: 2,
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Số TC', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              rowSpan: 2
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Điểm số', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+
+              columnSpan: 2,
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Điểm chữ', size: 20, font: 'Times New Roman', bold: true })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER,
+              rowSpan: 2,
+
+            }),
+
+          ],
+
+        }),
+
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Hệ 10', size: 20, font: 'Times New Roman', bold: true, })],
+                alignment: AlignmentType.CENTER,
+                verticalAlign: VerticalAlign.CENTER,
+
+              })],
+              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+
+            }),
+
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: 'Hệ 4', size: 20, font: 'Times New Roman', bold: true, })],
+                alignment: AlignmentType.CENTER,
+                verticalAlign: VerticalAlign.CENTER,
+
+              })],
+              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+
+            }),
+          ],
+          tableHeader: true
+
+        }),
+        ...Array.from({ length: end - start }, (_, index) => {
+          let i = start + index;
+
+          return new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: `${i + 1}`, size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })],
+              }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: "", size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })],
+                margins: { top: 50, bottom: 50, left: 50, right: 50 },
+                width: { size: 9000, type: WidthType.DXA },
+              }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: `2`, size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
+              }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: (7.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
+              }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: (3.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
+              }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [new TextRun({ text: i % 2 === 0 ? 'A+' : 'A', size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.CENTER,
+                })]
+              }),
+
+            ],
+
+          })
+        })
+      ],
+
+    })
+  }
 }
 
 module.exports = ExcelPhuLucBangService

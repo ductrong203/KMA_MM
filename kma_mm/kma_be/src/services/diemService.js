@@ -355,25 +355,45 @@ class DiemService {
         let ho_va_ten = hoTenIndexes
           .map((idx) => row[idx])
           .filter((val) => val !== "")
-          .join(" ");
-
-        // Xử lý điểm thành phần 1
+          .join(" ");        
+        let ghi_chu = null;
         let diem_tp1 = null;
+        let diem_tp2 = null;
+        let diem_gk = null;
+        
+        // Lưu giá trị điểm thô để kiểm tra
+        let diem1Raw = null;
+        let diem2Raw = null;
+        let invalidScore = null;
+        
+        // Xử lý điểm thành phần 1
         if (diemTP1Index !== -1 && row[diemTP1Index] !== undefined) {
-          let diem1 = row[diemTP1Index].toString().replace(",", ".").trim();
-          diem_tp1 = !isNaN(Number(diem1)) ? parseFloat(Number(diem1).toFixed(2)) : null;
+          diem1Raw = row[diemTP1Index].toString().replace(",", ".").trim();
+          if (diem1Raw !== "" && !isNaN(Number(diem1Raw))) {
+            diem_tp1 = parseFloat(Number(diem1Raw).toFixed(2));
+          } else if (diem1Raw !== "") {
+            invalidScore = diem1Raw;
+          }
         }
 
         // Xử lý điểm thành phần 2
-        let diem_tp2 = null;
         if (diemTP2Index !== -1 && row[diemTP2Index] !== undefined) {
-          let diem2 = row[diemTP2Index].toString().replace(",", ".").trim();
-          diem_tp2 = !isNaN(Number(diem2)) ? parseFloat(Number(diem2).toFixed(2)) : null;
+          diem2Raw = row[diemTP2Index].toString().replace(",", ".").trim();
+          if (diem2Raw !== "" && !isNaN(Number(diem2Raw))) {
+            diem_tp2 = parseFloat(Number(diem2Raw).toFixed(2));
+          } else if (diem2Raw !== "") {
+            invalidScore = invalidScore || diem2Raw;
+          }
         }
 
-        // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
-        let diem_gk = null;
-        if (diem_tp1 !== null && diem_tp2 !== null) {
+        // Nếu có điểm không hợp lệ, gán tất cả điểm = 0 và lưu ghi chú
+        if (invalidScore) {
+          diem_tp1 = 0;
+          diem_tp2 = 0;
+          diem_gk = 0;
+          ghi_chu = invalidScore;
+        } else if (diem_tp1 !== null && diem_tp2 !== null) {
+          // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
           diem_gk = parseFloat((0.3 * diem_tp1 + 0.7 * diem_tp2).toFixed(2));
         }
 
@@ -391,6 +411,7 @@ class DiemService {
           diem_tp1,
           diem_tp2,
           diem_gk,
+          ghi_chu,
         });
       }
 

@@ -1,10 +1,5 @@
 const dotenv = require("dotenv");
-const path = require("path");
 dotenv.config();
-
-// Load .env file từ thư mục gốc (1 cấp trên src)
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
 module.exports = {
   development: {
     username: process.env.DB_USERNAME || "root",

@@ -16,6 +16,12 @@ app.use(morgan("dev"));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
+
+
+const logActivity = require("./middelWare/logger");
+app.use(logActivity);
+
+
 routes(app);
 db.sequelize
   .authenticate()

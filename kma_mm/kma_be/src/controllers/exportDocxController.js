@@ -1,14 +1,14 @@
-const ExcelPhuLucBangService = require("../services/excelPhuLucBangService");
+const ExportDocxService = require("../services/exportDocxService");
 const path = require("path");
 const fs = require("fs");
 const SinhVienService = require("../services/studentService");
 
-const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
+const exportDir = path.join(__dirname, "..", "exports", "ket_qua_hoc_tap_cua_sinh_vien");
 if (!fs.existsSync(exportDir)) {
   fs.mkdirSync(exportDir, { recursive: true });
 }
 
-class ExcelPhuLucBangController{
+class ExportDocxController{
     static async getDataPhuLucBang(req, res) {
         try {
             const { sinh_vien_id, ky_hoc, khoa_dao_tao_id } = req.query;
@@ -36,7 +36,7 @@ class ExcelPhuLucBangController{
             }
             
             // Lấy dữ liệu phụ lục bảng
-            const data = await ExcelPhuLucBangService.getDataPhuLucBang(
+            const data = await ExportDocxService.getDataPhuLucBang(
                 parseInt(sinh_vien_id),
                 parseInt(ky_hoc),
                 parseInt(khoa_dao_tao_id)
@@ -69,7 +69,7 @@ class ExcelPhuLucBangController{
             }
             
             // Lấy thông tin số kỳ học và khóa đào tạo
-            const data = await ExcelPhuLucBangService.getSoKyHocVaKhoa(parseInt(sinh_vien_id));
+            const data = await ExportDocxService.getSoKyHocVaKhoa(parseInt(sinh_vien_id));
             
             return res.status(200).json({
                 success: true,
@@ -85,9 +85,9 @@ class ExcelPhuLucBangController{
         }
     }
 
-    static async exportExcelPhuLucBang(req, res) {
+    static async exportDocxKQHocKy(req, res) {
         try {
-            const { sinh_vien_id } = req.query;
+            const { sinh_vien_id, hoc_ky } = req.query;
 
             // Kiểm tra dữ liệu đầu vào
             if (!sinh_vien_id) {
@@ -97,27 +97,26 @@ class ExcelPhuLucBangController{
                 });
             }
             
-            // Lấy thông tin sinh viên
-            const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang_v2(parseInt(sinh_vien_id));
+            const docxBuffer = await ExportDocxService.exportDocxKQHocKy(sinh_vien_id, hoc_ky);
             
             // Lưu file vào thư mục exports/phulucbang
-            const fileName = `phu_luc_bang_sinh_vien_${sinh_vien_id}.xlsx`;
+            const fileName = `ket_qua_hoc_tap_hoc_ky_${hoc_ky}_cua_sinh_vien_${sinh_vien_id}.docx`;
             const filePath = path.join(exportDir, fileName);
 
-            await sinhVien.xlsx.writeFile(filePath);
-
-            // Gửi file về client
+            fs.writeFileSync(filePath, docxBuffer);
+        
             res.download(filePath, fileName, (err) => {
                 if (err) {
                     console.error("Lỗi khi gửi file:", err);
-                    return res.status(500).json({ 
-                        success: false, 
-                        message: "Không thể tải file" 
+                    return res.status(500).json({
+                        success: false,
+                        message: "Không thể tải file"
                     });
                 }
+        
                 console.log("File đã được lưu tại:", filePath);
-                // Bỏ phần xóa file để lưu vĩnh viễn
             });
+
         } catch (error) {
             console.error("Lỗi khi xuất file Excel phụ lục bảng:", error);
             return res.status(500).json({
@@ -128,10 +127,10 @@ class ExcelPhuLucBangController{
         }
     }
 
-    static async exportDocsPhuLucBang(req, res) {
+    static async exportDocxKQNamHoc(req, res) {
         
         try {
-            const { sinh_vien_id } = req.query;
+            const { sinh_vien_id, nam_hoc } = req.query;
         
             if (!sinh_vien_id) {
                 return res.status(400).json({
@@ -140,8 +139,8 @@ class ExcelPhuLucBangController{
                 });
             }
         
-            const docxBuffer = await ExcelPhuLucBangService.docxPhuLucBang(sinh_vien_id);
-            const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.docx`;
+            const docxBuffer = await ExportDocxService.exportDocxKQNamHoc(sinh_vien_id, nam_hoc);
+            const fileName = `ket_qua_hoc_tap_nam_hoc_${nam_hoc}_cua_sinh_vien_${sinh_vien_id}.docx`;
             const filePath = path.join(exportDir, fileName);
         
             fs.writeFileSync(filePath, docxBuffer);
@@ -168,4 +167,4 @@ class ExcelPhuLucBangController{
         }
     }
 }
-module.exports = ExcelPhuLucBangController;
+module.exports = ExportDocxController;

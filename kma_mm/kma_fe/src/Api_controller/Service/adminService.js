@@ -21,3 +21,15 @@ export const updateUserById = async (id, data) => {
         throw error;
     }
 };
+
+export const getLogActivity = async (role, startDate, endDate) => {
+
+    const response = await api.get("/auth/logs", {
+        params: {
+            role,
+            startDate,
+            endDate,
+        },
+    });
+    return response; 
+};

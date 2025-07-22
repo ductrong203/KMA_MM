@@ -31,8 +31,15 @@ const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
 const chungChiRoute = require('./chungChi');
 const chuongTrinhDaoTaoRoute = require('./chuongTrinhDaoTao');
+const exportExcelRoute = require('./exportExcel');
+const  exportDocx = require('./exportDocx');
+// const logActivity = require("../middelWare/logger");
+
+// const docsPhuLucBangRoute = require('./docsPhuLucBang');
 
 const routes = (app) => {
+  // app.use(logActivity);
+  
   app.use("/auth", authRouter);
   app.use("/lop", lopRouter);
   //app.use()
@@ -54,8 +61,20 @@ const routes = (app) => {
   app.use('/diem', diemRoute);
   app.use('/excel', excelRoute);
   app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
+  app.use('/excel-docs', exportDocx);
+
+  // app.use('/docs-phu-luc-bang', docsPhuLucBangRoute);
+
+
+  //   app.use("student", studentRouter);
+
+  //   app.use("teacher", teacherRouter);
+  //   app.use("exam", examRouter);
+  //   app.use("schedule", scheduleRouter);
+  //   app.use("library", libraryRouter);
+  //   app.use("statistic", statisticRouter);
   app.use('/chung-chi', chungChiRoute);
   app.use('/chuong-trinh-dao-tao', chuongTrinhDaoTaoRoute);
-
+  app.use('/export-excel', exportExcelRoute);
 };
 module.exports = routes;
