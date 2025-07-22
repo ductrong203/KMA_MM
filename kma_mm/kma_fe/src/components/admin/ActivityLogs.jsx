@@ -36,7 +36,7 @@ const ActivityLogs = () => {
     const rowsPerPage = 8;
 
     const handleDateChange = async (value) => {
-        setDateRange(value); 
+        setDateRange(value);
         console.log(dateRange);
         setIsModalOpen(false); // Đóng modal sau khi chọn
         // if (value[0] && value[1]) {
@@ -105,28 +105,24 @@ const ActivityLogs = () => {
             const matchesRole = selectedRole
                 ? log?.Role === selectedRole
                 : true;
-            const matchesDate = dateRange[0] &&  dateRange[1] 
-                ? ( (convertUTCToVietnamTime(log?.created_at)?.split(" ")[1] >= convertUTCToVietnamTime(dateRange[0]?.toISOString())?.split(" ")[1]) &&
-                    (convertUTCToVietnamTime(log?.created_at)?.split(" ")[1]  <= convertUTCToVietnamTime(dateRange[1]?.toISOString())?.split(" ")[1]))
-                : false;
-                // console.log();
-            if (matchesDate && matchesRole){ 
-                return  matchesDate && matchesRole;
-            }
-            else{
-                console.log("date", matchesDate);
-                console.log("role", matchesRole );
-                if (matchesDate) { 
-                    return matchesDate
-                }
-               else if (matchesRole){
-                    return matchesRole;
-               }
-            }
+            const start = new Date(dateRange[0]);
+            const end = new Date(dateRange[1]);
+
+ 
+            start.setHours(0, 0, 0, 0);
+
+            end.setHours(23, 59, 59, 999);
+            const createdAt = new Date(log?.created_at); 
+
+            const matchesDate = (dateRange[0] && dateRange[1])  ? (createdAt >= start && createdAt <= end): true ;
+       
+
+            return  matchesDate && matchesRole;
+
         });
         console.log(filtered);
         setFilteredLogs(filtered);
-    }, [dateRange, selectedRole, logs]); // Khi users, searchTerm hoặc selectedRole thay đổi
+    }, [dateRange[0], dateRange[1], selectedRole, logs]); // Khi users, searchTerm hoặc selectedRole thay đổi
 
     const convertUTCToVietnamTime = (utcDateString) => {
         const utcDate = new Date(utcDateString);
@@ -177,7 +173,7 @@ const ActivityLogs = () => {
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                <Typography variant="h5">Activity Logs</Typography>
+                <Typography variant="h5">Lịch sử hoạt động</Typography>
             </Box>
             <Box display="flex" gap={2} alignItems="center" marginBottom={2}>
                 {/* Bộ lọc Role */}

@@ -179,7 +179,27 @@ module.exports = function(sequelize, DataTypes) {
     username: {
       type: DataTypes.STRING(50),
       allowNull: true
-    }
+    },
+    tong_tin_chi: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    },
+    diem_trung_binh_tich_luy: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: 0.0,
+      },
+      bao_ve_do_an: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
+      diem_trung_binh_he_4: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: 0.0,
+      },
   }, {
     sequelize,
     tableName: 'sinh_vien',

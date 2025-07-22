@@ -13,19 +13,19 @@ const AddAccount = () => {
     const [role, setRole] = useState(6); // Default to 'sv'
 
     const roleMapping = {
-        1: "training",
-        2: "examination",
-        3: "student_manage",
-        4: "library",
-        5: "director",
-        6: "sv",
+        1: "đào tạo",
+        2: "khảo thí",
+        3: "quản lý sinh viên",
+        4: "thư viện",
+        5: "giám đốc",
+        6: "sinh viên",
         7: "admin",
     };
 
     const handleSubmit = async () => {
         console.log(password, confirmPassword, ho_ten)
         if (password !== confirmPassword) {
-            alert('Passwords do not match!');
+            alert('Mật khẩu không khớp!');
             return;
         }
 
@@ -58,7 +58,7 @@ const AddAccount = () => {
                 {/* Username */}
                 <Grid item xs={12} sm={6}>
                     <TextField
-                        label="Username"
+                        label="Tên đăng nhập"
                         variant="outlined"
                         fullWidth
                         value={username}
@@ -79,7 +79,7 @@ const AddAccount = () => {
                 {/* Password */}
                 <Grid item xs={12} sm={6}>
                     <TextField
-                        label="Password"
+                        label="Mật khẩu"
                         variant="outlined"
                         fullWidth
                         type="password"
@@ -91,7 +91,7 @@ const AddAccount = () => {
                 {/* Confirm Password */}
                 <Grid item xs={12} sm={6}>
                     <TextField
-                        label="Confirm Password"
+                        label="Xác nhận mật khẩu"
                         variant="outlined"
                         fullWidth
                         type="password"
@@ -104,7 +104,7 @@ const AddAccount = () => {
                 <Grid item xs={12} sm={6}>
                     <TextField
                         select
-                        label="Role"
+                        label="Vai trò"
                         variant="outlined"
                         fullWidth
                         value={role}

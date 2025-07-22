@@ -44,3 +44,23 @@ export const kiemTraBangDiemTonTai = async (id) => {
   const response = await api.get(`/diem/filter?thoi_khoa_bieu_id=${id}`);
   return response.data;
 };
+
+export const layDSSVTheoKhoaVaMonHoc = async (khoa_id, mon_hoc_id) => {
+  const response = await api.get(`/diem/khoadaotaovamonhoc/${khoa_id}/${mon_hoc_id}`);
+  return response.data;
+};
+
+export const fetchThongKeDiem = async (heDaoTaoId, khoaId, lopId, kyHocId) => {
+  try {
+    const queryParams = new URLSearchParams({
+      he_dao_tao_id: heDaoTaoId || '',
+      khoa_dao_tao_id: khoaId || '',
+      ky_hoc_id: kyHocId || '',
+      ...(lopId && { lop_id: lopId })
+    });
+    const response = await api.get(`/diem/thong-ke-diem?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
