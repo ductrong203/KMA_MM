@@ -393,6 +393,10 @@ const MonHocTheoHeDaoTao = () => {
     );
   };
 
+  const getTotalSubjects = () => {
+    return Object.values(subjectsBySemester).reduce((total, subjects) => total + subjects.length, 0);
+  };
+
   const SemesterDroppable = ({ semester, subjects }) => {
     const { setNodeRef, isOver } = useDroppable({
       id: `droppable-${semester}`,

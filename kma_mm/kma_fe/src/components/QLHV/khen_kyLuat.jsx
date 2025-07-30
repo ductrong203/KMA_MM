@@ -36,9 +36,17 @@ import {
   deleteKhenKyLuat,
 } from "../../Api_controller/Service/khen_KL_Service";
 
-import { getAllStudent } from "../../Api_controller/Service/qlhvService";
+
 import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService";
+import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
+
+import {
+  getAllStudent,
+  getListClassByKhoaDaoTaoId  // Sửa import để lấy từ qlhvService
+} from "../../Api_controller/Service/qlhvService";
+
+
 
 export default function QuanLyKhenKyLuat() {
   const [danhMuc, setDanhMuc] = useState([]);
@@ -47,6 +55,11 @@ export default function QuanLyKhenKyLuat() {
   const [sinhVienTheoLop, setSinhVienTheoLop] = useState([]);
   const [dsLop, setDSLop] = useState([]);
   const [lopChon, setLopChon] = useState([]);
+  const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
+  const [danhSachKhoa, setDanhSachKhoa] = useState([]);
+  const [heDaoTaoChon, setHeDaoTaoChon] = useState("");
+  const [khoaDaoTaoChon, setKhoaDaoTaoChon] = useState("");
+  const [originalLopList, setOriginalLopList] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState(null); // 'Danh mục' hoặc 'Khen thưởng/Kỷ luật'
   const [editingRecord, setEditingRecord] = useState(null);
@@ -100,14 +113,26 @@ export default function QuanLyKhenKyLuat() {
       console.error("Lỗi khi lấy dữ liệu sinh viên", error);
     }
   };
+
   const fetchLop = async () => {
     try {
       const response = await getDanhSachLop();
       setDSLop(response);
+      setOriginalLopList(response);
     } catch (error) {
       console.error("Lỗi khi lấy dữ liệu lớp", error);
     }
   };
+
+  const fetchHeDaoTao = async () => {
+    try {
+      const response = await fetchDanhSachHeDaoTao();
+      setDanhSachHeDaoTao(response);
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu hệ đào tạo", error);
+    }
+  };
+
   const fetchSinhVienTheoLop = async (lop_id) => {
     try {
       const response = await getDanhSachSinhVienTheoLop(lop_id);
@@ -123,14 +148,55 @@ export default function QuanLyKhenKyLuat() {
       await fetchKhenKyLuat();
       await fetchLop();
       await fetchSinhVien();
+      await fetchHeDaoTao();
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchKhoaDaoTao = async () => {
+      if (heDaoTaoChon) {
+        try {
+          const data = await getDanhSachKhoaDaoTaobyId(heDaoTaoChon);
+          setDanhSachKhoa(data);
+        } catch (error) {
+          console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+          setDanhSachKhoa([]);
+        }
+      } else {
+        setDanhSachKhoa([]);
+        setDSLop(originalLopList);
+      }
+    };
+    fetchKhoaDaoTao();
+  }, [heDaoTaoChon, originalLopList]);
+
+  useEffect(() => {
+    const fetchLopByKhoaDaoTao = async () => {
+      if (khoaDaoTaoChon) {
+        try {
+          const data = await getListClassByKhoaDaoTaoId(khoaDaoTaoChon);
+          setDSLop(data);
+        } catch (error) {
+          console.error("Lỗi khi lấy danh sách lớp theo khóa đào tạo:", error);
+          setDSLop(originalLopList);
+        }
+      } else {
+        setDSLop(originalLopList);
+      }
+    };
+    fetchLopByKhoaDaoTao();
+  }, [khoaDaoTaoChon, originalLopList]);
+
   const handleCloseDialog = () => {
     setErrors({});
     setDialogOpen(false);
+    setHeDaoTaoChon("");
+    setKhoaDaoTaoChon("");
+    setLopChon(null);
+    setSinhVienTheoLop([]);
   };
-  // Xử lý mở Dialog cho cả hai loại
+
   const handleOpenDialog = (record = null, type = "Danh mục") => {
     setDialogType(type);
     setEditingRecord(record);
@@ -146,23 +212,44 @@ export default function QuanLyKhenKyLuat() {
       );
     } else if (type === "Khen thưởng/Kỷ luật") {
       if (record) {
-        // Tìm thông tin lớp của sinh viên
         const selectedSinhVien = sinhVien.find(
           (sv) => sv.id === record.sinh_vien_id
         );
         const selectedLop = selectedSinhVien
-          ? dsLop.find((lop) => lop.id === selectedSinhVien.lop_id)
+          ? originalLopList.find((lop) => lop.id === selectedSinhVien.lop_id)
           : null;
 
-        setLopChon(selectedLop ? selectedLop.id : null);
-        fetchSinhVienTheoLop(selectedLop.id);
+        if (selectedLop) {
+          const selectedKhoa = danhSachKhoa.find(k => k.id === selectedLop.khoa_dao_tao_id);
+          const selectedHeDaoTao = selectedKhoa
+            ? danhSachHeDaoTao.find(h => h.id === selectedKhoa.he_dao_tao_id)
+            : null;
+
+          if (selectedHeDaoTao) {
+            setHeDaoTaoChon(selectedHeDaoTao.id);
+            getDanhSachKhoaDaoTaobyId(selectedHeDaoTao.id).then(khoaData => {
+              setDanhSachKhoa(khoaData);
+              if (selectedKhoa) {
+                setKhoaDaoTaoChon(selectedKhoa.id);
+                getListClassByKhoaDaoTaoId(selectedKhoa.id).then(lopData => {
+                  setDSLop(lopData);
+                  setLopChon(selectedLop.id);
+                  fetchSinhVienTheoLop(selectedLop.id);
+                });
+              }
+            });
+          }
+        }
+
         setFormData({
           ...record,
           sinh_vien_id: selectedSinhVien ? selectedSinhVien.id : "",
-          lop_id: selectedLop ? selectedLop.id : "",
         });
       } else {
+        setHeDaoTaoChon("");
+        setKhoaDaoTaoChon("");
         setLopChon(null);
+        setSinhVienTheoLop([]);
         setFormData({
           sinh_vien_id: "",
           danh_muc_id: "",
@@ -199,19 +286,14 @@ export default function QuanLyKhenKyLuat() {
       if (!formData.sinh_vien_id) {
         validationErrors.sinh_vien_id = "Vui lòng chọn học viên.";
       }
+      if (!formData.ly_do) {
+        validationErrors.ly_do = "Vui lòng nhập lý do.";
+      }
+      if (!formData.muc_thuong_phat) {
+        validationErrors.muc_thuong_phat = "Vui lòng nhập mức thưởng/ phạt.";
+      }
       if (!formData.ngay_quyet_dinh) {
         validationErrors.ngay_quyet_dinh = "Vui lòng chọn ngày quyết định.";
-      }
-      if (
-        !formData.muc_thuong_phat ||
-        isNaN(parseFloat(formData.muc_thuong_phat)) ||
-        parseFloat(formData.muc_thuong_phat) <= 0
-      ) {
-        validationErrors.muc_thuong_phat =
-          "Vui lòng chọn mức thưởng phạt hợp lệ.";
-      }
-      if (!formData.ly_do) {
-        validationErrors.ly_do = "Vui lòng chọn lý do.";
       }
     }
     setErrors(validationErrors);
@@ -219,9 +301,8 @@ export default function QuanLyKhenKyLuat() {
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
+
     try {
       if (dialogType === "Danh mục") {
         if (editingRecord) {
@@ -230,56 +311,134 @@ export default function QuanLyKhenKyLuat() {
           await createdanhmuckhenkyluat(formData);
         }
         fetchDanhMuc();
-        alert("Lưu thành công!");
-      } else if (dialogType === "Khen thưởng/Kỷ luật") {
+      } else {
         if (editingRecord) {
           await updateKhenKyLuat(editingRecord.id, formData);
         } else {
           await createKhenKyLuat(formData);
         }
         fetchKhenKyLuat();
-        alert("Lưu thành công!");
       }
-      setDialogOpen(false);
-      setErrors({});
+      handleCloseDialog();
     } catch (error) {
-      console.error("Lỗi khi lưu dữ liệu", error);
-      alert("Có lỗi xảy ra, vui lòng thử lại.");
+      console.error("Lỗi khi lưu dữ liệu:", error);
     }
   };
-  // Xóa dữ liệu
-  const handleDelete = async (id, dialogType) => {
-    const confirm = window.confirm("Bạn có chắc chắn muốn xóa?");
-    if (!confirm) return;
 
-    try {
-      if (dialogType === "Danh mục") {
-        await deleteDanhMucKhenKyLuat(id);
-        fetchDanhMuc();
-        alert("Xóa danh mục thành công!");
-      } else if (dialogType === "Khen thưởng/Kỷ luật") {
-        await deleteKhenKyLuat(id);
-        fetchKhenKyLuat();
-        alert("Xóa khen thưởng/kỷ luật thành công!");
+  const handleDelete = async (id, dialogType) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa không?")) {
+      try {
+        if (dialogType === "Danh mục") {
+          await deleteDanhMucKhenKyLuat(id);
+          fetchDanhMuc();
+        } else {
+          await deleteKhenKyLuat(id);
+          fetchKhenKyLuat();
+        }
+      } catch (error) {
+        console.error("Lỗi khi xóa dữ liệu:", error);
       }
-    } catch (error) {
-      console.error("Lỗi khi xóa", error);
-      alert("Có lỗi xảy ra khi xóa.");
     }
   };
 
   return (
     <div>
-      <Tabs
-        value={tabIndex}
-        onChange={(event, newValue) => setTabIndex(newValue)}
-      >
-        <Tab label="Danh mục khen thưởng/kỷ luật" />
-        <Tab label="Khen thưởng/kỷ luật" />
+      <Tabs value={tabIndex} onChange={(e, newValue) => setTabIndex(newValue)}>
+        <Tab label="Khen thưởng/Kỷ luật" />
+        <Tab label="Danh mục" />
       </Tabs>
 
-      {/* Tab Danh mục khen thưởng/kỷ luật */}
       {tabIndex === 0 && (
+        <div>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => handleOpenDialog(null, "Khen thưởng/Kỷ luật")}
+            >
+              Thêm Khen thưởng/Kỷ luật
+            </Button>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Học viên</TableCell>
+                  <TableCell>Danh mục</TableCell>
+                  <TableCell>Lý do</TableCell>
+                  <TableCell>Mức thưởng/phạt</TableCell>
+                  <TableCell>Hành động</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {khenKyLuat
+                  .slice(
+                    pageKhenKyLuat * rowsPerPageKhenKyLuat,
+                    pageKhenKyLuat * rowsPerPageKhenKyLuat +
+                    rowsPerPageKhenKyLuat
+                  )
+                  .map((record) => {
+                    const ho_dem_SV = sinhVien.find(
+                      (sv) => sv.id === record.sinh_vien_id
+                    )?.ho_dem;
+                    const ten_SV = sinhVien.find(
+                      (sv) => sv.id === record.sinh_vien_id
+                    )?.ten;
+                    const danhMucName = danhMuc.find(
+                      (dm) => dm.id === record.danh_muc_id
+                    )?.ten_danh_muc;
+                    const sinhVienName = `${ho_dem_SV} ${ten_SV}`;
+                    return (
+                      <TableRow key={record.id}>
+                        <TableCell>
+                          {sinhVienName || "Không tìm thấy"}
+                        </TableCell>
+                        <TableCell>{danhMucName || "Không tìm thấy"}</TableCell>
+                        <TableCell>{record.ly_do}</TableCell>
+                        <TableCell>{record.muc_thuong_phat}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outlined"
+                            onClick={() =>
+                              handleOpenDialog(record, "Khen thưởng/Kỷ luật")
+                            }
+                          >
+                            <Edit /> Sửa
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() =>
+                              handleDelete(record.id, "Khen thưởng/Kỷ luật")
+                            }
+                          >
+                            <Delete /> Xóa
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 20]}
+            component="div"
+            count={khenKyLuat.length}
+            rowsPerPage={rowsPerPageKhenKyLuat}
+            page={pageKhenKyLuat}
+            onPageChange={(event, newPage) => setPageKhenKyLuat(newPage)}
+            onRowsPerPageChange={(event) =>
+              setRowsPerPageKhenKyLuat(parseInt(event.target.value, 10))
+            }
+            labelRowsPerPage="Số dòng mỗi trang"
+          />
+        </div>
+      )}
+
+      {tabIndex === 1 && (
         <div>
           <Box display="flex" justifyContent="flex-end" mb={2}>
             <Button
@@ -355,100 +514,6 @@ export default function QuanLyKhenKyLuat() {
         </div>
       )}
 
-      {/* Tab Khen thưởng/Kỷ luật */}
-      {tabIndex === 1 && (
-        <div>
-          <Box display="flex" justifyContent="flex-end" mb={2}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Add />}
-              onClick={() => handleOpenDialog(null, "Khen thưởng/Kỷ luật")}
-            >
-              Thêm Khen thưởng/Kỷ luật
-            </Button>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Học viên</TableCell>
-                  <TableCell>Danh mục</TableCell>
-                  <TableCell>Lý do</TableCell>
-                  <TableCell>Mức thưởng/phạt</TableCell>
-                  <TableCell>Hành động</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {khenKyLuat
-                  .slice(
-                    pageKhenKyLuat * rowsPerPageKhenKyLuat,
-                    pageKhenKyLuat * rowsPerPageKhenKyLuat +
-                      rowsPerPageKhenKyLuat
-                  )
-                  .map((record) => {
-                    // Tìm sinh viên và danh mục theo ID
-                    const ho_dem_SV = sinhVien.find(
-                      (sv) => sv.id === record.sinh_vien_id
-                    )?.ho_dem;
-                    const ten_SV = sinhVien.find(
-                      (sv) => sv.id === record.sinh_vien_id
-                    )?.ten;
-                    const danhMucName = danhMuc.find(
-                      (dm) => dm.id === record.danh_muc_id
-                    )?.ten_danh_muc;
-                    const sinhVienName = `${ho_dem_SV} ${ten_SV}`;
-                    return (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          {sinhVienName || "Không tìm thấy"}
-                        </TableCell>
-                        <TableCell>{danhMucName || "Không tìm thấy"}</TableCell>
-                        <TableCell>{record.ly_do}</TableCell>
-                        <TableCell>{record.muc_thuong_phat}</TableCell>
-
-                        <TableCell>
-                          <Button
-                            variant="outlined"
-                            onClick={() =>
-                              handleOpenDialog(record, "Khen thưởng/Kỷ luật")
-                            }
-                          >
-                            <Edit /> Sửa
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={() =>
-                              handleDelete(record.id, "Khen thưởng/Kỷ luật")
-                            }
-                          >
-                            <Delete /> Xóa
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 20]}
-            component="div"
-            count={khenKyLuat.length}
-            rowsPerPage={rowsPerPageKhenKyLuat}
-            page={pageKhenKyLuat}
-            onPageChange={(event, newPage) => setPageKhenKyLuat(newPage)}
-            onRowsPerPageChange={(event) =>
-              setRowsPerPageKhenKyLuat(parseInt(event.target.value, 10))
-            }
-            labelRowsPerPage="Số dòng mỗi trang"
-          />
-        </div>
-      )}
-
-      {/* Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>
           {editingRecord ? `Chỉnh sửa ${dialogType}` : `Thêm ${dialogType}`}
@@ -543,6 +608,51 @@ export default function QuanLyKhenKyLuat() {
                   />
                 )}
               />
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Hệ đào tạo *</InputLabel>
+                <Select
+                  value={heDaoTaoChon}
+                  onChange={(e) => {
+                    const heDaoTaoId = e.target.value;
+                    setHeDaoTaoChon(heDaoTaoId);
+                    setKhoaDaoTaoChon("");
+                    setLopChon(null);
+                    setSinhVienTheoLop([]);
+                    setFormData({ ...formData, sinh_vien_id: "" });
+                  }}
+                >
+                  <MenuItem value="">Chọn hệ đào tạo</MenuItem>
+                  {danhSachHeDaoTao.map((heDaoTao) => (
+                    <MenuItem key={heDaoTao.id} value={heDaoTao.id}>
+                      {heDaoTao.ten_he_dao_tao}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Khóa đào tạo *</InputLabel>
+                <Select
+                  value={khoaDaoTaoChon}
+                  onChange={(e) => {
+                    const khoaDaoTaoId = e.target.value;
+                    setKhoaDaoTaoChon(khoaDaoTaoId);
+                    setLopChon(null);
+                    setSinhVienTheoLop([]);
+                    setFormData({ ...formData, sinh_vien_id: "" });
+                  }}
+                  disabled={!heDaoTaoChon}
+                >
+                  <MenuItem value="">Chọn khóa đào tạo</MenuItem>
+                  {danhSachKhoa.map((khoa) => (
+                    <MenuItem key={khoa.id} value={khoa.id}>
+                      {khoa.ten_khoa}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
               <Autocomplete
                 options={dsLop}
                 getOptionLabel={(option) => option.ma_lop}
@@ -565,8 +675,14 @@ export default function QuanLyKhenKyLuat() {
 
                   setFormData({ ...formData, sinh_vien_id: "" });
                 }}
+                disabled={!khoaDaoTaoChon}
                 renderInput={(params) => (
-                  <TextField {...params} label="Lớp" margin="normal" required />
+                  <TextField
+                    {...params}
+                    label="Lớp *"
+                    margin="normal"
+                    required
+                  />
                 )}
               />
 
@@ -594,6 +710,7 @@ export default function QuanLyKhenKyLuat() {
                   />
                 )}
               />
+
               <TextField
                 label="Lý do"
                 fullWidth
@@ -678,7 +795,6 @@ export default function QuanLyKhenKyLuat() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Hủy</Button>
-
           <Button onClick={handleSave} color="primary">
             Lưu
           </Button>
