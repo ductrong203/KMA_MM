@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, List, ListItem, ListItemText, IconButton,
   FormControl, InputLabel, Select, MenuItem, Paper, Chip, Divider,
-  Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
+  Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox,
+  Autocomplete, TextField // Thêm Autocomplete và TextField
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -48,7 +49,7 @@ const MonHocTheoHeDaoTao = () => {
   const [openForm, setOpenForm] = useState(false);
   const [formData, setFormData] = useState({
     khoa_dao_tao_id: '',
-    mon_hoc_id: '',
+    mon_hoc_ids: [], // Thay đổi từ mon_hoc_id thành mon_hoc_ids (array)
     ky_hoc: '',
     bat_buoc: 0
   });
@@ -190,7 +191,7 @@ const MonHocTheoHeDaoTao = () => {
   const handleOpenForm = () => setOpenForm(true);
   const handleCloseForm = () => {
     setOpenForm(false);
-    setFormData({ khoa_dao_tao_id: selectedBatch, mon_hoc_id: '', ky_hoc: '', bat_buoc: 0 });
+    setFormData({ khoa_dao_tao_id: selectedBatch, mon_hoc_ids: [], ky_hoc: '', bat_buoc: 0 });
   };
 
   const handleFormChange = (event) => {
@@ -203,27 +204,72 @@ const MonHocTheoHeDaoTao = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    if (formData.mon_hoc_ids.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một môn học!');
+      return;
+    }
+
     try {
-      const newSubjectPlan = await createSubjectPlan(formData);
-      const newSubject = {
+      // Tạo promise cho tất cả môn học được chọn
+      const createPromises = formData.mon_hoc_ids.map(mon_hoc_id => 
+        createSubjectPlan({
+          ...formData,
+          mon_hoc_id: mon_hoc_id
+        })
+      );
+
+      const results = await Promise.all(createPromises);
+      
+      // Cập nhật state với tất cả môn học mới
+      const newSubjects = results.map((newSubjectPlan, index) => ({
         ...newSubjectPlan,
-        ten_mon_hoc: subjects.find(s => s.id === formData.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
-      };
+        ten_mon_hoc: subjects.find(s => s.id === formData.mon_hoc_ids[index])?.ten_mon_hoc || 'Không xác định'
+      }));
+
       setSubjectsBySemester(prev => ({
         ...prev,
-        [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), newSubject]
+        [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), ...newSubjects]
       }));
+      
       setInitialSubjectsBySemester(prev => ({
         ...prev,
-        [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), newSubject]
+        [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), ...newSubjects]
       }));
+
+      toast.success(`Đã thêm thành công ${newSubjects.length} môn học vào kế hoạch!`);
       handleCloseForm();
     } catch (error) {
       console.error('Lỗi khi thêm kế hoạch:', error);
+      toast.error('Có lỗi xảy ra khi thêm kế hoạch môn học!');
     }
   };
 
   const handleResetSemester = () => setSelectedSemester('');
+
+  // Thêm hàm tính tổng tín chỉ cho từng học kỳ
+  const getCreditsBySemester = (semester) => {
+    const semesterSubjects = subjectsBySemester[semester] || [];
+    return semesterSubjects.reduce((total, subject) => {
+      const subjectData = subjects.find(s => s.id === subject.mon_hoc_id);
+      return total + (subjectData?.so_tin_chi || 0);
+    }, 0);
+  };
+
+  // Cập nhật hàm getTotalSubjects để trả về cả số môn học và tín chỉ
+  const getTotalSubjects = () => {
+    return Object.values(subjectsBySemester).reduce((total, subjects) => total + subjects.length, 0);
+  };
+
+  const getTotalCredits = () => {
+    return Object.values(subjectsBySemester).reduce((total, semesterSubjects) => {
+      const semesterCredits = semesterSubjects.reduce((semTotal, subject) => {
+        const subjectData = subjects.find(s => s.id === subject.mon_hoc_id);
+        return semTotal + (subjectData?.so_tin_chi || 0);
+      }, 0);
+      return total + semesterCredits;
+    }, 0);
+  };
 
   const DraggableSubject = ({ subject, semester }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -243,6 +289,10 @@ const MonHocTheoHeDaoTao = () => {
       handleRemoveSubject(semester, subject.id);
     };
 
+    // Lấy thông tin tín chỉ từ subjects
+    const subjectData = subjects.find(s => s.id === subject.mon_hoc_id);
+    const credits = subjectData?.so_tin_chi || 0;
+
     return (
       <ListItem
         ref={setNodeRef}
@@ -256,7 +306,8 @@ const MonHocTheoHeDaoTao = () => {
             cursor: 'grab'
           },
           py: 0.5,
-          px: 1
+          px: 1,
+          alignItems: 'flex-start'
         }}
         secondaryAction={
           <IconButton
@@ -265,6 +316,7 @@ const MonHocTheoHeDaoTao = () => {
             size="small"
             sx={{
               opacity: 0.7,
+              mt: 0.5,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: 'rgba(244, 67, 54, 0.1)'
@@ -280,35 +332,65 @@ const MonHocTheoHeDaoTao = () => {
           {...listeners}
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
             width: '100%',
             cursor: isDragging ? 'grabbing' : 'grab',
             py: 1,
-            borderRadius: 1
+            borderRadius: 1,
+            pr: 1 // Thêm padding right để không đè lên icon xóa
           }}
         >
           <ListItemText
             primary={
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <Typography variant="body2" sx={{ 
+                fontWeight: 500,
+                mb: 0.5,
+                lineHeight: 1.3
+              }}>
                 {subject.ten_mon_hoc}
               </Typography>
             }
             secondary={
-              <Chip
-                label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`}
-                size="small"
-                color={subject.bat_buoc ? 'primary' : 'default'}
-                sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
-              />
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1, 
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}>
+                <Chip
+                  label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`}
+                  size="small"
+                  color={subject.bat_buoc ? 'primary' : 'default'}
+                  sx={{ 
+                    height: 20, 
+                    fontSize: '0.7rem',
+                    '& .MuiChip-label': { px: 1 }
+                  }}
+                />
+                <Chip
+                  label={`${credits} TC`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ 
+                    height: 20, 
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    color: 'success.main',
+                    borderColor: 'success.main',
+                    '& .MuiChip-label': { px: 1 }
+                  }}
+                />
+              </Box>
             }
+            sx={{ 
+              margin: 0,
+              '& .MuiListItemText-primary': { mb: 0.5 },
+              '& .MuiListItemText-secondary': { mt: 0 }
+            }}
           />
         </Box>
       </ListItem>
     );
-  };
-
-  const getTotalSubjects = () => {
-    return Object.values(subjectsBySemester).reduce((total, subjects) => total + subjects.length, 0);
   };
 
   const SemesterDroppable = ({ semester, subjects }) => {
@@ -320,6 +402,8 @@ const MonHocTheoHeDaoTao = () => {
         }
       }
     });
+
+    const semesterCredits = getCreditsBySemester(semester);
 
     return (
       <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -357,16 +441,29 @@ const MonHocTheoHeDaoTao = () => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#1565C0" }}>
               Học kỳ {semester}
             </Typography>
-            <Chip
-              label={`${subjects.length} môn`}
-              size="small"
-              sx={{
-                backgroundColor: subjects.length > 0 ? '#e3f2fd' : '#f5f5f5',
-                color: subjects.length > 0 ? '#1565C0' : '#757575',
-                fontWeight: 600,
-                fontSize: '0.75rem'
-              }}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+              <Chip
+                label={`${subjects.length} môn`}
+                size="small"
+                sx={{
+                  backgroundColor: subjects.length > 0 ? '#e3f2fd' : '#f5f5f5',
+                  color: subjects.length > 0 ? '#1565C0' : '#757575',
+                  fontWeight: 600,
+                  fontSize: '0.75rem'
+                }}
+              />
+              <Chip
+                label={`${semesterCredits} TC`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  color: semesterCredits > 0 ? '#1565C0' : '#757575',
+                  borderColor: semesterCredits > 0 ? '#1565C0' : '#757575',
+                  fontWeight: 600,
+                  fontSize: '0.75rem'
+                }}
+              />
+            </Box>
           </Box>
           <Divider sx={{ mb: 2 }} />
 
@@ -738,66 +835,187 @@ const MonHocTheoHeDaoTao = () => {
               <InputLabel>Kỳ học</InputLabel>
               <Select
                 name="ky_hoc"
-                value={formData.ky_hoc}
-                onChange={handleFormChange}
-                required
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="">Chọn kỳ học</MenuItem>
-                {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
-                  <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              value={formData.ky_hoc}
+              onChange={handleFormChange}
+              required
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="">Chọn kỳ học</MenuItem>
+              {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
+                <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>Môn học</InputLabel>
-              <Select
-                name="mon_hoc_id"
-                value={formData.mon_hoc_id}
-                onChange={handleFormChange}
-                required
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="">Chọn môn học</MenuItem>
-                {subjectsByCurriculum.map(subject => (
-                  <MenuItem key={subject.id} value={subject.id}>
-                    {subject.ten_mon_hoc}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          <Box sx={{ mt: 2 }}>
+            <Autocomplete
+              multiple
+              options={subjectsByCurriculum.filter(subject => {
+                // Lọc bỏ những môn đã có trong kế hoạch của kỳ được chọn
+                const currentSemesterSubjects = formData.ky_hoc ? 
+                  (subjectsBySemester[formData.ky_hoc] || []) : [];
+                return !currentSemesterSubjects.some(existing => existing.mon_hoc_id === subject.id);
+              })}
+              getOptionLabel={(option) => option.ten_mon_hoc}
+              value={formData.mon_hoc_ids.map(id => 
+                subjectsByCurriculum.find(subject => subject.id === id)
+              ).filter(Boolean)}
+              onChange={(event, newValue) => {
+                const selectedIds = newValue.map(subject => subject.id);
+                setFormData(prev => ({
+                  ...prev,
+                  mon_hoc_ids: selectedIds
+                }));
+              }}
+              renderTags={(tagValue, getTagProps) =>
+                tagValue.map((option, index) => {
+                  const subjectData = subjects.find(s => s.id === option.id);
+                  const credits = subjectData?.so_tin_chi || 0;
+                  return (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={`${option.ten_mon_hoc} (${credits} TC)`}
+                      size="small"
+                      sx={{
+                        backgroundColor: 'primary.light',
+                        color: 'white',
+                        '& .MuiChip-deleteIcon': {
+                          color: 'white'
+                        }
+                      }}
+                    />
+                  );
+                })
+              }
+              renderOption={(props, option, { selected }) => {
+                const subjectData = subjects.find(s => s.id === option.id);
+                const credits = subjectData?.so_tin_chi || 0;
+                return (
+                  <li {...props}>
+                    <Checkbox
+                      checked={selected}
+                      sx={{ mr: 1 }}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <Typography variant="body2">
+                        {option.ten_mon_hoc}
+                      </Typography>
+                      <Chip
+                        label={`${credits} TC`}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          ml: 1,
+                          height: 20,
+                          fontSize: '0.65rem',
+                          color: 'primary.main',
+                          borderColor: 'primary.main'
+                        }}
+                      />
+                    </Box>
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Môn học"
+                  placeholder="Tìm kiếm và chọn môn học..."
+                  required={formData.mon_hoc_ids.length === 0}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                  helperText={`${formData.mon_hoc_ids.length} môn học đã chọn`}
+                />
+              )}
+              noOptionsText="Không tìm thấy môn học phù hợp"
+              filterOptions={(options, { inputValue }) => {
+                // Custom filter để tìm kiếm cả tên môn học và mã môn học
+                const filterValue = inputValue.toLowerCase();
+                return options.filter(option => 
+                  option.ten_mon_hoc.toLowerCase().includes(filterValue) ||
+                  (option.ma_mon_hoc && option.ma_mon_hoc.toLowerCase().includes(filterValue))
+                );
+              }}
+              sx={{
+                '& .MuiAutocomplete-tag': {
+                  maxWidth: '100%'
+                }
+              }}
+            />
+          </Box>
 
-            <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
-              <Checkbox
-                name="bat_buoc"
-                checked={formData.bat_buoc === 1}
-                onChange={handleFormChange}
-                sx={{ mr: 1 }}
-              />
-              <Typography component="span" variant="body1">
-                Môn học bắt buộc
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
+            <Checkbox
+              name="bat_buoc"
+              checked={formData.bat_buoc === 1}
+              onChange={handleFormChange}
+              sx={{ mr: 1 }}
+            />
+            <Typography component="span" variant="body1">
+              Môn học bắt buộc (áp dụng cho tất cả môn được chọn)
+            </Typography>
+          </Box>
+
+          {formData.mon_hoc_ids.length > 0 && (
+            <Box sx={{ 
+              mt: 2, 
+              p: 2, 
+              backgroundColor: 'grey.50', 
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <strong>Tóm tắt:</strong>
               </Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Chip 
+                  label={`${formData.mon_hoc_ids.length} môn học`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Chip 
+                  label={`${formData.mon_hoc_ids.reduce((total, id) => {
+                    const subject = subjects.find(s => s.id === id);
+                    return total + (subject?.so_tin_chi || 0);
+                  }, 0)} tín chỉ`}
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                />
+                <Chip 
+                  label={formData.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}
+                  size="small"
+                  color={formData.bat_buoc ? 'primary' : 'default'}
+                />
+              </Box>
             </Box>
-          </form>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button
-            onClick={handleCloseForm}
-            variant="outlined"
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-          >
-            Hủy
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-          >
-            Thêm
-          </Button>
-        </DialogActions>
-      </Dialog>
+          )}
+        </form>
+      </DialogContent>
+      <DialogActions sx={{ p: 3, gap: 1 }}>
+        <Button
+          onClick={handleCloseForm}
+          variant="outlined"
+          sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+        >
+          Hủy
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={formData.mon_hoc_ids.length === 0}
+          sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+        >
+          Thêm {formData.mon_hoc_ids.length > 0 ? `(${formData.mon_hoc_ids.length} môn)` : ''}
+        </Button>
+      </DialogActions>
+    </Dialog>
 
       <Dialog
         open={openCopyDialog}
@@ -909,13 +1127,24 @@ const MonHocTheoHeDaoTao = () => {
             flexWrap: 'wrap',
             gap: 2
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                📚 Tổng số môn học
+                📚 Tổng kết
               </Typography>
               <Chip
                 label={`${getTotalSubjects()} môn học`}
                 variant="outlined"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  '& .MuiChip-label': {
+                    px: 1
+                  }
+                }}
+              />
+              <Chip
+                label={`${getTotalCredits()} tín chỉ`}
+                variant="filled"
                 color="primary"
                 sx={{
                   fontWeight: 600,
