@@ -397,7 +397,7 @@ const ActivityLogs = () => {
                                         <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                        <strong>Action chi tiết:</strong> {selectedLog.action}
+                                        <strong>Action chi tiết:</strong> {selectedLog.action.split("/").join(" ")}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         <strong>Thời gian:</strong> {convertUTCToVietnamTime(selectedLog.created_at)}
