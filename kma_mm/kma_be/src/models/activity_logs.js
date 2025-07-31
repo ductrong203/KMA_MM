@@ -31,6 +31,12 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    resonse_data: {
+      type: DataTypes.TEXT("long"),
+      allowNull: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
+    },
     ip_address: {
       type: DataTypes.STRING(255),
       allowNull: false
@@ -42,6 +48,8 @@ module.exports = function(sequelize, DataTypes) {
   }, {
     sequelize,
     tableName: 'activity_logs',
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_unicode_ci',
     timestamps: false,
     indexes: [
       {

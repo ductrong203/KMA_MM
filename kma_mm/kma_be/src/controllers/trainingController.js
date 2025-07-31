@@ -41,7 +41,9 @@ const fetchDanhSachHeDaoTao = async (req, res) => {
 const updateTraining = async (req, res) => {
   try {
     const response = await trainingService.updateTraining(req.params.code, req.body);
-    return res.status(201).json(response);
+    return res.status(201).json(
+      {message: "Cập nhật hệ đào tạo thành công ",
+      data: response});
   } catch (e) {
     return res.status(500).json({
       message: e.message || "Server error",

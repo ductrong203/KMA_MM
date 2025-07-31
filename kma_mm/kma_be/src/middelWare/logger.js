@@ -50,9 +50,19 @@ const logActivity = async (req,res,next) => {
         
       }
 
+     const originalSend = res.send;
+     let  responseBody;    
+    
+           res.send= function (body) {
+             responseBody = JSON.parse(body);
+             return originalSend.call(this, body); 
+          }
+
       res.on("finish", async () => {
         // const duration = Date.now() - start;
         // console.log(req);
+
+      
         try {
 
           //xử lí lấy user login
@@ -72,14 +82,17 @@ const logActivity = async (req,res,next) => {
         //     });
         //   }
         //  else 
-        
-         if (req.method !== "GET" && req.path!=="/login" && res.statusCode < 400) {
+        // console.log(res.body);
+
+         if (req.method !== "GET" && req.path!=="/login" && res.statusCode < 400&& responseBody.status!=="ERR") {
             // console.log(req.body.password);
-            console.log(res);
+          
             
             delete req.body.password;
             delete req.body.confirmPassword;
+            
 
+console.log("res#################", responseBody.message);
             await activity_logs.create({
               Username: await getInforByUsername(decoded?.id) || "unknown",
               Role: mapRole[decoded?.role] || "unknown",
@@ -87,8 +100,9 @@ const logActivity = async (req,res,next) => {
               endpoint: req.originalUrl,
               request_data: req.body,
               response_status: res.statusCode,
+              resonse_data: responseBody.message|| responseBody.thongBao || responseBody.data.message,
               ip_address: req.ip || req.connection.remoteAddress
-            });
+            }) 
           }
           } catch (error) {
           console.error("Logging Error:", error);

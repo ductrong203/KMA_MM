@@ -4,7 +4,9 @@ class KhoaDaoTaoController {
   static async create(req, res) {
     try {
       const khoaDaoTao = await KhoaDaoTaoService.createKhoaDaoTao(req.body);
-      res.status(201).json(khoaDaoTao);
+      res.status(201).json(
+        {message: "Tạo khoa đào tạo thành công ", 
+        data:khoaDaoTao});
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -47,7 +49,10 @@ class KhoaDaoTaoController {
     try {
       const { id } = req.params;
       const updatedKhoa = await KhoaDaoTaoService.updateKhoaDaoTao(id, req.body);
-      res.json(updatedKhoa);
+      res.json(
+        {message: "Cập nhật khoa đào tạo thành công", 
+        data: updatedKhoa
+      });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

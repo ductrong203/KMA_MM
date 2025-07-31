@@ -4,7 +4,9 @@ class ThongTinQuanNhanController {
   static async create(req, res) {
     try {
       const thongTin = await ThongTinQuanNhanService.createThongTin(req.body);
-      return res.status(201).json(thongTin);
+      return res.status(201).json(
+        {message: "Tạo thông tin quân nhân thành công",
+        data: thongTin});
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -52,7 +54,9 @@ class ThongTinQuanNhanController {
       if (!updated) {
         return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
       }
-      return res.json(updated);
+      return res.json(
+        {message: "Cập nhật thông tin quân nhân thành công ",
+        data: updated});
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -65,7 +69,9 @@ class ThongTinQuanNhanController {
       if (!updated) {
         return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
       }
-      return res.json(updated);
+      return res.json(
+        {message: "Cập nhật thông tin quân nhân thành công ",
+        data: updated});
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -78,7 +84,7 @@ class ThongTinQuanNhanController {
       if (!deleted) {
         return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
       }
-      return res.json({ message: "Xóa thành công" });
+      return res.json({ message: "Xóa thành công thông tin quân nhân " });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

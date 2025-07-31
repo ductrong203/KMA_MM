@@ -12,7 +12,9 @@ class SinhVienController {
   static async create(req, res) {
     try {
       const sinhVien = await SinhVienService.createSinhVien(req.body);
-      res.status(201).json(sinhVien);
+      res.status(201).json(
+        {message: "Thêm sinh viên thành công", 
+        data: sinhVien});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -76,7 +78,9 @@ class SinhVienController {
     try {
       const updatedSinhVien = await SinhVienService.updateSinhVien(req.params.id, req.body);
       if (!updatedSinhVien) return res.status(404).json({ message: "Không tìm thấy sinh viên" });
-      res.json(updatedSinhVien);
+      res.json(
+        {message: "Cập nhật sinh viên thành công ",
+        data: updatedSinhVien});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }

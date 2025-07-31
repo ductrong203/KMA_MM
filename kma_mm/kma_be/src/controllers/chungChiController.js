@@ -214,6 +214,7 @@ exports.taoLoaiChungChi = async (req, res) => {
       const ketQua = await chungChiService.taoLoaiChungChi(req.body);
       res.status(201).json({
         success: true,
+        message: "Đã tạo loại chứng chỉ thành công ",
         data: ketQua.data,
       });
     } catch (error) {

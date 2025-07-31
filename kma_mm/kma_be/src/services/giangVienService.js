@@ -57,7 +57,7 @@ const createGiangVien = async (giangVien) => {
     console.log("Giảng viên đã tạo:", createdGiangVien);
     return {
       status: "OK",
-      message: "Success!",
+      message: "Tạo giảng viên thành công",
       data: createdGiangVien,
     };
   } catch (error) {
