@@ -400,12 +400,12 @@ const QuanLyMonHoc = () => {
 
   const subjectColumns = [
     { field: 'ma_mon_hoc', headerName: 'Mã môn học', width: 100 },
-    { field: 'ten_mon_hoc', headerName: 'Tên môn học', width: 200 },
+    { field: 'ten_mon_hoc', headerName: 'Tên môn học', width: 300 },
     { field: 'so_tin_chi', headerName: 'Số tín chỉ', width: 80 },
     {
       field: 'he_dao_tao_id',
       headerName: 'Hệ đào tạo',
-      width: 150,
+      width: 220,
       renderCell: (params) => {
         const curriculum = curriculums.find((c) => c.id === params.value);
         return curriculum ? curriculum.ten_he_dao_tao : params.value;

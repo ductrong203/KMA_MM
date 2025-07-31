@@ -3,7 +3,19 @@ const DiemService = require('../services/diemService');
 class DiemController {
   static async filter(req, res) {
     try {
-      const data = await DiemService.filter(req.query);
+      // Xử lý tham số bao_ve_do_an
+      let queryParams = { ...req.query };
+      if (queryParams.bao_ve_do_an !== undefined) {
+        if (queryParams.bao_ve_do_an === 'true') {
+          queryParams.bao_ve_do_an = true;
+        } else if (queryParams.bao_ve_do_an === 'false') {
+          queryParams.bao_ve_do_an = false;
+        } else if (queryParams.bao_ve_do_an === 'null' || queryParams.bao_ve_do_an === '') {
+          queryParams.bao_ve_do_an = null;
+        }
+      }
+
+      const data = await DiemService.filter(queryParams);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -45,12 +57,22 @@ class DiemController {
 
   static async createDiemForClass(req, res) {
     try {
-      const { thoi_khoa_bieu_id } = req.body;
+      const { thoi_khoa_bieu_id, bao_ve_do_an } = req.body;
       if (!thoi_khoa_bieu_id) {
         return res.status(400).json({ message: "Thiếu thoi_khoa_bieu_id!" });
       }
 
-      const result = await DiemService.createDiemForClass(thoi_khoa_bieu_id);
+      // Chuyển đổi bao_ve_do_an thành boolean hoặc null
+      let baoVeDoAnValue = null;
+      if (bao_ve_do_an !== undefined && bao_ve_do_an !== null) {
+        if (typeof bao_ve_do_an === 'string') {
+          baoVeDoAnValue = bao_ve_do_an.toLowerCase() === 'true';
+        } else {
+          baoVeDoAnValue = Boolean(bao_ve_do_an);
+        }
+      }
+
+      const result = await DiemService.createDiemForClass(thoi_khoa_bieu_id, baoVeDoAnValue);
       return res.status(201).json(result);
     } catch (error) {
       return res.status(500).json({ message: error.message });

@@ -5,7 +5,10 @@ class DoiTuongQuanLyController{
     static async create(req, res){
         try {
             const doiTuongQuanLy = await DoiTuongQuanLyService.createDoiTuongQuanLy(req.body);
-            res.status(201).json(doiTuongQuanLy);
+            res.status(201).json(
+        {message: "Tạo đối tượng quản lý thành công ",
+            data: doiTuongQuanLy
+        });
         } catch (error) {
             res.status(400).json({ message: error.message });
         }
@@ -34,7 +37,10 @@ class DoiTuongQuanLyController{
         try {
             const doiTuongQuanLy = await DoiTuongQuanLyService.updateDoiTuongQuanLy(req.params.id, req.body);
             if(!doiTuongQuanLy) return await res.status(404).json({ message: "Khong tim thay doi tuong quan ly"});
-            res.json(doiTuongQuanLy);
+            res.json(
+        {messsage: "Cập nhật đối tượng quản lý thành công ",
+            data: doiTuongQuanLy
+        } );
         } catch (error) {
             res.status(400).json({ message: error.message });
         }

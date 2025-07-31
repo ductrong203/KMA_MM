@@ -54,8 +54,9 @@ class DiemService {
   //     data: rows
   //   };
   // }
-  static async filter({ sinh_vien_id, thoi_khoa_bieu_id }) {
+  static async filter({ sinh_vien_id, thoi_khoa_bieu_id, bao_ve_do_an = null }) {
     const whereClause = {};
+    const sinhVienWhere = {};
   
     if (sinh_vien_id) {
       const foundSinhVien = await sinh_vien.findByPk(sinh_vien_id);
@@ -74,6 +75,11 @@ class DiemService {
         return { data: [] };
       }
     }
+
+    // Nếu có truyền tham số bao_ve_do_an, thêm điều kiện lọc sinh viên
+    if (bao_ve_do_an !== null) {
+      sinhVienWhere.bao_ve_do_an = bao_ve_do_an;
+    }
   
     const rows = await diem.findAll({
       where: whereClause,
@@ -82,7 +88,8 @@ class DiemService {
         {
           model: sinh_vien,
           as: 'sinh_vien',
-          attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
+          attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id', 'bao_ve_do_an'],
+          where: Object.keys(sinhVienWhere).length > 0 ? sinhVienWhere : undefined
         }
       ]
     });
@@ -136,7 +143,7 @@ class DiemService {
           {
             model: sinh_vien,
             as: 'sinh_vien',
-            attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
+            attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id', 'bao_ve_do_an']
           }
         ]
       });
@@ -169,7 +176,7 @@ class DiemService {
     return await diem.create(data);
   }
 
-  static async createDiemForClass(thoi_khoa_bieu_id) {
+  static async createDiemForClass(thoi_khoa_bieu_id, bao_ve_do_an = null) {
     try {
         // Tìm thông tin thời khóa biểu
         const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
@@ -177,14 +184,25 @@ class DiemService {
             throw new Error("Không tìm thấy thời khóa biểu!");
         }
 
-        // Lấy danh sách sinh viên thuộc lớp của thời khóa biểu
+        // Tạo điều kiện lọc sinh viên
+        const whereCondition = { lop_id: tkb.lop_id };
+        
+        // Nếu có truyền tham số bao_ve_do_an, thêm điều kiện lọc
+        if (bao_ve_do_an !== null) {
+            whereCondition.bao_ve_do_an = bao_ve_do_an;
+        }
+
+        // Lấy danh sách sinh viên thuộc lớp của thời khóa biểu (có lọc theo bao_ve_do_an nếu cần)
         const sinhViens = await sinh_vien.findAll({
-            where: { lop_id: tkb.lop_id },
+            where: whereCondition,
             attributes: ['id'] // Chỉ lấy ID sinh viên
         });
 
         if (!sinhViens.length) {
-            throw new Error("Không có sinh viên nào trong lớp này!");
+            const filterMessage = bao_ve_do_an !== null 
+                ? ` với điều kiện bao_ve_do_an = ${bao_ve_do_an}` 
+                : "";
+            throw new Error(`Không có sinh viên nào trong lớp này${filterMessage}!`);
         }
 
         // Lấy danh sách điểm đã tồn tại
@@ -221,7 +239,13 @@ class DiemService {
             await diem.bulkCreate(newDiemList);
         }
 
-        return { message: "Tạo bảng điểm thành công!", data: newDiemList };
+        const filterMessage = bao_ve_do_an !== null 
+            ? ` (đã lọc theo bao_ve_do_an = ${bao_ve_do_an})` 
+            : "";
+        return { 
+            message: `Tạo bảng điểm thành công${filterMessage}!`, 
+            data: newDiemList 
+        };
     } catch (error) {
         throw error;
     }
@@ -445,7 +469,7 @@ class DiemService {
   
       // Lấy danh sách sinh viên dựa trên mon_hoc_id, khoa_dao_tao_id, và lop_id (nếu có)
       const sinhVienData = await sinh_vien.findAll({
-        attributes: ["id", "ma_sinh_vien", "ho_dem", "ten"],
+        attributes: ["id", "ma_sinh_vien", "ho_dem", "ten", "bao_ve_do_an"],
         include: [
           {
             model: diem,
@@ -475,9 +499,15 @@ class DiemService {
             model: lop,
             as: "lop",
             attributes: ["ma_lop"],
-            required: false, // Bao gồm sinh viên học lại từ khóa/lớp khác
+            required: true, // Chỉ lấy sinh viên thuộc lớp, không lấy học lại
           },
         ],
+        where: {
+          // Đảm bảo sinh viên thuộc đúng lớp trong khóa đào tạo
+          ...(lop_id ? { lop_id } : {}),
+          // Nếu không có lop_id cụ thể, lọc theo khoa_dao_tao_id thông qua lớp
+          ...(!lop_id && { '$lop.khoa_dao_tao_id$': khoa_dao_tao_id })
+        },
         group: ["sinh_vien.id", "sinh_vien.ma_sinh_vien", "sinh_vien.ho_dem", "sinh_vien.ten", "lop.ma_lop", "diems.id", "diems.diem_ck"],
         subQuery: false,
         transaction,
@@ -762,14 +792,17 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
     });
     const thoiKhoaBieuIds = thoiKhoaBieus.map(tkb => tkb.id);
 
-    // Lấy danh sách điểm
+    // Lấy danh sách điểm - chỉ lấy sinh viên thuộc đúng lớp
     const diemRecords = await diem.findAll({
       where: { thoi_khoa_bieu_id: thoiKhoaBieuIds },
       include: [
         {
           model: sinh_vien,
           as: 'sinh_vien',
-          attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'gioi_tinh', 'diem_trung_binh_tich_luy', 'diem_trung_binh_he_4'],
+          attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'gioi_tinh', 'diem_trung_binh_tich_luy', 'diem_trung_binh_he_4', 'bao_ve_do_an', 'lop_id'],
+          // Thêm điều kiện để đảm bảo sinh viên thuộc đúng lớp
+          where: lop_id ? { lop_id } : { lop_id: lopIds },
+          required: true
         },
         {
           model: thoi_khoa_bieu,
@@ -805,6 +838,11 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
       const monHoc = record.thoi_khoa_bieu.mon_hoc?.ten_mon_hoc || 'Unknown';
       const soTinChi = record.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
 
+      // Kiểm tra sinh viên có thuộc đúng lớp của thời khóa biểu không
+      if (sv.lop_id !== lopId) {
+        continue; // Bỏ qua sinh viên học lại từ lớp khác
+      }
+
       // Lấy thông tin lớp và khóa
       const lopInfo = lops.find(l => l.id === lopId);
       const khoaId = lopInfo?.khoa_dao_tao_id;
@@ -833,9 +871,11 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
         });
 
         sinhVienMap.set(svId, {
+          id: svId, // Thêm ID sinh viên
           ma_sinh_vien: sv.ma_sinh_vien,
           ho_ten: `${sv.ho_dem || ''} ${sv.ten || ''}`.trim(),
           gioi_tinh: sv.gioi_tinh === 1 ? 'Nam' : sv.gioi_tinh === 0 ? 'Nữ' : 'Khác',
+          bao_ve_do_an: sv.bao_ve_do_an || false,
           diem_tb_ky: {},
           diem_tb_tich_luy_he10: sv.diem_trung_binh_tich_luy || 0,
           diem_tb_tich_luy_he4: sv.diem_trung_binh_he_4 || 0,
@@ -932,9 +972,11 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
 
     // Chuẩn bị dữ liệu trả về
     const thongKeTongQuan = Array.from(sinhVienMap.values()).map(sv => ({
+      id: sv.id, // Thêm ID sinh viên
       ma_sinh_vien: sv.ma_sinh_vien,
       ho_ten: sv.ho_ten,
       gioi_tinh: sv.gioi_tinh,
+      bao_ve_do_an: sv.bao_ve_do_an,
       diem_tb_ky: sv.diem_tb_ky,
       diem_tb_tich_luy_he10: sv.diem_tb_tich_luy_he10,
       diem_tb_tich_luy_he4: sv.diem_tb_tich_luy_he4,
@@ -944,6 +986,7 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
       sv.chi_tiet.map(ct => ({
         ma_sinh_vien: sv.ma_sinh_vien,
         ho_ten: sv.ho_ten,
+        bao_ve_do_an: sv.bao_ve_do_an,
         ky_hoc: ct.ky_hoc,
         mon_hoc: ct.mon_hoc,
         diem_tb_ky_he10: ct.diem_tb_ky_he10,

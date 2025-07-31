@@ -6,7 +6,10 @@ class DanhMucKhenKyLuatController {
     try {
       const DanhMucKhenKyLuat =
         await DanhMucKhenKyLuatService.createDanhMucKhenKyLuat(req.body);
-      res.status(201).json(DanhMucKhenKyLuat);
+      res.status(201).json(
+        {message:"Tạo danh mục khen kỷ luật thành công ",
+        data: DanhMucKhenKyLuat});
+      
     } catch (error) {
       res.status(400).json({ message: error.message });
     }

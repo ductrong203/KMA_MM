@@ -6,7 +6,9 @@ class KhenThuongKyLuatController {
     try {
       const KhenThuongKyLuat =
         await KhenThuongKyLuatService.createKhenThuongKyLuat(req.body);
-      res.status(201).json(KhenThuongKyLuat);
+      res.status(201).json(
+        {  message: "Tạo khen thưởng kỷ luật thành công",
+        data: KhenThuongKyLuat});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -47,7 +49,10 @@ class KhenThuongKyLuatController {
         return await res
           .status(404)
           .json({ message: "Khong tim thay danh muc khen thuong ky luat" });
-      res.json(KhenThuongKyLuat);
+      res.json(
+        {message: "Cập nhật khen thuỏng kỷ luật thành công ", 
+        data: KhenThuongKyLuat 
+        });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -61,7 +66,7 @@ class KhenThuongKyLuatController {
         return res
           .status(404)
           .json({ message: "Khong tim thay danh muc khen thuong ky luat" });
-      res.json({ message: "Da xoa danh muc khen thuong ky luat" });
+      res.json({ message: "Đã xoá danh mục khen thưởng kỷ luật " });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

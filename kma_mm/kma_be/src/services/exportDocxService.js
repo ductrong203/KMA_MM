@@ -1,12 +1,49 @@
-const { Document, Packer, Paragraph, Table, TableCell, BorderStyle, VerticalAlign, TableRow, TextRun, WidthType, AlignmentType, UnderlineType, PageBreak } = require("docx");
+const { Document, Packer, Paragraph, Table, TableCell, BorderStyle, VerticalAlign, TableRow, TextRun, WidthType, AlignmentType, UnderlineType, PageBreak, HeightRule } = require("docx");
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
 const models = initModels(sequelize);
 const { sinh_vien, thoi_khoa_bieu, diem, lop, khoa_dao_tao } = models;
 const KeHoachMonHocService = require('../services/keHoachMonHocService');
+const ExcelPhuLucBangService = require('./excelPhuLucBangService');
 const { text } = require("body-parser");
 
 class ExportDocxService {
+  // Tính điểm trung bình kỳ học
+  static async getDiemTrungBinhKyHoc(sinh_vien_id, ky_hoc, khoa_dao_tao_id) {
+    try {
+      const dataDiem = await ExcelPhuLucBangService.getDataPhuLucBang(sinh_vien_id, ky_hoc, khoa_dao_tao_id);
+      
+      if (!dataDiem || dataDiem.length === 0) {
+        return { gpa_he_4: 0, gpa_he_10: 0 };
+      }
+      
+      let totalCredits = 0;
+      let totalWeightedGradePoints_4 = 0;
+      let totalWeightedGradePoints_10 = 0;
+      
+      for (const item of dataDiem) {
+        if (item.diem_he_4 !== null && item.diem_he_10 !== null) {
+          totalCredits += item.so_tin_chi;
+          totalWeightedGradePoints_4 += item.diem_he_4 * item.so_tin_chi;
+          totalWeightedGradePoints_10 += item.diem_he_10 * item.so_tin_chi;
+        }
+      }
+      
+      let gpa_he_4 = 0;
+      let gpa_he_10 = 0;
+      
+      if (totalCredits > 0) {
+        gpa_he_4 = Math.round((totalWeightedGradePoints_4 / totalCredits) * 100) / 100;
+        gpa_he_10 = Math.round((totalWeightedGradePoints_10 / totalCredits) * 100) / 100;
+      }
+      
+      return { gpa_he_4, gpa_he_10 };
+    } catch (error) {
+      console.error("Lỗi khi tính điểm trung bình kỳ học:", error);
+      return { gpa_he_4: 0, gpa_he_10: 0 };
+    }
+  }
+
   static async getSoKyHocVaKhoa(sinh_vien_id) {
     try {
       // Find student by ID
@@ -246,7 +283,19 @@ class ExportDocxService {
     try {
       // Lấy thông tin số kỳ học và khóa đào tạo của sinh viên
       const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
-      // Lấy thông tin sinh viên
+      
+      // Chuyển đổi nam_hoc thành string để đảm bảo có thể sử dụng split()
+      const namHocTruyenVaoStr = String(nam_hoc);
+      
+      // Kiểm tra định dạng nam_hoc
+      if (!namHocTruyenVaoStr.includes('-')) {
+        throw new Error(`Định dạng năm học ${namHocTruyenVaoStr} không hợp lệ. Vui lòng sử dụng định dạng YYYY-YYYY`);
+      }
+
+      // Tách năm bắt đầu từ nam_hoc
+      const namBatDauTruyenVao = parseInt(namHocTruyenVaoStr.split('-')[0]); // VD: 2024
+      
+      // Lấy thông tin sinh viên để tính toán kỳ học
       const sinhVien = await sinh_vien.findOne({
         where: { id: sinh_vien_id },
         include: [
@@ -258,16 +307,115 @@ class ExportDocxService {
               {
                 model: khoa_dao_tao,
                 as: 'khoa_dao_tao',
-                attributes: ['ma_khoa', 'ten_khoa', 'nam_hoc']
+                attributes: ['ma_khoa', 'ten_khoa', 'nam_hoc', 'id','so_ky_hoc']
               }
             ]
           }
         ]
       });
-
+      
       if (!sinhVien) {
         throw new Error("Không tìm thấy thông tin sinh viên");
       }
+
+      // Lấy thông tin năm học gốc của khóa đào tạo
+      const namHocGoc = sinhVien.lop?.khoa_dao_tao?.nam_hoc || ''; // VD: "2024-2027"
+      const soKyHocTong = sinhVien.lop?.khoa_dao_tao?.so_ky_hoc || 6; // Tổng số kỳ học
+      
+      // Kiểm tra định dạng namHocGoc
+      if (!namHocGoc) {
+        throw new Error("Không tìm thấy thông tin năm học gốc của khóa đào tạo");
+      }
+
+      // Tách năm từ namHocGoc để tính khoảng hợp lệ
+      const [namBatDauGoc, namKetThucGoc] = namHocGoc.split('-').map(Number);
+      if (!namBatDauGoc || !namKetThucGoc) {
+        throw new Error("Định dạng năm học gốc không hợp lệ");
+      }
+
+      // Kiểm tra nam_hoc có nằm trong khoảng hợp lệ không
+      const namKetThucTruyenVao = namBatDauTruyenVao + 1;
+      
+      if (namBatDauTruyenVao < namBatDauGoc || namKetThucTruyenVao > namKetThucGoc) {
+        throw new Error(`Năm học ${namHocTruyenVaoStr} không nằm trong khoảng đào tạo ${namHocGoc}`);
+      }
+      
+      // Tính offset năm học (mỗi năm học có 2 kỳ)
+      const offsetNam = namBatDauTruyenVao - namBatDauGoc; // VD: 0, 1, 2...
+      const kyHoc1 = (offsetNam * 2) + 1; // Kỳ 1 của năm học truyền vào
+      const kyHoc2 = (offsetNam * 2) + 2; // Kỳ 2 của năm học truyền vào
+
+      // Kiểm tra các kỳ học có vượt quá tổng số kỳ học không
+      if (kyHoc1 > soKyHocTong || kyHoc2 > soKyHocTong) {
+        throw new Error(`Các kỳ học ${kyHoc1}, ${kyHoc2} vượt quá tổng số kỳ học ${soKyHocTong} của khóa đào tạo`);
+      }
+
+      // Lấy dữ liệu điểm cho từng kỳ học cụ thể
+      const dataDiemKy1 = await ExcelPhuLucBangService.getDataPhuLucBang(sinh_vien_id, kyHoc1, khoa_dao_tao_id);
+      const dataDiemKy2 = await ExcelPhuLucBangService.getDataPhuLucBang(sinh_vien_id, kyHoc2, khoa_dao_tao_id);
+      
+      // Tính điểm trung bình năm học từ cả hai kỳ học cụ thể
+      // Tính GPA cho kỳ 1
+      let totalCreditsKy1 = 0;
+      let totalWeightedGradePointsKy1 = 0;
+      for (const item of dataDiemKy1) {
+        if (item.diem_he_4 !== null && item.diem_he_4 !== undefined && 
+            item.so_tin_chi !== null && item.so_tin_chi !== undefined) {
+          const credits = Number(item.so_tin_chi);
+          const gradePoints = Number(item.diem_he_4);
+          if (!isNaN(credits) && !isNaN(gradePoints) && gradePoints >= 1.0) {
+            totalCreditsKy1 += credits;
+            totalWeightedGradePointsKy1 += (gradePoints * credits);
+          }
+        }
+      }
+      const gpaKy1 = totalCreditsKy1 > 0 ? (totalWeightedGradePointsKy1 / totalCreditsKy1) : 0;
+      
+      // Tính GPA cho kỳ 2
+      let totalCreditsKy2 = 0;
+      let totalWeightedGradePointsKy2 = 0;
+      for (const item of dataDiemKy2) {
+        if (item.diem_he_4 !== null && item.diem_he_4 !== undefined && 
+            item.so_tin_chi !== null && item.so_tin_chi !== undefined) {
+          const credits = Number(item.so_tin_chi);
+          const gradePoints = Number(item.diem_he_4);
+          if (!isNaN(credits) && !isNaN(gradePoints) && gradePoints >= 1.0) {
+            totalCreditsKy2 += credits;
+            totalWeightedGradePointsKy2 += (gradePoints * credits);
+          }
+        }
+      }
+      const gpaKy2 = totalCreditsKy2 > 0 ? (totalWeightedGradePointsKy2 / totalCreditsKy2) : 0;
+      
+      // Tính điểm trung bình năm học (trung bình có trọng số theo tín chỉ)
+      const totalCreditsNamHoc = totalCreditsKy1 + totalCreditsKy2;
+      const totalWeightedGradePointsNamHoc = totalWeightedGradePointsKy1 + totalWeightedGradePointsKy2;
+      const gpaNamHoc_he4 = totalCreditsNamHoc > 0 ? (totalWeightedGradePointsNamHoc / totalCreditsNamHoc) : 0;
+      
+      // Làm tròn 2 chữ số thập phân
+      const gpaNamHoc = Math.round(gpaNamHoc_he4 * 100) / 100;
+      
+      // Xếp loại học lực dựa trên GPA hệ 4
+      let xepLoaiHocLuc = '';
+      if (gpaNamHoc >= 3.5) {
+        xepLoaiHocLuc = 'Xuất sắc';
+      } else if (gpaNamHoc >= 3.0) {
+        xepLoaiHocLuc = 'Giỏi';
+      } else if (gpaNamHoc >= 2.5) {
+        xepLoaiHocLuc = 'Khá';
+      } else if (gpaNamHoc >= 2.0) {
+        xepLoaiHocLuc = 'Trung bình';
+      } else if (gpaNamHoc >= 1.0) {
+        xepLoaiHocLuc = 'Yếu';
+      } else {
+        xepLoaiHocLuc = 'Kém';
+      }
+
+      // Format ngày tháng
+      const today = new Date();
+      const day = today.getDate();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
 
       // Header
       const rowHead = new TableRow({
@@ -311,7 +459,7 @@ class ExportDocxService {
                 alignment: AlignmentType.RIGHT,
                 indent: { right: 720 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: 'Hà Nội, ngày ', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
                 ],
 
@@ -330,14 +478,14 @@ class ExportDocxService {
               new Paragraph({
                 spacing: { line: 300 },
                 children: [
-                  new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Họ và tên: ', size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Nơi sinh: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Khoá đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Trình độ đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 28, font: 'Times New Roman' }),
                 
                 ],
                 alignment: AlignmentType.LEFT,
@@ -352,14 +500,14 @@ class ExportDocxService {
                 spacing: { line: 300 },
                 alignment: AlignmentType.LEFT,
                 children: [
-                  new TextRun({ text: 'Ngày sinh: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Ngành/chuyên ngành: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngày sinh: ', size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Mã học viên: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngành/chuyên ngành: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Hình thức đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Chính quy`, size: 28, font: 'Times New Roman' }),
 
                 ],
               }),
@@ -369,8 +517,6 @@ class ExportDocxService {
         ],
       });
 
-      const { totalCredits, gpa } = await this.getTotalCreditsAndGPA(sinh_vien_id, so_ky_hoc, khoa_dao_tao_id);
-      
       //thông tin tổng
       const rowTotal = new TableRow({
         children: [
@@ -380,9 +526,9 @@ class ExportDocxService {
                 spacing: { line: 300 },
                 children: [
                   new TextRun({ text: 'Điểm TB năm học (hệ 4): ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${totalCredits}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Điểm TB năm học (hệ 10): ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${gpa}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${gpaNamHoc}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Tổng số tín chỉ năm học: ', size: 24, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${totalCreditsNamHoc}`, size: 24, font: 'Times New Roman' }),
 
                 ],
                 alignment: AlignmentType.LEFT,
@@ -398,14 +544,14 @@ class ExportDocxService {
                 alignment: AlignmentType.LEFT,
                 children: [
                   new TextRun({ text: 'Xếp loại học lực: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: `${xepLoaiHocLuc}`, size: 24, font: 'Times New Roman' }),
 
                 ],
               }),
               new Paragraph({
                 spacing: { after: 50 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày      tháng   năm 202', size: 26, italics: true, break: 1 }),
+                  new TextRun({ text: `Hà Nội, ngày ${day.toString().padStart(2, '0')} tháng ${month.toString().padStart(2, '0')} năm ${year}`, size: 26, italics: true, break: 1 }),
                 ],
                 alignment: AlignmentType.RIGHT,
 
@@ -458,7 +604,7 @@ class ExportDocxService {
               spacing: { after: 200 },
               children: [
                 new TextRun({ text: 'KẾT QUẢ HỌC TẬP', bold: true, size: 28, font: 'Times New Roman', break: 1 }),
-                new TextRun({ text: 'Năm học 2022-2027', bold: true, size: 28, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE }, break: 1 }),
+                new TextRun({ text: `Năm học ${namHocTruyenVaoStr}`, bold: true, size: 28, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE }, break: 1 }),
               ],
             }),
 
@@ -511,7 +657,7 @@ class ExportDocxService {
                             spacing: {after: 50},
                             children: [new TextRun({ text: 'a) Học kỳ 1', size: 26, italics:true  })],
                           }),
-                        this.generateSubTable(0, 5)
+                        this.generateSubTable(dataDiemKy1, 0, dataDiemKy1.length)
                     ], // bảng trái
 
                     }),
@@ -527,7 +673,7 @@ class ExportDocxService {
                             spacing: {after: 50},
                             children: [new TextRun({ text: 'b) Học kỳ 2', size: 26, italics:true  })],
                           }),
-                        this.generateSubTable(5, 10)
+                        this.generateSubTable(dataDiemKy2, 0, dataDiemKy2.length)
                     ], // bảng phải
                     })
                   ],
@@ -539,8 +685,7 @@ class ExportDocxService {
             new Paragraph({
                 children: [new TextRun({ text: 'II. Các học phần được miễn học, công nhận tín chỉ hoặc chuyển đổi điểm', bold: true, size: 24, font: 'Times New Roman'})],
   
-              }),
-            new Table({
+              }),            new Table({
                 borders: {
                   top: { size: 0, color: "FFFFFF" },
                   bottom: { size: 0, color: "FFFFFF" },
@@ -559,15 +704,15 @@ class ExportDocxService {
                               spacing: {after: 50},
                               children: [new TextRun({ text: 'a) Học kỳ 1', size: 26, italics:true  })],
                             }),
-                          this.generateSubTable(0, 3)
+                          this.generateSubTable([], 0, 3)
                       ], // bảng trái
-  
+
                       }),
                       new TableCell({
                         width: { size: 500, type: WidthType.DXA },
                         children: [new Paragraph({})],
                       }),
-  
+
                       new TableCell({
                         width: { size: 8000, type: WidthType.DXA },
                         children: [
@@ -575,13 +720,13 @@ class ExportDocxService {
                               spacing: {after: 50},
                               children: [new TextRun({ text: 'b) Học kỳ 2', size: 26, italics:true  })],
                             }),
-                          this.generateSubTable(0, 3)
+                          this.generateSubTable([], 3, 6)
                       ], // bảng phải
                       })
                     ],
                   }),
                 ],
-  
+
               }),
               new Paragraph({
                 // spacing: { after: 100 },
@@ -624,6 +769,29 @@ class ExportDocxService {
     try {
       // Lấy thông tin số kỳ học và khóa đào tạo của sinh viên
       const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
+      
+      // Lấy dữ liệu điểm cho kỳ học sử dụng hàm từ ExcelPhuLucBangService
+      const dataDiem = await ExcelPhuLucBangService.getDataPhuLucBang(sinh_vien_id, hoc_ky, khoa_dao_tao_id);
+      
+      // Tính điểm trung bình kỳ học
+      const { gpa_he_4, gpa_he_10 } = await this.getDiemTrungBinhKyHoc(sinh_vien_id, hoc_ky, khoa_dao_tao_id);
+      
+      // Xếp loại học lực dựa trên GPA hệ 4
+      let xepLoaiHocLuc = '';
+      if (gpa_he_4 >= 3.5) {
+        xepLoaiHocLuc = 'Xuất sắc';
+      } else if (gpa_he_4 >= 3.0) {
+        xepLoaiHocLuc = 'Giỏi';
+      } else if (gpa_he_4 >= 2.5) {
+        xepLoaiHocLuc = 'Khá';
+      } else if (gpa_he_4 >= 2.0) {
+        xepLoaiHocLuc = 'Trung bình';
+      } else if (gpa_he_4 >= 1.0) {
+        xepLoaiHocLuc = 'Yếu';
+      } else {
+        xepLoaiHocLuc = 'Kém';
+      }
+
       // Lấy thông tin sinh viên
       const sinhVien = await sinh_vien.findOne({
         where: { id: sinh_vien_id },
@@ -646,6 +814,12 @@ class ExportDocxService {
       if (!sinhVien) {
         throw new Error("Không tìm thấy thông tin sinh viên");
       }
+
+      // Format ngày tháng
+      const today = new Date();
+      const day = today.getDate();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
 
       // Header
       const rowHead = new TableRow({
@@ -689,7 +863,7 @@ class ExportDocxService {
                 alignment: AlignmentType.RIGHT,
                 indent: { right: 720 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: 'Hà Nội, ngày ', italics: true, size: 26, font: 'Times New Roman', break: 1 }),
                   new TextRun({ text: `07 tháng 06 năm 2025`, italics: true, size: 26, font: 'Times New Roman', }),
                 ],
 
@@ -708,14 +882,14 @@ class ExportDocxService {
               new Paragraph({
                 spacing: { line: 300 },
                 children: [
-                  new TextRun({ text: 'Họ và tên: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Nơi sinh: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Khoá đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Trình độ đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Họ và tên: ', size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ho_dem} ${sinhVien.ten}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Nơi sinh: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.quan_huyen && sinhVien.tinh_thanh ? `${sinhVien.quan_huyen} - ${sinhVien.tinh_thanh}` : ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Khoá đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.ma_sinh_vien}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Trình độ đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 28, font: 'Times New Roman' }),
                 
                 ],
                 alignment: AlignmentType.LEFT,
@@ -730,14 +904,14 @@ class ExportDocxService {
                 spacing: { line: 300 },
                 alignment: AlignmentType.LEFT,
                 children: [
-                  new TextRun({ text: 'Ngày sinh: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Mã học viên: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Ngành/chuyên ngành: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Hình thức đào tạo: ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `Chính quy`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngày sinh: ', size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Mã học viên: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.gioi_tinh === 1 ? "Nam" : "Nữ"}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Ngành/chuyên ngành: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${sinhVien.lop?.khoa_dao_tao?.ten_khoa || ''}`, size: 28, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Hình thức đào tạo: ', size: 28, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `Chính quy`, size: 28, font: 'Times New Roman' }),
 
                 ],
               }),
@@ -757,10 +931,10 @@ class ExportDocxService {
               new Paragraph({
                 spacing: { line: 300 },
                 children: [
-                  new TextRun({ text: 'Điểm TB năm học (hệ 4): ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${totalCredits}`, size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: 'Điểm TB năm học (hệ 10): ', size: 24, font: 'Times New Roman', break: 1 }),
-                  new TextRun({ text: `${gpa}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB học kỳ (hệ 4): ', size: 26, font: 'Times New Roman' }),
+                  new TextRun({ text: `${gpa_he_4}`, size: 26, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Điểm TB học kỳ (hệ 10): ', size: 26, font: 'Times New Roman', break: 1 }),
+                  new TextRun({ text: `${gpa_he_10}`, size: 26, font: 'Times New Roman' }),
 
                 ],
                 alignment: AlignmentType.LEFT,
@@ -775,15 +949,15 @@ class ExportDocxService {
                 spacing: { line: 300 },
                 alignment: AlignmentType.LEFT,
                 children: [
-                  new TextRun({ text: 'Xếp loại học lực: ', size: 24, font: 'Times New Roman' }),
-                  new TextRun({ text: `${sinhVien.ngay_sinh ? new Date(sinhVien.ngay_sinh).toLocaleDateString('vi-VN') : ''}`, size: 24, font: 'Times New Roman' }),
+                  new TextRun({ text: 'Xếp loại học lực: ', size: 26, font: 'Times New Roman' }),
+                  new TextRun({ text: `${xepLoaiHocLuc}`, size: 26, font: 'Times New Roman' }),
 
                 ],
               }),
               new Paragraph({
                 spacing: { after: 50 },
                 children: [
-                  new TextRun({ text: 'Hà Nội, ngày      tháng   năm 202', size: 26, italics: true, break: 1 }),
+                  new TextRun({ text: `Hà Nội, ngày ${day.toString().padStart(2, '0')} tháng ${month.toString().padStart(2, '0')} năm ${year}`, size: 26, italics: true, break: 1 }),
                 ],
                 alignment: AlignmentType.RIGHT,
 
@@ -836,14 +1010,14 @@ class ExportDocxService {
               spacing: { after: 200 },
               children: [
                 new TextRun({ text: 'KẾT QUẢ HỌC TẬP', bold: true, size: 28, font: 'Times New Roman', break: 1 }),
-                new TextRun({ text: 'Học kỳ … Năm học 2022-2027', bold: true, size: 28, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE }, break: 1 }),
+                new TextRun({ text: `Học kỳ ${hoc_ky} Năm học ${sinhVien.lop?.khoa_dao_tao?.nam_hoc || ''}`, bold: true, size: 28, font: 'Times New Roman', underline: { type: UnderlineType.SINGLE }, break: 1 }),
               ],
             }),
 
             // PHẦN 1 LỚN
             new Paragraph({
               spacing: { after: 50 },
-              children: [new TextRun({ text: '', bold: true, size: 24, font: 'Times New Roman', break: 1 })],
+              children: [new TextRun({ text: '', bold: true, size: 28, font: 'Times New Roman', break: 1 })],
 
             }),
             new Table({
@@ -887,26 +1061,25 @@ class ExportDocxService {
               },
               rows: [
                 new TableRow({
-                  children: [
-                    new TableCell({
-                      width: { size: 8000, type: WidthType.DXA },
-                      children: [
-                        this.generateSubTable(0, 5)
-                    ], // bảng trái
+                  children: [                      new TableCell({
+                        width: { size: 8000, type: WidthType.DXA },
+                        children: [
+                          this.generateSubTable(dataDiem, 0, Math.ceil(dataDiem.length / 2))
+                      ], // bảng trái
 
-                    }),
-                    new TableCell({
-                      width: { size: 500, type: WidthType.DXA },
-                      children: [new Paragraph({})],
-                    }),
+                      }),
+                      new TableCell({
+                        width: { size: 500, type: WidthType.DXA },
+                        children: [new Paragraph({})],
+                      }),
 
-                    new TableCell({
-                      width: { size: 8000, type: WidthType.DXA },
-                      children: [
-                      
-                        this.generateSubTable(5, 10)
-                    ], // bảng phải
-                    })
+                      new TableCell({
+                        width: { size: 8000, type: WidthType.DXA },
+                        children: [
+                        
+                          this.generateSubTable(dataDiem, Math.ceil(dataDiem.length / 2), dataDiem.length)
+                      ], // bảng phải
+                      })
                   ],
                 }),
               ],
@@ -936,23 +1109,22 @@ class ExportDocxService {
                   new TableRow({
                     children: [
                       new TableCell({
-                        width: { size: 8000, type: WidthType.DXA },
-                        children: [
+                        width: { size: 8000, type: WidthType.DXA },                        children: [
             
-                          this.generateSubTable(0, 3)
+                          this.generateSubTable([], 0, 3)
                       ], // bảng trái
-  
+
                       }),
                       new TableCell({
                         width: { size: 500, type: WidthType.DXA },
                         children: [new Paragraph({})],
                       }),
-  
+
                       new TableCell({
                         width: { size: 8000, type: WidthType.DXA },
                         children: [
                       
-                          this.generateSubTable(3, 6)
+                          this.generateSubTable([], 3, 6)
                       ], // bảng phải
                       })
                     ],
@@ -994,8 +1166,8 @@ class ExportDocxService {
     }
   }
 
-  static  generateSubTable(start, end) {
-    console.log(start)
+  static generateSubTable(data, start, end) {
+    console.log('generateSubTable called with:', { dataLength: data.length, start, end });
     // const { so_ky_hoc, khoa_dao_tao_id } = await this.getSoKyHocVaKhoa(sinh_vien_id);
 
     // for (let ky_hoc = 1; ky_hoc <= so_ky_hoc; ky_hoc++) {
@@ -1028,7 +1200,7 @@ class ExportDocxService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
-              width: { size: 50000, type: WidthType.DXA },
+              width: { size: 3000, type: WidthType.DXA },
               rowSpan: 2,
             }),
             new TableCell({
@@ -1037,6 +1209,7 @@ class ExportDocxService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
+              width: { size: 500, type: WidthType.DXA },
               rowSpan: 2
             }),
             new TableCell({
@@ -1045,7 +1218,7 @@ class ExportDocxService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
-
+              width: { size: 1000, type: WidthType.DXA },
               columnSpan: 2,
             }),
             new TableCell({
@@ -1054,11 +1227,13 @@ class ExportDocxService {
                 alignment: AlignmentType.CENTER
               })],
               verticalAlign: VerticalAlign.CENTER,
+              width: { size: 700, type: WidthType.DXA },
               rowSpan: 2,
 
             }),
 
           ],
+          height: { value: 300, rule: HeightRule.ATLEAST }, // Tăng chiều cao hàng tiêu đề
 
         }),
 
@@ -1071,7 +1246,9 @@ class ExportDocxService {
                 verticalAlign: VerticalAlign.CENTER,
 
               })],
-              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+              width: { size: 500, type: WidthType.DXA },
+              margins: { top: 50, bottom: 0, left: 50, right: 50 },
+              verticalAlign: VerticalAlign.CENTER,
 
             }),
 
@@ -1082,58 +1259,73 @@ class ExportDocxService {
                 verticalAlign: VerticalAlign.CENTER,
 
               })],
-              margins: { top: 50, bottom: 0, left: 50, right: 50 }, // Tăng padding ô
+              width: { size: 500, type: WidthType.DXA },
+              margins: { top: 50, bottom: 0, left: 50, right: 50 },
+              verticalAlign: VerticalAlign.CENTER,
 
             }),
           ],
-          tableHeader: true
+          tableHeader: true,
+          //height: { value: 400, rule: HeightRule.ATLEAST }, // Tăng chiều cao hàng con tiêu đề
 
         }),
         ...Array.from({ length: end - start }, (_, index) => {
           let i = start + index;
+          const item = data[i];
 
           return new TableRow({
             children: [
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: `${i + 1}`, size: 20, font: 'Times New Roman' })],
+                  children: [new TextRun({ text: item ? `${i + 1}` : '', size: 20, font: 'Times New Roman' })],
                   alignment: AlignmentType.CENTER,
                 })],
+                verticalAlign: VerticalAlign.CENTER,
               }),
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: "", size: 20, font: 'Times New Roman' })],
-                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: item ? item.ten_mon_hoc : '', size: 20, font: 'Times New Roman' })],
+                  alignment: AlignmentType.LEFT,
                 })],
                 margins: { top: 50, bottom: 50, left: 50, right: 50 },
-                width: { size: 9000, type: WidthType.DXA },
+                width: { size: 3000, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
               }),
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: `2`, size: 20, font: 'Times New Roman' })],
+                  children: [new TextRun({ text: item ? `${item.so_tin_chi}` : '', size: 20, font: 'Times New Roman' })],
                   alignment: AlignmentType.CENTER,
-                })]
+                })],
+                width: { size: 500, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
               }),
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: (7.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  children: [new TextRun({ text: item && item.diem_he_10 !== null ? `${item.diem_he_10}` : '', size: 20, font: 'Times New Roman' })],
                   alignment: AlignmentType.CENTER,
-                })]
+                })],
+                width: { size: 500, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
               }),
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: (3.0 + i * 0.1).toFixed(1), size: 20, font: 'Times New Roman' })],
+                  children: [new TextRun({ text: item && item.diem_he_4 !== null ? `${item.diem_he_4}` : '', size: 20, font: 'Times New Roman' })],
                   alignment: AlignmentType.CENTER,
-                })]
+                })],
+                width: { size: 500, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
               }),
               new TableCell({
                 children: [new Paragraph({
-                  children: [new TextRun({ text: i % 2 === 0 ? 'A+' : 'A', size: 20, font: 'Times New Roman' })],
+                  children: [new TextRun({ text: item ? item.diem_chu || '' : '', size: 20, font: 'Times New Roman' })],
                   alignment: AlignmentType.CENTER,
-                })]
+                })],
+                width: { size: 700, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
               }),
 
             ],
+            height: { value: 300, rule: HeightRule.ATLEAST }, // Tăng chiều cao hàng giá trị
 
           })
         })

@@ -92,7 +92,7 @@ export const xoaChungChi = async (id) => {
 
 export const laydanhsachloaichungchi = async () => {
     try {
-        const response = await api.get("/chung-chi/loai-chung-chi");
+        const response = await api.get("/loai-chung-chi");
         return response.data;
     } catch (error) {
         console.error("Error fetching chung chi types:", error);
@@ -118,14 +118,42 @@ export const getChungChiByFilters = async (filters) => {
 };
 
 // Thêm các API mới cho quản lý loại chứng chỉ
-export const taoLoaiChungChi = async (loaiChungChi) => {
+export const taoLoaiChungChi = async (data) => {
     try {
-        const response = await api.post("/chung-chi/loai-chung-chi", {
-            loai_chung_chi: loaiChungChi
-        });
+        const response = await api.post("/loai-chung-chi", data);
         return response.data;
     } catch (error) {
         console.error("Error creating chung chi type:", error);
+        throw error;
+    }
+};
+
+export const capNhatLoaiChungChi = async (id, data) => {
+    try {
+        const response = await api.put(`/loai-chung-chi/${id}`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating chung chi type:", error);
+        throw error;
+    }
+};
+
+export const xoaLoaiChungChi = async (id) => {
+    try {
+        const response = await api.delete(`/loai-chung-chi/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting chung chi type:", error);
+        throw error;
+    }
+};
+
+export const layChiTietLoaiChungChi = async (id) => {
+    try {
+        const response = await api.get(`/loai-chung-chi/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching chung chi type detail:", error);
         throw error;
     }
 };

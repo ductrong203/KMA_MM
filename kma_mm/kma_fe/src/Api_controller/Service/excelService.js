@@ -91,7 +91,20 @@ export const importStudentsFromExcel = async (data) => {
 export const exportPhuLucBangDiem = async (id) => {
   console.log(id);
   try {
-    const response = await api.get(`/excel-phu-luc-bang/export/?sinh_vien_id=${id}`, {
+    const response = await api.get(`/excel-phu-luc-bang/export-excel/?sinh_vien_id=${id}`, {
+      responseType: 'blob', // Quan trọng: yêu cầu dữ liệu kiểu blob để tải file
+    });
+    return response;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
+export const exportPhuLucBangDiemWord = async (id) => {
+  console.log(id);
+  try {
+    const response = await api.get(`/excel-phu-luc-bang/export-docx/?sinh_vien_id=${id}`, {
       responseType: 'blob', // Quan trọng: yêu cầu dữ liệu kiểu blob để tải file
     });
     return response;

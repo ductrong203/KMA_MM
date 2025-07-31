@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('sinh_vien', {
+  const SinhVien = sequelize.define('sinh_vien', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -229,4 +229,45 @@ module.exports = function(sequelize, DataTypes) {
       },
     ]
   });
+
+  // Định nghĩa associations cho sinh_vien
+  SinhVien.associate = function(models) {
+    // Mối quan hệ với lop
+    SinhVien.belongsTo(models.lop, {
+      foreignKey: 'lop_id',
+      as: 'lop',
+    });
+
+    // Mối quan hệ với doi_tuong_quan_ly
+    SinhVien.belongsTo(models.doi_tuong_quan_ly, {
+      foreignKey: 'doi_tuong_id',
+      as: 'doi_tuong',
+    });
+
+    // Mối quan hệ với chung_chi
+    SinhVien.hasMany(models.chung_chi, {
+      foreignKey: 'sinh_vien_id',
+      as: 'chungChis',
+    });
+
+    // Mối quan hệ với thong_tin_quan_nhan
+    SinhVien.hasMany(models.thong_tin_quan_nhan, {
+      foreignKey: 'sinh_vien_id',
+      as: 'thong_tin_quan_nhans',
+    });
+
+    // Mối quan hệ với diem
+    SinhVien.hasMany(models.diem, {
+      foreignKey: 'sinh_vien_id',
+      as: 'diems',
+    });
+
+    // Mối quan hệ với khen_thuong_ky_luat
+    SinhVien.hasMany(models.khen_thuong_ky_luat, {
+      foreignKey: 'sinh_vien_id',
+      as: 'khen_thuong_ky_luats',
+    });
+  };
+
+  return SinhVien;
 };

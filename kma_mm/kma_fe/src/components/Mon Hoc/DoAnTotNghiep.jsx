@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   FormControl,
   InputLabel,
@@ -10,76 +9,114 @@ import {
   Checkbox,
   Button,
 } from '@mui/material';
+import { toast } from 'react-toastify';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachSinhVienTheoKhoa } from '../../Api_controller/Service/sinhVienService';
 import { capNhatDanhSachSinhVien } from '../../Api_controller/Service/sinhVienService';
+import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
 import { DataGrid } from '@mui/x-data-grid';
 import * as XLSX from 'xlsx';
 
-const GraduationManagement = ({ curriculums, role, setNotification }) => {
+const GraduationManagement = ({ curriculums, role }) => {
   const [students, setStudents] = useState([]);
   const [khoaList, setKhoaList] = useState([]);
+  const [lopList, setLopList] = useState([]);
   const [heDaoTaoFilter, setHeDaoTaoFilter] = useState('');
   const [khoaFilter, setKhoaFilter] = useState('');
+  const [lopFilter, setLopFilter] = useState('');
+  const [filterType, setFilterType] = useState('lop'); // 'khoa' hoặc 'lop' - mặc định là lớp
   const [loading, setLoading] = useState(false);
   const [sortModel, setSortModel] = useState([{ field: 'tong_tin_chi', sort: 'desc' }]);
   const [pageSize, setPageSize] = useState(15);
   const [pendingChanges, setPendingChanges] = useState({});
+
+  const fetchKhoaList = useCallback(async () => {
+    try {
+      const response = await getDanhSachKhoaTheoDanhMucDaoTao(heDaoTaoFilter);
+      setKhoaList(response);
+    } catch (error) {
+      toast.error('Lỗi khi tải danh sách khóa: ' + error.message);
+    }
+  }, [heDaoTaoFilter]);
+
+  const fetchLopList = useCallback(async () => {
+    if (!khoaFilter) return;
+    try {
+      const response = await getDanhSachLopTheoKhoaDaoTao(khoaFilter);
+      setLopList(response.data || response);
+    } catch (error) {
+      toast.error('Lỗi khi tải danh sách lớp: ' + error.message);
+    }
+  }, [khoaFilter]);
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getDanhSachSinhVienTheoKhoa(khoaFilter);
+      setStudents(response.data.students);
+    } catch (error) {
+      toast.error('Lỗi khi tải danh sách sinh viên: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [khoaFilter]);
+
+  const fetchStudentsByLop = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getDanhSachSinhVienTheoKhoa(khoaFilter);
+      const allStudents = response.data.students;
+      const filteredStudents = allStudents.filter(student => student.lop_id === parseInt(lopFilter));
+      setStudents(filteredStudents);
+    } catch (error) {
+      toast.error('Lỗi khi tải danh sách sinh viên theo lớp: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [khoaFilter, lopFilter]);
 
   useEffect(() => {
     if (heDaoTaoFilter) {
       fetchKhoaList();
     } else {
       setKhoaList([]);
+      setLopList([]);
       setKhoaFilter('');
+      setLopFilter('');
       setStudents([]);
     }
-  }, [heDaoTaoFilter]);
+  }, [heDaoTaoFilter, fetchKhoaList]);
 
   useEffect(() => {
-    if (khoaFilter) {
+    if (filterType === 'khoa' && khoaFilter) {
       fetchStudents();
+    } else if (filterType === 'lop' && khoaFilter) {
+      fetchLopList();
     } else {
       setStudents([]);
     }
-  }, [khoaFilter]);
+  }, [khoaFilter, filterType, fetchStudents, fetchLopList]);
 
-  const fetchKhoaList = async () => {
-    try {
-      const response = await getDanhSachKhoaTheoDanhMucDaoTao(heDaoTaoFilter);
-      setKhoaList(response);
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: 'Lỗi khi tải danh sách khóa: ' + error.message,
-        severity: 'error',
-      });
+  useEffect(() => {
+    if (filterType === 'lop' && lopFilter) {
+      fetchStudentsByLop();
     }
-  };
+  }, [lopFilter, filterType, fetchStudentsByLop]);
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const response = await getDanhSachSinhVienTheoKhoa(khoaFilter);
-      setStudents(response.data.students);
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: 'Lỗi khi tải danh sách sinh viên: ' + error.message,
-        severity: 'error',
-      });
-    } finally {
-      setLoading(false);
+  const handleFilterTypeChange = (newFilterType) => {
+    setFilterType(newFilterType);
+    setLopFilter('');
+    setStudents([]);
+    if (newFilterType === 'khoa') {
+      setLopList([]);
+    } else if (newFilterType === 'lop' && khoaFilter) {
+      fetchLopList();
     }
   };
 
   const handleCheckboxChange = (studentId, baoVeDoAn) => {
     if (role === 'examination') {
-      setNotification({
-        open: true,
-        message: 'Bạn không có quyền thực hiện thao tác này!',
-        severity: 'warning',
-      });
+      toast.warning('Bạn không có quyền thực hiện thao tác này!');
       return;
     }
     // Cập nhật pendingChanges
@@ -101,11 +138,7 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
 
   const handleSaveChanges = async () => {
     if (role === 'examination') {
-      setNotification({
-        open: true,
-        message: 'Bạn không có quyền thực hiện thao tác này!',
-        severity: 'warning',
-      });
+      toast.warning('Bạn không có quyền thực hiện thao tác này!');
       return;
     }
     try {
@@ -115,28 +148,16 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
       }));
 
       if (sinhVienList.length === 0) {
-        setNotification({
-          open: true,
-          message: 'Không có thay đổi để lưu!',
-          severity: 'warning',
-        });
+        toast.warning('Không có thay đổi để lưu!');
         return;
       }
 
       await capNhatDanhSachSinhVien(khoaFilter, sinhVienList);
 
       setPendingChanges({});
-      setNotification({
-        open: true,
-        message: 'Lưu tất cả thay đổi thành công!',
-        severity: 'success',
-      });
+      toast.success('Lưu tất cả thay đổi thành công!');
     } catch (error) {
-      setNotification({
-        open: true,
-        message: 'Lỗi khi lưu thay đổi: ' + error.message,
-        severity: 'error',
-      });
+      toast.error('Lỗi khi lưu thay đổi: ' + error.message);
     }
   };
 
@@ -179,13 +200,11 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
       headerName: 'Bảo vệ đồ án',
       width: 150,
       renderCell: (params) => (
-        params.row.bao_ve_do_an ? (
-          <Checkbox
-            checked={params.row.bao_ve_do_an}
-            onChange={(e) => handleCheckboxChange(params.row.id, e.target.checked)}
-            disabled={role === 'examination'}
-          />
-        ) : null
+        <Checkbox
+          checked={params.row.bao_ve_do_an === true}
+          onChange={(e) => handleCheckboxChange(params.row.id, e.target.checked)}
+          disabled={role === 'examination'}
+        />
       ),
     },
     {
@@ -193,13 +212,11 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
       headerName: 'Thi tốt nghiệp',
       width: 150,
       renderCell: (params) => (
-        !params.row.bao_ve_do_an ? (
-          <Checkbox
-            checked={!params.row.bao_ve_do_an}
-            onChange={(e) => handleCheckboxChange(params.row.id, !e.target.checked)}
-            disabled={role === 'examination'}
-          />
-        ) : null
+        <Checkbox
+          checked={params.row.bao_ve_do_an === false}
+          onChange={(e) => handleCheckboxChange(params.row.id, !e.target.checked)}
+          disabled={role === 'examination'}
+        />
       ),
     },
   ];
@@ -209,15 +226,15 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
       <Typography variant="h5" gutterBottom>
         Quản lý đồ án tốt nghiệp
       </Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Lọc theo hệ đào tạo</InputLabel>
+          <InputLabel>Chọn khóa đào tạo</InputLabel>
           <Select
             value={heDaoTaoFilter}
-            label="Lọc theo hệ đào tạo"
+            label="Chọn khóa đào tạo"
             onChange={(e) => setHeDaoTaoFilter(e.target.value)}
           >
-            <MenuItem value="">Tất cả hệ đào tạo</MenuItem>
+            <MenuItem value="">Chọn khóa đào tạo</MenuItem>
             {curriculums.map((curriculum) => (
               <MenuItem key={curriculum.id} value={curriculum.id}>
                 {curriculum.ten_he_dao_tao}
@@ -225,14 +242,15 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
             ))}
           </Select>
         </FormControl>
+
         <FormControl sx={{ minWidth: 200 }} disabled={!heDaoTaoFilter}>
-          <InputLabel>Lọc theo khóa</InputLabel>
+          <InputLabel>Chọn khóa đào tạo</InputLabel>
           <Select
             value={khoaFilter}
-            label="Lọc theo khóa"
+            label="Chọn khóa đào tạo"
             onChange={(e) => setKhoaFilter(e.target.value)}
           >
-            <MenuItem value="">Tất cả khóa</MenuItem>
+            <MenuItem value="">Chọn khóa đào tạo</MenuItem>
             {khoaList.map((khoa) => (
               <MenuItem key={khoa.id} value={khoa.id}>
                 {khoa.ten_khoa}
@@ -240,6 +258,36 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
             ))}
           </Select>
         </FormControl>
+        
+        <FormControl sx={{ minWidth: 150 }} disabled={!khoaFilter}>
+          <InputLabel>Lọc theo</InputLabel>
+          <Select
+            value={filterType}
+            label="Lọc theo"
+            onChange={(e) => handleFilterTypeChange(e.target.value)}
+          >
+            <MenuItem value="lop">Lớp</MenuItem>
+            <MenuItem value="khoa">Khóa đào tạo</MenuItem>
+          </Select>
+        </FormControl>
+
+        {filterType === 'lop' && (
+          <FormControl sx={{ minWidth: 200 }} disabled={!khoaFilter}>
+            <InputLabel>Chọn lớp</InputLabel>
+            <Select
+              value={lopFilter}
+              label="Chọn lớp"
+              onChange={(e) => setLopFilter(e.target.value)}
+            >
+              <MenuItem value="">Tất cả lớp</MenuItem>
+              {lopList.map((lop) => (
+                <MenuItem key={lop.id} value={lop.id}>
+                  {lop.ma_lop}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
       <DataGrid
         rows={students}
@@ -271,6 +319,7 @@ const GraduationManagement = ({ curriculums, role, setNotification }) => {
           Xuất Excel
         </Button>
       </Box>
+      
     </Box>
   );
 };
