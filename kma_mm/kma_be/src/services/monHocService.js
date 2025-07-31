@@ -24,6 +24,7 @@ const createMonHoc = async (monHoc) => {
                 ten_mon_hoc: monHoc.ten_mon_hoc,
                 so_tin_chi: monHoc.so_tin_chi,
                 tinh_diem: monHoc.tinh_diem,
+                bao_ve: monHoc.bao_ve || false,
                 ghi_chu: monHoc.ghi_chu,
                 he_dao_tao_id: heDaoTaoId // Chỉ lưu một he_dao_tao_id cho mỗi bản ghi
             };
@@ -68,6 +69,7 @@ const updateMonHoc = async (id, monHoc) => {
             ten_mon_hoc: monHoc.ten_mon_hoc,
             so_tin_chi: monHoc.so_tin_chi,
             tinh_diem: monHoc.tinh_diem,
+            bao_ve: monHoc.bao_ve || false,
             ghi_chu: monHoc.ghi_chu,
             he_dao_tao_id: monHoc.curriculumIds[0] // Chỉ cập nhật một he_dao_tao_id cho bản ghi này
         };
@@ -94,6 +96,7 @@ const updateMonHoc = async (id, monHoc) => {
                     ten_mon_hoc: monHoc.ten_mon_hoc,
                     so_tin_chi: monHoc.so_tin_chi,
                     tinh_diem: monHoc.tinh_diem,
+                    bao_ve: monHoc.bao_ve || false,
                     ghi_chu: monHoc.ghi_chu,
                     he_dao_tao_id: heDaoTaoId
                 });

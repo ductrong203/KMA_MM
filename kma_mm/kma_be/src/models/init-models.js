@@ -14,6 +14,7 @@ var _sequelizemeta = require("./sequelizemeta");
 var _sinh_vien = require("./sinh_vien");
 var _thoi_khoa_bieu = require("./thoi_khoa_bieu");
 var _thong_tin_quan_nhan = require("./thong_tin_quan_nhan");
+var _tot_nghiep = require("./tot_nghiep");
 var _users = require("./users");
 
 function initModels(sequelize) {
@@ -32,6 +33,7 @@ function initModels(sequelize) {
   var sinh_vien = _sinh_vien(sequelize, DataTypes);
   var thoi_khoa_bieu = _thoi_khoa_bieu(sequelize, DataTypes);
   var thong_tin_quan_nhan = _thong_tin_quan_nhan(sequelize, DataTypes);
+  var tot_nghiep = _tot_nghiep(sequelize, DataTypes);
   var users = _users(sequelize, DataTypes);
 
   khoa_dao_tao.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
@@ -62,8 +64,18 @@ function initModels(sequelize) {
   sinh_vien.hasMany(khen_thuong_ky_luat, { as: "khen_thuong_ky_luats", foreignKey: "sinh_vien_id"});
   thong_tin_quan_nhan.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id"});
   sinh_vien.hasMany(thong_tin_quan_nhan, { as: "thong_tin_quan_nhans", foreignKey: "sinh_vien_id"});
+  tot_nghiep.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id"});
+  sinh_vien.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "sinh_vien_id"});
   diem.belongsTo(thoi_khoa_bieu, { as: "thoi_khoa_bieu", foreignKey: "thoi_khoa_bieu_id"});
   thoi_khoa_bieu.hasMany(diem, { as: "diems", foreignKey: "thoi_khoa_bieu_id"});
+  
+  // Associations for tot_nghiep
+  tot_nghiep.belongsTo(lop, { as: "lop", foreignKey: "lop_id"});
+  lop.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "lop_id"});
+  tot_nghiep.belongsTo(khoa_dao_tao, { as: "khoa_dao_tao", foreignKey: "khoa_dao_tao_id"});
+  khoa_dao_tao.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "khoa_dao_tao_id"});
+  tot_nghiep.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id"});
+  danh_muc_dao_tao.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "he_dao_tao_id"});
 
   return {
     danh_muc_dao_tao,
@@ -81,6 +93,7 @@ function initModels(sequelize) {
     sinh_vien,
     thoi_khoa_bieu,
     thong_tin_quan_nhan,
+    tot_nghiep,
     users,
   };
 }

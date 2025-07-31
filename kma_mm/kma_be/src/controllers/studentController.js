@@ -206,6 +206,30 @@ class SinhVienController {
     }
   }
 
+  static async checkMultipleGraduationConditions(req, res) {
+    try {
+      const { sinhVienIds } = req.body;
+      if (!sinhVienIds || !Array.isArray(sinhVienIds)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Danh sách ID sinh viên không hợp lệ. Cần truyền mảng sinhVienIds.',
+        });
+      }
+
+      const result = await SinhVienService.checkMultipleStudentsGraduationConditions(sinhVienIds);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Kiểm tra điều kiện tốt nghiệp cho nhiều sinh viên thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+  }
+
   static async getByKhoaDaoTaoId(req, res) {
     try {
         const { khoa_dao_tao_id } = req.params;

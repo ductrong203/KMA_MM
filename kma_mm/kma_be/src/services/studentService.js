@@ -1,8 +1,6 @@
-const { initModels } = require("../models/init-models");
-const { sequelize } = require("../models");
-const models = initModels(sequelize);
-const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao } = models;
-const { chung_chi } = require('../models');
+const db = require("../models");
+const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi: LoaiChungChiModel, chung_chi } = db;
+const { sequelize } = db;
 const ExcelJS = require('exceljs');
 const fs = require("fs");
 
@@ -647,39 +645,98 @@ class SinhVienService {
   static async timSinhVienTheoMaHoacFilter(filters) {
     try {
       const { ma_sinh_vien, he_dao_tao_id, khoa_id, lop_id } = filters;
-      const where = {};
-      if (ma_sinh_vien) where.ma_sinh_vien = ma_sinh_vien;
-      if (lop_id) where.lop_id = lop_id;
+      
+      // Build WHERE conditions for sinh_vien
+      const sinhVienWhere = {};
+      if (ma_sinh_vien) sinhVienWhere.ma_sinh_vien = ma_sinh_vien;
+      if (lop_id) sinhVienWhere.lop_id = lop_id;
 
-      const lopWhere = {};
-      if (khoa_id) lopWhere.khoa_dao_tao_id = khoa_id;
+      // Simple case: only search by ma_sinh_vien or lop_id
+      if ((ma_sinh_vien || lop_id) && !khoa_id && !he_dao_tao_id) {
+        const sinhVienList = await sinh_vien.findAll({
+          where: sinhVienWhere,
+          include: [
+            {
+              model: lop,
+              as: 'lop',
+              attributes: ['ma_lop', 'khoa_dao_tao_id'],
+            },
+          ],
+        });
 
-      const khoaWhere = {};
-      if (he_dao_tao_id) khoaWhere.he_dao_tao_id = he_dao_tao_id;
+        if (!sinhVienList || sinhVienList.length === 0) {
+          throw new Error('Không tìm thấy sinh viên phù hợp');
+        }
+
+        return sinhVienList.map(sv => ({
+          ma_sinh_vien: sv.ma_sinh_vien,
+          ho_dem: sv.ho_dem,
+          ten: sv.ten,
+          lop: sv.lop?.ma_lop || sv.lop_id,
+          khoa: null,
+          he_dao_tao_id: null,
+          ten_he_dao_tao: null,
+        }));
+      }
+
+      // Complex case: need to filter by khoa_id or he_dao_tao_id
+      // Step 1: Get lop_ids that match the criteria
+      let validLopIds = [];
+
+      if (khoa_id && !he_dao_tao_id) {
+        // Filter by khoa_dao_tao_id only
+        const lopList = await lop.findAll({
+          where: { khoa_dao_tao_id: khoa_id },
+          attributes: ['id', 'ma_lop'],
+        });
+        validLopIds = lopList.map(l => l.id);
+      } else if (he_dao_tao_id) {
+        // Filter by he_dao_tao_id (need to go through khoa_dao_tao)
+        const khoaList = await khoa_dao_tao.findAll({
+          where: { he_dao_tao_id: he_dao_tao_id },
+          attributes: ['id'],
+        });
+        const khoaIds = khoaList.map(k => k.id);
+        
+        if (khoaIds.length === 0) {
+          throw new Error('Không tìm thấy khóa đào tạo phù hợp');
+        }
+
+        const lopWhere = { khoa_dao_tao_id: khoaIds };
+        if (khoa_id) {
+          lopWhere.khoa_dao_tao_id = khoa_id; // Override if specific khoa_id is provided
+        }
+
+        const lopList = await lop.findAll({
+          where: lopWhere,
+          attributes: ['id', 'ma_lop'],
+        });
+        validLopIds = lopList.map(l => l.id);
+      }
+
+      if (validLopIds.length === 0) {
+        throw new Error('Không tìm thấy lớp phù hợp với tiêu chí');
+      }
+
+      // Step 2: Filter sinh_vien by valid lop_ids
+      const finalWhere = { ...sinhVienWhere };
+      if (lop_id) {
+        // Check if the specified lop_id is in validLopIds
+        if (!validLopIds.includes(parseInt(lop_id))) {
+          throw new Error('Lớp không phù hợp với tiêu chí tìm kiếm');
+        }
+        finalWhere.lop_id = lop_id;
+      } else {
+        finalWhere.lop_id = validLopIds;
+      }
 
       const sinhVienList = await sinh_vien.findAll({
-        where,
+        where: finalWhere,
         include: [
           {
             model: lop,
             as: 'lop',
-            attributes: ['ma_lop'],
-            where: lopWhere,
-            include: [
-              {
-                model: khoa_dao_tao,
-                as: 'khoa_dao_tao',
-                attributes: ['ma_khoa'],
-                where: khoaWhere,
-                include: [
-                  {
-                    model: danh_muc_dao_tao,
-                    as: 'he_dao_tao',
-                    attributes: ['id', 'ten_he_dao_tao'], // Thêm 'id'
-                  },
-                ],
-              },
-            ],
+            attributes: ['ma_lop', 'khoa_dao_tao_id'],
           },
         ],
       });
@@ -688,15 +745,36 @@ class SinhVienService {
         throw new Error('Không tìm thấy sinh viên phù hợp');
       }
 
-      return sinhVienList.map(sv => ({
-        ma_sinh_vien: sv.ma_sinh_vien,
-        ho_dem: sv.ho_dem,
-        ten: sv.ten,
-        lop: sv.lop?.ma_lop || sv.lop_id,
-        khoa: sv.lop?.khoa_dao_tao?.ma_khoa || null,
-        he_dao_tao_id: sv.lop?.khoa_dao_tao?.he_dao_tao?.id || null, // Lấy từ id của danh_muc_dao_tao
-        ten_he_dao_tao: sv.lop?.khoa_dao_tao?.he_dao_tao?.ten_he_dao_tao || null,
-      }));
+      // Step 3: Get additional info for khoa and he_dao_tao
+      const result = [];
+      for (const sv of sinhVienList) {
+        let khoaInfo = null;
+        let heDaoTaoInfo = null;
+
+        if (sv.lop && sv.lop.khoa_dao_tao_id) {
+          khoaInfo = await khoa_dao_tao.findByPk(sv.lop.khoa_dao_tao_id, {
+            attributes: ['ma_khoa', 'he_dao_tao_id'],
+          });
+
+          if (khoaInfo && khoaInfo.he_dao_tao_id) {
+            heDaoTaoInfo = await danh_muc_dao_tao.findByPk(khoaInfo.he_dao_tao_id, {
+              attributes: ['id', 'ten_he_dao_tao'],
+            });
+          }
+        }
+
+        result.push({
+          ma_sinh_vien: sv.ma_sinh_vien,
+          ho_dem: sv.ho_dem,
+          ten: sv.ten,
+          lop: sv.lop?.ma_lop || sv.lop_id,
+          khoa: khoaInfo?.ma_khoa || null,
+          he_dao_tao_id: heDaoTaoInfo?.id || null,
+          ten_he_dao_tao: heDaoTaoInfo?.ten_he_dao_tao || null,
+        });
+      }
+
+      return result;
     } catch (error) {
       throw new Error(error.message);
     }
@@ -818,17 +896,47 @@ class SinhVienService {
       // Kiểm tra điều kiện tín chỉ
       const isTinChiValid = tongTinChi >= 130;
 
-      // Lấy danh sách chứng chỉ có tinh_trang "tốt nghiệp"
+      // Lấy tất cả các loại chứng chỉ có xet_tot_nghiep = true
+      const allRequiredCertTypes = await LoaiChungChiModel.findAll({
+        where: {
+          xet_tot_nghiep: true,
+          tinh_trang: 'hoạt động' // Chỉ lấy loại chứng chỉ đang hoạt động
+        },
+        attributes: ['id', 'ten_loai_chung_chi', 'xet_tot_nghiep']
+      });
+
+      // Lấy danh sách chứng chỉ của sinh viên có tinh_trang "tốt nghiệp" và thuộc loại chứng chỉ có xet_tot_nghiep = true
       const chungChiList = await chung_chi.findAll({
         where: {
           sinh_vien_id: sinhVienId,
           tinh_trang: 'tốt nghiệp',
         },
-        attributes: ['id', 'loai_chung_chi', 'tinh_trang', 'diem_trung_binh', 'xep_loai', 'so_quyet_dinh', 'ngay_ky_quyet_dinh'],
+        include: [
+          {
+            model: LoaiChungChiModel,
+            as: 'loaiChungChi',
+            where: {
+              xet_tot_nghiep: true,
+            },
+            attributes: ['id', 'ten_loai_chung_chi', 'xet_tot_nghiep'],
+          },
+        ],
+        attributes: ['id', 'loai_chung_chi', 'loai_chung_chi_id', 'tinh_trang', 'diem_trung_binh', 'xep_loai', 'so_quyet_dinh', 'ngay_ky_quyet_dinh'],
       });
 
-      // Kiểm tra điều kiện chứng chỉ
-      const isChungChiValid = chungChiList.length > 0;
+      // Lấy danh sách ID các loại chứng chỉ mà sinh viên đã có
+      const studentCertTypeIds = chungChiList.map(cc => cc.loai_chung_chi_id).filter(id => id);
+      const uniqueStudentCertTypeIds = [...new Set(studentCertTypeIds)];
+
+      // Lấy danh sách ID các loại chứng chỉ bắt buộc
+      const requiredCertTypeIds = allRequiredCertTypes.map(cert => cert.id);
+
+      // Kiểm tra xem sinh viên có đủ tất cả loại chứng chỉ bắt buộc không
+      const missingCertTypes = requiredCertTypeIds.filter(id => !uniqueStudentCertTypeIds.includes(id));
+      const isChungChiValid = missingCertTypes.length === 0 && requiredCertTypeIds.length > 0;
+
+      // Lấy thông tin về các loại chứng chỉ còn thiếu
+      const missingCertTypesInfo = allRequiredCertTypes.filter(cert => missingCertTypes.includes(cert.id));
 
       // Xác định điều kiện tốt nghiệp
       const isEligible = isTinChiValid && isChungChiValid;
@@ -839,15 +947,71 @@ class SinhVienService {
         ma_sinh_vien: sinhVien.ma_sinh_vien,
         ho_ten: `${sinhVien.ho_dem || ''} ${sinhVien.ten || ''}`.trim(),
         tong_tin_chi: tongTinChi,
-        chung_chi_tot_nghiep: chungChiList.map((cc) => cc.toJSON()),
+        chung_chi_tot_nghiep: chungChiList.map((cc) => ({
+          ...cc.toJSON(),
+          loai_chung_chi_info: cc.loaiChungChi ? cc.loaiChungChi.toJSON() : null,
+        })),
         dieu_kien_tot_nghiep: {
           du_tin_chi: isTinChiValid,
-          co_chung_chi: isChungChiValid,
+          co_chung_chi_xet_tot_nghiep: isChungChiValid,
           du_dieu_kien: isEligible,
+          chi_tiet: {
+            tong_tin_chi_hien_tai: tongTinChi,
+            tong_tin_chi_yeu_cau: 130,
+            so_chung_chi_dat_yeu_cau: chungChiList.length,
+            so_loai_chung_chi_yeu_cau: requiredCertTypeIds.length,
+            so_loai_chung_chi_da_co: uniqueStudentCertTypeIds.length,
+            so_loai_chung_chi_con_thieu: missingCertTypes.length,
+            loai_chung_chi_con_thieu: missingCertTypesInfo.map(cert => ({
+              id: cert.id,
+              ten_loai_chung_chi: cert.ten_loai_chung_chi
+            })),
+            tat_ca_loai_chung_chi_yeu_cau: allRequiredCertTypes.map(cert => ({
+              id: cert.id,
+              ten_loai_chung_chi: cert.ten_loai_chung_chi,
+              da_co: uniqueStudentCertTypeIds.includes(cert.id)
+            }))
+          },
         },
       };
 
       return result;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  static async checkMultipleStudentsGraduationConditions(sinhVienIds) {
+    try {
+      if (!Array.isArray(sinhVienIds) || sinhVienIds.length === 0) {
+        throw new Error("Danh sách ID sinh viên không hợp lệ");
+      }
+
+      const results = [];
+      for (const sinhVienId of sinhVienIds) {
+        try {
+          const result = await this.checkGraduationConditions(sinhVienId);
+          results.push(result);
+        } catch (error) {
+          results.push({
+            sinh_vien_id: sinhVienId,
+            error: error.message,
+          });
+        }
+      }
+
+      // Thống kê tổng quan
+      const eligibleCount = results.filter(r => r.dieu_kien_tot_nghiep?.du_dieu_kien).length;
+      const totalCount = results.length;
+
+      return {
+        results,
+        summary: {
+          total_students: totalCount,
+          eligible_students: eligibleCount,
+          not_eligible_students: totalCount - eligibleCount,
+        },
+      };
     } catch (error) {
       throw new Error(error.message);
     }
