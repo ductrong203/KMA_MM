@@ -5,6 +5,7 @@ dotenv.config();
 // Load .env file từ thư mục gốc (1 cấp trên src)
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
+console.log("DB_HOST:", process.env.DB_HOST);
 module.exports = {
   development: {
     username: process.env.DB_USERNAME || "root",
@@ -28,4 +29,5 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: "mysql",
   },
+  
 };

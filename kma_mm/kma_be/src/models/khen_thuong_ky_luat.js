@@ -54,7 +54,7 @@ module.exports = function(sequelize, DataTypes) {
     ngay_tao: {
       type: DataTypes.DATE,
       allowNull: true,
-      defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.Sequelize.fn('current_timestamp')
     },
     nguoi_tao: {
       type: DataTypes.STRING(50),
