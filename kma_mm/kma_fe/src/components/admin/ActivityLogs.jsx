@@ -14,11 +14,17 @@ import {
     TextField,
     MenuItem,
     Box,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from "@mui/material";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import Modal from 'react-modal';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; 
+import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';// Icon quay lại
 import { useNavigate } from 'react-router-dom';
 import { getLogActivity } from "../../Api_controller/Service/adminService";
 
@@ -32,6 +38,8 @@ const ActivityLogs = () => {
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [selectedRole, setSelectedRole] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedLog, setSelectedLog] = useState(null);
 
     const rowsPerPage = 8;
 
@@ -39,19 +47,7 @@ const ActivityLogs = () => {
         setDateRange(value);
         console.log(dateRange);
         setIsModalOpen(false); // Đóng modal sau khi chọn
-        // if (value[0] && value[1]) {
-        //     try {
-        //         const startDate = value[0].toISOString().split('T')[0]; // Định dạng YYYY-MM-DD
-        //         const endDate = value[1].toISOString().split('T')[0]; // Định dạng YYYY-MM-DD
-        //         // const role = selectedRole;
-        //         // Gọi API getLogActivity
-        //         // const response = await getLogActivity();
-        //         // setLogs(response.data); // Lưu dữ liệu logs từ API
-        //         // console.log('Logs:', response.data);
-        //     } catch (error) {
-        //         console.error('Lỗi khi lấy logs:', error);
-        //     }
-        // }
+        
     };
     // Hàm mở modal
     const openModal = () => {
@@ -64,6 +60,59 @@ const ActivityLogs = () => {
         setIsModalOpen(false);
     };
 
+    const openDetailModal = (log) => {
+    setSelectedLog(log);
+    setIsDetailModalOpen(true);
+  };
+    const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedLog(null);
+  }
+  const renderJsonData = (data, indent=0) => {
+    if (typeof data !== "object" || data === null) {
+      return (
+          <Typography variant = "body2" sx= {{ml: indent}}>
+              {String(data)}
+          </Typography>
+      )
+    }
+
+        return (
+<Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 2,
+      }}
+    >
+      {Object.entries(data).map(([key, value]) => (
+        <Box
+          key={key}
+          sx={{
+            minWidth: '200px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#f5f5f5',
+            p: 1.5,
+            borderRadius: 1,
+            boxShadow: 1,
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 'bold', marginRight: 1, whiteSpace: 'nowrap' }}
+          >
+            {key}:
+          </Typography>
+          <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+          </Typography>
+        </Box>
+      ))}
+    </Box>          )
+
+  }
     const navigate = useNavigate(); // Hook điều hướng
     const roleMapping = {
         daoTao: "Đào tạo",
@@ -74,10 +123,14 @@ const ActivityLogs = () => {
         sinhVien: "Sinh viên",
         admin: "Admin",
     };
+    const actionMap = {
+        POST: "Tạo mới ",
+        PUT: "Chỉnh sửa",
+        DELETE: "Xoá",
+    }
     const handleBackToDashboard = () => {
         navigate('/admin/dashboard'); // Điều hướng đến trang AdminDashboard
     };
-
     useEffect(() => {
         const fetchLogs = async () => {
             try {
@@ -248,14 +301,11 @@ const ActivityLogs = () => {
                     <TableHead>
                         <TableRow className="bg-blue-100 text-white">
                             <TableCell>STT</TableCell>
-                            <TableCell>Username</TableCell>
+                            <TableCell>Tên tài khoản</TableCell>
                             <TableCell>Quyền</TableCell>
-                            <TableCell>Thực hiện</TableCell>
-                            <TableCell>endpoint</TableCell>
-                            <TableCell>Dữ liệu yêu cầu</TableCell>
-                            <TableCell>Trạng thái trả về</TableCell>
-                            {/* <TableCell>ip_address</TableCell> */}
-                            <TableCell>Vào hồi</TableCell>
+                            <TableCell>Hành động </TableCell>
+                            <TableCell>Mô tả </TableCell>
+                            <TableCell>Thời gian</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -264,17 +314,144 @@ const ActivityLogs = () => {
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell>{log.Username}</TableCell>
                                 <TableCell>{roleMapping[log.Role]}</TableCell>
-                                <TableCell>{log.action}</TableCell>
-                                <TableCell>{log.endpoint}</TableCell>
-                                <TableCell>{JSON.stringify(log.request_data)}</TableCell>
-                                <TableCell>{log.response_status}</TableCell>
+                                <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
+                                <TableCell>
+                                 <Box 
+                                        display="flex" 
+                                        alignItems="center" 
+                                        gap={1}
+                                        sx={{ minHeight: '48px' }} // Ensure consistent row height
+                                    >
+                                        <Typography 
+                                            variant="body2" 
+                                            sx={{ 
+                                                maxWidth: '200px', 
+                                                overflow: 'hidden', 
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                lineHeight: 1.2,
+                                                flex: 1
+                                            }}
+                                        >
+                                            {log.resonse_data}
+                                        </Typography>
+                                        <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => openDetailModal(log)}
+                                            title="Xem chi tiết"
+                                            sx={{
+                                                padding: '4px',
+                                                alignSelf: 'center',
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            <InfoIcon fontSize="small" />
+                                        </IconButton>
+                                    </Box> 
+                                </TableCell>
                                 <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
+
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+{/* Detail Modal */}
+            <Dialog
+                open={isDetailModalOpen}
+                onClose={closeDetailModal}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: { minHeight: '400px' }
+                }}
+            >
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">Chi tiết hoạt động</Typography>
+                    <IconButton
+                        onClick={closeDetailModal}
+                        sx={{ color: 'grey.500' }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedLog && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                    Thông tin cơ bản:
+                                </Typography>
+                                <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>ID:</strong> {selectedLog.ID}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>Tên tài khoản:</strong> {selectedLog.Username}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>Quyền:</strong> {roleMapping[selectedLog.Role]}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>Action chi tiết:</strong> {selectedLog.action}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <strong>Thời gian:</strong> {convertUTCToVietnamTime(selectedLog.created_at)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            
+                            <Box>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                    Mô tả chi tiết:
+                                </Typography>
+                                <Paper 
+                                    sx={{ 
+                                        p: 2, 
+                                        backgroundColor: 'grey.50', 
+                                        maxHeight: '200px', 
+                                        overflow: 'auto',
+                                        whiteSpace: 'pre-wrap'
+                                    }}
+                                >
+                                    <Typography variant="body2">
+                                        {selectedLog.resonse_data || 'Không có mô tả chi tiết'}
+                                    </Typography>
+                                </Paper>
+                            </Box>
 
+                            {/* Additional fields if available */}
+                            {selectedLog.request_data && (
+                                <Box>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        Dữ liệu yêu cầu:
+                                    </Typography>
+                                    <Paper 
+                                        sx={{ 
+                                            p: 2, 
+                                            backgroundColor: 'grey.50', 
+                                            maxHeight: '200px', 
+                                            overflow: 'auto',
+                                            whiteSpace: 'pre-wrap'
+                                        }}
+                                    >
+                                        {renderJsonData(selectedLog.request_data)}
+                                    </Paper>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDetailModal} variant="contained" color="primary">
+                        Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Pagination
                 count={Math.ceil(filteredLogs.length / rowsPerPage)}
                 page={currentPage}
