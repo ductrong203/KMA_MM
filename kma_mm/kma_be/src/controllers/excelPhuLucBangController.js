@@ -141,7 +141,7 @@ class ExcelPhuLucBangController{
             }
         
             const docxBuffer = await ExcelPhuLucBangService.docxPhuLucBang(sinh_vien_id);
-            const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.docx`;
+            const fileName = `phu_luc_bang_sinh_vien_${sinh_vien_id}.docx`;
             const filePath = path.join(exportDir, fileName);
         
             fs.writeFileSync(filePath, docxBuffer);

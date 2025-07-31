@@ -1,4 +1,5 @@
 import {
+    Alert,
     Box,
     Button,
     Checkbox,
@@ -91,6 +92,9 @@ function TaoBangDiem({ sampleStudents }) {
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    
+    // State cho hình thức bảo vệ
+    const [defenseType, setDefenseType] = useState('');
 
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearchStudents = async () => {
@@ -101,11 +105,25 @@ function TaoBangDiem({ sampleStudents }) {
         setSearchMode(true);
         setLoadingStudents(true);
         try {
-            const response = await layDanhSachSinhVienTheoTKB(scheduleId);
+            // Chuẩn bị tham số cho API tìm kiếm
+            let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
+            
+            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+            if (defenseType === 'bao_ve_do_an') {
+                searchUrl += '&bao_ve_do_an=true';
+            } else if (defenseType === 'thi_tot_nghiep') {
+                searchUrl += '&bao_ve_do_an=false';
+            }
+            
+            const response = await layDanhSachSinhVienTheoTKB(searchUrl);
             console.log("searchResponse:", response);
 
+            // Backend đã Flọc theo hình thức bảo vệ, không cần lọc lại ở frontend
+            const filteredByDefenseType = response.data;
+            console.log(filteredByDefenseType)
+
             const formattedStudents = await Promise.all(
-                response.data.map(async (student) => {
+                filteredByDefenseType.map(async (student) => {
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                     const maLop = lopInfo?.ma_lop || student.lop_id;
 
@@ -129,9 +147,13 @@ function TaoBangDiem({ sampleStudents }) {
             setStudents(formattedStudents);
 
             if (formattedStudents.length > 0) {
-                toast.success(`Đã tìm thấy ${formattedStudents.length} học viên.`);
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' : 
+                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'tất cả';
+                toast.success(`Đã tìm thấy ${formattedStudents.length} học viên đủ điều kiện ${defenseTypeText}.`);
             } else {
-                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' : 
+                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'phù hợp';
+                toast.warn(`Không tìm thấy học viên nào đủ điều kiện ${defenseTypeText}.`);
             }
         } catch (error) {
             console.error('Error searching students:', error);
@@ -302,7 +324,7 @@ function TaoBangDiem({ sampleStudents }) {
         };
 
         fetchScheduleId();
-    }, [classGroup, course]);
+    }, [classGroup, course, semester]);
 
     console.log("scheduleId:", scheduleId);
 
@@ -318,9 +340,24 @@ function TaoBangDiem({ sampleStudents }) {
             console.log(existingGradeSheet);
             if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
                 toast.warn('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
-                const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+                
+                // Chuẩn bị tham số cho API tìm kiếm khi bảng điểm đã tồn tại
+                let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
+                
+                // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+                if (defenseType === 'bao_ve_do_an') {
+                    searchUrl += '&bao_ve_do_an=true';
+                } else if (defenseType === 'thi_tot_nghiep') {
+                    searchUrl += '&bao_ve_do_an=false';
+                }
+                
+                const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
+                
+                // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
+                const filteredByDefenseType = studentsResponse.data;
+                
                 const formattedStudents = await Promise.all(
-                    studentsResponse.data.map(async (student) => {
+                    filteredByDefenseType.map(async (student) => {
                         const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                         const maLop = lopInfo?.ma_lop || student.lop_id;
 
@@ -344,14 +381,38 @@ function TaoBangDiem({ sampleStudents }) {
                 return;
             }
 
-            const gradeSheetResponse = await taoBangDiemChoSinhVien({ thoi_khoa_bieu_id: scheduleId });
+            // Chuẩn bị tham số cho API tạo bảng điểm
+            const gradeSheetParams = { thoi_khoa_bieu_id: scheduleId };
+            
+            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+            if (defenseType === 'bao_ve_do_an') {
+                gradeSheetParams.bao_ve_do_an = true;
+            } else if (defenseType === 'thi_tot_nghiep') {
+                gradeSheetParams.bao_ve_do_an = false;
+            }
+            // Nếu không chọn hình thức bảo vệ, không truyền tham số bao_ve_do_an
+            
+            const gradeSheetResponse = await taoBangDiemChoSinhVien(gradeSheetParams);
             console.log('Grade sheet response:', gradeSheetResponse);
 
-            const studentsResponse = await layDanhSachSinhVienTheoTKB(scheduleId);
+            // Chuẩn bị tham số cho API tìm kiếm sau khi tạo bảng điểm mới
+            let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
+            
+            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+            if (defenseType === 'bao_ve_do_an') {
+                searchUrl += '&bao_ve_do_an=true';
+            } else if (defenseType === 'thi_tot_nghiep') {
+                searchUrl += '&bao_ve_do_an=false';
+            }
+            
+            const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
             console.log("studentsResponse:", studentsResponse);
 
+            // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
+            const filteredByDefenseType = studentsResponse.data;
+
             const formattedStudents = await Promise.all(
-                studentsResponse.data.map(async (student) => {
+                filteredByDefenseType.map(async (student) => {
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                     const maLop = lopInfo?.ma_lop || student.lop_id;
 
@@ -375,9 +436,19 @@ function TaoBangDiem({ sampleStudents }) {
             setStudents(formattedStudents);
 
             if (formattedStudents.length > 0) {
-                toast.success(`Đã tạo bảng điểm với ${formattedStudents.length} học viên.`);
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
+                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : '';
+                const message = defenseTypeText ? 
+                    `Đã tạo bảng điểm ${defenseTypeText} với ${formattedStudents.length} học viên.` :
+                    `Đã tạo bảng điểm với ${formattedStudents.length} học viên.`;
+                toast.success(message);
             } else {
-                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
+                                      defenseType === 'thi_tot_nghiệp' ? 'thi tốt nghiệp' : '';
+                const message = defenseTypeText ? 
+                    `Không tìm thấy học viên nào đủ điều kiện ${defenseTypeText}.` :
+                    'Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.';
+                toast.warn(message);
             }
         } catch (error) {
             console.error('Error creating grade sheet:', error);
@@ -819,6 +890,22 @@ function TaoBangDiem({ sampleStudents }) {
                         </Select>
                     </FormControl>
                 </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>Hình thức bảo vệ</InputLabel>
+                        <Select
+                            value={defenseType}
+                            label="Hình thức bảo vệ"
+                            onChange={(e) => setDefenseType(e.target.value)}
+                        >
+                            <MenuItem value="">
+                                <em>Tất cả (không lọc)</em>
+                            </MenuItem>
+                            <MenuItem value="bao_ve_do_an">Bảo vệ đồ án</MenuItem>
+                            <MenuItem value="thi_tot_nghiep">Thi tốt nghiệp</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
                 <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2, mb: 2 }}>
                         <Button
@@ -846,9 +933,28 @@ function TaoBangDiem({ sampleStudents }) {
             <Divider sx={{ my: 2 }} />
 
             <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="primary">
-                    Lưu ý: Chỉ có thể nhập điểm cuối kỳ (CK) khi điểm giữa kỳ (TP1 và TP2) đều lớn hơn hoặc bằng 4.0
-                </Typography>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                        Chú ý khi lựa chọn hình thức bảo vệ:
+                    </Typography>
+                    <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                        <li>
+                            <Typography variant="body2">
+                                <strong>Bảo vệ đồ án:</strong> Chỉ tạo sinh viên được đánh dấu &quot;Bảo vệ đồ án&quot;
+                            </Typography>
+                        </li>
+                        <li>
+                            <Typography variant="body2">
+                                <strong>Thi tốt nghiệp:</strong> Chỉ tạo sinh viên &quot;Thi tốt nghiệp&quot;
+                            </Typography>
+                        </li>
+                        <li>
+                            <Typography variant="body2">
+                                <strong>Tất cả:</strong> Chỉ tạo toàn bộ sinh viên (không lọc theo hình thức bảo vệ)
+                            </Typography>
+                        </li>
+                    </Box>
+                </Alert>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>

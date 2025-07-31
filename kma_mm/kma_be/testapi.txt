@@ -347,6 +347,15 @@ http://localhost:8000/export-excel/ket-qua-ky-hoc/?sinh_vien_id=2&so_ky_hoc=1
 export excel năm học
 http://localhost:8000/export-excel/ket-qua-nam-hoc/?sinh_vien_id=2&nam_hoc=2021-2022
 
+export docx phụ lục bằng
+http://localhost:8000/excel-phu-luc-bang/export-docx/?sinh_vien_id=3
+
+export docx kỳ học
+http://localhost:8000/excel-docs/export-ket-qua-ky-hoc?sinh_vien_id=2&nam_hoc=2021-2022
+
+export docx năm học
+http://localhost:8000/excel-docs/export-ket-qua-nam-hoc?sinh_vien_id=2&nam_hoc=2021-2022
+
 api lấy danh sách chứng chỉ
 http://localhost:8000/chung-chi?heDaoTaoId=1&khoaDaoTaoId=1&lopId=1
 {

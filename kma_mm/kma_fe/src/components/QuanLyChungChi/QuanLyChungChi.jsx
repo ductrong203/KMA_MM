@@ -3,7 +3,8 @@ import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container,
     TextField, InputAdornment, Pagination as MuiPagination, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, IconButton, Tooltip, createTheme, ThemeProvider,
-    Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress, Autocomplete
+    Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress, Autocomplete,
+    FormControlLabel, Checkbox
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -22,18 +23,14 @@ import {
     suaChungChi,
     xoaChungChi,
     taoLoaiChungChi,
-
+    capNhatLoaiChungChi,
+    xoaLoaiChungChi,
+    layChiTietLoaiChungChi
 } from "../../Api_controller/Service/chungChiService";
 import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService"; // Thêm API lấy học viên
 import { toast } from "react-toastify";
 
 // Constants
-const DEFAULT_CHUNG_CHI_OPTIONS = [
-    { value: "Chuẩn đầu ra TA", label: "Chuẩn đầu ra TA" },
-    { value: "Chứng chỉ GDTC", label: "Chứng chỉ GDTC" },
-    { value: "Chứng chỉ GDQP&AN", label: "Chứng chỉ GDQP&AN" }
-];
-
 const TRANG_THAI_OPTIONS = [
     { value: "all", label: "Tất cả học viên" },
     { value: "Bình thường", label: "Học viên đang học" },
@@ -75,7 +72,7 @@ const QuanLyChungChi = () => {
         khoaDaoTao: "",
         lopId: "",
         searchTerm: "",
-        loaiChungChi: "Chuẩn đầu ra TA",
+        loaiChungChi: "", // Sẽ được set sau khi load dữ liệu
         trangThai: "all"
     });
 
@@ -86,7 +83,7 @@ const QuanLyChungChi = () => {
         lopList: [],
         originalLopList: [],
         sinhVienList: [],
-        loaiChungChiList: DEFAULT_CHUNG_CHI_OPTIONS,
+        loaiChungChiList: [], // Khởi tạo rỗng, sẽ lấy từ API
         sinhVienTheoLop: [] // Thêm danh sách học viên theo lớp
     });
 
@@ -96,6 +93,7 @@ const QuanLyChungChi = () => {
         openDialog: false,
         openEditDialog: false,
         openManageTypeDialog: false,
+        openEditTypeDialog: false,
         page: 1,
         pageSize: 10,
         totalPages: 1
@@ -109,6 +107,17 @@ const QuanLyChungChi = () => {
     // Thêm state cho quản lý loại chứng chỉ
     const [newLoaiChungChi, setNewLoaiChungChi] = useState("");
     const [isAddingType, setIsAddingType] = useState(false);
+    const [xetTotNghiep, setXetTotNghiep] = useState(false);
+    
+    // State cho chỉnh sửa loại chứng chỉ
+    const [editLoaiChungChi, setEditLoaiChungChi] = useState({
+        id: null,
+        ten_loai_chung_chi: "",
+        mo_ta: "",
+        xet_tot_nghiep: false,
+        tinh_trang: "hoạt động"
+    });
+    const [isEditingType, setIsEditingType] = useState(false);
 
     // Memoized filtered data
     const processFilteredData = useMemo(() => {
@@ -196,17 +205,27 @@ const QuanLyChungChi = () => {
                 fetchDanhSachHeDaoTao(),
             ]);
 
-            let loaiChungChiList = DEFAULT_CHUNG_CHI_OPTIONS;
-            if (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0) {
-                const apiChungChiList = loaiChungChiRes.data.map(item => ({
-                    value: item,
-                    label: item
+            let loaiChungChiList = [];
+            // Cập nhật để xử lý cả format cũ và mới
+            if (loaiChungChiRes?.success && loaiChungChiRes.data?.length > 0) {
+                loaiChungChiList = loaiChungChiRes.data.map(item => ({
+                    id: item.id,
+                    value: item.ten_loai_chung_chi,
+                    label: item.ten_loai_chung_chi,
+                    mo_ta: item.mo_ta,
+                    xet_tot_nghiep: item.xet_tot_nghiep,
+                    tinh_trang: item.tinh_trang
                 }));
-                // Kết hợp danh sách API với mặc định, loại bỏ trùng lặp
-                loaiChungChiList = [
-                    ...DEFAULT_CHUNG_CHI_OPTIONS,
-                    ...apiChungChiList.filter(item => !DEFAULT_CHUNG_CHI_OPTIONS.some(defaultItem => defaultItem.value === item.value))
-                ];
+            } else if (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0) {
+                // Fallback cho format cũ
+                loaiChungChiList = loaiChungChiRes.data.map(item => ({
+                    id: item.id,
+                    value: item.ten_loai_chung_chi,
+                    label: item.ten_loai_chung_chi,
+                    mo_ta: item.mo_ta,
+                    xet_tot_nghiep: item.xet_tot_nghiep,
+                    tinh_trang: item.tinh_trang
+                }));
             }
 
             setData(prev => ({
@@ -215,6 +234,11 @@ const QuanLyChungChi = () => {
                 loaiChungChiList,
                 sinhVienList: []
             }));
+
+            // Set loại chứng chỉ mặc định nếu có
+            if (loaiChungChiList.length > 0 && !filters.loaiChungChi) {
+                setFilters(prev => ({ ...prev, loaiChungChi: loaiChungChiList[0].value }));
+            }
         } catch (error) {
             console.error("Lỗi khi tải dữ liệu ban đầu:", error);
             toast.error("Có lỗi xảy ra khi tải dữ liệu");
@@ -491,6 +515,7 @@ const QuanLyChungChi = () => {
         setUi(prev => ({ ...prev, openManageTypeDialog: false }));
         setNewLoaiChungChi("");
         setIsAddingType(false);
+        setXetTotNghiep(false);
     };
 
     const handleAddLoaiChungChi = async () => {
@@ -510,29 +535,153 @@ const QuanLyChungChi = () => {
 
         try {
             setIsAddingType(true);
-            const response = await taoLoaiChungChi(newLoaiChungChi.trim());
+            const response = await taoLoaiChungChi({
+                ten_loai_chung_chi: newLoaiChungChi.trim(),
+                xet_tot_nghiep: xetTotNghiep
+            });
 
             if (response.success) {
-                // Cập nhật danh sách loại chứng chỉ
-                const newTypeItem = {
-                    value: newLoaiChungChi.trim(),
-                    label: newLoaiChungChi.trim()
-                };
-                setData(prev => ({
-                    ...prev,
-                    loaiChungChiList: [...prev.loaiChungChiList, newTypeItem]
-                }));
+                // Reload danh sách loại chứng chỉ từ API
+                const loaiChungChiRes = await laydanhsachloaichungchi();
+                
+                // Xử lý cả format cũ và mới
+                if ((loaiChungChiRes?.success && loaiChungChiRes.data?.length > 0) || 
+                    (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0)) {
+                    const loaiChungChiList = loaiChungChiRes.data.map(item => ({
+                        id: item.id,
+                        value: item.ten_loai_chung_chi,
+                        label: item.ten_loai_chung_chi,
+                        mo_ta: item.mo_ta,
+                        xet_tot_nghiep: item.xet_tot_nghiep,
+                        tinh_trang: item.tinh_trang
+                    }));
+                    setData(prev => ({
+                        ...prev,
+                        loaiChungChiList
+                    }));
+                }
 
                 setNewLoaiChungChi("");
+                setXetTotNghiep(false);
                 toast.success("Thêm loại chứng chỉ thành công");
             } else {
                 toast.error("Không thể thêm loại chứng chỉ");
             }
         } catch (error) {
-            console.error("Error adding chung chi type:", error);
             toast.error("Không thể thêm loại chứng chỉ");
         } finally {
             setIsAddingType(false);
+        }
+    };
+
+    // Handlers cho chỉnh sửa loại chứng chỉ
+    const handleEditLoaiChungChi = (item) => {
+        setEditLoaiChungChi({
+            id: item.id,
+            ten_loai_chung_chi: item.label,
+            mo_ta: item.mo_ta || "",
+            xet_tot_nghiep: item.xet_tot_nghiep || false,
+            tinh_trang: item.tinh_trang || "hoạt động"
+        });
+        setUi(prev => ({ ...prev, openEditTypeDialog: true }));
+    };
+
+    const handleCloseEditTypeDialog = () => {
+        setUi(prev => ({ ...prev, openEditTypeDialog: false }));
+        setEditLoaiChungChi({
+            id: null,
+            ten_loai_chung_chi: "",
+            mo_ta: "",
+            xet_tot_nghiep: false,
+            tinh_trang: "hoạt động"
+        });
+        setIsEditingType(false);
+    };
+
+    const handleEditTypeInputChange = (field, value) => {
+        setEditLoaiChungChi(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSubmitEditLoaiChungChi = async () => {
+        if (!editLoaiChungChi.ten_loai_chung_chi.trim()) {
+            toast.error("Vui lòng nhập tên loại chứng chỉ");
+            return;
+        }
+
+        // Kiểm tra trùng lặp (trừ chính nó)
+        const exists = data.loaiChungChiList.some(item => 
+            item.value.toLowerCase() === editLoaiChungChi.ten_loai_chung_chi.trim().toLowerCase() 
+            && item.id !== editLoaiChungChi.id
+        );
+        
+        if (exists) {
+            toast.error("Tên loại chứng chỉ này đã tồn tại");
+            return;
+        }
+
+        try {
+            setIsEditingType(true);
+            const response = await capNhatLoaiChungChi(editLoaiChungChi.id, {
+                ten_loai_chung_chi: editLoaiChungChi.ten_loai_chung_chi.trim(),
+                mo_ta: editLoaiChungChi.mo_ta.trim(),
+                xet_tot_nghiep: editLoaiChungChi.xet_tot_nghiep,
+                tinh_trang: editLoaiChungChi.tinh_trang
+            });
+
+            if (response.success) {
+                // Cập nhật danh sách loại chứng chỉ
+                setData(prev => ({
+                    ...prev,
+                    loaiChungChiList: prev.loaiChungChiList.map(item => 
+                        item.id === editLoaiChungChi.id 
+                            ? { 
+                                ...item, 
+                                value: editLoaiChungChi.ten_loai_chung_chi.trim(),
+                                label: editLoaiChungChi.ten_loai_chung_chi.trim(),
+                                mo_ta: editLoaiChungChi.mo_ta.trim(),
+                                xet_tot_nghiep: editLoaiChungChi.xet_tot_nghiep,
+                                tinh_trang: editLoaiChungChi.tinh_trang
+                            }
+                            : item
+                    )
+                }));
+
+                handleCloseEditTypeDialog();
+                toast.success("Cập nhật loại chứng chỉ thành công");
+            } else {
+                toast.error("Không thể cập nhật loại chứng chỉ");
+            }
+        } catch (error) {
+            toast.error("Không thể cập nhật loại chứng chỉ");
+        } finally {
+            setIsEditingType(false);
+        }
+    };
+
+    const handleDeleteLoaiChungChi = async (item) => {
+        if (!window.confirm(`Bạn có chắc chắn muốn xóa loại chứng chỉ "${item.label}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await xoaLoaiChungChi(item.id);
+            
+            if (response.success) {
+                // Xóa khỏi danh sách
+                setData(prev => ({
+                    ...prev,
+                    loaiChungChiList: prev.loaiChungChiList.filter(x => x.id !== item.id)
+                }));
+                
+                toast.success("Xóa loại chứng chỉ thành công");
+            } else {
+                toast.error("Không thể xóa loại chứng chỉ");
+            }
+        } catch (error) {
+            toast.error("Không thể xóa loại chứng chỉ. Có thể loại chứng chỉ này đang được sử dụng.");
         }
     };
 
@@ -1185,32 +1334,48 @@ const QuanLyChungChi = () => {
                             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
                                 Thêm loại chứng chỉ mới
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="Tên loại chứng chỉ"
-                                    variant="outlined"
-                                    value={newLoaiChungChi}
-                                    onChange={(e) => setNewLoaiChungChi(e.target.value)}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleAddLoaiChungChi();
-                                        }
-                                    }}
-                                    disabled={isAddingType}
-                                    placeholder="Ví dụ: Chứng chỉ TOEIC, Chứng chỉ IT..."
-                                    helperText="Nhập tên loại chứng chỉ mới và nhấn Enter hoặc click Thêm"
-                                />
-                                <Button
-                                    variant="contained"
-                                    onClick={handleAddLoaiChungChi}
-                                    disabled={isAddingType || !newLoaiChungChi.trim()}
-                                    sx={{ minWidth: 120, height: 40 }}
-                                >
-                                    {isAddingType ? "Đang thêm..." : "Thêm"}
-                                </Button>
-                            </Box>
+                            <Grid container spacing={2} alignItems="flex-start">
+                                <Grid item xs={12} md={8}>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        label="Tên loại chứng chỉ"
+                                        variant="outlined"
+                                        value={newLoaiChungChi}
+                                        onChange={(e) => setNewLoaiChungChi(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleAddLoaiChungChi();
+                                            }
+                                        }}
+                                        disabled={isAddingType}
+                                        placeholder="Ví dụ: Chứng chỉ TOEIC, Chứng chỉ IT..."
+                                        helperText="Nhập tên loại chứng chỉ mới và nhấn Enter hoặc click Thêm"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={xetTotNghiep}
+                                                    onChange={(e) => setXetTotNghiep(e.target.checked)}
+                                                    color="primary"
+                                                />
+                                            }
+                                            label="Xét tốt nghiệp"
+                                        />
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleAddLoaiChungChi}
+                                            disabled={isAddingType || !newLoaiChungChi.trim()}
+                                            sx={{ minWidth: 120, height: 40 }}
+                                        >
+                                            {isAddingType ? "Đang thêm..." : "Thêm"}
+                                        </Button>
+                                    </Box>
+                                </Grid>
+                            </Grid>
                         </Paper>
 
                         {/* Danh sách loại chứng chỉ hiện có */}
@@ -1232,49 +1397,93 @@ const QuanLyChungChi = () => {
                                             <TableRow sx={{ backgroundColor: "#1976d2" }}>
                                                 <TableCell sx={{ fontWeight: "bold", color: 'white', width: '80px' }}>STT</TableCell>
                                                 <TableCell sx={{ fontWeight: "bold", color: 'white' }}>Tên loại chứng chỉ</TableCell>
-                                                <TableCell sx={{ fontWeight: "bold", color: 'white', width: '120px' }}>Trạng thái</TableCell>
-                                                <TableCell sx={{ fontWeight: "bold", color: 'white', width: '120px' }}>Nguồn gốc</TableCell>
+                                                <TableCell sx={{ fontWeight: "bold", color: 'white', width: '120px' }}>Tình trạng</TableCell>
+                                                <TableCell sx={{ fontWeight: "bold", color: 'white', width: '120px' }}>Xét tốt nghiệp</TableCell>
+                                                <TableCell sx={{ fontWeight: "bold", color: 'white', width: '140px' }}>Thao tác</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {data.loaiChungChiList.map((item, index) => {
-                                                const isDefault = DEFAULT_CHUNG_CHI_OPTIONS.some(defaultItem => defaultItem.value === item.value);
-                                                return (
-                                                    <TableRow
-                                                        key={item.value}
-                                                        sx={{
-                                                            backgroundColor: isDefault ? '#e3f2fd' : index % 2 === 0 ? '#fafafa' : 'inherit',
-                                                            '&:hover': { backgroundColor: isDefault ? '#bbdefb' : '#f0f0f0' }
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ fontWeight: 'medium' }}>{index + 1}</TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="body2" sx={{ fontWeight: isDefault ? 'bold' : 'normal' }}>
-                                                                {item.label}
+                                            {data.loaiChungChiList.map((item, index) => (
+                                                <TableRow
+                                                    key={item.id || item.value}
+                                                    sx={{
+                                                        backgroundColor: index % 2 === 0 ? '#fafafa' : 'inherit',
+                                                        '&:hover': { backgroundColor: '#f0f0f0' }
+                                                    }}
+                                                >
+                                                    <TableCell sx={{ fontWeight: 'medium' }}>{index + 1}</TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="body2">
+                                                            {item.label}
+                                                        </Typography>
+                                                        {item.mo_ta && (
+                                                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                                                                {item.mo_ta}
                                                             </Typography>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Box sx={{
-                                                                display: 'inline-block',
-                                                                px: 1.5,
-                                                                py: 0.5,
-                                                                borderRadius: 2,
-                                                                fontSize: '0.75rem',
-                                                                fontWeight: 'bold',
-                                                                color: 'white',
-                                                                bgcolor: isDefault ? '#4caf50' : '#2196f3'
-                                                            }}>
-                                                                {isDefault ? 'Hệ thống' : 'Tùy chỉnh'}
-                                                            </Box>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="caption" color="textSecondary">
-                                                                {isDefault ? 'Mặc định' : 'Người dùng tạo'}
-                                                            </Typography>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box sx={{
+                                                            display: 'inline-block',
+                                                            px: 1.5,
+                                                            py: 0.5,
+                                                            borderRadius: 2,
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 'bold',
+                                                            color: 'white',
+                                                            bgcolor: item.tinh_trang === 'hoạt động' ? '#4caf50' : '#f44336'
+                                                        }}>
+                                                            {item.tinh_trang === 'hoạt động' ? 'Hoạt động' : 'Tạm dừng'}
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box sx={{
+                                                            display: 'inline-block',
+                                                            px: 1.5,
+                                                            py: 0.5,
+                                                            borderRadius: 2,
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 'bold',
+                                                            color: 'white',
+                                                            bgcolor: item.xet_tot_nghiep ? '#2196f3' : '#9e9e9e'
+                                                        }}>
+                                                            {item.xet_tot_nghiep ? 'Có' : 'Không'}
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                                            <Tooltip title="Chỉnh sửa">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleEditLoaiChungChi(item)}
+                                                                    sx={{
+                                                                        color: '#1976d2',
+                                                                        '&:hover': {
+                                                                            backgroundColor: '#e3f2fd'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Xóa">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleDeleteLoaiChungChi(item)}
+                                                                    sx={{
+                                                                        color: '#d32f2f',
+                                                                        '&:hover': {
+                                                                            backgroundColor: '#ffebee'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
@@ -1289,6 +1498,86 @@ const QuanLyChungChi = () => {
                         sx={{ minWidth: 100 }}
                     >
                         Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog chỉnh sửa loại chứng chỉ */}
+            <Dialog open={ui.openEditTypeDialog} onClose={handleCloseEditTypeDialog} fullWidth maxWidth="sm">
+                <DialogTitle>
+                    <Typography variant="h6" component="span">Chỉnh sửa loại chứng chỉ</Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Tên loại chứng chỉ"
+                                    variant="outlined"
+                                    value={editLoaiChungChi.ten_loai_chung_chi}
+                                    onChange={(e) => handleEditTypeInputChange('ten_loai_chung_chi', e.target.value)}
+                                    disabled={isEditingType}
+                                    required
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Mô tả"
+                                    variant="outlined"
+                                    multiline
+                                    rows={3}
+                                    value={editLoaiChungChi.mo_ta}
+                                    onChange={(e) => handleEditTypeInputChange('mo_ta', e.target.value)}
+                                    disabled={isEditingType}
+                                    placeholder="Nhập mô tả cho loại chứng chỉ (tùy chọn)"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={editLoaiChungChi.xet_tot_nghiep}
+                                            onChange={(e) => handleEditTypeInputChange('xet_tot_nghiep', e.target.checked)}
+                                            disabled={isEditingType}
+                                            color="primary"
+                                        />
+                                    }
+                                    label="Xét tốt nghiệp"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth variant="outlined" disabled={isEditingType}>
+                                    <InputLabel>Tình trạng</InputLabel>
+                                    <Select
+                                        value={editLoaiChungChi.tinh_trang}
+                                        onChange={(e) => handleEditTypeInputChange('tinh_trang', e.target.value)}
+                                        label="Tình trạng"
+                                    >
+                                        <MenuItem value="hoạt động">Hoạt động</MenuItem>
+                                        <MenuItem value="tạm dừng">Tạm dừng</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 3, bgcolor: '#fafafa' }}>
+                    <Button
+                        onClick={handleCloseEditTypeDialog}
+                        disabled={isEditingType}
+                        sx={{ minWidth: 100 }}
+                    >
+                        Hủy
+                    </Button>
+                    <Button
+                        onClick={handleSubmitEditLoaiChungChi}
+                        variant="contained"
+                        disabled={isEditingType || !editLoaiChungChi.ten_loai_chung_chi.trim()}
+                        sx={{ minWidth: 120 }}
+                    >
+                        {isEditingType ? "Đang cập nhật..." : "Cập nhật"}
                     </Button>
                 </DialogActions>
             </Dialog>
