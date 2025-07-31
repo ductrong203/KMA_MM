@@ -36,7 +36,7 @@ const createMonHoc = async (monHoc) => {
 
         return {
             status: "OK",
-            message: "Success!",
+            message: "Tạo môn học thành công ",
             data: createdMonHocs, // Trả về danh sách các bản ghi đã tạo
         };
     } catch (error) {
@@ -105,7 +105,7 @@ const updateMonHoc = async (id, monHoc) => {
 
         return {
             status: "OK",
-            message: "Success!",
+            message: "Cập nhật môn học thành công ",
             data: updatedMonHoc,
         };
     } catch (error) {

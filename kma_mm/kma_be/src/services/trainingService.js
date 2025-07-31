@@ -21,7 +21,7 @@ const createTraining = async (newTraining) => {
 
     return {
       status: "OK",
-      message: "Success!",
+      message: "Tạo hệ đào tạo thành công ",
       data: createdTraining,
     };
   } catch (error) {
