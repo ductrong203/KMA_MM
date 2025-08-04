@@ -38,8 +38,8 @@ const TRANG_THAI_OPTIONS = [
 ];
 
 const TINH_TRANG_OPTIONS = [
-    { value: "Bình thường", label: "Bình thường" },
-    { value: "Tốt nghiệp", label: "Tốt nghiệp" }
+    { value: "bình thường", label: "Bình thường" },
+    { value: "tốt nghiệp", label: "Tốt nghiệp" }
 ];
 
 const INIT_NEW_DATA = {
