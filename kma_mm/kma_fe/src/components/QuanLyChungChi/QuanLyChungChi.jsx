@@ -593,7 +593,7 @@ const QuanLyChungChi = () => {
                 so_quyet_dinh: editData.so_quyet_dinh || null,
                 loai_chung_chi: editData.loai_chung_chi,
                 ngay_ky_quyet_dinh: editData.ngay_ky_qd || null,
-                tinh_trang: editData.tinh_trang === "Bình thường" ? "bình thường" : "tốt nghiệp"
+                tinh_trang: editData.tinh_trang === "bình thường" ? "bình thường" : "tốt nghiệp"
             };
 
             let result;
