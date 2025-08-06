@@ -196,7 +196,9 @@ class SinhVienController {
   static async checkGraduationConditions(req, res) {
     try {
       const sinhVienId = req.params.sinhVienId;
-      const result = await SinhVienService.checkGraduationConditions(sinhVienId);
+      // Lấy số tín chỉ yêu cầu từ query string nếu có
+      const requiredCredits = req.query.requiredCredits ? parseInt(req.query.requiredCredits) : null;
+      const result = await SinhVienService.checkGraduationConditions(sinhVienId, requiredCredits);
       return res.status(200).json({
         status: 'success',
         message: 'Kiểm tra điều kiện tốt nghiệp thành công',
@@ -213,6 +215,9 @@ class SinhVienController {
   static async checkMultipleGraduationConditions(req, res) {
     try {
       const { sinhVienIds } = req.body;
+      // Lấy số tín chỉ yêu cầu từ body nếu có
+      const requiredCredits = req.body.requiredCredits ? parseInt(req.body.requiredCredits) : null;
+      
       if (!sinhVienIds || !Array.isArray(sinhVienIds)) {
         return res.status(400).json({
           status: 'error',
@@ -220,7 +225,7 @@ class SinhVienController {
         });
       }
 
-      const result = await SinhVienService.checkMultipleStudentsGraduationConditions(sinhVienIds);
+      const result = await SinhVienService.checkMultipleStudentsGraduationConditions(sinhVienIds, requiredCredits);
       return res.status(200).json({
         status: 'success',
         message: 'Kiểm tra điều kiện tốt nghiệp cho nhiều sinh viên thành công',

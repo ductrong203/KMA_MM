@@ -326,7 +326,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         if (currentSubjectInfo?.bao_ve) {
             return true;
         }
-        return student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 >= 4.0;
+        // Kiểm tra cả điểm TP1 và TP2 đều phải >= 4.0
+        return student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 >= 4.0 &&
+               student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 >= 4.0;
     };
 
     // Hàm helper để tính toán điểm và trạng thái cho sinh viên cụ thể
@@ -490,6 +492,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             prevStudents.map(student =>
                 student.ma_sinh_vien === studentId
                     ? { ...student, diem: { ...student.diem, [scoreType]: numericValue } }
+                    : student
+            )
+        );
+    };
+
+    const handleNoteChange = (studentId, value) => {
+        setStudents(prevStudents =>
+            prevStudents.map(student =>
+                student.ma_sinh_vien === studentId
+                    ? { ...student, ghi_chu: value }
                     : student
             )
         );
@@ -1105,6 +1117,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                 note = 'Chưa có điểm TP1';
                                             } else if (student.diem.TP1 < 4.0) {
                                                 note = 'Điểm TP1 < 4.0 (Không đủ điều kiện thi cuối kỳ)';
+                                            } else if (student.diem.TP2 === null || student.diem.TP2 === undefined) {
+                                                note = 'Chưa có điểm TP2';
+                                            } else if (student.diem.TP2 < 4.0) {
+                                                note = 'Điểm TP2 < 4.0 (Không đủ điều kiện thi cuối kỳ)';
                                             }
                                             const componentScore = calculateComponentScore(student);
                                             
@@ -1136,7 +1152,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                     <TableCell align="center">
                                                         {componentScore !== null ? Number(componentScore).toFixed(1) : '-'}
                                                     </TableCell>
-                                                    <TableCell sx={{ color: 'red' }}>{student.ghi_chu || note}</TableCell>
+                                                    <TableCell>
+                                                        <TextField
+                                                            value={student.ghi_chu || ''}
+                                                            onChange={(e) => handleNoteChange(student.ma_sinh_vien, e.target.value)}
+                                                            placeholder={note}
+                                                            sx={{ width: '100%' }}
+                                                            multiline
+                                                            maxRows={2}
+                                                        />
+                                                    </TableCell>
                                                 </TableRow>
                                             );
                                         })}
@@ -1151,7 +1176,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                             <Alert severity="info" sx={{ my: 2 }}>
                                 {currentSubjectInfo?.bao_ve
                                     ? "Môn bảo vệ: Chỉ cần nhập điểm thi cuối kỳ. Điểm >= 4.0 để qua môn."
-                                    : "Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho học viên có điểm TP1 ≥ 4.0. Điểm thi (CK1 hoặc CK2) phải ≥ 2.0 và điểm tổng kết ≥ 4.0 để qua môn."
+                                    : "Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho học viên có điểm TP1 ≥ 4.0 và điểm TP2 ≥ 4.0. Điểm thi (CK1 hoặc CK2) phải ≥ 2.0 và điểm tổng kết ≥ 4.0 để qua môn."
                                 }
                             </Alert>
                             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -1244,7 +1269,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         {componentScore !== null ? Number(componentScore).toFixed(1) : '-'}
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        <Tooltip title={!canTakeFinalExam(student) ? 'Học viên phải có điểm TP1 ≥ 4.0' : ''}>
+                                                        <Tooltip title={!canTakeFinalExam(student) ? 'Học viên phải có điểm TP1 ≥ 4.0 và điểm TP2 ≥ 4.0' : ''}>
                                                             <span>
                                                                 <TextField
                                                                     type="number"
@@ -1334,7 +1359,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 1 && (
                 <>
                     <Alert severity="success" sx={{ my: 2 }}>
-                        {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ 4.0)
+                        {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ 4.0 và TP2 ≥ 4.0)
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="eligible students table">
@@ -1417,7 +1442,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 2 && (
                 <>
                     <Alert severity="warning" sx={{ my: 2 }}>
-                        {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ 4.0)
+                        {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ 4.0 và TP2 ≥ 4.0)
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="ineligible students table">
@@ -1442,6 +1467,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                         note = 'Chưa có điểm TP1';
                                     } else if (student.diem.TP1 < 4.0) {
                                         note = 'Điểm TP1 < 4.0';
+                                    } else if (student.diem.TP2 === null || student.diem.TP2 === undefined) {
+                                        note = 'Chưa có điểm TP2';
+                                    } else if (student.diem.TP2 < 4.0) {
+                                        note = 'Điểm TP2 < 4.0';
                                     }
                                     const componentScore = calculateComponentScore(student);
                                     
@@ -1491,7 +1520,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                     {statusDisplay}
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ color: 'red' }}>{student.ghi_chu || note}</TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    value={student.ghi_chu || ''}
+                                                    onChange={(e) => handleNoteChange(student.ma_sinh_vien, e.target.value)}
+                                                    placeholder={note}
+                                                    sx={{ width: '100%' }}
+                                                    multiline
+                                                    maxRows={2}
+                                                />
+                                            </TableCell>
                                         </TableRow>
                                     );
                                 })}

@@ -496,3 +496,190 @@ response:
         "loaiChungChi": "Chuẩn đầu ra TA"
     }
 }
+
+Loại Chứng Chỉ API Documentation
+=================================
+
+Lấy danh sách loại chứng chỉ
+----------------------------
+GET http://localhost:8000/loai-chung-chi
+header: Authorization
+Bearer token "access token"
+
+Query params (không bắt buộc):
+tinh_trang: "hoat_dong" hoặc "tam_dung"
+
+Response:
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "ten_loai_chung_chi": "TOEIC",
+            "mo_ta": "Chứng chỉ Tiếng Anh quốc tế",
+            "xet_tot_nghiep": true,
+            "tinh_trang": "hoat_dong",
+            "created_at": "2025-07-15T10:30:00.000Z",
+            "updated_at": "2025-07-15T10:30:00.000Z"
+        },
+        {
+            "id": 2,
+            "ten_loai_chung_chi": "Chứng chỉ GDTC",
+            "mo_ta": "Chứng chỉ Giáo dục thể chất",
+            "xet_tot_nghiep": true,
+            "tinh_trang": "hoat_dong",
+            "created_at": "2025-07-16T09:15:00.000Z",
+            "updated_at": "2025-07-16T09:15:00.000Z"
+        }
+    ]
+}
+
+Tìm kiếm loại chứng chỉ
+-----------------------
+GET http://localhost:8000/loai-chung-chi/tim-kiem?tu_khoa=TOEIC
+header: Authorization
+Bearer token "access token"
+
+Query params (bắt buộc):
+tu_khoa: từ khóa tìm kiếm
+
+Response:
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "ten_loai_chung_chi": "TOEIC",
+            "mo_ta": "Chứng chỉ Tiếng Anh quốc tế",
+            "xet_tot_nghiep": true,
+            "tinh_trang": "hoat_dong",
+            "created_at": "2025-07-15T10:30:00.000Z",
+            "updated_at": "2025-07-15T10:30:00.000Z"
+        }
+    ]
+}
+
+Lấy chi tiết loại chứng chỉ theo ID
+----------------------------------
+GET http://localhost:8000/loai-chung-chi/16
+header: Authorization
+Bearer token "access token"
+
+Response:
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "ten_loai_chung_chi": "TOEIC",
+        "mo_ta": "Chứng chỉ Tiếng Anh quốc tế",
+        "xet_tot_nghiep": true,
+        "tinh_trang": "hoat_dong",
+        "created_at": "2025-07-15T10:30:00.000Z",
+        "updated_at": "2025-07-15T10:30:00.000Z"
+    }
+}
+
+Tạo loại chứng chỉ mới
+---------------------
+POST http://localhost:8000/loai-chung-chi
+header: Authorization
+Bearer token "access token"
+header: Content-Type
+application/json
+
+body raw:
+{
+  "ten_loai_chung_chi": "IELTS",
+  "mo_ta": "Chứng chỉ Tiếng Anh quốc tế",
+  "xet_tot_nghiep": true,
+  "tinh_trang": "hoat_dong"
+}
+
+Response:
+{
+    "success": true,
+    "data": {
+        "id": 3,
+        "ten_loai_chung_chi": "IELTS",
+        "mo_ta": "Chứng chỉ Tiếng Anh quốc tế",
+        "xet_tot_nghiep": true,
+        "tinh_trang": "hoat_dong",
+        "created_at": "2025-08-04T15:25:00.000Z",
+        "updated_at": "2025-08-04T15:25:00.000Z"
+    },
+    "message": "Tạo loại chứng chỉ thành công"
+}
+
+Cập nhật loại chứng chỉ
+----------------------
+PUT http://localhost:8000/loai-chung-chi/3
+header: Authorization
+Bearer token "access token"
+header: Content-Type
+application/json
+
+body raw:
+{
+  "ten_loai_chung_chi": "IELTS Updated",
+  "mo_ta": "Chứng chỉ Tiếng Anh quốc tế cập nhật",
+  "xet_tot_nghiep": false,
+  "tinh_trang": "hoat_dong"
+}
+
+Response:
+{
+    "success": true,
+    "data": {
+        "id": 3,
+        "ten_loai_chung_chi": "IELTS Updated",
+        "mo_ta": "Chứng chỉ Tiếng Anh quốc tế cập nhật",
+        "xet_tot_nghiep": false,
+        "tinh_trang": "hoat_dong",
+        "created_at": "2025-08-04T15:25:00.000Z",
+        "updated_at": "2025-08-04T15:30:00.000Z"
+    },
+    "message": "Cập nhật loại chứng chỉ thành công"
+}
+
+Thay đổi trạng thái loại chứng chỉ
+---------------------------------
+PATCH http://localhost:8000/loai-chung-chi/3/trang-thai
+header: Authorization
+Bearer token "access token"
+header: Content-Type
+application/json
+
+body raw:
+{
+  "tinh_trang": "tạm dừng"
+}
+
+Response:
+{
+    "success": true,
+    "data": {
+        "id": 3,
+        "ten_loai_chung_chi": "IELTS Updated",
+        "mo_ta": "Chứng chỉ Tiếng Anh quốc tế cập nhật",
+        "xet_tot_nghiep": false,
+        "tinh_trang": "tạm dừng",
+        "created_at": "2025-08-04T15:25:00.000Z",
+        "updated_at": "2025-08-04T15:35:00.000Z"
+    },
+    "message": "Thay đổi trạng thái loại chứng chỉ thành công"
+}
+
+Xóa loại chứng chỉ
+-----------------
+DELETE http://localhost:8000/loai-chung-chi/3
+header: Authorization
+Bearer token "access token"
+
+Response:
+{
+    "success": true,
+    "data": {
+        "id": 3
+    },
+    "message": "Xóa loại chứng chỉ thành công"
+}

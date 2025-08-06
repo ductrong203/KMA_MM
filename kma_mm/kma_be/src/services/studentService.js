@@ -882,19 +882,47 @@ class SinhVienService {
       }
   }
 
-  static async checkGraduationConditions(sinhVienId) {
+  static async checkGraduationConditions(sinhVienId, requiredCredits = null) {
     try {
-      // Tìm sinh viên theo ID
-      const sinhVien = await sinh_vien.findByPk(sinhVienId);
+      // Tìm sinh viên theo ID và lấy thông tin lớp
+      const sinhVien = await sinh_vien.findByPk(sinhVienId, {
+        include: [
+          {
+            model: lop,
+            as: 'lop',
+            attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
+          }
+        ]
+      });
+      
       if (!sinhVien) {
         throw new Error("Sinh viên không tồn tại");
       }
-
+      
       // Lấy tổng tín chỉ từ bảng sinh_vien
       const tongTinChi = sinhVien.tong_tin_chi || 0;
-
+      
+      // Lấy thông tin khóa đào tạo để lấy số tín chỉ yêu cầu
+      let tongTinChiYeuCau = requiredCredits;
+      
+      if (!tongTinChiYeuCau && sinhVien.lop && sinhVien.lop.khoa_dao_tao_id) {
+        const khoaDaoTao = await khoa_dao_tao.findByPk(sinhVien.lop.khoa_dao_tao_id, {
+          attributes: ['id', 'tong_tin_chi_yeu_cau']
+        });
+        
+        if (khoaDaoTao && khoaDaoTao.tong_tin_chi_yeu_cau) {
+          tongTinChiYeuCau = khoaDaoTao.tong_tin_chi_yeu_cau;
+          console.log(`Lấy tín chỉ yêu cầu từ khóa đào tạo: ${tongTinChiYeuCau}`);
+        } else {
+          console.log(`Không tìm thấy tín chỉ yêu cầu trong khóa đào tạo ID: ${sinhVien.lop.khoa_dao_tao_id}`);
+        }
+      }
+      
+      // Nếu không có giá trị từ tham số hoặc từ khóa đào tạo, dùng giá trị mặc định là 130
+      tongTinChiYeuCau = tongTinChiYeuCau || 130;
+      
       // Kiểm tra điều kiện tín chỉ
-      const isTinChiValid = tongTinChi >= 130;
+      const isTinChiValid = tongTinChi >= tongTinChiYeuCau;
 
       // Lấy tất cả các loại chứng chỉ có xet_tot_nghiep = true
       const allRequiredCertTypes = await LoaiChungChiModel.findAll({
@@ -957,7 +985,7 @@ class SinhVienService {
           du_dieu_kien: isEligible,
           chi_tiet: {
             tong_tin_chi_hien_tai: tongTinChi,
-            tong_tin_chi_yeu_cau: 130,
+            tong_tin_chi_yeu_cau: tongTinChiYeuCau,
             so_chung_chi_dat_yeu_cau: chungChiList.length,
             so_loai_chung_chi_yeu_cau: requiredCertTypeIds.length,
             so_loai_chung_chi_da_co: uniqueStudentCertTypeIds.length,
@@ -981,7 +1009,7 @@ class SinhVienService {
     }
   }
 
-  static async checkMultipleStudentsGraduationConditions(sinhVienIds) {
+  static async checkMultipleStudentsGraduationConditions(sinhVienIds, requiredCredits = null) {
     try {
       if (!Array.isArray(sinhVienIds) || sinhVienIds.length === 0) {
         throw new Error("Danh sách ID sinh viên không hợp lệ");
@@ -990,7 +1018,7 @@ class SinhVienService {
       const results = [];
       for (const sinhVienId of sinhVienIds) {
         try {
-          const result = await this.checkGraduationConditions(sinhVienId);
+          const result = await this.checkGraduationConditions(sinhVienId, requiredCredits);
           results.push(result);
         } catch (error) {
           results.push({
