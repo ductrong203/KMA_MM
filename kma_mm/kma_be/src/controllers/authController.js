@@ -1,31 +1,60 @@
-const express = require("express");
 const UserService = require("../services/authService");
 const jwtService = require("../services/jwtService");
-const register = async (req, res) => {
-  try {
-    const { username, password, confirmPassword, ho_ten } = req.body;
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
 
-    if (!username || !password || !confirmPassword || !ho_ten) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "The input is required",
-      });
-    } else if (confirmPassword !== password) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "The confirmPassword must match password",
+      }
+  const register = async (req, res) => {
+    try {
+      const { username, password, confirmPassword, ho_ten } = req.body;
+
+      if (!username || !password || !confirmPassword || !ho_ten) {
+        return res.status(400).json({
+          status: "ERR",
+          message: "The input is required",
+        });
+      } else if (confirmPassword !== password) {
+        return res.status(400).json({
+          status: "ERR",
+          message: "The confirmPassword must match 1password",
+        });
+      }
+      // Giả sử UserService.register trả về dữ liệu người dùng mới đã được tạo
+      const response = await UserService.register(req.body);
+
+      console.log("res#######",req );
+      let userN  = await  getFieldById("users", req.user.id, "username");
+      if (response) {
+      let inforActivity = {
+        username:   userN,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `Người dùng ${userN} đã tạo tài khoản ${username} cho hệ ${mapRole[response?.data?.role]} `,
+        response_status: 200,
+        resData: "Đăng kí thành công",
+        ip:  req._remoteAddress,
+
+      }
+        await logActivity(inforActivity);
+      }
+      return res.status(201).json(response); // Trả về status 201 cho yêu cầu thành công khi tạo người dùng
+    } catch (e) {
+      return res.status(500).json({
+        message: e.message || "Server error",
       });
     }
-   
-    // Giả sử UserService.register trả về dữ liệu người dùng mới đã được tạo
-    const response = await UserService.register(req.body);
-    return res.status(201).json(response); // Trả về status 201 cho yêu cầu thành công khi tạo người dùng
-  } catch (e) {
-    return res.status(500).json({
-      message: e.message || "Server error",
-    });
-  }
-};
+  };
+
 // Login User
 const loginUser = async (req, res) => {
   try {
@@ -50,16 +79,35 @@ const loginUser = async (req, res) => {
     });
   }
 };
+
 const deleteUser = async (req, res) => {
   try {
     const idUser = req.params.id;
+    console.log(req.user.id)
     if (!idUser) {
       return res.status(200).json({
         status: "ERR",
         message: "Users ID is required!",
       });
     }
+    let userN1  = await  getFieldById("users", req.user.id, "username");
+    let userN2  = await  getFieldById("users", idUser, "username");
+    let roleN2 =  await  getFieldById("users", idUser, "role");
     const reponse = await UserService.deleteUser(idUser);
+    if (reponse) {
+      let inforActivity = {
+        username:   userN1,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `Người dùng ${userN1} đã xóa tài khoản ${userN2} của hệ ${mapRole[roleN2]} `,
+        response_status: 200,
+        resData: "Xóa tài khoản thành công",
+        ip:  req._remoteAddress,
+
+      }
+        await logActivity(inforActivity);
+      }
     return res.status(200).json(reponse);
   } catch (e) {
     return res.status(404).json({ message: e });
@@ -97,7 +145,29 @@ const updateUser = async (req, res) => {
         message: "Users ID is required!",
       });
     }
+     let userN1  = await  getFieldById("users", req.user.id, "username");
+    let userN2  = await  getFieldById("users", id, "username");
+    let roleN2  = await  getFieldById("users", id, "role");
+    // console.log("###########",roleN2);
+    let oldData = await users.findOne({where : {id}});
     const reponse = await UserService.updateUser(id, data);
+    if (reponse) {
+      let newData = reponse.data;
+      console.log(oldData.dataValues,"$$$$", newData.dataValues);
+      let inforActivity = {
+        username:   userN1,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `${getDiffData(oldData.dataValues, newData.dataValues  )}`,
+        response_status: 200,
+        resData: `Cập nhật tài khoản ${userN2} của hệ ${mapRole[roleN2]} thành công`,
+        ip:  req._remoteAddress,
+
+      }
+        await logActivity(inforActivity);
+      }
+
     return res.status(200).json(reponse);
   } catch (e) {
     return res.status(404).json({ message: e });
