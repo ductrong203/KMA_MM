@@ -41,6 +41,7 @@ import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingServ
 import axios from 'axios';
 import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, importDanhSachDiemGK } from '../../Api_controller/Service/excelService';
 import { toast } from 'react-toastify';
+import { getGradeSettings } from '../../Api_controller/Service/gradeSettingsService';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
     const fileInputRef = useRef(null);
@@ -76,6 +77,12 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const [searchType, setSearchType] = useState('class');
     const [semesterOptions, setSemesterOptions] = useState([]);
     const [currentSubjectInfo, setCurrentSubjectInfo] = useState(null);
+    const [gradeSettings, setGradeSettings] = useState({
+        diemThiToiThieu: 2.0,
+        diemTrungBinhDat: 4.0,
+        diemGiuaKyToiThieu: 4.0,
+        diemChuyenCanToiThieu: 4.0
+    });
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -84,6 +91,22 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const handleGradeTabChange = (event, newValue) => {
         setActiveGradeTab(newValue);
     };
+
+    // Fetch grade settings when component mounts
+    useEffect(() => {
+        const fetchGradeSettings = async () => {
+            try {
+                const settings = await getGradeSettings();
+                if (settings) {
+                    setGradeSettings(settings);
+                }
+            } catch (error) {
+                console.error('Error fetching grade settings:', error);
+                toast.error('Không thể tải thiết lập điểm. Sử dụng giá trị mặc định.');
+            }
+        };
+        fetchGradeSettings();
+    }, []);
 
     useEffect(() => {
         const fetchEducationTypes = async () => {
@@ -318,7 +341,14 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const eligibleForRetake = (student) => {
         if (student.diem.CK1 === null || student.diem.CK1 === undefined) return false;
         const { score: averageScore } = calculateAverageScore(student);
-        return student.diem.CK1 < 2.0 || (averageScore !== null && averageScore < 4.0) || student.diem.CK2 !== null;
+        
+        // Học viên đủ điều kiện thi lại nếu:
+        // 1. Điểm thi CK1 < điểm thi tối thiểu HOẶC
+        // 2. Điểm trung bình < điểm trung bình đạt HOẶC
+        // 3. Đã có điểm CK2 (đã thi lại rồi)
+        return student.diem.CK1 < gradeSettings.diemThiToiThieu || 
+               (averageScore !== null && averageScore < gradeSettings.diemTrungBinhDat) || 
+               student.diem.CK2 !== null;
     };
 
     const canTakeFinalExam = (student) => {
@@ -326,9 +356,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         if (currentSubjectInfo?.bao_ve) {
             return true;
         }
-        // Kiểm tra cả điểm TP1 và TP2 đều phải >= 4.0
-        return student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 >= 4.0 &&
-               student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 >= 4.0;
+        // Kiểm tra cả điểm TP1 và TP2 đều phải >= quy định
+        return student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 >= gradeSettings.diemGiuaKyToiThieu &&
+               student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 >= gradeSettings.diemChuyenCanToiThieu;
     };
 
     // Hàm helper để tính toán điểm và trạng thái cho sinh viên cụ thể
@@ -340,8 +370,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 return { score: null, passed: false, he4: null, chu: null, trang_thai: null };
             }
             
-            // Môn bảo vệ chỉ cần điểm thi cuối kỳ >= 4.0 để qua môn
-            const passed = finalScore >= 4.0;
+            // Môn bảo vệ chỉ cần điểm thi cuối kỳ >= quy định để qua môn
+            const passed = finalScore >= gradeSettings.diemTrungBinhDat;
             let he4 = null;
             let chu = null;
             
@@ -381,8 +411,12 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
         const componentScore = 0.7 * student.diem.TP1 + 0.3 * student.diem.TP2;
         const averageScore = Number(((componentScore * 0.3 + finalScore * 0.7)).toFixed(1));
-        const passed = finalScore >= 2.0 && averageScore >= 4.0;
-
+        
+        // Kiểm tra các điều kiện để qua môn: 
+        // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
+        // 2. Điểm trung bình phải >= diemTrungBinhDat
+        const passed = finalScore >= gradeSettings.diemThiToiThieu && averageScore >= gradeSettings.diemTrungBinhDat;
+        console.log(passed)
         let he4 = null;
         let chu = null;
         if (averageScore !== null) {
@@ -410,8 +444,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             return { score: null, passed: false, he4: null, chu: null, trang_thai: null };
         }
         
-        // Môn bảo vệ chỉ cần điểm thi cuối kỳ >= 4.0 để qua môn
-        const passed = finalScore >= 4.0;
+        // Môn bảo vệ chỉ cần điểm thi cuối kỳ >= quy định để qua môn
+        const passed = finalScore >= gradeSettings.diemTrungBinhDat;
         let he4 = null;
         let chu = null;
         
@@ -430,10 +464,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     }
 
     // Logic cũ cho môn học thông thường
-    // Kiểm tra nếu TP1 hoặc TP2 dưới 4
+    // Kiểm tra nếu TP1 hoặc TP2 dưới quy định
     if (
-        (student.diem.TP1 !== null && student.diem.TP1 < 4.0) ||
-        (student.diem.TP2 !== null && student.diem.TP2 < 4.0)
+        (student.diem.TP1 !== null && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ||
+        (student.diem.TP2 !== null && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu)
     ) {
         return {
             score: 0.0,
@@ -451,7 +485,11 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     const componentScore = 0.7 * student.diem.TP1 + 0.3 * student.diem.TP2;
     const averageScore = Number(((componentScore * 0.3 + finalScore * 0.7)).toFixed(1));
-    const passed = finalScore >= 2.0 && averageScore >= 4.0;
+    
+    // Kiểm tra các điều kiện để qua môn:
+    // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
+    // 2. Điểm trung bình phải >= diemTrungBinhDat
+    const passed = finalScore >= gradeSettings.diemThiToiThieu && averageScore >= gradeSettings.diemTrungBinhDat;
 
     let he4 = null;
     let chu = null;
@@ -560,7 +598,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             prevStudents.map(student => {
                 if (student.ma_sinh_vien === studentId) {
                     if (!eligibleForRetake(student) && checked) {
-                        toast.error('Học viên không đủ điều kiện đăng ký thi lại (CK1 phải < 2.0 hoặc điểm tổng kết < 4.0).');
+                        toast.error(`Học viên không đủ điều kiện đăng ký thi lại (Điểm CK1 phải < ${gradeSettings.diemThiToiThieu} hoặc điểm tổng kết < ${gradeSettings.diemTrungBinhDat}).`);
                         return student;
                     }
                     return { ...student, retakeRegistered: checked };
@@ -602,10 +640,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             if (student.retakeRegistered && student.diem.CK2 === null && eligibleForRetake(student)) {
                 finalTrangThai = 'thi_lai';
             }
-            // Nếu TP1 hoặc TP2 < 4, ghi đè diem_hp và trang_thai
+            // Nếu TP1 hoặc TP2 < quy định, ghi đè diem_hp và trang_thai
             if (
-                (student.diem.TP1 !== null && student.diem.TP1 < 4.0) ||
-                (student.diem.TP2 !== null && student.diem.TP2 < 4.0)
+                (student.diem.TP1 !== null && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ||
+                (student.diem.TP2 !== null && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu)
             ) {
                 return {
                     id: student.id,
@@ -1049,7 +1087,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     {(!currentSubjectInfo?.bao_ve && activeGradeTab === 0) && (
                         <>
                             <Alert severity="info" sx={{ my: 2 }}>
-                                Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ 4.0 là điều kiện để học viên được thi cuối kỳ.
+                                Nhập điểm giữa kỳ (TP1) và điểm chuyên cần (TP2). Điểm TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu} là điều kiện để học viên được thi cuối kỳ.
                             </Alert>
                             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
                                 <Button
@@ -1137,7 +1175,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                             value={student.diem.TP1 === null || student.diem.TP1 === undefined ? '' : student.diem.TP1}
                                                             onChange={(e) => handleMidtermScoreChange(student.ma_sinh_vien, 'TP1', e.target.value)}
                                                             inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                            sx={{ width: '80px' }}
+                                                            sx={{
+                                                                width: '80px',
+                                                                '& .MuiOutlinedInput-root': {
+                                                                    '&.Mui-focused fieldset': {
+                                                                        borderColor: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : undefined
+                                                                    }
+                                                                },
+                                                                '& .MuiInputBase-input': {
+                                                                    color: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : 'inherit',
+                                                                    fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
+                                                                }
+                                                            }}
                                                         />
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -1146,7 +1195,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                             value={student.diem.TP2 === null || student.diem.TP2 === undefined ? '' : student.diem.TP2}
                                                             onChange={(e) => handleMidtermScoreChange(student.ma_sinh_vien, 'TP2', e.target.value)}
                                                             inputProps={{ min: 0, max: 10, step: 0.1 }}
-                                                            sx={{ width: '80px' }}
+                                                            sx={{
+                                                                width: '80px',
+                                                                '& .MuiOutlinedInput-root': {
+                                                                    '&.Mui-focused fieldset': {
+                                                                        borderColor: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : undefined
+                                                                    }
+                                                                },
+                                                                '& .MuiInputBase-input': {
+                                                                    color: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : 'inherit',
+                                                                    fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
+                                                                }
+                                                            }}
                                                         />
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -1175,8 +1235,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         <>
                             <Alert severity="info" sx={{ my: 2 }}>
                                 {currentSubjectInfo?.bao_ve
-                                    ? "Môn bảo vệ: Chỉ cần nhập điểm thi cuối kỳ. Điểm >= 4.0 để qua môn."
-                                    : "Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho học viên có điểm TP1 ≥ 4.0 và điểm TP2 ≥ 4.0. Điểm thi (CK1 hoặc CK2) phải ≥ 2.0 và điểm tổng kết ≥ 4.0 để qua môn."
+                                    ? `Môn bảo vệ: Chỉ cần nhập điểm thi cuối kỳ. Điểm >= ${gradeSettings.diemTrungBinhDat} để qua môn.`
+                                    : `Nhập điểm cuối kỳ (CK). Chỉ có thể nhập điểm cho học viên có điểm TP1 ≥ ${gradeSettings.diemGiuaKyToiThieu} và điểm TP2 ≥ ${gradeSettings.diemChuyenCanToiThieu}. Để qua môn, cần đáp ứng cả hai điều kiện: điểm thi (CK1 hoặc CK2) phải ≥ ${gradeSettings.diemThiToiThieu} VÀ điểm tổng kết phải ≥ ${gradeSettings.diemTrungBinhDat}.`
                                 }
                             </Alert>
                             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -1252,17 +1312,22 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                             return (
                                                 <TableRow
                                                     key={student.ma_sinh_vien}
-                                                    sx={!passed && averageScore !== null ? { backgroundColor: 'rgba(255, 0, 0, 0.05)' } : {}}
                                                 >
                                                     <TableCell>{student.ma_sinh_vien}</TableCell>
                                                     <TableCell>{student.ho_dem}</TableCell>
                                                     <TableCell>{student.ten}</TableCell>
                                                     <TableCell>{student.lop}</TableCell>
                                                     <TableCell>{student.lan_hoc}</TableCell>
-                                                    <TableCell align="center" sx={{ color: student.diem.TP1 < 4.0 ? 'red' : 'inherit' }}>
+                                                    <TableCell align="center" sx={{
+                                                        color: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : 'inherit',
+                                                        fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
+                                                    }}>
                                                         {student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}
                                                     </TableCell>
-                                                    <TableCell align="center">
+                                                    <TableCell align="center" sx={{
+                                                        color: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : 'inherit',
+                                                        fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
+                                                    }}>
                                                         {student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -1359,7 +1424,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 1 && (
                 <>
                     <Alert severity="success" sx={{ my: 2 }}>
-                        {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ 4.0 và TP2 ≥ 4.0)
+                        {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="eligible students table">
@@ -1388,15 +1453,24 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     return (
                                         <TableRow
                                             key={student.ma_sinh_vien}
-                                            sx={!passed && averageScore !== null ? { backgroundColor: 'rgba(255, 0, 0, 0.05)' } : {}}
                                         >
                                             <TableCell>{student.ma_sinh_vien}</TableCell>
                                             <TableCell>{student.ho_dem}</TableCell>
                                             <TableCell>{student.ten}</TableCell>
                                             <TableCell>{student.lop}</TableCell>
                                             <TableCell>{student.lan_hoc}</TableCell>
-                                            <TableCell align="center">{student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}</TableCell>
-                                            <TableCell align="center">{student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}</TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}
+                                            </TableCell>
                                             <TableCell align="center">{componentScore !== null ? Number(componentScore).toFixed(1) : '-'}</TableCell>
                                             <TableCell align="center">{student.diem.CK1 !== null ? student.diem.CK1 : '-'}</TableCell>
                                             <TableCell align="center">{student.diem.CK2 !== null ? student.diem.CK2 : '-'}</TableCell>
@@ -1442,7 +1516,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 2 && (
                 <>
                     <Alert severity="warning" sx={{ my: 2 }}>
-                        {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ 4.0 và TP2 ≥ 4.0)
+                        {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
                     </Alert>
                     <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
                         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="ineligible students table">
@@ -1483,7 +1557,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                 statusDisplay = 'Qua môn';
                                                 statusColor = 'green';
                                                 break;
-                                            case 'truot_mon':
+                                            case 'rot_mon':
                                                 statusDisplay = 'Trượt môn';
                                                 statusColor = 'red';
                                                 break;
@@ -1507,8 +1581,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                             <TableCell>{student.ten}</TableCell>
                                             <TableCell>{student.lop}</TableCell>
                                             <TableCell>{student.lan_hoc}</TableCell>
-                                            <TableCell align="center" sx={{ color: 'red' }}>{student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}</TableCell>
-                                            <TableCell align="center">{student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}</TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}
+                                            </TableCell>
                                             <TableCell align="center">{componentScore !== null && componentScore !== undefined ? Number(componentScore).toFixed(1) : '-'}</TableCell>
                                             <TableCell align="center">
                                                 <Typography
@@ -1542,7 +1626,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             {activeTab === 3 && (
                 <>
                     <Alert severity="error" sx={{ my: 2 }}>
-                        {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < 2.0)`}
+                        {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < ${gradeSettings.diemThiToiThieu} hoặc Điểm TB < ${gradeSettings.diemTrungBinhDat}). Học viên sẽ trượt môn nếu không đạt cả hai điều kiện: điểm thi ≥ ${gradeSettings.diemThiToiThieu} VÀ điểm trung bình ≥ ${gradeSettings.diemTrungBinhDat}.`}
                     </Alert>
                     <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
                         <Button
@@ -1582,17 +1666,31 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     return (
                                         <TableRow
                                             key={student.ma_sinh_vien}
-                                            sx={!passed && averageScore !== null ? { backgroundColor: 'rgba(255, 0, 0, 0.05)' } : {}}
                                         >
                                             <TableCell>{student.ma_sinh_vien}</TableCell>
                                             <TableCell>{student.ho_dem}</TableCell>
                                             <TableCell>{student.ten}</TableCell>
                                             <TableCell>{student.lop}</TableCell>
                                             <TableCell>{student.lan_hoc}</TableCell>
-                                            <TableCell align="center">{student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}</TableCell>
-                                            <TableCell align="center">{student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}</TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP1 === null || student.diem.TP1 === undefined ? '-' : student.diem.TP1}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.TP2 === null || student.diem.TP2 === undefined ? '-' : student.diem.TP2}
+                                            </TableCell>
                                             <TableCell align="center">{componentScore !== null && componentScore !== undefined ? Number(componentScore).toFixed(1) : '-'}</TableCell>
-                                            <TableCell align="center" sx={{ color: 'red' }}>{student.diem.CK1}</TableCell>
+                                            <TableCell align="center" sx={{
+                                                color: (student.diem.CK1 !== null && student.diem.CK1 !== undefined && student.diem.CK1 < gradeSettings.diemThiToiThieu) ? 'red' : 'inherit',
+                                                fontWeight: (student.diem.CK1 !== null && student.diem.CK1 !== undefined && student.diem.CK1 < gradeSettings.diemThiToiThieu) ? 'bold' : 'normal'
+                                            }}>
+                                                {student.diem.CK1}
+                                            </TableCell>
                                             <TableCell align="center">{student.diem.CK2 !== null ? student.diem.CK2 : '-'}</TableCell>
                                             <TableCell align="center">
                                                 {averageScore ? (
