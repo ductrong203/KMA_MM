@@ -18,10 +18,19 @@ const  getDiffData = (oldData, newData) => {
             if (oldData[key] !== newData[key]) {
                 console.log("oldData", oldData[key]);
                 console.log("newData", newData[key]);
+
                 if (key.includes("ngay_ra_quyet_dinh")){
                     oldData[key] = formatDate(oldData[key]);
                     newData[key] = formatDate(newData[key]);
                     
+                }
+                
+                if (key.includes("thuoc_khoa")) {
+                        oldData[key] = oldData[key] == 0 ? " phòng ban ": " khoa ";
+                        newData[key] = newData[key] == 0 ? " phòng ban ": " khoa ";
+                        change.push(`chuyển từ ${oldData[key]} => ${newData[key]}`);
+                        continue;
+
                 }
                 if (key === "role" || key === "Role") {
                     oldData[key] = mapRole[oldData[key]];
