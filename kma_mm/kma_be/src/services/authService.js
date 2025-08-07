@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
 const user = require("../models/user");
 const { where, Op } = require("sequelize");
-
+const {logActAcivity} = require("../services/activityLogService");
 
 const register = async (newUser) => {
   const { username, password, confirmPassword, role, ho_ten } = newUser;
@@ -29,7 +29,14 @@ const register = async (newUser) => {
       role,
       ho_ten,
     });
-
+    
+    try {
+      // await logActAcivity({
+          
+      // })
+    } catch (error) {
+      
+    }
     return {
       status: "OK",
       message: "Đăng kí thành công",
@@ -62,6 +69,7 @@ const loginUser = async (user) => {
     const access_token = await generalAccessToken({
       id: checkUser.id,
       role: checkUser.role,
+
     });
     const refresh_token = await generalRefreshToken({
       id: checkUser.id,

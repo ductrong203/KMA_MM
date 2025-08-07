@@ -232,7 +232,7 @@ const ActivityLogs = () => {
                 {/* Bộ lọc Role */}
                 <TextField
                     select
-                    label="xét theo quyền"
+                    label="Xét theo quyền"
                     variant="outlined"
                     fullWidth
                     value={selectedRole}

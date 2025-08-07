@@ -1,5 +1,17 @@
 const chungChiService = require('../services/chungChiService');
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
 
+      }
 exports.layDanhSachLoaiChungChi = async (req, res) => {
   try {
     const danhSachLoai = await chungChiService.layDanhSachLoaiChungChi();
@@ -100,7 +112,21 @@ exports.taoChungChi = async (req, res) => {
 
     // Gọi phương thức từ service
     const ketQua = await chungChiService.taoChungChi(data);
-
+     let userN  = await  getFieldById("users", req.user.id, "username");
+          if (ketQua) {
+          let inforActivity = {
+            username:   userN,
+            role: mapRole[req.user.role],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: `Người dùng ${userN} đã tạo chứng chỉ ${ketQua.data.loaiChungChi} cho sinh viên có mã ${ketQua.data.maSinhVien} `,
+            response_status: 200,
+            resData: "Tạo chứng chỉ mới thành công",
+            ip:  req._remoteAddress,
+    
+          }
+            await logActivity(inforActivity);
+          }
     return res.status(201).json({
       thongBao: 'Tạo chứng chỉ thành công',
       duLieu: ketQua.data,
@@ -167,10 +193,27 @@ exports.chinhSuaChungChi = async (req, res) => {
       ngay_ky_quyet_dinh,
       tinh_trang,
     };
-
+    const oldData  =   await chung_chi.findOne({where : {id}});
     // Gọi phương thức từ service
     const ketQua = await chungChiService.chinhSuaChungChi(id, data);
+    let userN  = await  getFieldById("users", req.user.id, "username");
+    let sinhVienId =  await  getFieldById("chung_chi", id, "sinh_vien_id");
+    let maSV =  await  getFieldById("users", sinhVienId, "ma_sinh_vien");
+    if (ketQua) {
+      const newData = ketQua;
+      let inforActivity = {
+        username:   userN,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `${getDiffData(oldData, newData)}`,
+        response_status: 200,
+        resData: `Người dùng ${userN} đã cập nhật chứng chỉ thành công cho sinh viên có mã ${maSV}`,
+        ip:  req._remoteAddress,
 
+      }
+        await logActivity(inforActivity);
+      }
     return res.status(200).json({
       thongBao: 'Chỉnh sửa chứng chỉ thành công',
       duLieu: ketQua.data,
@@ -196,7 +239,23 @@ exports.xoaChungChi = async (req, res) => {
 
     // Gọi phương thức từ service
     const ketQua = await chungChiService.xoaChungChi(id);
+    let userN  = await  getFieldById("users", req.user.id, "username");
+    let sinhVienId =  await  getFieldById("chung_chi", id, "sinh_vien_id");
+    let maSV =  await  getFieldById("users", sinhVienId, "ma_sinh_vien");
+      if (ketQua) {
+      let inforActivity = {
+        username:   userN,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `Người dùng ${userN} đã xóa chứng chỉ cho sinh viên mã  ${maSV}`,
+        response_status: 200,
+        resData: "Xóa chứng chỉ thành công",
+        ip:  req._remoteAddress,
 
+      }
+        await logActivity(inforActivity);
+      }
     return res.status(200).json({
       thongBao: 'Xóa chứng chỉ thành công',
       duLieu: ketQua.data,
@@ -212,6 +271,21 @@ exports.xoaChungChi = async (req, res) => {
 exports.taoLoaiChungChi = async (req, res) => {
     try {
       const ketQua = await chungChiService.taoLoaiChungChi(req.body);
+       let userN  = await  getFieldById("users", req.user.id, "username");
+      if (response) {
+      let inforActivity = {
+        username:   userN,
+        role: mapRole[req.user.role],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `Người dùng ${userN} đã tạo loại chứng chỉ  ${ketQua.data.loaiChungChi} `,
+        response_status: 200,
+        resData: "Đăng kí thành công",
+        ip:  req._remoteAddress,
+
+      }
+        await logActivity(inforActivity);
+      }
       res.status(201).json({
         success: true,
         message: "Đã tạo loại chứng chỉ thành công ",

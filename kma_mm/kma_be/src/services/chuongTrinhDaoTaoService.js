@@ -132,7 +132,7 @@ class ChuongTrinhDaoTaoService {
 
   // Kiểm tra sự tồn tại của he_dao_tao_id
   const heDaoTao = await danh_muc_dao_tao.findOne({ where: { id: he_dao_tao_id } });
-  if (!heDaoTao) {
+  if (!heDaoTao) {  
     throw new Error('Hệ đào tạo không tồn tại');
   }
 

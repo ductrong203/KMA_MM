@@ -9,7 +9,7 @@ const logActivity = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
     async function getInforByUserID(username) {
-      try {
+      try {.
         const user = await users.findOne({ where: { username: username } });
         if (!user) {
           console.log("User not found");

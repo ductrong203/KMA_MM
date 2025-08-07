@@ -1,7 +1,20 @@
 const SinhVienService = require("../services/studentService");
 const path = require("path");
 const fs = require("fs");
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const { verifyAccessToken } = require("../utils/decodedToken");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
 
+      }
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");
 if (!fs.existsSync(exportDir)) {
@@ -12,6 +25,27 @@ class SinhVienController {
   static async create(req, res) {
     try {
       const sinhVien = await SinhVienService.createSinhVien(req.body);
+    const token = req.headers.authorization?.split(" ")[1];
+    // console.log(token);
+    let user = verifyAccessToken(token);
+    let userN  = await  getFieldById("users", user.id, "username");
+    let  userR = await  getFieldById("users", user.id, "role");
+    let lop = await getFieldById("lop", sinhVien.lop_id, "ma_lop")
+      if (sinhVien) {
+      let inforActivity = {
+        username:   userN,
+        role: mapRole[userR],
+        action: req.method,
+        endpoint: req.originalUrl,
+        reqData: `Người dùng ${userN}  đã thêm thành công sinh viên có mã ${sinhVien.ma_sinh_vien} vào lớp ${lop} `,
+        response_status: 200,
+        resData: "Thêm sinh viên thành công",
+        ip:  req._remoteAddress,
+
+      }
+        await logActivity(inforActivity);
+      }
+
       res.status(201).json(
         {message: "Thêm sinh viên thành công", 
         data: sinhVien});

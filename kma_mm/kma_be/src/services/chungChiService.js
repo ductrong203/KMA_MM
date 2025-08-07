@@ -229,6 +229,7 @@ class ChungChiService {
       const chungChi = await chung_chi.findByPk(id);
       if (!chungChi) {
         throw new Error(`Chứng chỉ với id ${id} không tồn tại`);
+        
       }
 
       // Kiểm tra ma_sinh_vien (nếu có)
