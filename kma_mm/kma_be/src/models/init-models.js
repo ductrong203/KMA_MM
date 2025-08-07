@@ -4,6 +4,7 @@ var _danh_muc_khen_ky_luat = require("./danh_muc_khen_ky_luat");
 var _diem = require("./diem");
 var _doi_tuong_quan_ly = require("./doi_tuong_quan_ly");
 var _giang_vien = require("./giang_vien");
+var _gradeSettings = require("./gradeSettings");
 var _ke_hoach_mon_hoc = require("./ke_hoach_mon_hoc");
 var _khen_thuong_ky_luat = require("./khen_thuong_ky_luat");
 var _khoa_dao_tao = require("./khoa_dao_tao");
@@ -23,6 +24,7 @@ function initModels(sequelize) {
   var diem = _diem(sequelize, DataTypes);
   var doi_tuong_quan_ly = _doi_tuong_quan_ly(sequelize, DataTypes);
   var giang_vien = _giang_vien(sequelize, DataTypes);
+  var QuyDinhDiem = _gradeSettings(sequelize, DataTypes);
   var ke_hoach_mon_hoc = _ke_hoach_mon_hoc(sequelize, DataTypes);
   var khen_thuong_ky_luat = _khen_thuong_ky_luat(sequelize, DataTypes);
   var khoa_dao_tao = _khoa_dao_tao(sequelize, DataTypes);
@@ -89,6 +91,7 @@ function initModels(sequelize) {
     lop,
     mon_hoc,
     phong_ban,
+    QuyDinhDiem,
     sequelizemeta,
     sinh_vien,
     thoi_khoa_bieu,
