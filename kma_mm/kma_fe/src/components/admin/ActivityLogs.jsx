@@ -304,7 +304,7 @@ const ActivityLogs = () => {
                             <TableCell>Tên tài khoản</TableCell>
                             <TableCell>Quyền</TableCell>
                             <TableCell>Hành động </TableCell>
-                            <TableCell>Mô tả </TableCell>
+                            <TableCell>Mô tả ngắn gọn </TableCell>
                             <TableCell>Thời gian</TableCell>
                         </TableRow>
                     </TableHead>
@@ -368,7 +368,7 @@ const ActivityLogs = () => {
                 }}
             >
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">Chi tiết hoạt động</Typography>
+                    <Typography variant="h6">Mô tả chi tiết</Typography>
                     <IconButton
                         onClick={closeDetailModal}
                         sx={{ color: 'grey.500' }}
@@ -397,9 +397,6 @@ const ActivityLogs = () => {
                                         <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                        <strong>Action chi tiết:</strong> {selectedLog.action.split("/").join(" ")}
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         <strong>Thời gian:</strong> {convertUTCToVietnamTime(selectedLog.created_at)}
                                     </Typography>
                                 </Box>
@@ -407,7 +404,7 @@ const ActivityLogs = () => {
                             
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                    Mô tả chi tiết:
+                                    Mô tả hành động
                                 </Typography>
                                 <Paper 
                                     sx={{ 
@@ -428,7 +425,7 @@ const ActivityLogs = () => {
                             {selectedLog.request_data && (
                                 <Box>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        Dữ liệu yêu cầu:
+                                        Chi tiết thực hiện:
                                     </Typography>
                                     <Paper 
                                         sx={{ 

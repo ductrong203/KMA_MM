@@ -10,21 +10,22 @@ const mapRole = {
       }
 const {formatDate} = require("../utils/formatDate");
 
-const  getDiffData = (oldData, newData) => {
+const  getDiffData =  (oldData, newData) => {
         const change = [];
         for (let key in newData) {
+            newData[key] = newData[key] === null ? "": newData[key]; 
+            oldData[key] = oldData[key] === null ? "": oldData[key]; 
             if (key.includes("create") || key.includes("update")) continue;
 
             if (oldData[key] !== newData[key]) {
                 console.log("oldData", oldData[key]);
                 console.log("newData", newData[key]);
 
-                if (key.includes("ngay_ra_quyet_dinh")){
+                if (key.includes("ngay_")){
                     oldData[key] = formatDate(oldData[key]);
                     newData[key] = formatDate(newData[key]);
-                    
                 }
-                
+
                 if (key.includes("thuoc_khoa")) {
                         oldData[key] = oldData[key] == 0 ? " phòng ban ": " khoa ";
                         newData[key] = newData[key] == 0 ? " phòng ban ": " khoa ";
