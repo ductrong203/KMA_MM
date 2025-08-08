@@ -20,7 +20,7 @@ import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
-import GradeSettings from "./components/Admin/GradeSettings";
+import GradeSettings from "./components/admin/GradeSettings";
 
 import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
 import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";

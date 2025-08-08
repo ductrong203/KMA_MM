@@ -6,15 +6,10 @@ import {
   Typography,
   TextField,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Grid,
   Divider,
   Alert,
   CircularProgress,
-  Snackbar,
   Paper
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
@@ -89,35 +84,6 @@ const GradeSettings = () => {
     }
   };
 
-  const handlePolicyChange = (event) => {
-    const policy = event.target.value;
-    if (policy === 'new') {
-      setSettings({
-        ...settings,
-        chinhSachHienTai: 'moi',
-        diemThiToiThieu: 2.0,
-        diemTrungBinhDat: 4.0,
-        chinhSachTuychinh: false
-      });
-    } else if (policy === 'old') {
-      setSettings({
-        ...settings,
-        chinhSachHienTai: 'cu',
-        diemThiToiThieu: 4.0,
-        diemTrungBinhDat: 4.0,
-        diemGiuaKyToiThieu: 4.0,  // Đảm bảo giá trị quy định cũ được đặt
-        diemChuyenCanToiThieu: 4.0, // Đảm bảo giá trị quy định cũ được đặt
-        chinhSachTuychinh: false
-      });
-    } else if (policy === 'custom') {
-      setSettings({
-        ...settings,
-        chinhSachHienTai: 'tuy_chinh',
-        chinhSachTuychinh: true
-      });
-    }
-  };
-
   const handleInputChange = (field, value) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
@@ -155,50 +121,30 @@ const GradeSettings = () => {
               <Typography variant="h6" gutterBottom>
                 Quy định chung về điểm qua môn
               </Typography>
-              <FormControl fullWidth sx={{ mb: 3, mt: 2 }}>
-                <InputLabel>Chọn quy định</InputLabel>
-                <Select
-                  value={settings.chinhSachTuychinh ? 'custom' : settings.chinhSachHienTai === 'moi' ? 'new' : 'old'}
-                  onChange={handlePolicyChange}
-                  label="Chọn quy định"
-                >
-                  <MenuItem value="new">Quy định mới (CK ≥ 2.0 và TB ≥ 4.0)</MenuItem>
-                  <MenuItem value="old">Quy định cũ (CK ≥ 4.0 và TB ≥ 4.0)</MenuItem>
-                  <MenuItem value="custom">Quy định tùy chỉnh</MenuItem>
-                </Select>
-              </FormControl>
-
-              {settings.chinhSachTuychinh && (
-                <>
-                  <Alert severity="info" sx={{ mb: 3 }}>
-                    Bạn đang sử dụng quy định tùy chỉnh. Vui lòng nhập các giá trị điểm tối thiểu bên dưới.
-                  </Alert>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Điểm thi cuối kỳ tối thiểu"
-                        type="number"
-                        value={settings.diemThiToiThieu}
-                        onChange={(e) => handleInputChange('diemThiToiThieu', e.target.value)}
-                        InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
-                        helperText="Điểm thi cuối kỳ (CK) tối thiểu để đạt"
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Điểm trung bình tối thiểu"
-                        type="number"
-                        value={settings.diemTrungBinhDat}
-                        onChange={(e) => handleInputChange('diemTrungBinhDat', e.target.value)}
-                        InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
-                        helperText="Điểm trung bình tối thiểu để qua môn"
-                      />
-                    </Grid>
-                  </Grid>
-                </>
-              )}
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Điểm thi cuối kỳ tối thiểu"
+                    type="number"
+                    value={settings.diemThiToiThieu}
+                    onChange={(e) => handleInputChange('diemThiToiThieu', e.target.value)}
+                    InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
+                    helperText="Điểm thi cuối kỳ (CK) tối thiểu để đạt"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Điểm trung bình tối thiểu"
+                    type="number"
+                    value={settings.diemTrungBinhDat}
+                    onChange={(e) => handleInputChange('diemTrungBinhDat', e.target.value)}
+                    InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
+                    helperText="Điểm trung bình tối thiểu để qua môn"
+                  />
+                </Grid>
+              </Grid>
 
               <Divider sx={{ my: 3 }} />
 
@@ -240,13 +186,6 @@ const GradeSettings = () => {
                 Tóm tắt thiết lập hiện tại
               </Typography>
               <Box sx={{ mt: 2, backgroundColor: 'grey.100', p: 2, borderRadius: 1 }}>
-                <Typography variant="body1" gutterBottom>
-                  <strong>Quy định đang áp dụng:</strong> {
-                    settings.chinhSachTuychinh ? 'Quy định tùy chỉnh' :
-                    (settings.chinhSachHienTai === 'moi' ? 'Quy định mới' : 'Quy định cũ')
-                  }
-                </Typography>
-                <Divider sx={{ my: 1 }} />
                 <Typography variant="body1" gutterBottom>
                   <strong>Điều kiện qua môn:</strong>
                 </Typography>
