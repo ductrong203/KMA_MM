@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
     DialogTitle, DialogContent, DialogActions, Card, CardContent, CardActions, IconButton, createTheme,
-    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText, Chip
+    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText,
+    FormControlLabel, Chip
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -49,6 +50,7 @@ const ThoiKhoaBieu = () => {
     const [useKeHoachDaoTao, setUseKeHoachDaoTao] = useState(false);
     const [keHoachMonHocList, setKeHoachMonHocList] = useState([]);
     const [selectedMonHocIds, setSelectedMonHocIds] = useState([]); // Danh sách môn học được chọn
+    const [selectAllMonHoc, setSelectAllMonHoc] = useState(false);
 
     const [trangThaiOptions] = useState([
         { value: 1, label: "Hoạt động" },
@@ -355,6 +357,7 @@ const ThoiKhoaBieu = () => {
         // KHÔNG reset heDaoTaoFilter - giữ nguyên bộ lọc đang hiển thị
         setMonHocId("");
         setSelectedMonHocIds([]);
+        setSelectAllMonHoc(false); // Reset checkbox chọn tất cả
         setKyHocOptionsForm([]);
         setLopList(originalLopList);
         setEditIndex(null);
@@ -432,13 +435,43 @@ const ThoiKhoaBieu = () => {
         setOpen(true);
     };
 
+    // Sửa hàm handleEdit:
     const handleEdit = async (tkb, index) => {
+        console.log("Debug tkb data:", tkb); // Debug để xem dữ liệu
+        
         setKyHoc(tkb.ky_hoc || "");
         setLopId(tkb.lop_id || "");
         setMonHocId(tkb.mon_hoc_id || "");
         setSelectedMonHocIds([tkb.mon_hoc_id]);
-        setGiangVienId(tkb.giang_vien_id || "");
-        setGiangVien(tkb.giang_vien || "");
+        
+        // Debug giảng viên
+        console.log("Giảng viên ID:", tkb.giang_vien_id);
+        console.log("Giảng viên name:", tkb.giang_vien);
+        console.log("Giảng viên list:", giangVienList);
+        
+        // Xử lý giảng viên một cách an toàn
+        if (tkb.giang_vien_id) {
+            // Tìm giảng viên trong danh sách
+            const foundGiangVien = giangVienList.find(gv => gv.id === tkb.giang_vien_id);
+            if (foundGiangVien) {
+                setGiangVienId(tkb.giang_vien_id);
+                setGiangVien(foundGiangVien.ho_ten);
+            } else {
+                // Nếu không tìm thấy trong danh sách, dùng tên có sẵn
+                setGiangVienId(tkb.giang_vien_id);
+                setGiangVien(tkb.giang_vien || "");
+                console.warn("Giảng viên không tồn tại trong danh sách:", tkb.giang_vien_id);
+            }
+        } else if (tkb.giang_vien) {
+            // Nếu chỉ có tên mà không có ID (dữ liệu cũ)
+            setGiangVienId("");
+            setGiangVien(tkb.giang_vien);
+        } else {
+            // Không có thông tin giảng viên
+            setGiangVienId("");
+            setGiangVien("");
+        }
+        
         setPhongHoc(tkb.phong_hoc || "");
         setTietHoc(tkb.tiet_hoc || "");
         setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
@@ -508,6 +541,29 @@ const ThoiKhoaBieu = () => {
     const findMonHoc = (id) => monHocList.find(item => item.id === id) || { ten_mon_hoc: "Môn học không xác định", ma_mon_hoc: "N/A", so_tin_chi: "N/A", tinh_diem: "N/A", he_dao_tao_id: null, ghi_chu: "N/A" };
     const findGiangVienName = (id) => giangVienList.find(item => item.id === id)?.ho_ten || "Giảng viên không xác định";
     const findHeDaoTaoName = (id) => HeDaoTao.find(item => item.id === id)?.ten_he_dao_tao || "Hệ đào tạo không xác định";
+
+    // Thêm hàm xử lý checkbox "Chọn tất cả":
+    const handleSelectAllChange = (event) => {
+        const isChecked = event.target.checked;
+        setSelectAllMonHoc(isChecked);
+        
+        if (isChecked) {
+            // Chọn tất cả môn học
+            const allMonHocIds = keHoachMonHocList.map(item => item.mon_hoc_id);
+            setSelectedMonHocIds(allMonHocIds);
+        } else {
+            // Bỏ chọn tất cả
+            setSelectedMonHocIds([]);
+        }
+    };
+
+    // Thêm useEffect để cập nhật trạng thái checkbox "Chọn tất cả" khi selectedMonHocIds thay đổi:
+    useEffect(() => {
+        if (keHoachMonHocList.length > 0) {
+            const allSelected = keHoachMonHocList.every(item => selectedMonHocIds.includes(item.mon_hoc_id));
+            setSelectAllMonHoc(allSelected);
+        }
+    }, [selectedMonHocIds, keHoachMonHocList]);
 
     return (
         <ThemeProvider theme={theme}>
@@ -795,7 +851,28 @@ const ThoiKhoaBieu = () => {
 
                     {editId === null && useKeHoachDaoTao ? (
                         <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle1">Danh sách môn học từ kế hoạch đào tạo:</Typography>
+                            <Typography variant="subtitle1" sx={{ mb: 1 }}>Danh sách môn học từ kế hoạch đào tạo:</Typography>
+                            
+                            {/* Thêm checkbox "Chọn tất cả" */}
+                            {keHoachMonHocList.length > 0 && (
+                                <Box sx={{ mb: 2, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={selectAllMonHoc}
+                                                onChange={handleSelectAllChange}
+                                                indeterminate={selectedMonHocIds.length > 0 && selectedMonHocIds.length < keHoachMonHocList.length}
+                                            />
+                                        }
+                                        label={
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                Chọn tất cả ({selectedMonHocIds.length}/{keHoachMonHocList.length})
+                                            </Typography>
+                                        }
+                                    />
+                                </Box>
+                            )}
+                            
                             {keHoachMonHocList.length > 0 ? (
                                 <List dense>
                                     {keHoachMonHocList.map((mon) => (
@@ -864,12 +941,30 @@ const ThoiKhoaBieu = () => {
                             <Grid container spacing={2} sx={{ mt: 1 }}>
                                 <Grid item xs={12}>
                                     <Autocomplete
+                                        freeSolo // Thêm freeSolo để cho phép nhập tên tự do
                                         options={giangVienList}
-                                        getOptionLabel={(option) => option.ho_ten}
-                                        value={giangVienList.find((gv) => gv.id === giangVienId) || null}
+                                        getOptionLabel={(option) => {
+                                            if (typeof option === 'string') return option; // Trường hợp freeSolo
+                                            return option.ho_ten || "";
+                                        }}
+                                        value={
+                                            giangVienList.find((gv) => gv.id === giangVienId) || 
+                                            (giangVien ? giangVien : null) // Fallback về tên nếu không tìm thấy ID
+                                        }
                                         onChange={(event, newValue) => {
-                                            setGiangVienId(newValue ? newValue.id : "");
-                                            setGiangVien(newValue ? newValue.ho_ten : "");
+                                            if (typeof newValue === 'string') {
+                                                // Trường hợp nhập tự do
+                                                setGiangVienId("");
+                                                setGiangVien(newValue);
+                                            } else if (newValue) {
+                                                // Trường hợp chọn từ danh sách
+                                                setGiangVienId(newValue.id);
+                                                setGiangVien(newValue.ho_ten);
+                                            } else {
+                                                // Trường hợp clear
+                                                setGiangVienId("");
+                                                setGiangVien("");
+                                            }
                                         }}
                                         renderInput={(params) => (
                                             <TextField 
@@ -878,6 +973,7 @@ const ThoiKhoaBieu = () => {
                                                 fullWidth 
                                                 size="small" 
                                                 placeholder="Tìm kiếm và chọn giảng viên..."
+                                                value={giangVien} // Hiển thị tên giảng viên
                                             />
                                         )}
                                         noOptionsText="Không tìm thấy giảng viên nào"
