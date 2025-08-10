@@ -1,5 +1,6 @@
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
+const { Op } = require("sequelize");
 const models = initModels(sequelize);
 const { diem, sinh_vien, thoi_khoa_bieu, lop, mon_hoc, danh_muc_dao_tao, khoa_dao_tao } = models;
 
@@ -8,6 +9,31 @@ const fs = require("fs");
 const ExcelJS = require("exceljs");
 
 class DiemService {
+  // Kiểm tra SV đã có điểm của cùng môn trong cùng khóa chưa
+  static async hasDiemForMonInKhoa(sinh_vien_id, mon_hoc_id, khoa_dao_tao_id) {
+    return await diem.findOne({
+      where: { sinh_vien_id },
+      attributes: ["id", "sinh_vien_id"],
+      include: [
+        {
+          model: thoi_khoa_bieu,
+          as: "thoi_khoa_bieu",
+          attributes: [],
+          where: { mon_hoc_id },
+          required: true,
+          include: [
+            {
+              model: lop,
+              as: "lop",
+              attributes: [],
+              where: { khoa_dao_tao_id },
+              required: true,
+            },
+          ],
+        },
+      ],
+    });
+  }
   // static async filter({ sinh_vien_id, thoi_khoa_bieu_id, page = 1, pageSize = 10 }) {
   //   page = parseInt(page) || 1;
   //   pageSize = parseInt(pageSize) || 10;
@@ -173,6 +199,21 @@ class DiemService {
       throw new Error(`Bảng điểm đã tồn tại cho thời khoá biểu id ${thoi_khoa_bieu_id} của sinh viên có id ${sinh_vien_id}`);
     }
 
+    // Không cho tạo điểm cùng môn 2 lần trong cùng khóa
+    const lopInfo = await lop.findByPk(tkbExist.lop_id, { attributes: ["khoa_dao_tao_id"] });
+    if (lopInfo && tkbExist.mon_hoc_id) {
+      const dup = await DiemService.hasDiemForMonInKhoa(
+        sinh_vien_id,
+        tkbExist.mon_hoc_id,
+        lopInfo.khoa_dao_tao_id
+      );
+      if (dup) {
+        throw new Error(
+          `Sinh viên đã có điểm của môn (mon_hoc_id=${tkbExist.mon_hoc_id}) trong khóa đào tạo (khoa_dao_tao_id=${lopInfo.khoa_dao_tao_id}). Không thể tạo trùng.`
+        );
+      }
+    }
+
     return await diem.create(data);
   }
 
@@ -182,6 +223,12 @@ class DiemService {
         const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
         if (!tkb) {
             throw new Error("Không tìm thấy thời khóa biểu!");
+        }
+
+        // Lấy thông tin khóa đào tạo của lớp mở môn này
+        const lopInfo = await lop.findByPk(tkb.lop_id, { attributes: ["khoa_dao_tao_id"] });
+        if (!lopInfo) {
+            throw new Error("Không tìm thấy thông tin lớp học của thời khóa biểu!");
         }
 
         // Tạo điều kiện lọc sinh viên
@@ -205,17 +252,33 @@ class DiemService {
             throw new Error(`Không có sinh viên nào trong lớp này${filterMessage}!`);
         }
 
-        // Lấy danh sách điểm đã tồn tại
-        const existingDiemRecords = await diem.findAll({
-            where: {
-                thoi_khoa_bieu_id: thoi_khoa_bieu_id,
-                sinh_vien_id: sinhViens.map(sv => sv.id)
-            },
-            attributes: ['sinh_vien_id']
-        });
+    // Lấy danh sách sinh viên đã có điểm của cùng môn trong cùng khóa
+    const sinhVienIds = sinhViens.map(sv => sv.id);
+    const duplicates = await diem.findAll({
+      where: { sinh_vien_id: sinhVienIds },
+      attributes: ['sinh_vien_id'],
+      include: [
+        {
+          model: thoi_khoa_bieu,
+          as: 'thoi_khoa_bieu',
+          attributes: [],
+          where: { mon_hoc_id: tkb.mon_hoc_id },
+          required: true,
+          include: [
+            {
+              model: lop,
+              as: 'lop',
+              attributes: [],
+              where: { khoa_dao_tao_id: lopInfo.khoa_dao_tao_id },
+              required: true,
+            }
+          ]
+        }
+      ]
+    });
 
-        // Lọc ra những sinh viên chưa có bản ghi điểm
-        const existingStudentIds = new Set(existingDiemRecords.map(d => d.sinh_vien_id));
+    // Lọc ra những sinh viên chưa có điểm (tránh tạo trùng trong cùng khóa và cùng môn)
+    const existingStudentIds = new Set(duplicates.map(d => d.sinh_vien_id));
         const newDiemList = sinhViens
             .filter(sv => !existingStudentIds.has(sv.id))
             .map(sv => ({
@@ -239,11 +302,11 @@ class DiemService {
             await diem.bulkCreate(newDiemList);
         }
 
-        const filterMessage = bao_ve_do_an !== null 
+    const filterMessage = bao_ve_do_an !== null 
             ? ` (đã lọc theo bao_ve_do_an = ${bao_ve_do_an})` 
             : "";
         return { 
-            message: `Tạo bảng điểm thành công${filterMessage}!`, 
+      message: `Tạo bảng điểm thành công${filterMessage}!${newDiemList.length === 0 ? ' (Tất cả sinh viên đã có điểm cho môn này trong khóa hiện tại)' : ''}`, 
             data: newDiemList 
         };
     } catch (error) {
@@ -274,11 +337,46 @@ class DiemService {
                 }
             }
 
-            if (thoi_khoa_bieu_id) {
-                const tkbExist = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
-                if (!tkbExist) {
-                    throw new Error(`Thời khóa biểu với ID ${thoi_khoa_bieu_id} không tồn tại.`);
-                }
+            // Xác định mục tiêu cập nhật và chặn trùng môn trong cùng khóa
+            const targetTKB = thoi_khoa_bieu_id
+              ? await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id)
+              : await thoi_khoa_bieu.findByPk(record.thoi_khoa_bieu_id);
+            if (!targetTKB) {
+              throw new Error(`Thời khóa biểu với ID ${thoi_khoa_bieu_id || record.thoi_khoa_bieu_id} không tồn tại.`);
+            }
+            const targetLop = await lop.findByPk(targetTKB.lop_id, { attributes: ["khoa_dao_tao_id"] });
+            const targetSinhVienId = sinh_vien_id || record.sinh_vien_id;
+
+            // Nếu thay đổi dẫn đến trùng điểm cùng môn trong cùng khóa với bản ghi khác -> chặn
+            if (targetLop && targetTKB.mon_hoc_id && targetSinhVienId) {
+              const dup = await diem.findOne({
+                where: {
+                  sinh_vien_id: targetSinhVienId,
+                  id: { [Op.ne]: record.id },
+                },
+                attributes: ["id"],
+                include: [
+                  {
+                    model: thoi_khoa_bieu,
+                    as: 'thoi_khoa_bieu',
+                    attributes: [],
+                    where: { mon_hoc_id: targetTKB.mon_hoc_id },
+                    required: true,
+                    include: [
+                      {
+                        model: lop,
+                        as: 'lop',
+                        attributes: [],
+                        where: { khoa_dao_tao_id: targetLop.khoa_dao_tao_id },
+                        required: true,
+                      },
+                    ],
+                  },
+                ],
+              });
+              if (dup) {
+                throw new Error('Không thể cập nhật: Sinh viên đã có điểm của môn này trong cùng khóa đào tạo.');
+              }
             }
 
             await record.update(updateData);
@@ -646,7 +744,7 @@ class DiemService {
     try {
       // Tìm thông tin thời khóa biểu
       const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id, {
-        attributes: ['id', 'mon_hoc_id'],
+        attributes: ['id', 'mon_hoc_id', 'lop_id'],
       });
       if (!tkb) {
         throw new Error("Không tìm thấy thời khóa biểu!");
@@ -654,6 +752,12 @@ class DiemService {
 
       if (!tkb.mon_hoc_id) {
         throw new Error("Thời khóa biểu không có thông tin môn học!");
+      }
+
+      // Lấy khóa đào tạo mục tiêu
+      const lopInfo = await lop.findByPk(tkb.lop_id, { attributes: ['khoa_dao_tao_id'] });
+      if (!lopInfo) {
+        throw new Error('Không tìm thấy thông tin lớp học của thời khóa biểu!');
       }
 
       // Kiểm tra sinh viên học lại tồn tại dựa trên ma_sinh_vien
@@ -667,21 +771,43 @@ class DiemService {
       const sinh_vien_id = sinhVienHocLai.id;
       const mon_hoc_id = tkb.mon_hoc_id;
 
-      // Đếm số lần học lại của sinh viên với môn học này
+      // Không cho tạo nếu đã có điểm của cùng môn trong cùng khóa
+      const existed = await diem.findOne({
+        where: { sinh_vien_id },
+        include: [
+          {
+            model: thoi_khoa_bieu,
+            as: 'thoi_khoa_bieu',
+            attributes: [],
+            where: { mon_hoc_id },
+            required: true,
+            include: [
+              {
+                model: lop,
+                as: 'lop',
+                attributes: [],
+                where: { khoa_dao_tao_id: lopInfo.khoa_dao_tao_id },
+                required: true,
+              },
+            ],
+          },
+        ],
+      });
+      if (existed) {
+        throw new Error('Sinh viên đã có điểm của môn này trong cùng khóa đào tạo. Không thể thêm học lại.');
+      }
+
+      // Nếu chưa có trong cùng khóa, đếm tổng số lần học môn này (mọi khóa) để đặt lan_hoc
       const soLanHoc = await diem.count({
         include: [
           {
             model: thoi_khoa_bieu,
-            as: 'thoi_khoa_bieu', // Giả định alias trong quan hệ
-            where: { mon_hoc_id: mon_hoc_id },
+            as: 'thoi_khoa_bieu',
+            where: { mon_hoc_id },
           },
         ],
-        where: {
-          sinh_vien_id: sinh_vien_id,
-        },
+        where: { sinh_vien_id },
       });
-
-      // Tính lan_hoc mới, bắt đầu từ 2
       const newLanHoc = soLanHoc + 1;
 
       // Tạo bản ghi điểm mới cho sinh viên học lại
@@ -792,7 +918,7 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
     });
     const thoiKhoaBieuIds = thoiKhoaBieus.map(tkb => tkb.id);
 
-    // Lấy danh sách điểm - chỉ lấy sinh viên thuộc đúng lớp
+    // Lấy danh sách điểm - bao gồm cả sinh viên học lại
     const diemRecords = await diem.findAll({
       where: { thoi_khoa_bieu_id: thoiKhoaBieuIds },
       include: [
@@ -800,8 +926,6 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
           model: sinh_vien,
           as: 'sinh_vien',
           attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'gioi_tinh', 'diem_trung_binh_tich_luy', 'diem_trung_binh_he_4', 'bao_ve_do_an', 'lop_id'],
-          // Thêm điều kiện để đảm bảo sinh viên thuộc đúng lớp
-          where: lop_id ? { lop_id } : { lop_id: lopIds },
           required: true
         },
         {
@@ -838,16 +962,16 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
       const monHoc = record.thoi_khoa_bieu.mon_hoc?.ten_mon_hoc || 'Unknown';
       const soTinChi = record.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
 
-      // Kiểm tra sinh viên có thuộc đúng lớp của thời khóa biểu không
-      if (sv.lop_id !== lopId) {
-        continue; // Bỏ qua sinh viên học lại từ lớp khác
-      }
-
       // Lấy thông tin lớp và khóa
       const lopInfo = lops.find(l => l.id === lopId);
       const khoaId = lopInfo?.khoa_dao_tao_id;
       const maLop = lopInfo?.ma_lop || 'Unknown';
       const tenKhoa = lopInfo?.khoa_dao_tao?.ten_khoa || 'Unknown';
+
+      // Lấy thông tin lớp gốc của sinh viên
+      const lopGocInfo = lops.find(l => l.id === sv.lop_id);
+      const maLopGoc = lopGocInfo?.ma_lop || 'Unknown';
+      const isHocLai = sv.lop_id !== lopId; // Kiểm tra có phải sinh viên học lại không
 
       // Khởi tạo dữ liệu sinh viên
       if (!sinhVienMap.has(svId)) {
@@ -876,6 +1000,7 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
           ho_ten: `${sv.ho_dem || ''} ${sv.ten || ''}`.trim(),
           gioi_tinh: sv.gioi_tinh === 1 ? 'Nam' : sv.gioi_tinh === 0 ? 'Nữ' : 'Khác',
           bao_ve_do_an: sv.bao_ve_do_an || false,
+          lop_goc: maLopGoc, // Thêm thông tin lớp gốc
           diem_tb_ky: {},
           diem_tb_tich_luy_he10: sv.diem_trung_binh_tich_luy || 0,
           diem_tb_tich_luy_he4: sv.diem_trung_binh_he_4 || 0,
@@ -919,6 +1044,8 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
           mon_hoc: {},
           diem_tb_ky_he10,
           diem_tb_ky_he4,
+          lop_hoc: maLop, // Thêm thông tin lớp học môn này
+          is_hoc_lai: isHocLai, // Thêm thông tin có phải học lại không
         });
       }
 
@@ -977,6 +1104,7 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
       ho_ten: sv.ho_ten,
       gioi_tinh: sv.gioi_tinh,
       bao_ve_do_an: sv.bao_ve_do_an,
+      lop_goc: sv.lop_goc, // Thêm thông tin lớp gốc
       diem_tb_ky: sv.diem_tb_ky,
       diem_tb_tich_luy_he10: sv.diem_tb_tich_luy_he10,
       diem_tb_tich_luy_he4: sv.diem_tb_tich_luy_he4,
@@ -987,7 +1115,10 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
         ma_sinh_vien: sv.ma_sinh_vien,
         ho_ten: sv.ho_ten,
         bao_ve_do_an: sv.bao_ve_do_an,
+        lop_goc: sv.lop_goc, // Thêm thông tin lớp gốc
         ky_hoc: ct.ky_hoc,
+        lop_hoc: ct.lop_hoc, // Thêm thông tin lớp học môn này
+        is_hoc_lai: ct.is_hoc_lai, // Thêm thông tin có phải học lại không
         mon_hoc: ct.mon_hoc,
         diem_tb_ky_he10: ct.diem_tb_ky_he10,
         diem_tb_ky_he4: ct.diem_tb_ky_he4,
