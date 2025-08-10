@@ -19,7 +19,7 @@ class ExcelController {
       }
 
       // Xuất file Excel
-      const workbook = await ExcelService.exportToExcel(sinhVienData);
+      const workbook = await ExcelService.exportToExcel(sinhVienData, req.body);
 
       // Lưu file vào thư mục exports/excel
       const fileName = `danh_gia_diem_qua_trinh.xlsx`;
@@ -52,7 +52,7 @@ class ExcelController {
       }
 
       // Xuất file Excel
-      const workbook = await ExcelService.exportToExcelCuoiKy(sinhVienData);
+      const workbook = await ExcelService.exportToExcelCuoiKy(sinhVienData, req.body);
 
       // Lưu file vào thư mục exports/excel
       const fileName = `danh_sach_cuoi_ky.xlsx`;
