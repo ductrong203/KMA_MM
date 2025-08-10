@@ -256,7 +256,7 @@ const ThongKeDiem = () => {
       
       toast.success('Export kết quả kỳ học thành công!');
       handleCloseExportDialog();
-    } catch (error) {
+    } catch {
       toast.error('Không thể export kết quả kỳ học!');
     }
   };
@@ -287,7 +287,7 @@ const ThongKeDiem = () => {
       
       toast.success('Export kết quả năm học thành công!');
       handleCloseExportDialog();
-    } catch (error) {
+    } catch {
       toast.error('Không thể export kết quả năm học!');
     }
   };
