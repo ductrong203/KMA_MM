@@ -18,6 +18,7 @@ router.put("/:id", SinhVienController.update);
 router.delete("/:id", SinhVienController.delete);
 router.post("/export-excel", SinhVienController.exportToExcel);
 router.get('/kiem-tra-tot-nghiep/:sinhVienId', SinhVienController.checkGraduationConditions);
+router.post('/kiem-tra-tot-nghiep-nhieu', SinhVienController.checkMultipleGraduationConditions);
 router.get('/khoa/:khoa_dao_tao_id', SinhVienController.getByKhoaDaoTaoId);
 router.put('/khoa/:khoa_dao_tao_id', SinhVienController.updateSinhVienByKhoaDaoTao);
 module.exports = router;

@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('chung_chi', {
+  const ChungChi = sequelize.define('chung_chi', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -44,6 +44,15 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+    loai_chung_chi_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'loai_chung_chi',
+        key: 'id',
+      },
+      comment: 'Foreign key tới bảng loai_chung_chi',
+    },
   }, {
     sequelize,
     tableName: 'chung_chi',
@@ -60,6 +69,28 @@ module.exports = function(sequelize, DataTypes) {
         using: 'BTREE',
         fields: [{ name: 'sinh_vien_id' }],
       },
+      {
+        name: 'idx_chung_chi_loai_chung_chi_id',
+        using: 'BTREE',
+        fields: [{ name: 'loai_chung_chi_id' }],
+      },
     ],
   });
-};
+
+  // Định nghĩa associations
+  ChungChi.associate = function(models) {
+    // Mối quan hệ với sinh_vien
+    ChungChi.belongsTo(models.sinh_vien, {
+      foreignKey: 'sinh_vien_id',
+      as: 'sinhVien',
+    });
+
+    // Mối quan hệ với loai_chung_chi
+    ChungChi.belongsTo(models.loai_chung_chi, {
+      foreignKey: 'loai_chung_chi_id',
+      as: 'loaiChungChi',
+    });
+  };
+
+  return ChungChi;
+}

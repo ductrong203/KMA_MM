@@ -17,6 +17,7 @@ import {
   Business as BusinessIcon,
   People as PeopleIcon, // Thêm icon cho Quản lý giảng viên, nhân viên
   Groups as GroupsIcon, // Thêm icon cho Quản lý đối tượng
+  Settings as SettingsIcon, // Icon cho thiết lập quy định điểm
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
@@ -35,6 +36,7 @@ const menuItems = [
     href: "/admin/assign-roles",
     color: "secondary.main",
   },
+  
   {
     title: "Quản lý phòng ban",
     description: "Thêm, sửa, quản lý phòng ban.",
@@ -63,7 +65,13 @@ const menuItems = [
     href: "/admin/manage-accounts",
     color: "primary.main",
   },
- 
+ {
+    title: "Thiết lập quy định điểm",
+    description: "Điều chỉnh quy định về điểm qua môn, điểm thi lại và các quy định khác.",
+    icon: <SettingsIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/grade-settings",
+    color: "primary.main",
+  },
   {
     title: "Lịch sử hoạt động",
     description: "Xem lịch sử đăng nhập hoặc hành động của người dùng.",

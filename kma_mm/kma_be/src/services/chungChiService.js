@@ -1,4 +1,5 @@
-const { chung_chi, sinh_vien, lop, khoa_dao_tao, danh_muc_dao_tao } = require('../models');
+
+const { chung_chi, sinh_vien, lop, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi: LoaiChungChiModel } = require('../models');
 const { Op } = require('sequelize');
 
 class ChungChiService {
@@ -150,7 +151,7 @@ class ChungChiService {
 
   static async taoChungChi(data) {
     try {
-      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, loai_chung_chi_id, ngay_ky_quyet_dinh, tinh_trang } = data;
 
       // Kiểm tra ma_sinh_vien có tồn tại
       const sinhVien = await sinh_vien.findOne({ where: { ma_sinh_vien } });
@@ -162,6 +163,19 @@ class ChungChiService {
       const tinhTrangHopLe = ['tốt nghiệp', 'bình thường'];
       if (!tinh_trang || !tinhTrangHopLe.includes(tinh_trang)) {
         throw new Error(`Tình trạng phải là một trong các giá trị: ${tinhTrangHopLe.join(', ')}`);
+      }
+
+      // Xác định loai_chung_chi_id
+      let finalLoaiChungChiId = loai_chung_chi_id || null;
+      
+      // Nếu không có loai_chung_chi_id nhưng có loai_chung_chi, tìm ID dựa trên tên
+      if (!finalLoaiChungChiId && loai_chung_chi) {
+        const loaiChungChiRecord = await LoaiChungChiModel.findOne({
+          where: { ten_loai_chung_chi: loai_chung_chi }
+        });
+        if (loaiChungChiRecord) {
+          finalLoaiChungChiId = loaiChungChiRecord.id;
+        }
       }
 
       // Xử lý ngay_ky_quyet_dinh
@@ -178,6 +192,7 @@ class ChungChiService {
         ghi_chu,
         so_quyet_dinh,
         loai_chung_chi,
+        loai_chung_chi_id: finalLoaiChungChiId, // Sử dụng ID đã xác định
         ngay_ky_quyet_dinh: ngayKyQuyetDinh,
         tinh_trang,
       });
@@ -223,7 +238,7 @@ class ChungChiService {
 
   static async chinhSuaChungChi(id, data) {
     try {
-      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = data;
+      const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, loai_chung_chi_id, ngay_ky_quyet_dinh, tinh_trang } = data;
 
       // Kiểm tra chứng chỉ tồn tại
       const chungChi = await chung_chi.findByPk(id);
@@ -259,6 +274,29 @@ class ChungChiService {
         }
       }
 
+      // Xác định loai_chung_chi_id
+      let loaiChungChiId = chungChi.loai_chung_chi_id; // Giữ nguyên giá trị cũ
+      
+      // Nếu có loai_chung_chi_id được gửi trực tiếp, sử dụng nó
+      if (loai_chung_chi_id !== undefined) {
+        loaiChungChiId = loai_chung_chi_id;
+      } 
+      // Nếu không có loai_chung_chi_id nhưng có thay đổi loai_chung_chi
+      else if (loai_chung_chi !== undefined && loai_chung_chi !== chungChi.loai_chung_chi) {
+        if (loai_chung_chi) {
+          const loaiChungChiRecord = await LoaiChungChiModel.findOne({
+            where: { ten_loai_chung_chi: loai_chung_chi }
+          });
+          if (loaiChungChiRecord) {
+            loaiChungChiId = loaiChungChiRecord.id;
+          } else {
+            loaiChungChiId = null; // Nếu không tìm thấy loại chứng chỉ
+          }
+        } else {
+          loaiChungChiId = null; // Nếu loai_chung_chi là null/empty
+        }
+      }
+
       // Cập nhật chứng chỉ
       await chungChi.update({
         sinh_vien_id: sinhVienId, // Sử dụng sinhVienId đã xác định
@@ -267,6 +305,7 @@ class ChungChiService {
         ghi_chu: ghi_chu !== undefined ? ghi_chu : chungChi.ghi_chu,
         so_quyet_dinh: so_quyet_dinh !== undefined ? so_quyet_dinh : chungChi.so_quyet_dinh,
         loai_chung_chi: loai_chung_chi !== undefined ? loai_chung_chi : chungChi.loai_chung_chi,
+        loai_chung_chi_id: loaiChungChiId, // Cập nhật loai_chung_chi_id
         ngay_ky_quyet_dinh: ngayKyQuyetDinh !== undefined ? ngayKyQuyetDinh : chungChi.ngay_ky_quyet_dinh,
         tinh_trang: tinh_trang !== undefined ? tinh_trang : chungChi.tinh_trang,
       });
@@ -333,7 +372,7 @@ class ChungChiService {
 
   static async taoLoaiChungChi(data) {
     try {
-      const { loai_chung_chi } = data;
+      const { loai_chung_chi, xet_tot_nghiep } = data;
 
       // Kiểm tra dữ liệu đầu vào
       if (!loai_chung_chi || typeof loai_chung_chi !== 'string' || loai_chung_chi.trim() === '') {
@@ -362,12 +401,14 @@ class ChungChiService {
         so_quyet_dinh: null,
         ngay_ky_quyet_dinh: null,
         tinh_trang: 'bình thường',
+        xet_tot_nghiep: xet_tot_nghiep || false,
       });
 
       // Trả về thông tin loại chứng chỉ vừa tạo
       return {
         data: {
           loaiChungChi: chungChiMoi.loai_chung_chi,
+          xetTotNghiep: chungChiMoi.xet_tot_nghiep,
         },
       };
     } catch (error) {

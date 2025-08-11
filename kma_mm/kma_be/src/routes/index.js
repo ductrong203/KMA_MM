@@ -30,9 +30,12 @@ const diemRoute = require('./diem');
 const excelRoute = require('./excel');
 const excelPhuLucBangRoute = require('./excelPhuLucBang');
 const chungChiRoute = require('./chungChi');
+const loaiChungChiRoute = require('./loaiChungChi');
 const chuongTrinhDaoTaoRoute = require('./chuongTrinhDaoTao');
 const exportExcelRoute = require('./exportExcel');
 const  exportDocx = require('./exportDocx');
+const totNghiepRoute = require('./totNghiep');
+const gradeSettingsRoute = require('./gradeSettingsRoutes');
 // const logActivity = require("../middelWare/logger");
 
 // const docsPhuLucBangRoute = require('./docsPhuLucBang');
@@ -74,7 +77,11 @@ const routes = (app) => {
   //   app.use("library", libraryRouter);
   //   app.use("statistic", statisticRouter);
   app.use('/chung-chi', chungChiRoute);
+  app.use('/loai-chung-chi', loaiChungChiRoute);
   app.use('/chuong-trinh-dao-tao', chuongTrinhDaoTaoRoute);
   app.use('/export-excel', exportExcelRoute);
+  app.use('/tot-nghiep', totNghiepRoute);
+  app.use('/grade-settings', gradeSettingsRoute);
+  app.use('/statistic', statisticRouter);
 };
 module.exports = routes;

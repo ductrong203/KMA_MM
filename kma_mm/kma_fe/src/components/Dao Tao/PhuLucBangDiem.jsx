@@ -19,11 +19,12 @@ import {
   Stack
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
 import { getDanhSachSinhVienTheoLop } from '../../Api_controller/Service/sinhVienService';
-import { exportPhuLucBangDiem } from '../../Api_controller/Service/excelService';
+import { exportPhuLucBangDiem, exportPhuLucBangDiemWord } from '../../Api_controller/Service/excelService';
 import PageHeader from '../../layout/PageHeader';
 
 
@@ -151,7 +152,7 @@ const PhuLucBangDiem = () => {
     setSelectedClass(event.target.value);
   };
 
-  const handleExportReport = async (studentId) => {
+  const handleExportReport = async (studentId, exportType = 'excel') => {
     if (!studentId) {
       alert('Không tìm thấy mã sinh viên.');
       return;
@@ -160,8 +161,16 @@ const PhuLucBangDiem = () => {
     setExportLoading(true);
 
     try {
-
-      const response = await exportPhuLucBangDiem(studentId);
+      let response;
+      let fileName;
+      
+      if (exportType === 'word') {
+        response = await exportPhuLucBangDiemWord(studentId);
+        fileName = `phu-luc-bang-diem-${studentId}.docx`;
+      } else {
+        response = await exportPhuLucBangDiem(studentId);
+        fileName = `phu-luc-bang-diem-${studentId}.xlsx`;
+      }
 
       if (!response || !response.data) {
         throw new Error('Không có dữ liệu trả về từ server.');
@@ -175,7 +184,7 @@ const PhuLucBangDiem = () => {
       const link = document.createElement('a');
 
       link.href = url;
-      link.download = `phu-luc-bang-diem-${studentId}.xlsx`;
+      link.download = fileName;
 
       document.body.appendChild(link);
       link.click();
@@ -301,15 +310,28 @@ const PhuLucBangDiem = () => {
                       </Box>
                     </TableCell>
                     <TableCell align="center">
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<FileDownloadIcon />}
-                        onClick={() => handleExportReport(student.id)}
-                        disabled={exportLoading}
-                      >
-                        Xuất báo cáo
-                      </Button>
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<FileDownloadIcon />}
+                          onClick={() => handleExportReport(student.id, 'excel')}
+                          disabled={exportLoading}
+                          color="primary"
+                        >
+                          Excel
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<DescriptionIcon />}
+                          onClick={() => handleExportReport(student.id, 'word')}
+                          disabled={exportLoading}
+                          color="secondary"
+                        >
+                          Word
+                        </Button>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}

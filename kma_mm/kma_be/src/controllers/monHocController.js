@@ -21,7 +21,7 @@ const mapRole = {
 const createMonHoc = async (req, res) => {
     try {
         console.log(req.body);
-        const { ma_mon_hoc, ten_mon_hoc, so_tin_chi, tinh_diem, ghi_chu } = req.body;
+        const { ma_mon_hoc, ten_mon_hoc, so_tin_chi, tinh_diem, ghi_chu, bao_ve } = req.body;
 
         // Kiểm tra các trường bắt buộc
         const missingFields = [];
@@ -29,7 +29,7 @@ const createMonHoc = async (req, res) => {
         if (!ma_mon_hoc) missingFields.push('ma_mon_hoc');
         if (!ten_mon_hoc) missingFields.push('ten_mon_hoc');
         if (!so_tin_chi) missingFields.push('so_tin_chi');
-        if (!tinh_diem) missingFields.push('tinh_diem');
+        if (tinh_diem === undefined || tinh_diem === null) missingFields.push('tinh_diem');
 
         // Nếu thiếu trường nào, trả về thông báo lỗi
         if (missingFields.length > 0) {
