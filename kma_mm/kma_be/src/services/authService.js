@@ -238,7 +238,10 @@ const get_logs = async (role, startDate, endDate) => {
 
    }
    if (!role&&!startDate&&!endDate){
-    logs = await activity_logs.findAll();
+    logs = await activity_logs.findAll({
+        order: [['created_at', 'DESC']],
+
+    });
     
    }
     // const total_page = Math.ceil(count/limit);
