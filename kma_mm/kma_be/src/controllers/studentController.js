@@ -1,20 +1,22 @@
 const SinhVienService = require("../services/studentService");
+const {sinh_vien} = require("../models");
+
 const path = require("path");
 const fs = require("fs");
-const {logActivity} = require("../services/activityLogService");
+const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
-const {users} = require("../models");
-const {getDiffData} = require("../utils/getDiffData");
+const { users } = require("../models");
+const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const mapRole = {
-        1: "daoTao",
-        2: "khaoThi",
-        3: "quanLiSinhVien",
-        5: "giamDoc",
-        6: "sinhVien",
-        7: "admin"
+  1: "daoTao",
+  2: "khaoThi",
+  3: "quanLiSinhVien",
+  5: "giamDoc",
+  6: "sinhVien",
+  7: "admin"
 
-      }
+}
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");
 if (!fs.existsSync(exportDir)) {
@@ -25,30 +27,36 @@ class SinhVienController {
   static async create(req, res) {
     try {
       const sinhVien = await SinhVienService.createSinhVien(req.body);
-    const token = req.headers.authorization?.split(" ")[1];
-    // console.log(token);
-    let user = verifyAccessToken(token);
-    let userN  = await  getFieldById("users", user.id, "username");
-    let  userR = await  getFieldById("users", user.id, "role");
-    let lop = await getFieldById("lop", sinhVien.lop_id, "ma_lop")
-      if (sinhVien) {
-      let inforActivity = {
-        username:   userN,
-        role: mapRole[userR],
-        action: req.method,
-        endpoint: req.originalUrl,
-        reqData: `Người dùng ${userN}  đã thêm thành công sinh viên có mã ${sinhVien.ma_sinh_vien} vào lớp ${lop} `,
-        response_status: 200,
-        resData: "Thêm sinh viên thành công",
-        ip:  req._remoteAddress,
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+        // console.log(token);
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        let lop = await getFieldById("lop", sinhVien.lop_id, "ma_lop");
+        let doiTuong = await getFieldById("doi_tuong_quan_ly", req.body.doi_tuong_id, "ten_doi_tuong");
+        if (sinhVien) {
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: `Người dùng ${userN}  đã thêm thành công sinh viên có mã ${req.body.ma_sinh_vien} lớp ${lop} thuộc đối tượng quản lý ${doiTuong}`,
+            response_status: 200,
+            resData: "Thêm sinh viên thành công",
+            ip: req._remoteAddress,
 
+          }
+          await logActivity(inforActivity);
+        }
+      } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
       }
-        await logActivity(inforActivity);
-      }
-
       res.status(201).json(
-        {message: "Thêm sinh viên thành công", 
-        data: sinhVien});
+        {
+          message: "Thêm sinh viên thành công",
+          data: sinhVien
+        });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -110,11 +118,118 @@ class SinhVienController {
 
   static async update(req, res) {
     try {
+      const oldDataRaw = await sinh_vien.findByPk(req.params.id);
+      const oldData = {
+        "Mã sinh viên": oldDataRaw.ma_sinh_vien,
+        "Giới tính": oldDataRaw.gioi_tinh === 1? "nam" : "nữ",
+        "Quê quán": oldDataRaw.que_quan,
+        "lớp": await getFieldById("lop", oldDataRaw.lop_id, "ten_lop"),
+        "Đối tượng": await getFieldById("doi_tuong_quan_ly", oldDataRaw.doi_tuong_id, "ten_doi_tuong"),
+        "đang học": oldDataRaw.dang_hoc ===1 ? "có": "không",
+        "Ghi chú": oldDataRaw.ghi_chu,
+        "họ đệm": oldDataRaw.ho_dem,
+        "tên": oldDataRaw.ten,
+        "số tài khoản": oldDataRaw.so_tai_khoan,
+        "ngân hàng": oldDataRaw.ngan_hang,
+        "chuc_vu": oldDataRaw.chuc_vu,
+        "CCCD": oldDataRaw.CCCD,
+        "ngay_cap_CCCD": oldDataRaw.ngay_cap_CCCD,
+        "noi_cap_CCCD": oldDataRaw.noi_cap_CCCD,
+        "ky_nhap_hoc": oldDataRaw.ky_nhap_hoc,
+        "ngay_vao_doan": oldDataRaw.ngay_vao_doan,
+        "ngay_vao_dang": oldDataRaw.ngay_vao_dang,
+        "ngay_vao_truong": oldDataRaw.ngay_vao_truong,
+        "ngay_ra_truong": oldDataRaw.ngay_ra_truong,
+        "tinh_thanh": oldDataRaw.tinh_thanh,
+        "quan_huyen": oldDataRaw.quan_huyen,
+        "phuong_xa_khoi": oldDataRaw.phuong_xa_khoi,
+        "dan_toc": oldDataRaw.dan_toc,
+        "ton_giao": oldDataRaw.ton_giao,
+        "quoc_tich": oldDataRaw.quoc_tich,
+        "trung_tuyen_theo_nguyen_vong": oldDataRaw.trung_tuyen_theo_nguyen_vong,
+        "nam_tot_nghiep_PTTH": oldDataRaw.nam_tot_nghiep_PTTH,
+        "thanh_phan_gia_dinh": oldDataRaw.thanh_phan_gia_dinh,
+        "dv_lien_ket_dao_tao": oldDataRaw.dv_lien_ket_dao_tao,
+        "so_dien_thoai": oldDataRaw.so_dien_thoai,
+        "dien_thoai_gia_dinh": oldDataRaw.dien_thoai_gia_dinh,
+        "dien_thoai_CQ": oldDataRaw.dien_thoai_CQ,
+        "email": oldDataRaw.email,
+        "khi_can_bao_tin_cho_ai": oldDataRaw.khi_can_bao_tin_cho_ai,
+        "noi_tru": oldDataRaw.noi_tru,
+        "ngoai_tru": oldDataRaw.ngoai_tru,
+
+      }
       const updatedSinhVien = await SinhVienService.updateSinhVien(req.params.id, req.body);
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+        // console.log(token);
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        if (updatedSinhVien) {
+          const newDataRaw = await sinh_vien.findByPk(req.params.id);
+         const newData = {
+        "Mã sinh viên": newDataRaw.ma_sinh_vien,
+        "Giới tính": newDataRaw.gioi_tinh === 1? "nam" : "nữ",
+        "Quê quán": newDataRaw.que_quan,
+        "lớp": await getFieldById("lop", newDataRaw.lop_id, "ten_lop"),
+        "Đối tượng": await getFieldById("doi_tuong_quan_ly", newDataRaw.doi_tuong_id, "ten_doi_tuong"),
+        "đang học": newDataRaw.dang_hoc ===1 ? "có": "không",
+        "Ghi chú": newDataRaw.ghi_chu,
+        "họ đệm": newDataRaw.ho_dem,
+        "tên": newDataRaw.ten,
+        "số tài khoản": newDataRaw.so_tai_khoan,
+        "ngân hàng": newDataRaw.ngan_hang,
+        "chuc_vu": newDataRaw.chuc_vu,
+        "CCCD": newDataRaw.CCCD,
+        "ngay_cap_CCCD": newDataRaw.ngay_cap_CCCD,
+        "noi_cap_CCCD": newDataRaw.noi_cap_CCCD,
+        "ky_nhap_hoc": newDataRaw.ky_nhap_hoc,
+        "ngay_vao_doan": newDataRaw.ngay_vao_doan,
+        "ngay_vao_dang": newDataRaw.ngay_vao_dang,
+        "ngay_vao_truong": newDataRaw.ngay_vao_truong,
+        "ngay_ra_truong": newDataRaw.ngay_ra_truong,
+        "tinh_thanh": newDataRaw.tinh_thanh,
+        "quan_huyen": newDataRaw.quan_huyen,
+        "phuong_xa_khoi": newDataRaw.phuong_xa_khoi,
+        "dan_toc": newDataRaw.dan_toc,
+        "ton_giao": newDataRaw.ton_giao,
+        "quoc_tich": newDataRaw.quoc_tich,
+        "trung_tuyen_theo_nguyen_vong": newDataRaw.trung_tuyen_theo_nguyen_vong,
+        "nam_tot_nghiep_PTTH": newDataRaw.nam_tot_nghiep_PTTH,
+        "thanh_phan_gia_dinh": newDataRaw.thanh_phan_gia_dinh,
+        "dv_lien_ket_dao_tao": newDataRaw.dv_lien_ket_dao_tao,
+        "so_dien_thoai": newDataRaw.so_dien_thoai,
+        "dien_thoai_gia_dinh": newDataRaw.dien_thoai_gia_dinh,
+        "dien_thoai_CQ": newDataRaw.dien_thoai_CQ,
+        "email": newDataRaw.email,
+        "khi_can_bao_tin_cho_ai": newDataRaw.khi_can_bao_tin_cho_ai,
+        "noi_tru": newDataRaw.noi_tru,
+        "ngoai_tru": newDataRaw.ngoai_tru,
+
+      }
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: `${getDiffData(oldData, newData)}`,
+            response_status: 200,
+            resData: `Cập nhật thành công sinh viên mã ${req.body.ma_sinh_vien}`,
+            ip: req._remoteAddress,
+
+          }
+          await logActivity(inforActivity);
+        }
+      } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+      }
       if (!updatedSinhVien) return res.status(404).json({ message: "Không tìm thấy sinh viên" });
       res.json(
-        {message: "Cập nhật sinh viên thành công ",
-        data: updatedSinhVien});
+        {
+          message: "Cập nhật sinh viên thành công ",
+          data: updatedSinhVien
+        });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -190,13 +305,37 @@ class SinhVienController {
     try {
       const { lop_id, ghi_de } = req.body;
       const filePath = req.file.path; // Giả sử sử dụng middleware như multer để upload file
-      const result = await SinhVienService.importSinhVien({lop_id, filePath, ghi_de});
+      const result = await SinhVienService.importSinhVien({ lop_id, filePath, ghi_de });
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            let lop = await getFieldById("lop", lop_id, "ma_lop")
+              if (result) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Người dùng ${userN}  đã nhập danh sách gồm ${result.newCount} sinh viên vào lớp có mã ${lop} `,
+                response_status: 200,
+                resData: "import danh sách sinh viên từ file excel",
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
-  
+
   static async timSinhVienTheoMaHoacFilter(req, res) {
     try {
       const filters = req.query; // Lấy tất cả query params
@@ -220,7 +359,7 @@ class SinhVienController {
     try {
       const { lop_id } = req.body;
       const filePath = req.file.path; // Giả sử sử dụng middleware như multer để upload file
-      const result = await SinhVienService.kiemTraTonTai({lop_id, filePath});
+      const result = await SinhVienService.kiemTraTonTai({ lop_id, filePath });
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -251,7 +390,7 @@ class SinhVienController {
       const { sinhVienIds } = req.body;
       // Lấy số tín chỉ yêu cầu từ body nếu có
       const requiredCredits = req.body.requiredCredits ? parseInt(req.body.requiredCredits) : null;
-      
+
       if (!sinhVienIds || !Array.isArray(sinhVienIds)) {
         return res.status(400).json({
           status: 'error',
@@ -275,18 +414,18 @@ class SinhVienController {
 
   static async getByKhoaDaoTaoId(req, res) {
     try {
-        const { khoa_dao_tao_id } = req.params;
-        if (!khoa_dao_tao_id) {
-            return res.status(400).json({ success: false, message: "Thiếu khoa_dao_tao_id" });
-        }
+      const { khoa_dao_tao_id } = req.params;
+      if (!khoa_dao_tao_id) {
+        return res.status(400).json({ success: false, message: "Thiếu khoa_dao_tao_id" });
+      }
 
-        const result = await SinhVienService.getStudentsByKhoaDaoTaoId(khoa_dao_tao_id);
-        res.status(200).json({ success: true, data: result });
+      const result = await SinhVienService.getStudentsByKhoaDaoTaoId(khoa_dao_tao_id);
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error.message });
     }
-}
- static async updateSinhVienByKhoaDaoTao(req, res) {
+  }
+  static async updateSinhVienByKhoaDaoTao(req, res) {
     try {
       const { khoa_dao_tao_id } = req.params;
       const { sinh_vien_list } = req.body;
@@ -298,9 +437,32 @@ class SinhVienController {
       if (!sinh_vien_list || !Array.isArray(sinh_vien_list)) {
         return res.status(400).json({ message: "Danh sách sinh viên không hợp lệ" });
       }
-
+      // const oldData = await 
       const result = await SinhVienService.updateSinhVienByKhoaDaoTao(khoa_dao_tao_id, sinh_vien_list);
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+        // console.log(token);
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        let lop = await getFieldById("lop", sinhVien.lop_id, "ma_lop")
+        if (result) {
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: ``,
+            response_status: 200,
+            resData: `Người dùng ${userN} đã cập nhật thông tin cho sinh viên có mã ${req.body.ma_sinh_vien}`,
+            ip: req._remoteAddress,
 
+          }
+          await logActivity(inforActivity);
+        }
+      } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+      }
       return res.status(200).json(result);
     } catch (error) {
       return res.status(500).json({ message: error.message });
