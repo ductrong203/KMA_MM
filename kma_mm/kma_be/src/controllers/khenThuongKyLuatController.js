@@ -1,11 +1,52 @@
 const { Model } = require("sequelize");
 const KhenThuongKyLuatService = require("../services/khenThuongKyLuatService");
+const khen_thuong_ky_luat = require("../models/khen_thuong_ky_luat");
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const { verifyAccessToken } = require("../utils/decodedToken");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
+
+      }
+
 
 class KhenThuongKyLuatController {
   static async create(req, res) {
     try {
       const KhenThuongKyLuat =
-        await KhenThuongKyLuatService.createKhenThuongKyLuat(req.body);
+       await KhenThuongKyLuatService.createKhenThuongKyLuat(req.body);
+       try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            let maSinhVien = await  getFieldById("sinh_vien", req.body.sinh_vien_id, "ma_sinh_vien");
+            let khen_phat = await  getFieldById("danh_muc_khen_ky_luat", req.body.danh_muc_id, "loai");
+              if (KhenThuongKyLuat) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `${khen_phat === "khen_thuong" ? "khen thưởng" : "kỷ luật"} với sinh viên có mã ${maSinhVien}`,
+                response_status: 200,
+                resData: `Người dùng ${userN} thêm khen thưởng/ kỷ luật thành công`,
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
       res.status(201).json(
         {  message: "Tạo khen thưởng kỷ luật thành công",
         data: KhenThuongKyLuat});
@@ -60,8 +101,37 @@ class KhenThuongKyLuatController {
 
   static async delete(req, res) {
     try {
+      const sinhVienId = await getFieldById("khen_thuong_ky_luat", req.params.id, "sinh_vien_id"); 
+      const danhMucId = await getFieldById("khen_thuong_ky_luat", req.params.id, "danh_muc_id"); 
+      const maSinhVien = await getFieldById("sinh_vien", sinhVienId, "ma_sinh_vien"); 
+      const khen_phat = await getFieldById("danh_muc_khen_ky_luat", danhMucId, "loai"); 
+      const danhMuc = await getFieldById("danh_muc_khen_ky_luat", danhMucId, "ten_danh_muc"); 
       const KhenThuongKyLuat =
         await KhenThuongKyLuatService.deleteKhenThuongKyLuat(req.params.id);
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            // let maSinhVien = await getFieldById("sinh_vien", req.)
+              if (KhenThuongKyLuat) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Xóa ${khen_phat === "khen_thuong" ? "khen thưởng" : "kỷ luật"} ${danhMuc} với sinh viên có mã ${maSinhVien}`,
+                response_status: 200,
+                resData: `Người dùng ${userN} xóa khen thưởng/ kỷ luật thành công`,
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }  
       if (!KhenThuongKyLuat)
         return res
           .status(404)
