@@ -19,7 +19,7 @@ export const getAllMiri = async () => {
     return response.data
 }
 export const updateMilitaryInfo = async (data, id) => {
-    const response = await api.post(`/thongtinquannhan/${id}`, data)
+    const response = await api.put(`/thongtinquannhan/${id}`, data)
     return response.data
 }
 

@@ -64,6 +64,8 @@ import ThongKe from "../Dao Tao/ThongKe";
 import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
 import ThongKeDiem from "../Dao Tao/ThongKeDiem";
 
+import ThongKeDiemTheoSinhVien from '../Dao Tao/ThongKeDiemTheoSinhVien';
+
 
 // Mock data
 const trainerInfo = {
@@ -231,12 +233,13 @@ function TrainingDashboard() {
                 <Tab label="Phụ lục văn bằng" />
                 <Tab label="Thống kê" />
                 <Tab label="Thống kê điểm" />
-               
+                <Tab label="Thống kê điểm theo sinh viên" />
               </Tabs>
               <Grid container spacing={3} sx={{ mt: 2 }}>
                 {subTab === 0 && <PhuLucBangDiem />}
                 {subTab === 1 && <ThongKe />}
                 {subTab === 2 && <ThongKeDiem />}
+                {subTab === 3 && <ThongKeDiemTheoSinhVien />}
               </Grid>
             </Box>
           )}

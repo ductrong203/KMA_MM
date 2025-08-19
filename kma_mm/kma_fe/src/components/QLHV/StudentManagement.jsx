@@ -48,6 +48,7 @@ import {
   getMilitaryInfoByStudentId,
   updateMilitaryInfoByStudentId,
   updateStudentById,
+  updateMilitaryInfo,
 } from "../../Api_controller/Service/qlhvService";
 import { exportStudentsToExcel, importStudentsFromExcel } from "../../Api_controller/Service/excelService";
 import { fetchDanhSachHeDaoTao, getDanhSachKhoaDaoTaobyId } from "../../Api_controller/Service/trainingService";
@@ -56,7 +57,7 @@ import { getDanhSachLop } from "../../Api_controller/Service/lopService";
 import { fetchDanhSachKhoa } from "../../Api_controller/Service/khoaService";
 import { toast } from "react-toastify";
 import PageHeader from "../../layout/PageHeader";
-import { checkExistingStudents } from "../../Api_controller/Service/sinhVienService";
+import { checkExistingStudents, getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService";
 
 const StudentManagement = () => {
   const [students, setStudents] = useState([]);
@@ -122,6 +123,9 @@ const StudentManagement = () => {
     suc_khoe: "",
   });
 
+  // THÊM STATE MỚI cho danh sách military records
+  const [militarys, setMilitary] = useState([]);
+
   const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
   const [danhSachDoiTuongQL, setDanhSachDoiTuongQL] = useState([]);
   const [danhSachLop, setDanhSachLop] = useState([]);
@@ -148,33 +152,32 @@ const StudentManagement = () => {
   const [importData, setImportData] = useState(null); // Lưu dữ liệu để import
   const role = localStorage.getItem("role") || "";
 
-  // Logic fetch data ban đầu (giữ nguyên)
+  // Logic fetch data ban đầu - THAY ĐỔI: Không lấy tất cả sinh viên nữa
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchInitialData = async () => {
       try {
-        const data = await getAllStudent();
+        // Chỉ lấy các danh sách reference, không lấy sinh viên
         const data3 = await fetchDanhSachHeDaoTao();
         const data4 = await getAllDoiTuongQuanLy();
         const data5 = await getDanhSachLop();
         const data6 = await fetchDanhSachKhoa();
-        console.log(data);
+        
         console.log("danh sach he dao tao", data3);
         console.log("danh doi tuong quan ly", data4);
         console.log("danh sách lop", data5);
         console.log("danh sách khoa", data6);
 
-        setStudents(data);
         setDanhSachHeDaoTao(data3);
         setDanhSachDoiTuongQL(data4);
         setDanhSachLop(data5);
         setOriginalLopList(data5);
         setDanhSachKhoa(data6);
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách học viên:", error);
+        console.error("Lỗi khi lấy dữ liệu ban đầu:", error);
       }
     };
 
-    fetchStudents();
+    fetchInitialData();
   }, []);
 
   // Lọc khóa đào tạo theo hệ đào tạo (giữ nguyên)
@@ -214,34 +217,65 @@ const StudentManagement = () => {
     fetchLopByKhoaDaoTao();
   }, [khoaDaoTaoFilter, originalLopList]);
 
-  // THÊM MỚI: Logic áp dụng bộ lọc
-  const handleApplyFilter = () => {
-    let filtered = students;
+  // THÊM MỚI: Logic áp dụng bộ lọc - sử dụng API getbylopid
+  const handleApplyFilter = async () => {
+    try {
+      let filtered = [];
 
-    // Lọc theo từ khóa tìm kiếm
-    if (searchTerm) {
-      filtered = filtered.filter((student) => {
-        const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-        const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-        const matchesSearch =
-          searchWords.every((word) => fullName.includes(word)) ||
-          student.ma_sinh_vien.includes(searchTerm);
-        return matchesSearch;
-      });
+      // Nếu có chọn lớp cụ thể, gọi API getbylopid
+      if (lopFilter) {
+        console.log(`Gọi API getbylopid với lop_id: ${lopFilter}`);
+        const studentsFromAPI = await getDanhSachSinhVienTheoLop(lopFilter);
+        console.log("Dữ liệu từ API getbylopid:", studentsFromAPI);
+        
+        // SỬA LỖI: Lấy data từ response object
+        filtered = studentsFromAPI?.data || studentsFromAPI || [];
+        
+        // THÊM: Cập nhật cả students state để các hàm khác có thể tìm thấy
+        setStudents(filtered);
+        
+        // Lọc thêm theo từ khóa tìm kiếm nếu có
+        if (searchTerm) {
+          filtered = filtered.filter((student) => {
+            const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+            const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+            const matchesSearch =
+              searchWords.every((word) => fullName.includes(word)) ||
+              student.ma_sinh_vien.includes(searchTerm);
+            return matchesSearch;
+          });
+        }
+      } else {
+        // Nếu không chọn lớp cụ thể, lấy tất cả sinh viên và lọc
+        console.log("Lấy tất cả sinh viên và lọc");
+        const allStudents = await getAllStudent();
+        setStudents(allStudents); // Cập nhật students state
+        filtered = allStudents;
+
+        // Lọc theo từ khóa tìm kiếm
+        if (searchTerm) {
+          filtered = filtered.filter((student) => {
+            const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
+            const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+            const matchesSearch =
+              searchWords.every((word) => fullName.includes(word)) ||
+              student.ma_sinh_vien.includes(searchTerm);
+            return matchesSearch;
+          });
+        }
+      }
+
+      setDisplayStudents(filtered);
+      setIsFilterApplied(true);
+      setPage(0);
+      toast.success(`Đã tìm thấy ${filtered.length} học viên phù hợp`);
+    } catch (error) {
+      console.error("Lỗi khi áp dụng bộ lọc:", error);
+      toast.error(`Lỗi khi lấy danh sách học viên: ${error.message || error}`);
     }
-
-    // Lọc theo lớp
-    if (lopFilter) {
-      filtered = filtered.filter(student => student.lop_id === lopFilter);
-    }
-
-    setDisplayStudents(filtered);
-    setIsFilterApplied(true);
-    setPage(0);
-    toast.success(`Đã tìm thấy ${filtered.length} học viên phù hợp`);
   };
 
-  // THÊM MỚI: Hủy bộ lọc
+  // THÊM MỚI: Hủy bộ lọc - reset về trạng thái ban đầu
   const handleClearFilter = () => {
     setHeDaoTaoFilter("");
     setKhoaDaoTaoFilter("");
@@ -249,6 +283,7 @@ const StudentManagement = () => {
     setSearchTerm("");
     setDisplayStudents([]);
     setIsFilterApplied(false);
+    setStudents([]); // Reset students array
     setPage(0);
     toast.info("Đã hủy bộ lọc");
   };
@@ -377,11 +412,11 @@ const StudentManagement = () => {
       setStudentData({
         ma_sinh_vien: newMaSinhVien,
         ngay_sinh: "",
-        gioi_tinh: false,
+        gioi_tinh: 1,
         que_quan: "",
         lop_id: lopFilter || "",
         doi_tuong_id: "",
-        dang_hoc: false,
+        dang_hoc: 1,
         ghi_chu: "",
         ho_dem: "",
         ten: "",
@@ -399,8 +434,8 @@ const StudentManagement = () => {
         tinh_thanh: "",
         quan_huyen: "",
         phuong_xa_khoi: "",
-        dan_toc: "",
-        ton_giao: "",
+        dan_toc: "Kinh",
+        ton_giao: "Không",
         quoc_tich: "",
         trung_tuyen_theo_nguyen_vong: "",
         nam_tot_nghiep_PTTH: "",
@@ -632,28 +667,73 @@ const StudentManagement = () => {
 
       // Lưu thông tin sinh viên
       let res;
-      let updatedStudents;
 
       if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
-        updatedStudents = [...students, res];
-        setStudents(updatedStudents);
         toast.success("Thêm học viên thành công!");
+        
+        // THÊM MỚI: Tự động refresh danh sách sau khi thêm thành công
+        if (isFilterApplied) {
+          // Gọi lại API để lấy dữ liệu mới nhất
+          await handleApplyFilter();
+        } else {
+          // Nếu chưa áp dụng filter, chỉ cần thêm vào students
+          const updatedStudents = [...students, res];
+          setStudents(updatedStudents);
+        }
       } else {
         res = await updateStudentById(formattedStudentData, formattedStudentData.id);
-        updatedStudents = students.map(student =>
-          student.id === res.id ? res : student
-        );
-        setStudents(updatedStudents);
         toast.success("Cập nhật học viên thành công!");
+        
+        // THÊM MỚI: Tự động refresh danh sách sau khi cập nhật thành công  
+        if (isFilterApplied) {
+          // Gọi lại API để lấy dữ liệu mới nhất
+          await handleApplyFilter();
+        } else {
+          // Nếu chưa áp dụng filter, cập nhật students
+          const updatedStudents = students.map(student =>
+            student.id === res.id ? res : student
+          );
+          setStudents(updatedStudents);
+        }
       }
 
+      // DEBUG: Kiểm tra toàn bộ flow
+      console.log("=== SAVE STUDENT DEBUG ===");
+      console.log("studentData:", studentData);
+      console.log("res sau khi save:", res);
+      
+      // SỬA: Lấy data từ res.data thay vì res
+      const actualStudentData = res.data || res;
+      console.log("actualStudentData:", actualStudentData);
+      console.log("actualStudentData.doi_tuong_id:", actualStudentData.doi_tuong_id);
+      
+      const doiTuongFound = danhSachDoiTuongQL.find(item => item.id === actualStudentData.doi_tuong_id);
+      console.log("doiTuongFound:", doiTuongFound);
+      
+      if (doiTuongFound) {
+        console.log("ten_doi_tuong:", doiTuongFound.ten_doi_tuong);
+        console.log("ten_doi_tuong.toLowerCase():", doiTuongFound.ten_doi_tuong.toLowerCase());
+        
+        const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
+        const isMatch = quanNhanList.includes(doiTuongFound.ten_doi_tuong.toLowerCase());
+        console.log("isMatch với quân nhân list:", isMatch);
+      }
+      
+      const isQuanNhanResult = isQuanNhan(actualStudentData.doi_tuong_id);
+      console.log("isQuanNhan result:", isQuanNhanResult);
+
       // THÊM MỚI: Xử lý thông tin quân nhân nếu là đối tượng quân nhân
-      if (isQuanNhan(res.doi_tuong_id)) {
+      if (isQuanNhan(actualStudentData.doi_tuong_id)) {
+        console.log("🎯 BẮT ĐẦU XỬ LÝ THÔNG TIN QUÂN NHÂN");
         try {
+          // Kiểm tra xem sinh viên đã có record quân nhân chưa
+          const existingMilitaryRecord = await checkMilitaryRecordExists(actualStudentData.id);
+          console.log("Existing military record:", existingMilitaryRecord);
+          
           const formattedMilitaryData = {
             ...militaryData,
-            sinh_vien_id: res.id,
+            sinh_vien_id: actualStudentData.id, // ← SỬA: Dùng actualStudentData.id
             ngay_nhap_ngu: militaryData.ngay_nhap_ngu
               ? new Date(militaryData.ngay_nhap_ngu).toISOString()
               : null,
@@ -663,45 +743,66 @@ const StudentManagement = () => {
           };
 
           console.log("Dữ liệu quân nhân gửi đi:", formattedMilitaryData);
+          console.log("militaryData hiện tại:", militaryData);
 
-          // Thử cập nhật trước, nếu không có thì tạo mới
-          try {
-            await updateMilitaryInfoByStudentId(res.id, formattedMilitaryData);
-            console.log("Cập nhật thông tin quân nhân thành công!");
-            toast.success("Cập nhật thông tin quân nhân thành công!");
-          } catch (updateError) {
-            console.log("Tạo mới thông tin quân nhân...");
-            await createMilitaryInfo(formattedMilitaryData);
-            console.log("Tạo mới thông tin quân nhân thành công!");
-            toast.success("Tạo mới thông tin quân nhân thành công!");
+          // Kiểm tra xem có dữ liệu quân nhân nào để cập nhật không
+          const hasAnyMilitaryData = Object.keys(militaryData).some(key => 
+            key !== 'sinh_vien_id' && militaryData[key] && militaryData[key] !== ''
+          );
+          
+          console.log("hasAnyMilitaryData:", hasAnyMilitaryData);
+
+          if (existingMilitaryRecord) {
+            // ĐÃ CÓ RECORD → Cập nhật bằng military record ID
+            console.log("Đã có record quân nhân, thực hiện cập nhật với ID:", existingMilitaryRecord.id);
+            if (hasAnyMilitaryData) {
+              try {
+                // SỬA: Dùng updateMilitaryInfo với military record ID
+                const updateResult = await updateMilitaryInfo(formattedMilitaryData, existingMilitaryRecord.id);
+                console.log("Cập nhật thông tin quân nhân thành công!", updateResult);
+                toast.success("Cập nhật thông tin quân nhân thành công!");
+              } catch (updateError) {
+                console.log("Lỗi cập nhật:", updateError);
+                toast.error("Lỗi khi cập nhật thông tin quân nhân!");
+              }
+            }
+          } else {
+            // CHƯA CÓ RECORD → Tạo mới (giữ nguyên)
+            console.log("Chưa có record quân nhân, tạo mới...");
+            const newMilitaryData = hasAnyMilitaryData 
+              ? formattedMilitaryData 
+              : {
+                  sinh_vien_id: res.id,
+                  ngay_nhap_ngu: null,
+                  cap_bac: '',
+                  trinh_do_van_hoa: '',
+                  noi_o_hien_nay: '',
+                  don_vi_cu_di_hoc: '',
+                  loai_luong: '',
+                  nhom_luong: '',
+                  bac_luong: '',
+                  he_so_luong: '',
+                  ngay_nhan_luong: null,
+                  chuc_vu: '',
+                  suc_khoe: '',
+                };
+            
+            try {
+              const createResult = await createMilitaryInfo(newMilitaryData);
+              console.log("Tạo mới record thông tin quân nhân thành công!", createResult);
+              toast.success("Tạo mới thông tin quân nhân thành công!");
+              
+              // Cập nhật state militarys để có dữ liệu mới
+              setMilitary(prev => [...prev, createResult]);
+            } catch (createError) {
+              console.log("Lỗi tạo mới:", createError);
+              toast.error("Lỗi khi tạo thông tin quân nhân!");
+            }
           }
         } catch (error) {
           console.error("Lỗi khi xử lý thông tin quân nhân:", error);
           toast.error(`Lỗi khi lưu thông tin quân nhân: ${error.message || error}`);
-          // Không return ở đây để vẫn đóng dialog
         }
-      }
-
-      // Refresh filtered data nếu đang áp dụng bộ lọc (giữ nguyên logic)
-      if (isFilterApplied) {
-        let filtered = updatedStudents;
-
-        if (searchTerm) {
-          filtered = filtered.filter((student) => {
-            const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-            const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-            const matchesSearch =
-              searchWords.every((word) => fullName.includes(word)) ||
-              student.ma_sinh_vien.includes(searchTerm);
-            return matchesSearch;
-          });
-        }
-
-        if (lopFilter) {
-          filtered = filtered.filter(student => student.lop_id === lopFilter);
-        }
-
-        setDisplayStudents(filtered);
       }
 
       setOpen(false);
@@ -711,7 +812,7 @@ const StudentManagement = () => {
     }
   };
 
-  // handleSaveMilitary (giữ nguyên)
+  // handleSaveMilitary - SỬA LỖI
   const handleSaveMilitary = async () => {
     try {
       console.log("Dữ liệu quân nhân cần lưu:", militaryData.sinh_vien_id);
@@ -743,7 +844,9 @@ const StudentManagement = () => {
         toast.success("Thêm mới thông tin quân nhân thành công!");
       }
 
-      setOpenMilitaryPopup(false);
+      // SỬA: Xóa dòng lỗi này
+      // setOpenMilitaryPopup(false);
+      
     } catch (error) {
       console.error("Lỗi khi xử lý thông tin quân nhân:", error);
       toast.error(`Lỗi khi lưu thông tin quân nhân: ${error.message || error}`);
@@ -907,142 +1010,7 @@ const StudentManagement = () => {
     }
   };
 
-  // handleImportFromExcel (giữ nguyên, chỉ thêm refresh data)
-  // const handleImportFromExcel = async (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file || !lopFilter) {
-  //     toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
-  //     return;
-  //   }
 
-  //   try {
-  //     const formData = new FormData();
-  //     formData.append("file", file);
-  //     formData.append("lop_id", lopFilter);
-
-  //     const response = await importStudentsFromExcel(formData);
-  //     const result = response.data;
-  //     if (result.success) {
-  //       toast.success(
-  //         `${result.data.message}\nSố học viên mới: ${result.data.newCount}\nSố thông tin quân nhân: ${result.data.thongTinQuanNhanCount}`
-  //       );
-
-  //       // Lấy dữ liệu mới và update
-  //       const updatedStudents = await getAllStudent();
-  //       setStudents(updatedStudents);
-
-  //       // THAY ĐỔI: Update displayStudents với dữ liệu mới
-  //       if (isFilterApplied) {
-  //         let filtered = updatedStudents;
-
-  //         if (searchTerm) {
-  //           filtered = filtered.filter((student) => {
-  //             const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-  //             const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-  //             const matchesSearch =
-  //               searchWords.every((word) => fullName.includes(word)) ||
-  //               student.ma_sinh_vien.includes(searchTerm);
-  //             return matchesSearch;
-  //           });
-  //         }
-
-  //         if (lopFilter) {
-  //           filtered = filtered.filter(student => student.lop_id === lopFilter);
-  //         }
-
-  //         setDisplayStudents(filtered);
-  //       }
-  //     } else {
-  //       throw new Error(result.message || "Nhập danh sách không thành công");
-  //     }
-  //   } catch (error) {
-  //     console.error("Lỗi khi nhập danh sách học viên:", error);
-  //     toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
-  //   }
-  // };
-  //  const handleImportFromExcel = async (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file || !lopFilter) {
-  //     toast.warn("Vui lòng chọn file Excel và lớp để nhập!");
-  //     return;
-  //   }
-
-  //   try {
-  //     // Bước 1: Kiểm tra sinh viên tồn tại
-  //     const checkFormData = new FormData();
-  //     checkFormData.append("file", file);
-  //     checkFormData.append("lop_id", lopFilter);
-
-  //     const checkResponse = await checkExistingStudents(checkFormData);
-  //     const checkResult = checkResponse.data;
-
-  //     if (!checkResult.success) {
-  //       throw new Error(checkResult.message || "Kiểm tra sinh viên thất bại");
-  //     }
-
-  //     const { existingCount } = checkResult.data;
-
-  //     let proceedWithImport = true;
-  //     let ghi_de = 0;
-
-  //     // Nếu có sinh viên tồn tại, hỏi người dùng
-  //     if (existingCount > 0) {
-  //       const confirmMessage = `Có ${existingCount} sinh viên đã tồn tại. Bạn có muốn ghi đè dữ liệu không?`;
-  //       proceedWithImport = window.confirm(confirmMessage);
-  //       ghi_de = proceedWithImport ? 1 : 0;
-  //     }
-
-  //     // Bước 2: Tiến hành import nếu người dùng đồng ý
-  //     if (proceedWithImport) {
-  //       const importFormData = new FormData();
-  //       importFormData.append("file", file);
-  //       importFormData.append("lop_id", lopFilter);
-  //       importFormData.append("ghi_de", ghi_de);
-
-  //       const importResponse = await importStudentsFromExcel(importFormData);
-  //       const importResult = importResponse.data;
-
-  //       if (importResult.success) {
-  //         toast.success(
-  //           `${importResult.data.message}\nSố học viên mới: ${importResult.data.newCount}\nSố thông tin quân nhân: ${importResult.data.thongTinQuanNhanCount}`
-  //         );
-
-  //         // Lấy dữ liệu mới và update
-  //         const updatedStudents = await getAllStudent();
-  //         setStudents(updatedStudents);
-
-  //         // Update displayStudents với dữ liệu mới
-  //         if (isFilterApplied) {
-  //           let filtered = updatedStudents;
-
-  //           if (searchTerm) {
-  //             filtered = filtered.filter((student) => {
-  //               const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-  //               const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-  //               const matchesSearch =
-  //                 searchWords.every((word) => fullName.includes(word)) ||
-  //                 student.ma_sinh_vien.includes(searchTerm);
-  //               return matchesSearch;
-  //             });
-  //           }
-
-  //           if (lopFilter) {
-  //             filtered = filtered.filter((student) => student.lop_id === lopFilter);
-  //           }
-
-  //           setDisplayStudents(filtered);
-  //         }
-  //       } else {
-  //         throw new Error(importResult.message || "Nhập danh sách không thành công");
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Lỗi khi nhập danh sách học viên:", error);
-  //     toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
-  //   } finally {
-  //     event.target.value = null; // Reset input file trong mọi trường hợp
-  //   }
-  // };
 
   const handleImportFromExcel = async (event) => {
     const file = event.target.files[0];
@@ -1144,6 +1112,16 @@ const StudentManagement = () => {
     }
     // Nếu chọn Hủy, không làm gì, chỉ reset input file
     event.target.value = null;
+  };
+
+  // Sửa function này
+  const checkMilitaryRecordExists = async (sinhVienId) => {
+    try {
+      const militaryInfo = await getMilitaryInfoByStudentId(sinhVienId);
+      return militaryInfo;
+    } catch (error) {
+      return null; // Không có record
+    }
   };
 
   return (
