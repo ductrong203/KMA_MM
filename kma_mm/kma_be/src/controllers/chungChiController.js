@@ -1,11 +1,12 @@
 const chungChiService = require('../services/chungChiService');
+const loaiChungChiService = require('../services/loaiChungChiService');
 
 exports.layDanhSachLoaiChungChi = async (req, res) => {
   try {
-    const danhSachLoai = await chungChiService.layDanhSachLoaiChungChi();
+    const danhSachLoai = await loaiChungChiService.layDanhSachLoaiChungChi();
     return res.status(200).json({
       thongBao: 'Lấy danh sách loại chứng chỉ thành công',
-      data: danhSachLoai,
+      data: danhSachLoai.data,
     });
   } catch (error) {
     return res.status(500).json({
@@ -55,7 +56,7 @@ exports.layDanhSachChungChiTheoHeKhoaLop = async (req, res) => {
 
 exports.taoChungChi = async (req, res) => {
   try {
-    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
+    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, loai_chung_chi_id, ngay_ky_quyet_dinh, tinh_trang } = req.body;
 
     // Kiểm tra dữ liệu đầu vào
     if (!ma_sinh_vien || typeof ma_sinh_vien !== 'string' || ma_sinh_vien.trim() === '') {
@@ -94,6 +95,7 @@ exports.taoChungChi = async (req, res) => {
       ghi_chu: ghi_chu || null,
       so_quyet_dinh: so_quyet_dinh || null,
       loai_chung_chi: loai_chung_chi || null,
+      loai_chung_chi_id: loai_chung_chi_id || null, // Thêm loai_chung_chi_id
       ngay_ky_quyet_dinh: ngay_ky_quyet_dinh || null,
       tinh_trang,
     };
@@ -116,7 +118,7 @@ exports.taoChungChi = async (req, res) => {
 exports.chinhSuaChungChi = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, ngay_ky_quyet_dinh, tinh_trang } = req.body;
+    const { ma_sinh_vien, diem_trung_binh, xep_loai, ghi_chu, so_quyet_dinh, loai_chung_chi, loai_chung_chi_id, ngay_ky_quyet_dinh, tinh_trang } = req.body;
 
     // Kiểm tra id hợp lệ
     if (!id || isNaN(id) || id <= 0) {
@@ -164,6 +166,7 @@ exports.chinhSuaChungChi = async (req, res) => {
       ghi_chu,
       so_quyet_dinh,
       loai_chung_chi,
+      loai_chung_chi_id, // Thêm loai_chung_chi_id
       ngay_ky_quyet_dinh,
       tinh_trang,
     };
@@ -211,9 +214,10 @@ exports.xoaChungChi = async (req, res) => {
 
 exports.taoLoaiChungChi = async (req, res) => {
     try {
-      const ketQua = await chungChiService.taoLoaiChungChi(req.body);
+      const ketQua = await loaiChungChiService.taoLoaiChungChi(req.body);
       res.status(201).json({
         success: true,
+        message: "Đã tạo loại chứng chỉ thành công ",
         data: ketQua.data,
       });
     } catch (error) {
@@ -224,3 +228,74 @@ exports.taoLoaiChungChi = async (req, res) => {
     }
   }
 
+exports.layChiTietLoaiChungChi = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    if (!id || isNaN(id) || id <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID không hợp lệ',
+      });
+    }
+
+    const ketQua = await loaiChungChiService.layChiTietLoaiChungChi(id);
+    res.status(200).json({
+      success: true,
+      data: ketQua.data,
+    });
+  } catch (error) {
+    res.status(404).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.capNhatLoaiChungChi = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    if (!id || isNaN(id) || id <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID không hợp lệ',
+      });
+    }
+
+    const ketQua = await loaiChungChiService.capNhatLoaiChungChi(id, req.body);
+    res.status(200).json({
+      success: true,
+      data: ketQua.data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.xoaLoaiChungChi = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    if (!id || isNaN(id) || id <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID không hợp lệ',
+      });
+    }
+
+    const ketQua = await loaiChungChiService.xoaLoaiChungChi(id);
+    res.status(200).json({
+      success: true,
+      data: ketQua.data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};

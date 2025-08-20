@@ -50,7 +50,9 @@ class ThoiKhoaBieuController {
   static async create(req, res) {
     try {
       const data = await ThoiKhoaBieuService.create(req.body);
-      res.status(201).json(data);
+      res.status(201).json(
+        {message: "Tạo thời khoá biểu thành công ", 
+        data});
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -68,7 +70,9 @@ class ThoiKhoaBieuController {
   static async update(req, res) {
     try {
       const data = await ThoiKhoaBieuService.update(req.params.id, req.body);
-      res.json(data);
+      res.json(
+        {message: "Cập nhật thời khoá biểu thành công  " ,
+        data});
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

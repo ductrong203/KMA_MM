@@ -12,7 +12,9 @@ class SinhVienController {
   static async create(req, res) {
     try {
       const sinhVien = await SinhVienService.createSinhVien(req.body);
-      res.status(201).json(sinhVien);
+      res.status(201).json(
+        {message: "Thêm sinh viên thành công", 
+        data: sinhVien});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -76,7 +78,9 @@ class SinhVienController {
     try {
       const updatedSinhVien = await SinhVienService.updateSinhVien(req.params.id, req.body);
       if (!updatedSinhVien) return res.status(404).json({ message: "Không tìm thấy sinh viên" });
-      res.json(updatedSinhVien);
+      res.json(
+        {message: "Cập nhật sinh viên thành công ",
+        data: updatedSinhVien});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -192,10 +196,39 @@ class SinhVienController {
   static async checkGraduationConditions(req, res) {
     try {
       const sinhVienId = req.params.sinhVienId;
-      const result = await SinhVienService.checkGraduationConditions(sinhVienId);
+      // Lấy số tín chỉ yêu cầu từ query string nếu có
+      const requiredCredits = req.query.requiredCredits ? parseInt(req.query.requiredCredits) : null;
+      const result = await SinhVienService.checkGraduationConditions(sinhVienId, requiredCredits);
       return res.status(200).json({
         status: 'success',
         message: 'Kiểm tra điều kiện tốt nghiệp thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+  }
+
+  static async checkMultipleGraduationConditions(req, res) {
+    try {
+      const { sinhVienIds } = req.body;
+      // Lấy số tín chỉ yêu cầu từ body nếu có
+      const requiredCredits = req.body.requiredCredits ? parseInt(req.body.requiredCredits) : null;
+      
+      if (!sinhVienIds || !Array.isArray(sinhVienIds)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Danh sách ID sinh viên không hợp lệ. Cần truyền mảng sinhVienIds.',
+        });
+      }
+
+      const result = await SinhVienService.checkMultipleStudentsGraduationConditions(sinhVienIds, requiredCredits);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Kiểm tra điều kiện tốt nghiệp cho nhiều sinh viên thành công',
         data: result,
       });
     } catch (error) {

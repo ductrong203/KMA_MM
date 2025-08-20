@@ -32,7 +32,7 @@ const register = async (newUser) => {
 
     return {
       status: "OK",
-      message: "Success!",
+      message: "Đăng kí thành công",
       data: createdUser,
     };
   } catch (error) {
@@ -92,7 +92,7 @@ const deleteUser = async (id) => {
     await users.destroy({ where: { id } });
     return {
       status: "OK",
-      message: "Deleted user successfully!",
+      message: "Xoá người dùng thành công ",
     };
   } catch (error) {
     throw new Error(error.message);
@@ -153,7 +153,7 @@ const updateUser = async (id, data) => {
 
     return {
       status: "OK",
-      message: "User is updated!",
+      message: "Cập nhật người dùng thành công",
       data: updatedUser,
     };
   } catch (error) {
@@ -182,7 +182,7 @@ const changePassword = async (id, oldPassword, newPassword) => {
     await users.update({ password: hashedPassword }, { where: { id } });
     return {
       status: "OK",
-      message: "Password has been changed successfully!",
+      message: "Thay đổi mật khẩu thành công",
     };
   } catch (error) {
     throw new Error(error.message);

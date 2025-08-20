@@ -20,9 +20,16 @@ export const checkExistingStudents = async (formData) => {
 };
 
 // Api_controller/Service/sinhVienService.js
-export const kiemTraTotNghiep = async (sinhVienId) => {
+export const kiemTraTotNghiep = async (sinhVienId, requiredCredits) => {
   try {
-    const response = await api.get(`student/kiem-tra-tot-nghiep/${sinhVienId}`);
+    let url = `student/kiem-tra-tot-nghiep/${sinhVienId}`;
+    
+    // Add requiredCredits as a query parameter if provided
+    if (requiredCredits) {
+      url += `?requiredCredits=${requiredCredits}`;
+    }
+    
+    const response = await api.get(url);
     return response.data;
   } catch (error) {
     console.error('Lỗi khi gọi API kiểm tra tốt nghiệp:', error);

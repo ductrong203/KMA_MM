@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   Grid, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Button, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Box, Autocomplete, TextField, Skeleton
+  TableCell, TableContainer, TableHead, TableRow, Box, Autocomplete, TextField, Skeleton,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import * as XLSX from 'xlsx';
@@ -14,7 +16,7 @@ import {
   getDanhSachKhoaDaoTao
 } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLop } from '../../Api_controller/Service/lopService';
-import { fetchThongKeDiem } from '../../Api_controller/Service/diemService';
+import { fetchThongKeDiem, exportKetQuaKyHoc, exportKetQuaNamHoc } from '../../Api_controller/Service/diemService';
 import React from 'react';
 
 // Đăng ký Chart.js
@@ -36,6 +38,13 @@ const ThongKeDiem = () => {
   const [monHocList, setMonHocList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingSemester, setLoadingSemester] = useState(false);
+  
+  // States cho export dialog
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'kyHoc' hoặc 'namHoc'
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [exportKyHoc, setExportKyHoc] = useState('');
+  const [exportNamHoc, setExportNamHoc] = useState('');
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -200,7 +209,87 @@ const ThongKeDiem = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheetTongQuan, 'Thống kê tổng quát');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(worksheetData), 'Chi tiết môn học');
-    XLSX.write(workbook, 'Thong_ke_diem.xlsx');
+    XLSX.writeFile(workbook, 'Thong_ke_diem.xlsx');
+  };
+
+  // Hàm mở dialog export cho sinh viên cụ thể
+  const handleOpenExportDialog = (student, type) => {
+    setSelectedStudent(student);
+    setExportType(type);
+    setExportDialogOpen(true);
+    setExportKyHoc('');
+    setExportNamHoc('');
+  };
+
+  // Hàm đóng dialog export
+  const handleCloseExportDialog = () => {
+    setExportDialogOpen(false);
+    setSelectedStudent(null);
+    setExportType('');
+    setExportKyHoc('');
+    setExportNamHoc('');
+  };
+
+  // Hàm xử lý export kết quả kỳ học
+  const handleExportKyHoc = async () => {
+    if (!selectedStudent || !exportKyHoc) {
+      toast.error('Vui lòng nhập đầy đủ thông tin!');
+      return;
+    }
+
+    try {
+      // Sử dụng ID sinh viên (số) thay vì mã sinh viên
+      const response = await exportKetQuaKyHoc(selectedStudent.id, exportKyHoc);
+      
+      // Tạo URL blob và download file
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `KetQua_KyHoc_${selectedStudent.ma_sinh_vien}_Ky${exportKyHoc}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export kết quả kỳ học thành công!');
+      handleCloseExportDialog();
+    } catch {
+      toast.error('Không thể export kết quả kỳ học!');
+    }
+  };
+
+  // Hàm xử lý export kết quả năm học
+  const handleExportNamHoc = async () => {
+    if (!selectedStudent || !exportNamHoc) {
+      toast.error('Vui lòng nhập đầy đủ thông tin!');
+      return;
+    }
+
+    try {
+      // Sử dụng ID sinh viên (số) thay vì mã sinh viên
+      const response = await exportKetQuaNamHoc(selectedStudent.id, exportNamHoc);
+      
+      // Tạo URL blob và download file
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `KetQua_NamHoc_${selectedStudent.ma_sinh_vien}_${exportNamHoc}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export kết quả năm học thành công!');
+      handleCloseExportDialog();
+    } catch {
+      toast.error('Không thể export kết quả năm học!');
+    }
   };
 
   const chartData = {
@@ -258,6 +347,7 @@ const ThongKeDiem = () => {
               )) : <TableCell sx={{ fontWeight: 'bold' }}>ĐTB Kỳ</TableCell>}
               <TableCell sx={{ fontWeight: 'bold' }}>ĐTB tích lũy (hệ 10)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>ĐTB tích lũy (hệ 4)</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -271,6 +361,28 @@ const ThongKeDiem = () => {
                 )) : <TableCell>{sv.diem_tb_ky[filterKyHoc]?.toFixed(2) || '-'}</TableCell>}
                 <TableCell>{sv.diem_tb_tich_luy_he10.toFixed(2)}</TableCell>
                 <TableCell>{sv.diem_tb_tich_luy_he4.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<GetAppIcon />}
+                      onClick={() => handleOpenExportDialog(sv, 'kyHoc')}
+                      sx={{ fontSize: '0.75rem', p: 0.5 }}
+                    >
+                      Kỳ học
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<GetAppIcon />}
+                      onClick={() => handleOpenExportDialog(sv, 'namHoc')}
+                      sx={{ fontSize: '0.75rem', p: 0.5 }}
+                    >
+                      Năm học
+                    </Button>
+                  </Box>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -480,15 +592,7 @@ const ThongKeDiem = () => {
           ) : thongKeTongQuan.length > 0 ? (
             <>
               {renderTongQuanTable()}
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={exportToExcel}
-                sx={{ mt: 2 }}
-                disabled={thongKeTongQuan.length === 0}
-              >
-                Xuất Excel
-              </Button>
+             
             </>
           ) : (
             <Typography>Không có dữ liệu để hiển thị</Typography>
@@ -513,6 +617,47 @@ const ThongKeDiem = () => {
           )}
         </Paper>
       </Grid>
+
+      {/* Dialog Export */}
+      <Dialog open={exportDialogOpen} onClose={handleCloseExportDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Export kết quả {exportType === 'kyHoc' ? 'kỳ học' : 'năm học'} - {selectedStudent?.ho_ten}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            {exportType === 'kyHoc' ? (
+              <TextField
+                fullWidth
+                label="Số kỳ học"
+                type="number"
+                value={exportKyHoc}
+                onChange={(e) => setExportKyHoc(e.target.value)}
+                placeholder="Nhập số kỳ học (ví dụ: 1, 2, 3...)"
+                inputProps={{ min: 1, max: numberOfSemesters || 8 }}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label="Năm học"
+                value={exportNamHoc}
+                onChange={(e) => setExportNamHoc(e.target.value)}
+                placeholder="Nhập năm học (ví dụ: 2021-2022)"
+                helperText="Định dạng: YYYY-YYYY"
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseExportDialog}>Hủy</Button>
+          <Button
+            variant="contained"
+            onClick={exportType === 'kyHoc' ? handleExportKyHoc : handleExportNamHoc}
+            disabled={exportType === 'kyHoc' ? !exportKyHoc : !exportNamHoc}
+          >
+            Export
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };

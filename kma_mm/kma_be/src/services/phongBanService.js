@@ -19,7 +19,7 @@ const createPhongBan = async (phongBan) => {
 
     return {
       status: "OK",
-      message: "Success!",
+      message: "Tạo phòng ban thành công ",
       data: createdPhongBan,
     };
   } catch (error) {

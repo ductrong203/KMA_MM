@@ -31,6 +31,18 @@ module.exports = function(sequelize, DataTypes) {
     so_ky_hoc: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    tong_tin_chi: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      comment: 'Tổng số tín chỉ thực tế của khóa đào tạo'
+    },
+    tong_tin_chi_yeu_cau: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 130,
+      comment: 'Tổng số tín chỉ yêu cầu để tốt nghiệp của khóa đào tạo'
     }
   }, {
     sequelize,

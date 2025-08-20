@@ -26,7 +26,6 @@ const register = async (req, res) => {
     });
   }
 };
-
 // Login User
 const loginUser = async (req, res) => {
   try {
@@ -62,7 +61,7 @@ const deleteUser = async (req, res) => {
     }
     const reponse = await UserService.deleteUser(idUser);
     return res.status(200).json(reponse);
-  } catch (error) {
+  } catch (e) {
     return res.status(404).json({ message: e });
   }
 };
@@ -84,7 +83,7 @@ const getDetailUser = async (req, res) => {
     }
     const response = await UserService.getDetailUser(id);
     return res.status(200).json(response);
-  } catch (error) {
+  } catch (e) {
     return res.status(404).json({ message: e });
   }
 };
@@ -100,7 +99,7 @@ const updateUser = async (req, res) => {
     }
     const reponse = await UserService.updateUser(id, data);
     return res.status(200).json(reponse);
-  } catch (error) {
+  } catch (e) {
     return res.status(404).json({ message: e });
   }
 };
@@ -114,7 +113,7 @@ const refreshToken = async (req, res) => {
     }
     const response = await jwtService.refreshTokenJwtService(token);
     return res.status(200).json(response);
-  } catch (error) {
+  } catch (e) {
     return res.status(200).json({ message: e });
   }
 };

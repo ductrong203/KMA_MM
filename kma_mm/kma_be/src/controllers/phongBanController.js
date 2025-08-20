@@ -34,7 +34,9 @@ const getPhongBan = async (req, res) => {
   const updatePhongBan = async (req, res) => {
     try {
         const response = await phongBanService.updatePhongBan(req.params.code, req.body);
-        return res.status(201).json(response); 
+        return res.status(201).json(
+      {message: "Cập nhật phòng ban thành công ",
+      data: response}); 
       } catch (e) {
         return res.status(500).json({
           message: e.message || "Server error",
