@@ -141,6 +141,26 @@ class DiemController {
       return res.status(500).json({ error: error.message || 'Không thể lấy thống kê điểm' });
     }
   }
+
+  static async getAllDiem(req, res) {
+    try {
+      const { sinh_vien_id } = req.params;
+      
+      if (!sinh_vien_id) {
+        return res.status(400).json({ 
+          error: 'Thiếu sinh_vien_id trong params' 
+        });
+      }
+
+      const data = await DiemService.getAllDiem(parseInt(sinh_vien_id));
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error('Lỗi trong getAllDiem:', error);
+      return res.status(500).json({ 
+        error: error.message || 'Không thể lấy bảng điểm sinh viên' 
+      });
+    }
+  }
 }
 
 module.exports = DiemController;

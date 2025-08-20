@@ -83,6 +83,18 @@ class DiemService {
           model: sinh_vien,
           as: 'sinh_vien',
           attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
+        },
+        {
+          model: thoi_khoa_bieu,
+          as: 'thoi_khoa_bieu',
+          attributes: ['dot_hoc', 'ky_hoc'],
+          include: [
+            {
+              model: mon_hoc,
+              as: 'mon_hoc',
+              attributes: ['so_tin_chi', 'ten_mon_hoc', 'ma_mon_hoc']
+            }
+          ]
         }
       ]
     });
@@ -1022,6 +1034,130 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
   }
 }
 
+  static async getAllDiem(sinh_vien_id){
+    try {
+      // Tìm thông tin sinh viên và lớp
+      const sinhVien = await sinh_vien.findByPk(sinh_vien_id, {
+        attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'lop_id'],
+        include: [
+          {
+            model: lop,
+            as: 'lop',
+            attributes: ['id', 'ma_lop', 'khoa_dao_tao_id']
+          }
+        ]
+      });
+
+      if (!sinhVien) {
+        throw new Error('Không tìm thấy sinh viên');
+      }
+
+      // Lấy tất cả bảng điểm của sinh viên
+      const allDiem = await diem.findAll({
+        where: { sinh_vien_id },
+        include: [
+          {
+            model: thoi_khoa_bieu,
+            as: 'thoi_khoa_bieu',
+            attributes: ['id', 'ky_hoc', 'dot_hoc', 'lop_id', 'mon_hoc_id', 'giang_vien'],
+            include: [
+              {
+                model: mon_hoc,
+                as: 'mon_hoc',
+                attributes: ['id', 'ma_mon_hoc', 'ten_mon_hoc', 'so_tin_chi']
+              },
+              {
+                model: lop,
+                as: 'lop',
+                attributes: ['id', 'ma_lop']
+              }
+            ]
+          }
+        ]
+      });
+
+      // Phân loại điểm theo lần học
+      const diemLan1 = []; // Lần học = 1 và thuộc lớp của sinh viên
+      const diemHocLai = []; // Lần học > 1 hoặc không thuộc lớp của sinh viên
+
+      allDiem.forEach(diemRecord => {
+        const tkb = diemRecord.thoi_khoa_bieu;
+        const lanHoc = diemRecord.lan_hoc || 1;
+        
+        // Nếu lần học = 1 và thuộc lớp của sinh viên
+        if (lanHoc === 1 && tkb.lop_id === sinhVien.lop_id) {
+          diemLan1.push(diemRecord);
+        } else {
+          // Học lại hoặc không thuộc lớp chính
+          diemHocLai.push(diemRecord);
+        }
+      });
+
+      // Sắp xếp điểm lần 1 theo kỳ học tăng dần
+      diemLan1.sort((a, b) => {
+        const kyHocA = a.thoi_khoa_bieu.ky_hoc;
+        const kyHocB = b.thoi_khoa_bieu.ky_hoc;
+        return kyHocA - kyHocB;
+      });
+
+      // Sắp xếp điểm học lại theo lần học tăng dần
+      diemHocLai.sort((a, b) => {
+        const lanHocA = a.lan_hoc || 1;
+        const lanHocB = b.lan_hoc || 1;
+        return lanHocA - lanHocB;
+      });
+
+      // Tạo kết quả cuối cùng
+      const result = [];
+
+      // Thêm các điểm lần 1 trước
+      diemLan1.forEach(diemLan1Record => {
+        result.push(diemLan1Record);
+        
+        // Tìm các lần học tiếp theo của cùng môn học
+        const monHocId = diemLan1Record.thoi_khoa_bieu.mon_hoc_id;
+        
+        // Lấy tất cả bản ghi học lại của môn này và sắp xếp theo lần học
+        const diemHocLaiMonNay = diemHocLai.filter(d => 
+          d.thoi_khoa_bieu.mon_hoc_id === monHocId
+        ).sort((a, b) => {
+          const lanHocA = a.lan_hoc || 1;
+          const lanHocB = b.lan_hoc || 1;
+          return lanHocA - lanHocB;
+        });
+        
+        // Thêm các lần học lại ngay sau lần 1
+        diemHocLaiMonNay.forEach(diemHocLaiRecord => {
+          result.push(diemHocLaiRecord);
+          
+          // Xóa khỏi danh sách học lại để không bị trùng lặp
+          const index = diemHocLai.indexOf(diemHocLaiRecord);
+          if (index > -1) {
+            diemHocLai.splice(index, 1);
+          }
+        });
+      });
+
+      // Thêm các bản ghi học lại còn lại (những môn không có lần 1 trong lớp chính)
+      diemHocLai.forEach(diemRecord => {
+        result.push(diemRecord);
+      });
+
+      return {
+        sinh_vien: {
+          id: sinhVien.id,
+          ma_sinh_vien: sinhVien.ma_sinh_vien,
+          ho_ten: `${sinhVien.ho_dem || ''} ${sinhVien.ten || ''}`.trim(),
+          lop: sinhVien.lop
+        },
+        data: result
+      };
+
+    } catch (error) {
+      console.error('Lỗi khi lấy tất cả điểm sinh viên:', error);
+      throw new Error('Không thể lấy bảng điểm: ' + error.message);
+    }
+  }
 
 }
 

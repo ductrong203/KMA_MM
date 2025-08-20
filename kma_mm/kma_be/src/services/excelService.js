@@ -431,8 +431,8 @@ class ExcelService {
 
     // **Độ rộng cột**
     worksheet.getColumn(1).width = 5.5;
-    worksheet.getColumn(2).width = 10.5;
-    worksheet.getColumn(3).width = 7;
+    worksheet.getColumn(2).width = 11;
+    worksheet.getColumn(3).width = 6.5;
     worksheet.getColumn(4).width = 4.5;
     worksheet.getColumn(5).width = 3;
     worksheet.getColumn(6).width = 6;
@@ -816,8 +816,8 @@ class ExcelService {
     // Độ rộng cột (điều chỉnh cho 10 cột A-J)
     worksheet.getColumn(1).width = 4.29 * 1.2;  // A: STT
     worksheet.getColumn(2).width = 4.4 * 1.2;     // B: SBD 
-    worksheet.getColumn(3).width = 11.29 * 1.2; // C: Mã HVSV
-    worksheet.getColumn(4).width = 19 * 1.2; // D: Họ đệm
+    worksheet.getColumn(3).width = 11.5 * 1.2; // C: Mã HVSV
+    worksheet.getColumn(4).width = 18.79 * 1.2; // D: Họ đệm
     worksheet.getColumn(5).width = 7.58 * 1.2;  // E: Tên
     worksheet.getColumn(6).width = 7.71 * 1.2;  // F: Lớp
     worksheet.getColumn(7).width = 6.29 * 1.2;  // G: Mã đề

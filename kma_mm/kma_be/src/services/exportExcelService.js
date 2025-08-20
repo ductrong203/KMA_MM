@@ -88,11 +88,21 @@ class ExportExcelService {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Kết quả kỳ học", {
         pageSetup: {
-          orientation: 'portrait',
+          orientation: "portrait",
           fitToPage: true,
           fitToWidth: 1,
           fitToHeight: 0,
-          paperSize: 9 // A4
+          paperSize: 9,
+          margins: {
+            left: 0.4,
+            right: 0.4,
+            top: 0.2,
+            bottom: 0.2,
+            header: 0.3,
+            footer: 0.3,
+          },
+          horizontalCentered: true,
+          printTitlesRow: "13:14",
         },
         properties: {
           defaultRowHeight: ROW_HEIGHT
@@ -515,11 +525,21 @@ class ExportExcelService {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Kết quả năm học", {
         pageSetup: {
-          orientation: 'portrait',
+          orientation: "portrait",
           fitToPage: true,
           fitToWidth: 1,
           fitToHeight: 0,
-          paperSize: 9 // A4
+          paperSize: 9,
+          margins: {
+            left: 0.4,
+            right: 0.4,
+            top: 0.2,
+            bottom: 0.2,
+            header: 0.3,
+            footer: 0.3,
+          },
+          horizontalCentered: true,
+          printTitlesRow: "13:14",
         },
         properties: {
           defaultRowHeight: ROW_HEIGHT
