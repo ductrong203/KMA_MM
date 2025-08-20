@@ -1,4 +1,18 @@
 const DiemService = require('../services/diemService');
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const { verifyAccessToken } = require("../utils/decodedToken");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
+
+      }
 
 class DiemController {
   static async filter(req, res) {
@@ -73,6 +87,35 @@ class DiemController {
       }
 
       const result = await DiemService.createDiemForClass(thoi_khoa_bieu_id, baoVeDoAnValue);
+      try {
+              const token = req.headers.authorization?.split(" ")[1];
+                  // console.log(token);
+                  let user = verifyAccessToken(token);
+                  let userN  = await  getFieldById("users", user.id, "username");
+                  let  userR = await  getFieldById("users", user.id, "role");
+                  let kyHoc = await  getFieldById("thoi_khoa_bieu", thoi_khoa_bieu_id, "ky_hoc"); 
+                  let lopId = await  getFieldById("thoi_khoa_bieu", thoi_khoa_bieu_id, "lop_id"); 
+                  let monHocId = await  getFieldById("thoi_khoa_bieu", thoi_khoa_bieu_id, "mon_hoc_id"); 
+                  let lop = await  getFieldById("lop", lopId, "ma_lop"); 
+                  let monHoc = await  getFieldById("mon_hoc", monHocId, "ten_mon_hoc"); 
+                    if (result) {
+                    let inforActivity = {
+                      username:   userN,
+                      role: mapRole[userR],
+                      action: req.method,
+                      endpoint: req.originalUrl,
+                      reqData: `Người dùng ${userN} đã tạo bảng điểm kỳ ${kyHoc} cho học phần ${monHoc} của lớp ${lop} `,
+                      response_status: 200,
+                      resData: "Tạo bảng điểm thành công",
+                      ip:  req._remoteAddress,
+              
+                    }
+                      await logActivity(inforActivity);
+                    }
+           } catch (error) {
+              console.error("Lỗi kìa ní:", error.message);
+           }
+      
       return res.status(201).json(result);
     } catch (error) {
       return res.status(500).json({ message: error.message });
@@ -147,9 +190,6 @@ class DiemController {
   static async getThongKeDiem(req, res) {
     try {
       const { he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id } = req.query;
-
-     
-
       const data = await DiemService.getThongKeDiem({
         he_dao_tao_id: he_dao_tao_id ? parseInt(he_dao_tao_id) : undefined,
         khoa_dao_tao_id: khoa_dao_tao_id ? parseInt(khoa_dao_tao_id) : undefined,
