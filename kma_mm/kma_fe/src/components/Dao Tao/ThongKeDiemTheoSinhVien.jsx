@@ -240,7 +240,7 @@ const ThongKeDiemTheoSinhVien = () => {
             diem_he_4: matchingDetail?.diem_he_4,
             diem_chu: matchingDetail?.diem_chu,
             diem_hp: diemMonHoc.diem_hp,
-            trang_thai: diemMonHoc.diem_hp >= 4.0 ? 'Hoàn thành' : 'Chưa đạt',
+            trang_thai: matchingDetail.trang_thai,
             ngay_cap_nhat: matchingDetail?.ngay_cap_nhat,
             ghi_chu: matchingDetail?.ghi_chu
           });
@@ -275,7 +275,7 @@ const ThongKeDiemTheoSinhVien = () => {
           diem_he_4: detail.diem_he_4,
           diem_chu: detail.diem_chu,
           diem_hp: detail.diem_hp,
-          trang_thai: detail.trang_thai || (detail.diem_hp >= 4.0 ? 'Hoàn thành' : 'Chưa đạt'),
+          trang_thai: detail.trang_thai,
           ngay_cap_nhat: detail.ngay_cap_nhat,
           ghi_chu: detail.ghi_chu
         });
@@ -533,9 +533,9 @@ const ThongKeDiemTheoSinhVien = () => {
                         <TableCell>{item.diem_hp ?? '-'}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={item.trang_thai || 'N/A'}
+                            label={item.trang_thai=="qua_mon"?'qua môn':"trượt môn" || 'N/A'}
                             size="small"
-                            color={item.trang_thai === 'Hoàn thành' ? "success" : "default"}
+                            color={item.trang_thai === 'qua_mon' ? "success" : "default"}
                           />
                         </TableCell>
                         <TableCell>
