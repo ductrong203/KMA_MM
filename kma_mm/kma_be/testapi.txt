@@ -683,3 +683,8 @@ Response:
     },
     "message": "Xóa loại chứng chỉ thành công"
 }
+
+
+lấy tất cả bảng điểm của sinh viên có sắp xếp
+GET
+http://localhost:8000/diem/sinh-vien/:sinh_vien_id/all-diem
