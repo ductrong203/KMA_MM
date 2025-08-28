@@ -1,4 +1,5 @@
 const DiemService = require('../services/diemService');
+const {logDiem} = require("../utils/logdiem");
 const {logActivity} = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const {users} = require("../models");
@@ -124,7 +125,53 @@ class DiemController {
 
   static async update(req, res) {
     try {
-      const data = await DiemService.update(req.body);
+      // console.log("ivsinasdncasndcasnconasvnsd")
+      const token = req.headers.authorization?.split(" ")[1];
+      let user = verifyAccessToken(token);
+      let userN = await getFieldById("users", user.id, "username");
+      let userR = await getFieldById("users", user.id, "role");
+        var oldDataMap = {};
+          if (Array.isArray(req.body)) {
+            // Cập nhật nhiều điểm
+            for (let item of req.body) {
+              if (item.id) {
+                var oldData = await DiemService.getById(item.id);
+                          if (oldData) oldDataMap[item.id] = oldData;
+
+              }
+            }
+          }
+      var data = await DiemService.update(req.body);
+      try {
+        // console.log(oldDataMap, " ############### ", data.data);
+        const extraData = await logDiem(oldDataMap, data.data);
+        console.log(extraData)
+        const countSinhVien = extraData.changed_students.length || 0;
+        // console.log("###############",extraData);
+        if ( countSinhVien > 0) {
+        // Tạo description
+        const courseInfo = extraData.course;
+        const classInfo = extraData.class ? ` lớp ${extraData.class}` : "";
+        // console.log("123");
+        const description = `Cập nhật điểm môn ${courseInfo}${classInfo} (${countSinhVien} sinh viên)`;
+        
+        let inforActivity = {
+          username: userN,
+          role: mapRole[userR],
+          action: req.method,
+          endpoint: req.originalUrl,
+          reqData: extraData,
+          response_status: 200,
+          resData: description,
+          ip: req._remoteAddress,
+        }
+        await logActivity(inforActivity);
+      }
+        console.log(extraData);
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
+
       res.json(data);
     } catch (error) {
       res.status(400).json({ error: error.message });
