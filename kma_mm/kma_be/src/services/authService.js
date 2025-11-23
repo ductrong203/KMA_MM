@@ -242,7 +242,6 @@ const get_logs = async (role, startDate, endDate) => {
         order: [['created_at', 'DESC']],
 
     });
-    
    }
     // const total_page = Math.ceil(count/limit);
     // console.log("limit: " , page)
