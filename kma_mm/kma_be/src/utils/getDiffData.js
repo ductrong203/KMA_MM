@@ -42,10 +42,19 @@ const  getDiffData =  (oldData, newData) => {
                     newData[key] = newData[key] == 1 ? "hoạt động": "không hoạt động";
                 }
 
+                if (key==="gioi_tinh") {
+                    oldData[key] = oldData[key] === 1 ? "nam": "nữ";
+                    newData[key] = newData[key] === 1 ? "nam": "nữ";
+                }
+                if (key==="dang_hoc") {
+                    oldData[key] = oldData[key] === 1 ? "có": "không";
+                    newData[key] = newData[key] === 1 ? "có": "không";
+                }
+
                 change.push(`${key}: ${oldData[key]} => ${newData[key]}`);
 
             }
         }
-        return change.length >0 ? change.join(" , "): "";
+        return change.length >0 ? change.join(" ; "): "";
 }
 module.exports = {getDiffData};
