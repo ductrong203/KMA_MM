@@ -18,75 +18,98 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Badge,
 } from "@mui/material";
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import Modal from 'react-modal';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; 
-import InfoIcon from '@mui/icons-material/Info';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { getLogActivity } from "../../Api_controller/Service/adminService";
 
-Modal.setAppElement('#root');
-
-// Component GradeChangesTable
-const GradeChangesTable = ({ data }) => {
-    // Nếu không có data hoặc không phải là data thay đổi điểm
-    if (!data || !data.changed_students) {
-        return null;
+// Component hiển thị bảng động cho is_list = 1
+const DynamicTableView = ({ data }) => {
+    // console.log("###########################################", data)
+    
+    if (data.is_list == 1) {
+        return (
+            <Typography variant="body2" color="text.secondary">
+                Không có dữ liệu để hiển thị
+            </Typography>
+        );
     }
 
     const { course, semester, class: className, total_students, changed_students } = data;
 
-    // Lấy tất cả các loại điểm có thể có từ tất cả sinh viên
-    const getAllGradeTypes = () => {
-        const gradeTypes = new Set();
+    // Lấy tất cả các loại thay đổi (các cột)
+    const getAllChangeTypes = () => {
+        const changeTypes = new Set();
         changed_students.forEach(student => {
-            Object.keys(student.changes).forEach(gradeType => {
-                gradeTypes.add(gradeType);
+            Object.keys(student.changes).forEach(changeType => {
+                changeTypes.add(changeType);
             });
         });
-        return Array.from(gradeTypes).sort();
+        return Array.from(changeTypes).sort();
     };
 
-    const gradeTypes = getAllGradeTypes();
+    const changeTypes = getAllChangeTypes();
 
-    // Mapping tên điểm tiếng Việt
-    const gradeTypeMapping = {
+    // Mapping tên cột tiếng Việt (có thể tùy chỉnh)
+    const columnMapping = {
         'diem_tp1': 'TP1',
         'diem_tp2': 'TP2',
         'diem_tp3': 'TP3',
         'diem_gk': 'Giữa kỳ',
+        'diem_ck2': 'Điểm thi lại',
+        'diem_chu': 'Điểm chữ',
         'diem_ck': 'Cuối kỳ',
-        'diem_tb': 'Trung bình'
+        'diem_tb': 'Trung bình',
+        'diem_hp': 'Điểm học phần',
+        'trang_thai': 'Trạng thái',
+        'diem_he_4': 'Điểm hệ 4'
+    };
+
+    // Hàm format tên cột: nếu có trong mapping thì dùng, không thì capitalize
+    const formatColumnName = (key) => {
+        if (columnMapping[key]) return columnMapping[key];
+        return key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
     return (
         <Box sx={{ mt: 2 }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
-                Thay đổi điểm số
+                Bảng thay đổi dữ liệu
             </Typography>
             
-            {/* Thông tin khóa học */}
-            <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' }, gap: 1 }}>
-                    <Typography variant="body2">
-                        <strong>Môn học:</strong> {course}
-                    </Typography>
-                    <Typography variant="body2">
-                        <strong>Học kỳ:</strong> {semester}
-                    </Typography>
-                    <Typography variant="body2">
-                        <strong>Lớp:</strong> {className}
-                    </Typography>
-                    <Typography variant="body2">
-                        <strong>SV thay đổi:</strong> {total_students}
-                    </Typography>
+            {/* Thông tin tổng quan */}
+            {(course || semester || className || total_students) && (
+                <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' }, gap: 1 }}>
+                        {course && (
+                            <Typography variant="body2">
+                                <strong>Môn học:</strong> {course}
+                            </Typography>
+                        )}
+                        {semester && (
+                            <Typography variant="body2">
+                                <strong>Học kỳ:</strong> {semester}
+                            </Typography>
+                        )}
+                        {className && (
+                            <Typography variant="body2">
+                                <strong>Lớp:</strong> {className}
+                            </Typography>
+                        )}
+                        {total_students && (
+                            <Typography variant="body2">
+                                <strong>Số lượng thay đổi:</strong> {total_students}
+                            </Typography>
+                        )}
+                    </Box>
                 </Box>
-            </Box>
+            )}
 
-            {/* Bảng thay đổi điểm */}
+            {/* Bảng dữ liệu */}
             <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
                 <Table>
                     <TableHead>
@@ -97,12 +120,12 @@ const GradeChangesTable = ({ data }) => {
                             <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>
                                 Tên sinh viên
                             </TableCell>
-                            {gradeTypes.map(gradeType => (
+                            {changeTypes.map(changeType => (
                                 <TableCell 
-                                    key={gradeType} 
+                                    key={changeType} 
                                     sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}
                                 >
-                                    {gradeTypeMapping[gradeType] || gradeType.toUpperCase()}
+                                    {formatColumnName(changeType)}
                                 </TableCell>
                             ))}
                         </TableRow>
@@ -110,22 +133,25 @@ const GradeChangesTable = ({ data }) => {
                     <TableBody>
                         {changed_students.map((student, index) => (
                             <TableRow 
-                                key={student.ma_sinh_vien}
+                                key={student.ma_sinh_vien || index}
                                 sx={{ 
                                     '&:nth-of-type(odd)': { backgroundColor: 'grey.50' },
                                     '&:hover': { backgroundColor: 'action.hover' }
                                 }}
                             >
                                 <TableCell sx={{ fontWeight: 'medium' }}>
-                                    {student.ma_sinh_vien}
+                                    {student.ma_sinh_vien || '-'}
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 'medium' }}>
-                                    {`${student.ho_dem} ${student.ten}`}
+                                    {student.ho_dem && student.ten 
+                                        ? `${student.ho_dem} ${student.ten}`
+                                        : student.name || '-'
+                                    }
                                 </TableCell>
-                                {gradeTypes.map(gradeType => {
-                                    const change = student.changes[gradeType];
+                                {changeTypes.map(changeType => {
+                                    const change = student.changes[changeType];
                                     return (
-                                        <TableCell key={gradeType} sx={{ textAlign: 'center' }}>
+                                        <TableCell key={changeType} sx={{ textAlign: 'center' }}>
                                             {change ? (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                                                     <Typography 
@@ -136,7 +162,7 @@ const GradeChangesTable = ({ data }) => {
                                                             fontWeight: 'medium'
                                                         }}
                                                     >
-                                                        {change.old}
+                                                        {change.old !== null && change.old !== undefined ? change.old : '-'}
                                                     </Typography>
                                                     <Typography component="span" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
                                                         ||
@@ -148,7 +174,7 @@ const GradeChangesTable = ({ data }) => {
                                                             fontWeight: 'bold'
                                                         }}
                                                     >
-                                                        {change.new}
+                                                        {change.new !== null && change.new !== undefined ? change.new : '-'}
                                                     </Typography>
                                                 </Box>
                                             ) : (
@@ -166,51 +192,38 @@ const GradeChangesTable = ({ data }) => {
             </TableContainer>
 
             {/* Chú thích */}
-            <Box sx={{ mt: 2, p: 2, backgroundColor: 'warning.light', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Typography component="span" sx={{ color: 'error.main', textDecoration: 'line-through', fontWeight: 'medium' }}>
-                            9.5
-                        </Typography>
-                        <Typography variant="body2">: Điểm cũ</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Typography component="span" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                            9.6
-                        </Typography>
-                        <Typography variant="body2">: Điểm mới</Typography>
-                    </Box>
-                </Box>
-            </Box>
+          
         </Box>
     );
 };
 
 const ActivityLogs = () => {
     const [logs, setLogs] = useState([]);
-    const [dateRange, setDateRange] = useState([null, null]);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [selectedRole, setSelectedRole] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [oldLogsCount, setOldLogsCount] = useState(0);
 
     const rowsPerPage = 8;
 
-    const handleDateChange = async (value) => {
-        setDateRange(value);
-        console.log(dateRange);
-        setIsModalOpen(false);
-    };
+    // Hàm tính số lượng log cũ hơn 30 ngày
+    const countOldLogs = (logsData) => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-    const openModal = () => {
-        setIsModalOpen(true);
-    };
+        const count = logsData.filter(log => {
+            const logDate = new Date(log.created_at);
+            return logDate < thirtyDaysAgo;
+        }).length;
 
-    const closeModal = () => {
-        setIsModalOpen(false);
+        setOldLogsCount(count);
     };
 
     const openDetailModal = (log) => {
@@ -223,18 +236,52 @@ const ActivityLogs = () => {
         setSelectedLog(null);
     };
 
-    // Hàm kiểm tra xem dữ liệu có phải là thay đổi điểm không
-    const isGradeChangeData = (data) => {
-        return data && 
-               typeof data === 'object' && 
-               data.changed_students && 
-               Array.isArray(data.changed_students) &&
-               data.course &&
-               data.semester !== undefined &&
-               data.class;
+    const openDeleteDialog = () => {
+        setIsDeleteDialogOpen(true);
     };
 
-    const renderJsonData = (data, indent = 0) => {
+    const closeDeleteDialog = () => {
+        setIsDeleteDialogOpen(false);
+    };
+
+    const handleDeleteLogs = async () => {
+        try {
+            //Gọi APIII
+            // await deleteLogsOlderThan30Days();
+            
+            // Sau khi xóa thành công, fetch lại dữ liệu
+            const response = await getLogActivity();
+            if (response.status === 200) {
+                setLogs(response.data.data);
+                setFilteredLogs(response.data.data);
+                countOldLogs(response.data.data);
+            }
+            
+            closeDeleteDialog();
+            console.log('Đã xóa dữ liệu log cũ hơn 30 ngày');
+        } catch (error) {
+            console.error("Error deleting logs:", error);
+        }
+    };
+
+    // Hàm render dữ liệu dựa trên is_list
+    const renderJsonData = (data, isList, indent = 0) => {
+        // Parse nếu là string
+    // console.log("##############################",isList)
+        if (typeof data === 'string') {
+            try {
+                const parsedData = JSON.parse(data);
+                return renderJsonData(parsedData, isList, indent);
+            } catch (e) {
+                return (
+                    <Typography variant="body2" sx={{ ml: indent }}>
+                        {data}
+                    </Typography>
+                );
+            }
+        }
+
+        // Kiểm tra null hoặc không phải object
         if (typeof data !== "object" || data === null) {
             return (
                 <Typography variant="body2" sx={{ ml: indent }}>
@@ -243,12 +290,12 @@ const ActivityLogs = () => {
             );
         }
 
-        // Kiểm tra nếu là dữ liệu thay đổi điểm số
-        if (isGradeChangeData(data)) {
-            return <GradeChangesTable data={data} />;
+        // Kiểm tra is_list = 1 để hiển thị bảng
+        if (isList===1) {
+            return <DynamicTableView data={data} />;
         }
 
-        // Render JSON data thông thường
+        // Hiển thị dạng box thông thường cho is_list = 0 hoặc không có is_list
         return (
             <Box
                 sx={{
@@ -257,31 +304,36 @@ const ActivityLogs = () => {
                     gap: 2,
                 }}
             >
-                {Object.entries(data).map(([key, value]) => (
-                    <Box
-                        key={key}
-                        sx={{
-                            minWidth: '200px',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#f5f5f5',
-                            p: 1.5,
-                            borderRadius: 1,
-                            boxShadow: 1,
-                        }}
-                    >
-                        <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 'bold', marginRight: 1, whiteSpace: 'nowrap' }}
+                {Object.entries(data).map(([key, value]) => {
+                    // Bỏ qua trường is_list khi hiển thị
+                    if (key === 'is_list') return null;
+                    
+                    return (
+                        <Box
+                            key={key}
+                            sx={{
+                                minWidth: '200px',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#f5f5f5',
+                                p: 1.5,
+                                borderRadius: 1,
+                                boxShadow: 1,
+                            }}
                         >
-                            {key}:
-                        </Typography>
-                        <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                        </Typography>
-                    </Box>
-                ))}
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 'bold', marginRight: 1, whiteSpace: 'nowrap' }}
+                            >
+                                {key}:
+                            </Typography>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </Typography>
+                        </Box>
+                    );
+                })}
             </Box>
         );
     };
@@ -314,7 +366,7 @@ const ActivityLogs = () => {
                 if (response.status === 200) {
                     setLogs(response.data.data);
                     setFilteredLogs(response.data.data);
-                    console.log("check", logs);
+                    countOldLogs(response.data.data);
                 } else {
                     console.error("Failed to fetch logs:", response.message);
                 }
@@ -333,20 +385,32 @@ const ActivityLogs = () => {
             const matchesRole = selectedRole
                 ? log?.Role === selectedRole
                 : true;
-            const start = new Date(dateRange[0]);
-            const end = new Date(dateRange[1]);
 
+            if (!startDate) {
+                return matchesRole;
+            }
+
+            const start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
-            end.setHours(23, 59, 59, 999);
+            
             const createdAt = new Date(log?.created_at);
 
-            const matchesDate = (dateRange[0] && dateRange[1]) ? (createdAt >= start && createdAt <= end) : true;
+            if (!endDate) {
+                const dayEnd = new Date(startDate);
+                dayEnd.setHours(23, 59, 59, 999);
+                return matchesRole && createdAt >= start && createdAt <= dayEnd;
+            }
+
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            const matchesDate = createdAt >= start && createdAt <= end;
 
             return matchesDate && matchesRole;
         });
-        console.log(filtered);
+        
         setFilteredLogs(filtered);
-    }, [dateRange[0], dateRange[1], selectedRole, logs]);
+        setCurrentPage(1);
+    }, [startDate, endDate, selectedRole, logs]);
 
     const convertUTCToVietnamTime = (utcDateString) => {
         const utcDate = new Date(utcDateString);
@@ -376,25 +440,58 @@ const ActivityLogs = () => {
 
     const handleResetFilter = () => {
         setSelectedRole("");
-        setDateRange([null, null]);
+        setStartDate('');
+        setEndDate('');
         setFilteredLogs(logs);
         console.log('Đã hủy lọc');
     };
 
     return (
         <Box sx={{ padding: 2 }}>
-            <Box display="flex" alignItems="center" mb={2}>
-                <IconButton
-                    color="primary"
-                    onClick={handleBackToDashboard}
-                    sx={{ mr: 2 }}
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                    <IconButton
+                        color="primary"
+                        onClick={handleBackToDashboard}
+                        sx={{ mr: 2 }}
+                    >
+                        <ArrowBackIcon />
+                    </IconButton>
+                    <Typography variant="h5">Lịch sử hoạt động</Typography>
+                </Box>
+                
+                <Badge 
+                    badgeContent={oldLogsCount} 
+                    color="error"
+                    max={999}
+                    sx={{
+                        '& .MuiBadge-badge': {
+                            right: -3,
+                            top: 3,
+                            border: '2px solid white',
+                            padding: '0 4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                        }
+                    }}
                 >
-                    <ArrowBackIcon />
-                </IconButton>
-                <Typography variant="h5">Lịch sử hoạt động</Typography>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={openDeleteDialog}
+                        disabled={oldLogsCount === 0}
+                        sx={{
+                            opacity: oldLogsCount === 0 ? 0.6 : 1,
+                            cursor: oldLogsCount === 0 ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        Xóa dữ liệu cũ
+                    </Button>
+                </Badge>
             </Box>
 
-            <Box display="flex" gap={2} alignItems="center" marginBottom={2}>
+            <Box display="flex" gap={2} alignItems="center" marginBottom={2} flexWrap="wrap">
                 <TextField
                     select
                     label="Xét theo quyền"
@@ -402,7 +499,7 @@ const ActivityLogs = () => {
                     fullWidth
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    sx={{ flex: 1 }}
+                    sx={{ flex: 1, minWidth: '200px' }}
                 >
                     <MenuItem value="">Tất cả các quyền</MenuItem>
                     {Object.entries(roleMapping).map(([key, value]) => (
@@ -412,50 +509,52 @@ const ActivityLogs = () => {
                     ))}
                 </TextField>
 
-                <button
-                    onClick={openModal}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                    Chọn Khoảng Ngày
-                </button>
-                <button
+                <TextField
+                    label="Ngày bắt đầu"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                    sx={{ minWidth: '200px' }}
+                />
+
+                <TextField
+                    label="Ngày kết thúc"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                    inputProps={{
+                        min: startDate
+                    }}
+                    disabled={!startDate}
+                    sx={{ minWidth: '200px' }}
+                />
+
+                <Button
+                    variant="contained"
+                    color="error"
                     onClick={handleResetFilter}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    sx={{ minWidth: '120px' }}
                 >
                     Hủy Lọc
-                </button>
-
-                {dateRange[0] && dateRange[1] && (
-                    <p className="mt-2">
-                        Đã chọn: {dateRange[0].toLocaleDateString('vi-VN')} -{' '}
-                        {dateRange[1].toLocaleDateString('vi-VN')}
-                    </p>
-                )}
-
-                <Modal
-                    isOpen={isModalOpen}
-                    onRequestClose={closeModal}
-                    className="flex items-center justify-center"
-                    overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-                    contentLabel="Chọn Khoảng Ngày"
-                >
-                    <div className="bg-white p-4 rounded shadow-lg max-w-md w-full">
-                        <h3 className="text-lg font-semibold mb-2">Chọn Khoảng Ngày</h3>
-                        <Calendar
-                            selectRange={true}
-                            onChange={handleDateChange}
-                            value={dateRange}
-                            className="border rounded p-2"
-                        />
-                        <button
-                            onClick={closeModal}
-                            className="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                        >
-                            Đóng
-                        </button>
-                    </div>
-                </Modal>
+                </Button>
             </Box>
+
+            {startDate && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        {endDate 
+                            ? `Đang lọc từ: ${new Date(startDate).toLocaleDateString('vi-VN')} đến ${new Date(endDate).toLocaleDateString('vi-VN')}`
+                            : `Đang lọc theo ngày: ${new Date(startDate).toLocaleDateString('vi-VN')}`
+                        }
+                    </Typography>
+                </Box>
+            )}
 
             <TableContainer component={Paper}>
                 <Table>
@@ -470,54 +569,65 @@ const ActivityLogs = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentLogs.map((log, index) => (
-                            <TableRow key={log.ID}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>{log.Username}</TableCell>
-                                <TableCell>{roleMapping[log.Role]}</TableCell>
-                                <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
-                                <TableCell>
-                                    <Box 
-                                        display="flex" 
-                                        alignItems="center" 
-                                        gap={1}
-                                        sx={{ minHeight: '48px' }}
-                                    >
-                                        <Typography 
-                                            variant="body2" 
-                                            sx={{ 
-                                                maxWidth: '200px', 
-                                                overflow: 'hidden', 
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                lineHeight: 1.2,
-                                                flex: 1
-                                            }}
+                        {currentLogs.length > 0 ? (
+                            currentLogs.map((log, index) => (
+                                <TableRow key={log.ID}>
+                                    <TableCell>{indexOfFirstLog + index + 1}</TableCell>
+                                    <TableCell>{log.Username}</TableCell>
+                                    <TableCell>{roleMapping[log.Role]}</TableCell>
+                                    <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
+                                    <TableCell>
+                                        <Box 
+                                            display="flex" 
+                                            alignItems="center" 
+                                            gap={1}
+                                            sx={{ minHeight: '48px' }}
                                         >
-                                            {log.resonse_data}
-                                        </Typography>
-                                        <IconButton
-                                            size="small"
-                                            color="primary"
-                                            onClick={() => openDetailModal(log)}
-                                            title="Xem chi tiết"
-                                            sx={{
-                                                padding: '4px',
-                                                alignSelf: 'center',
-                                                flexShrink: 0
-                                            }}
-                                        >
-                                            <InfoIcon fontSize="small" />
-                                        </IconButton>
-                                    </Box> 
+                                            <Typography 
+                                                variant="body2" 
+                                                sx={{ 
+                                                    maxWidth: '200px', 
+                                                    overflow: 'hidden', 
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    lineHeight: 1.2,
+                                                    flex: 1
+                                                }}
+                                            >
+                                                {log.resonse_data}
+                                            </Typography>
+                                            <IconButton
+                                                size="small"
+                                                color="primary"
+                                                onClick={() => openDetailModal(log)}
+                                                title="Xem chi tiết"
+                                                sx={{
+                                                    padding: '4px',
+                                                    alignSelf: 'center',
+                                                    flexShrink: 0
+                                                }}
+                                            >
+                                                <VisibilityIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box> 
+                                    </TableCell>
+                                    <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={6} align="center">
+                                    <Typography variant="body2" color="text.secondary">
+                                        Không tìm thấy dữ liệu phù hợp
+                                    </Typography>
                                 </TableCell>
-                                <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
 
+            {/* Dialog xem chi tiết */}
             <Dialog
                 open={isDetailModalOpen}
                 onClose={closeDetailModal}
@@ -595,7 +705,7 @@ const ActivityLogs = () => {
                                             whiteSpace: 'pre-wrap'
                                         }}
                                     >
-                                        {renderJsonData(selectedLog.request_data)}
+                                        {renderJsonData(selectedLog.request_data, selectedLog.is_list)}
                                     </Paper>
                                 </Box>
                             )}
@@ -605,6 +715,49 @@ const ActivityLogs = () => {
                 <DialogActions>
                     <Button onClick={closeDetailModal} variant="contained" color="primary">
                         Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog xác nhận xóa */}
+            <Dialog
+                open={isDeleteDialogOpen}
+                onClose={closeDeleteDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+                    <DeleteIcon />
+                    Xác nhận xóa dữ liệu
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Box sx={{ py: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                            Cảnh báo: Hành động này không thể hoàn tác!
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Có <strong style={{ color: '#d32f2f' }}>{oldLogsCount}</strong> bản ghi log cũ hơn 30 ngày sẽ bị xóa vĩnh viễn khỏi hệ thống.
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Bạn có chắc chắn muốn tiếp tục?
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button 
+                        onClick={closeDeleteDialog} 
+                        variant="outlined"
+                        color="inherit"
+                    >
+                        Hủy
+                    </Button>
+                    <Button 
+                        onClick={handleDeleteLogs} 
+                        variant="contained" 
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                    >
+                        Xác nhận xóa
                     </Button>
                 </DialogActions>
             </Dialog>
