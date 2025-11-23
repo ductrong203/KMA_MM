@@ -1,11 +1,11 @@
 const SinhVienService = require("../services/studentService");
-const {sinh_vien} = require("../models");
+const { sinh_vien } = require("../models");
+const { extraChangeQuanLyDoAn } = require("../utils/extraList");
 
 const path = require("path");
 const fs = require("fs");
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
-const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const mapRole = {
@@ -16,7 +16,7 @@ const mapRole = {
   6: "sinhVien",
   7: "admin"
 
-}
+}              
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");
 if (!fs.existsSync(exportDir)) {
@@ -121,11 +121,11 @@ class SinhVienController {
       const oldDataRaw = await sinh_vien.findByPk(req.params.id);
       const oldData = {
         "Mã sinh viên": oldDataRaw.ma_sinh_vien,
-        "Giới tính": oldDataRaw.gioi_tinh === 1? "nam" : "nữ",
+        "Giới tính": oldDataRaw.gioi_tinh === 1 ? "nam" : "nữ",
         "Quê quán": oldDataRaw.que_quan,
         "lớp": await getFieldById("lop", oldDataRaw.lop_id, "ten_lop"),
         "Đối tượng": await getFieldById("doi_tuong_quan_ly", oldDataRaw.doi_tuong_id, "ten_doi_tuong"),
-        "đang học": oldDataRaw.dang_hoc ===1 ? "có": "không",
+        "đang học": oldDataRaw.dang_hoc === 1 ? "có" : "không",
         "Ghi chú": oldDataRaw.ghi_chu,
         "họ đệm": oldDataRaw.ho_dem,
         "tên": oldDataRaw.ten,
@@ -168,46 +168,46 @@ class SinhVienController {
         let userR = await getFieldById("users", user.id, "role");
         if (updatedSinhVien) {
           const newDataRaw = await sinh_vien.findByPk(req.params.id);
-         const newData = {
-        "Mã sinh viên": newDataRaw.ma_sinh_vien,
-        "Giới tính": newDataRaw.gioi_tinh === 1? "nam" : "nữ",
-        "Quê quán": newDataRaw.que_quan,
-        "lớp": await getFieldById("lop", newDataRaw.lop_id, "ten_lop"),
-        "Đối tượng": await getFieldById("doi_tuong_quan_ly", newDataRaw.doi_tuong_id, "ten_doi_tuong"),
-        "đang học": newDataRaw.dang_hoc ===1 ? "có": "không",
-        "Ghi chú": newDataRaw.ghi_chu,
-        "họ đệm": newDataRaw.ho_dem,
-        "tên": newDataRaw.ten,
-        "số tài khoản": newDataRaw.so_tai_khoan,
-        "ngân hàng": newDataRaw.ngan_hang,
-        "chuc_vu": newDataRaw.chuc_vu,
-        "CCCD": newDataRaw.CCCD,
-        "ngay_cap_CCCD": newDataRaw.ngay_cap_CCCD,
-        "noi_cap_CCCD": newDataRaw.noi_cap_CCCD,
-        "ky_nhap_hoc": newDataRaw.ky_nhap_hoc,
-        "ngay_vao_doan": newDataRaw.ngay_vao_doan,
-        "ngay_vao_dang": newDataRaw.ngay_vao_dang,
-        "ngay_vao_truong": newDataRaw.ngay_vao_truong,
-        "ngay_ra_truong": newDataRaw.ngay_ra_truong,
-        "tinh_thanh": newDataRaw.tinh_thanh,
-        "quan_huyen": newDataRaw.quan_huyen,
-        "phuong_xa_khoi": newDataRaw.phuong_xa_khoi,
-        "dan_toc": newDataRaw.dan_toc,
-        "ton_giao": newDataRaw.ton_giao,
-        "quoc_tich": newDataRaw.quoc_tich,
-        "trung_tuyen_theo_nguyen_vong": newDataRaw.trung_tuyen_theo_nguyen_vong,
-        "nam_tot_nghiep_PTTH": newDataRaw.nam_tot_nghiep_PTTH,
-        "thanh_phan_gia_dinh": newDataRaw.thanh_phan_gia_dinh,
-        "dv_lien_ket_dao_tao": newDataRaw.dv_lien_ket_dao_tao,
-        "so_dien_thoai": newDataRaw.so_dien_thoai,
-        "dien_thoai_gia_dinh": newDataRaw.dien_thoai_gia_dinh,
-        "dien_thoai_CQ": newDataRaw.dien_thoai_CQ,
-        "email": newDataRaw.email,
-        "khi_can_bao_tin_cho_ai": newDataRaw.khi_can_bao_tin_cho_ai,
-        "noi_tru": newDataRaw.noi_tru,
-        "ngoai_tru": newDataRaw.ngoai_tru,
+          const newData = {
+            "Mã sinh viên": newDataRaw.ma_sinh_vien,
+            "Giới tính": newDataRaw.gioi_tinh === 1 ? "nam" : "nữ",
+            "Quê quán": newDataRaw.que_quan,
+            "lớp": await getFieldById("lop", newDataRaw.lop_id, "ten_lop"),
+            "Đối tượng": await getFieldById("doi_tuong_quan_ly", newDataRaw.doi_tuong_id, "ten_doi_tuong"),
+            "đang học": newDataRaw.dang_hoc === 1 ? "có" : "không",
+            "Ghi chú": newDataRaw.ghi_chu,
+            "họ đệm": newDataRaw.ho_dem,
+            "tên": newDataRaw.ten,
+            "số tài khoản": newDataRaw.so_tai_khoan,
+            "ngân hàng": newDataRaw.ngan_hang,
+            "chuc_vu": newDataRaw.chuc_vu,
+            "CCCD": newDataRaw.CCCD,
+            "ngay_cap_CCCD": newDataRaw.ngay_cap_CCCD,
+            "noi_cap_CCCD": newDataRaw.noi_cap_CCCD,
+            "ky_nhap_hoc": newDataRaw.ky_nhap_hoc,
+            "ngay_vao_doan": newDataRaw.ngay_vao_doan,
+            "ngay_vao_dang": newDataRaw.ngay_vao_dang,
+            "ngay_vao_truong": newDataRaw.ngay_vao_truong,
+            "ngay_ra_truong": newDataRaw.ngay_ra_truong,
+            "tinh_thanh": newDataRaw.tinh_thanh,
+            "quan_huyen": newDataRaw.quan_huyen,
+            "phuong_xa_khoi": newDataRaw.phuong_xa_khoi,
+            "dan_toc": newDataRaw.dan_toc,
+            "ton_giao": newDataRaw.ton_giao,
+            "quoc_tich": newDataRaw.quoc_tich,
+            "trung_tuyen_theo_nguyen_vong": newDataRaw.trung_tuyen_theo_nguyen_vong,
+            "nam_tot_nghiep_PTTH": newDataRaw.nam_tot_nghiep_PTTH,
+            "thanh_phan_gia_dinh": newDataRaw.thanh_phan_gia_dinh,
+            "dv_lien_ket_dao_tao": newDataRaw.dv_lien_ket_dao_tao,
+            "so_dien_thoai": newDataRaw.so_dien_thoai,
+            "dien_thoai_gia_dinh": newDataRaw.dien_thoai_gia_dinh,
+            "dien_thoai_CQ": newDataRaw.dien_thoai_CQ,
+            "email": newDataRaw.email,
+            "khi_can_bao_tin_cho_ai": newDataRaw.khi_can_bao_tin_cho_ai,
+            "noi_tru": newDataRaw.noi_tru,
+            "ngoai_tru": newDataRaw.ngoai_tru,
 
-      }
+          }
           let inforActivity = {
             username: userN,
             role: mapRole[userR],
@@ -308,28 +308,27 @@ class SinhVienController {
       const result = await SinhVienService.importSinhVien({ lop_id, filePath, ghi_de });
       try {
         const token = req.headers.authorization?.split(" ")[1];
-            // console.log(token);
-            let user = verifyAccessToken(token);
-            let userN  = await  getFieldById("users", user.id, "username");
-            let  userR = await  getFieldById("users", user.id, "role");
-            let lop = await getFieldById("lop", lop_id, "ma_lop")
-              if (result) {
-              let inforActivity = {
-                username:   userN,
-                role: mapRole[userR],
-                action: req.method,
-                endpoint: req.originalUrl,
-                reqData: `Người dùng ${userN}  đã nhập danh sách gồm ${result.newCount} sinh viên vào lớp có mã ${lop} `,
-                response_status: 200,
-                resData: "import danh sách sinh viên từ file excel",
-                ip:  req._remoteAddress,
-        
-              }
-                await logActivity(inforActivity);
-              }
-     } catch (error) {
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        let lop = await getFieldById("lop", lop_id, "ma_lop")
+        if (result) {
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: `Người dùng ${userN}  đã nhập danh sách gồm ${result.newCount} sinh viên vào lớp có mã ${lop} `,
+            response_status: 200,
+            resData: "import danh sách sinh viên từ file excel",
+            ip: req._remoteAddress,
+
+          }
+          await logActivity(inforActivity);
+        }
+      } catch (error) {
         console.error("Lỗi kìa ní:", error.message);
-     }
+      }
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -427,8 +426,29 @@ class SinhVienController {
   }
   static async updateSinhVienByKhoaDaoTao(req, res) {
     try {
-      const { khoa_dao_tao_id } = req.params;
-      const { sinh_vien_list } = req.body;
+      const token = req.headers.authorization?.split(" ")[1];
+      let user = verifyAccessToken(token);
+      let userN = await getFieldById("users", user.id, "username");
+      let userR = await getFieldById("users", user.id, "role");
+      const { khoa_dao_tao_id } = req.params || {};
+      const { sinh_vien_list } = req.body || [];
+      var oldDataMap = [];
+      var currentListStudent = await SinhVienService.getStudentsByKhoaDaoTaoId(khoa_dao_tao_id);
+      const maLop = currentListStudent.students[0].lop.ma_lop;
+      var idSinhVienList = sinh_vien_list.map(student => student.id);
+      if (Array.isArray(sinh_vien_list)) {
+        // Cập nhật nhiều điểm
+        for (let student of currentListStudent.students) {
+          if (idSinhVienList.includes(student.id)) oldDataMap.push({
+            id: student.id,
+            ma_sinh_vien: student.ma_sinh_vien,
+            ho_dem: student.ho_dem,
+            ten: student.ten,
+            bao_ve_do_an: student.bao_ve_do_an,
+            thi_tot_nghiep: student.thi_tot_nghiep,
+          });
+        }
+      }
 
       if (!khoa_dao_tao_id || isNaN(khoa_dao_tao_id)) {
         return res.status(400).json({ message: "Khóa đào tạo ID không hợp lệ" });
@@ -440,23 +460,23 @@ class SinhVienController {
       // const oldData = await 
       const result = await SinhVienService.updateSinhVienByKhoaDaoTao(khoa_dao_tao_id, sinh_vien_list);
       try {
-        const token = req.headers.authorization?.split(" ")[1];
-        // console.log(token);
-        let user = verifyAccessToken(token);
-        let userN = await getFieldById("users", user.id, "username");
-        let userR = await getFieldById("users", user.id, "role");
-        let lop = await getFieldById("lop", sinhVien.lop_id, "ma_lop")
-        if (result) {
+        const extraData = await extraChangeQuanLyDoAn(oldDataMap, result.updatedSinhViens, maLop);
+        console.log("extraData##########", extraData.changed_students[0].changes);
+        const countSinhVien = extraData.changed_students.length || 0;
+        if (countSinhVien > 0) {
+          // Tạo description
+          const classInfo = extraData.class ? ` lớp ${extraData.class}` : "";
+          const description = `Cập nhật trạng thái đồ án tốt nghiệp của sinh viên ${classInfo} - Tổng số sinh viên thay đổi: ${countSinhVien}`;
           let inforActivity = {
             username: userN,
             role: mapRole[userR],
             action: req.method,
             endpoint: req.originalUrl,
-            reqData: ``,
+            reqData: extraData,
             response_status: 200,
-            resData: `Người dùng ${userN} đã cập nhật thông tin cho sinh viên có mã ${req.body.ma_sinh_vien}`,
+            resData: description,
             ip: req._remoteAddress,
-
+            is_list: 1
           }
           await logActivity(inforActivity);
         }
