@@ -16,6 +16,7 @@ import {
   InputLabel,
   FormControl
 } from '@mui/material';
+import { toast } from 'react-toastify';
 
 const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
     so_tin_chi: 0,
     ghi_chu: '',
     tinh_diem: true,
+    bao_ve: false,
     curriculumIds: []
   });
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,11 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   // Update form data when subject prop changes
   useEffect(() => {
     if (subject) {
-      setFormData({ ...subject, curriculumIds: subject.he_dao_tao_id ? [subject.he_dao_tao_id] : [] });
+      setFormData({
+        ...subject,
+        curriculumIds: subject.he_dao_tao_id ? [subject.he_dao_tao_id] : [],
+        bao_ve: subject.bao_ve || false
+      });
     }
   }, [subject]);
 
@@ -44,7 +50,7 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
- 
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors({
@@ -84,14 +90,17 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) {
+      toast.error("Vui lòng kiểm tra và điền đầy đủ thông tin hợp lệ!");
       return;
     }
 
     setLoading(true);
     try {
       await onSubmit(formData);
+      toast.success(formData.id ? "Cập nhật môn học thành công!" : "Thêm môn học mới thành công!");
+      handleClose(); // Close dialog on success
     } catch (error) {
-      console.error('Error submitting form:', error);
+      toast.error("Đã xảy ra lỗi khi lưu môn học. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -143,14 +152,14 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
             disabled={loading}
             InputProps={{ inputProps: { min: 1 } }}
           />
-         <FormControl fullWidth margin="dense">
+          <FormControl fullWidth margin="dense">
             <InputLabel>Hệ đào tạo</InputLabel>
             <Select
               multiple
               name="curriculumIds"
               value={formData.curriculumIds}
               onChange={handleCurriculumChange}
-              renderValue={(selected) => 
+              renderValue={(selected) =>
                 selected.map(id => curriculums.find(c => c.id === id)?.ten_he_dao_tao).join(', ')
               }
             >
@@ -184,6 +193,23 @@ const MonHocForm = ({ open, onClose, subject, onSubmit, curriculums }) => {
             }
             label="Tính vào điểm trung bình chung"
           />
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="bao_ve"
+                checked={formData.bao_ve}
+                onChange={handleChange}
+                disabled={loading}
+              />
+            }
+            label="Môn bảo vệ"
+          />
+          <Box sx={{ mt: 1, p: 2, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #90caf9' }}>
+            <p style={{ margin: 0, fontSize: '14px', color: '#1976d2', fontStyle: 'italic' }}>
+              <strong>Lưu ý:</strong> Môn học bảo vệ sẽ chỉ có 1 đầu điểm (điểm cuối kỳ).
+              Các điểm thành phần khác sẽ tự động được điền bằng điểm cuối kỳ.
+            </p>
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions>

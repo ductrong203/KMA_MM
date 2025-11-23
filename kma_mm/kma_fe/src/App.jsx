@@ -20,6 +20,7 @@ import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
+import GradeSettings from "./components/admin/GradeSettings";
 
 import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
 import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";
@@ -33,8 +34,9 @@ import ManageDepartments from "./components/admin/ManageDepartment";
 import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
 import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
+import QuanLyChungChi from "./components/QuanLyChungChi/QuanLyChungChi";
 
-
+import { ToastContainer } from 'react-toastify';
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
@@ -157,6 +159,18 @@ const App = () => {
             </PrivateRoute>
           }
         />
+        
+        {/* Route thiết lập quy định điểm */}
+        <Route
+          path="/admin/grade-settings"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Thiết lập quy định điểm">
+                <GradeSettings />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/admin/teacher-management"
           element={
@@ -195,6 +209,18 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["training"]}>
               <Layout Info={info} title="HỆ QUẢN LÝ ĐÀO TẠO">
                 <TrainingDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* chung chi */}
+        <Route
+          path="/training/certificates"
+          element={
+            <PrivateRoute role={role} allowedRoles={["training"]}>
+              <Layout Info={info} title="Quản lý chứng chỉ">
+                <QuanLyChungChi />
               </Layout>
             </PrivateRoute>
           }
@@ -256,6 +282,18 @@ const App = () => {
 
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </Router>
   );
 };

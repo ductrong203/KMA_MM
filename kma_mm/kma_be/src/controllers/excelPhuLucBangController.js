@@ -1,6 +1,7 @@
 const ExcelPhuLucBangService = require("../services/excelPhuLucBangService");
 const path = require("path");
 const fs = require("fs");
+const SinhVienService = require("../services/studentService");
 
 const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
 if (!fs.existsSync(exportDir)) {
@@ -97,10 +98,10 @@ class ExcelPhuLucBangController{
             }
             
             // Lấy thông tin sinh viên
-            const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang(parseInt(sinh_vien_id));
+            const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang_v2(parseInt(sinh_vien_id));
             
             // Lưu file vào thư mục exports/phulucbang
-            const fileName = `phu_luc_bang_diem_sinh_vien_${sinh_vien_id}.xlsx`;
+            const fileName = `phu_luc_bang_sinh_vien_${sinh_vien_id}.xlsx`;
             const filePath = path.join(exportDir, fileName);
 
             await sinhVien.xlsx.writeFile(filePath);
@@ -122,6 +123,46 @@ class ExcelPhuLucBangController{
             return res.status(500).json({
                 success: false,
                 message: "Đã xảy ra lỗi khi xuất file Excel phụ lục bảng",
+                error: error.message
+            });
+        }
+    }
+
+    static async exportDocsPhuLucBang(req, res) {
+        
+        try {
+            const { sinh_vien_id } = req.query;
+        
+            if (!sinh_vien_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Thiếu thông tin sinh viên"
+                });
+            }
+        
+            const docxBuffer = await ExcelPhuLucBangService.docxPhuLucBang(sinh_vien_id);
+            const fileName = `phu_luc_bang_sinh_vien_${sinh_vien_id}.docx`;
+            const filePath = path.join(exportDir, fileName);
+        
+            fs.writeFileSync(filePath, docxBuffer);
+        
+            res.download(filePath, fileName, (err) => {
+                if (err) {
+                    console.error("Lỗi khi gửi file:", err);
+                    return res.status(500).json({
+                        success: false,
+                        message: "Không thể tải file"
+                    });
+                }
+        
+                console.log("File đã được lưu tại:", filePath);
+            });
+        
+        } catch (error) {
+            console.error("Lỗi khi xuất file DOCX phụ lục bảng:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Đã xảy ra lỗi khi xuất file DOCX phụ lục bảng",
                 error: error.message
             });
         }

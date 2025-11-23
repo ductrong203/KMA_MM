@@ -26,4 +26,9 @@ router.put(
   authUSerMiddleWare,
   authController.changePassword
 );
+
+
+//logs
+router.get("/logs", authAdminMiddleWare, authController.get_logs);
+
 module.exports = router;

@@ -21,6 +21,7 @@ import {
     Tabs,
     Tab,
     Divider,
+    Container,
 } from '@mui/material';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import SaveIcon from '@mui/icons-material/Save';
@@ -32,6 +33,19 @@ import { styled } from '@mui/material/styles';
 import QuanLyDiem from '../Diem/QuanLyDiem';
 import TaoBangDiem from '../Diem/TaoBangDiem';
 import XemDanhSachDiem from '../Diem/XemDanhSachDiem';
+import StudentManagement from '../QLHV/StudentManagement';
+import MonHocTheoHeDaoTao from '../Mon Hoc/MonHocTheoHeDaoTao';
+import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
+import QuanLyKhoa from '../Khoa/QuanLyKhoa';
+import QuanLyLop from '../LOP/ClassManagement';
+import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
+import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
+import QuanLyKhenKyLuat from '../QLHV/khen_kyLuat';
+import QuanLyChungChi from '../QuanLyChungChi/QuanLyChungChi';
+import QuanLyMonHoc from '../Mon Hoc/QuanLyMonHoc';
+import PhuLucBangDiem from '../Dao Tao/PhuLucBangDiem';
+import ThongKeTotNghiep from '../Dao Tao/ThongKe';
+import ThongKeDiem from '../Dao Tao/ThongKeDiem';
 
 // Styled component for file upload
 const VisuallyHiddenInput = styled('input')({
@@ -54,6 +68,8 @@ const sampleStudents = [
 ];
 
 const GradeImportSystem = () => {
+    const [currentTab, setCurrentTab] = useState(0);
+    const [subTab, setSubTab] = useState(0); // State cho tab con
     const [year, setYear] = useState('');
     const [semester, setSemester] = useState('');
     const [examPeriod, setExamPeriod] = useState('');
@@ -78,6 +94,14 @@ const GradeImportSystem = () => {
         examNumber: '',
         educationType: ''
     });
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+        setSubTab(0); // Reset tab con về 0 khi chuyển tab chính
+    };
+    const handleSubTabChange = (event, newValue) => {
+        setSubTab(newValue);
+    };
     const [reportType, setReportType] = useState('summary');
 
     // Add these handler functions
@@ -93,10 +117,6 @@ const GradeImportSystem = () => {
 
     const handleFileChange = (event) => {
         setSelectedFile(event.target.files[0]);
-    };
-
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
     };
 
     const handleImport = () => {
@@ -282,485 +302,101 @@ const GradeImportSystem = () => {
     };
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom component="div">
-                Hệ thống Quản lý Điểm
-            </Typography>
+        <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
+            <Container maxWidth="" sx={{ py: 4 }}>
+                <Paper sx={{ mb: 4, p: 3, borderRadius: 2 }}>
+                    {/* Tab chính */}
+                    <Tabs
+                        value={currentTab}
+                        onChange={handleTabChange}
+                        sx={{
+                            mb: 3,
+                            '& .MuiTab-root': {
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                color: 'primary.main',
+                                textTransform: 'uppercase',
+                                padding: '12px 24px',
+                            },
+                            '& .Mui-selected': {
+                                color: 'secondary.main',
+                                borderBottom: '2px solid',
+                                borderColor: 'secondary.main',
+                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            },
+                        }}
+                    >
+                        <Tab label="Quản lý điểm" />
+                        <Tab label="Quản lý học viên" />
+                        <Tab label="Quản lý môn học" />
+                        <Tab label="Thống kê và báo cáo" />
+                    </Tabs>
 
-            <Tabs value={tabValue} onChange={handleTabChange} aria-label="grade management tabs">
-                {/* <Tab label="Import Điểm" /> */}
-                <Tab label="Tạo Bảng Điểm" />
-                <Tab label="Quản lý Điểm" />
-                <Tab label="Xem Danh Sách Điểm" />
-                <Tab label="Báo cáo" />
-            </Tabs>
-
-            <Box sx={{ mt: 2 }}>
-                {/* {tabValue === 0 && (
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Import Điểm
-                        </Typography>
-
-                        <Grid container spacing={2} sx={{ mb: 3 }}>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Năm học</InputLabel>
-                                    <Select
-                                        value={year}
-                                        label="Năm học"
-                                        onChange={(e) => setYear(e.target.value)}
-                                    >
-                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
-                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
-                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học kỳ</InputLabel>
-                                    <Select
-                                        value={semester}
-                                        label="Học kỳ"
-                                        onChange={(e) => setSemester(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Học kỳ 1</MenuItem>
-                                        <MenuItem value="2">Học kỳ 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Đợt thi</InputLabel>
-                                    <Select
-                                        value={examPeriod}
-                                        label="Đợt thi"
-                                        onChange={(e) => setExamPeriod(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Đợt 1</MenuItem>
-                                        <MenuItem value="2">Đợt 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Môn học</InputLabel>
-                                    <Select
-                                        value={course}
-                                        label="Môn học"
-                                        onChange={(e) => setCourse(e.target.value)}
-                                    >
-                                        <MenuItem value="WEB">Lập trình Web</MenuItem>
-                                        <MenuItem value="JAVA">Lập trình Java</MenuItem>
-                                        <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Loại điểm</InputLabel>
-                                    <Select
-                                        value={examType}
-                                        label="Loại điểm"
-                                        onChange={(e) => setExamType(e.target.value)}
-                                    >
-                                        <MenuItem value="TP1">Thành phần 1</MenuItem>
-                                        <MenuItem value="TP2">Thành phần 2</MenuItem>
-                                        <MenuItem value="CK1">Cuối kỳ (lần 1)</MenuItem>
-                                        <MenuItem value="CK2">Cuối kỳ (thi lại)</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Lớp</InputLabel>
-                                    <Select
-                                        value={classGroup}
-                                        label="Lớp"
-                                        onChange={(e) => setClassGroup(e.target.value)}
-                                    >
-                                        <MenuItem value="ALL">Toàn khóa</MenuItem>
-                                        <MenuItem value="CT6">CT6</MenuItem>
-                                        <MenuItem value="CT7">CT7</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    component="label"
-                                    variant="contained"
-                                    startIcon={<CloudUploadIcon />}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Chọn file Excel
-                                    <VisuallyHiddenInput type="file" onChange={handleFileChange} />
-                                </Button>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<FileUploadIcon />}
-                                    onClick={handleImport}
-                                    disabled={!selectedFile || !year || !semester || !examPeriod || !course || !examType}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Import Điểm
-                                </Button>
-                            </Grid>
-                        </Grid>
-
-                        <Typography variant="subtitle1" gutterBottom>
-                            {selectedFile ? `File đã chọn: ${selectedFile.name}` : 'Chưa chọn file nào'}
-                        </Typography>
-                    </Paper>
-                )} */}
-                {tabValue == 0 && (
-                    <TaoBangDiem />
-                )}
-                {tabValue === 1 && (
-                    <QuanLyDiem onSave={handleSave} sampleStudents={sampleStudents} />
-                )}
-
-                {tabValue === 2 && (
-                    // <Paper sx={{ p: 3 }}>
-                    //     <Typography variant="h6" gutterBottom>
-                    //         Xem Danh Sách Điểm
-                    //     </Typography>
-
-                    //     <Grid container spacing={2} sx={{ mb: 3 }}>
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Năm học</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.year}
-                    //                     label="Năm học"
-                    //                     onChange={(e) => handleViewFilterChange('year', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="2023-2024">2023-2024</MenuItem>
-                    //                     <MenuItem value="2024-2025">2024-2025</MenuItem>
-                    //                     <MenuItem value="2025-2026">2025-2026</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Học kỳ</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.semester}
-                    //                     label="Học kỳ"
-                    //                     onChange={(e) => handleViewFilterChange('semester', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="1">Học kỳ 1</MenuItem>
-                    //                     <MenuItem value="2">Học kỳ 2</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Đợt học</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.examPeriod}
-                    //                     label="Đợt học"
-                    //                     onChange={(e) => handleViewFilterChange('examPeriod', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="1">Đợt 1</MenuItem>
-                    //                     <MenuItem value="2">Đợt 2</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Khóa</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.batch}
-                    //                     label="Khóa"
-                    //                     onChange={(e) => handleViewFilterChange('batch', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="K14">K14</MenuItem>
-                    //                     <MenuItem value="K15">K15</MenuItem>
-                    //                     <MenuItem value="K16">K16</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Chuyên ngành</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.major}
-                    //                     label="Chuyên ngành"
-                    //                     onChange={(e) => handleViewFilterChange('major', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="CNTT">Công nghệ thông tin</MenuItem>
-                    //                     <MenuItem value="KTPM">Kỹ thuật phần mềm</MenuItem>
-                    //                     <MenuItem value="HTTT">Hệ thống thông tin</MenuItem>
-                    //                     <MenuItem value="MMT">Mạng máy tính</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Học phần</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.course}
-                    //                     label="Học phần"
-                    //                     onChange={(e) => handleViewFilterChange('course', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="WEB">Lập trình Web</MenuItem>
-                    //                     <MenuItem value="JAVA">Lập trình Java</MenuItem>
-                    //                     <MenuItem value="DB">Cơ sở dữ liệu</MenuItem>
-                    //                     <MenuItem value="AI">Trí tuệ nhân tạo</MenuItem>
-                    //                     <MenuItem value="DS">Cấu trúc dữ liệu</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Lớp</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.classGroup}
-                    //                     label="Lớp"
-                    //                     onChange={(e) => handleViewFilterChange('classGroup', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="ALL">Tất cả</MenuItem>
-                    //                     <MenuItem value="CT6">CT6</MenuItem>
-                    //                     <MenuItem value="CT7">CT7</MenuItem>
-                    //                     <MenuItem value="CT8">CT8</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Lần thi</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.examNumber}
-                    //                     label="Lần thi"
-                    //                     onChange={(e) => handleViewFilterChange('examNumber', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="1">Lần 1</MenuItem>
-                    //                     <MenuItem value="2">Lần 2 (Thi lại)</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <FormControl fullWidth>
-                    //                 <InputLabel>Hệ đào tạo</InputLabel>
-                    //                 <Select
-                    //                     value={viewFilter.educationType}
-                    //                     label="Hệ đào tạo"
-                    //                     onChange={(e) => handleViewFilterChange('educationType', e.target.value)}
-                    //                 >
-                    //                     <MenuItem value="CQ">Chính quy</MenuItem>
-                    //                     <MenuItem value="LT">Liên thông</MenuItem>
-                    //                     <MenuItem value="VLVH">Vừa làm vừa học</MenuItem>
-                    //                 </Select>
-                    //             </FormControl>
-                    //         </Grid>
-
-                    //         <Grid item xs={12} sm={6} md={3}>
-                    //             <Button
-                    //                 variant="contained"
-                    //                 color="primary"
-                    //                 startIcon={<VisibilityIcon />}
-                    //                 onClick={handleViewSearch}
-                    //                 sx={{ height: '56px' }}
-                    //             >
-                    //                 Xem điểm
-                    //             </Button>
-                    //         </Grid>
-                    //     </Grid>
-
-                    //     <Divider sx={{ my: 2 }} />
-
-                    //     <TableContainer component={Paper}>
-                    //         <Table sx={{ minWidth: 650 }} aria-label="view grades table">
-                    //             <TableHead>
-                    //                 <TableRow>
-                    //                     <TableCell>Mã SV</TableCell>
-                    //                     <TableCell>Họ và tên</TableCell>
-                    //                     <TableCell>Lớp</TableCell>
-                    //                     <TableCell>Trạng thái</TableCell>
-                    //                     <TableCell>TP1</TableCell>
-                    //                     <TableCell>TP2</TableCell>
-                    //                     <TableCell>CK lần 1</TableCell>
-                    //                     <TableCell>CK lần 2</TableCell>
-                    //                     <TableCell>Điểm TK</TableCell>
-                    //                 </TableRow>
-                    //             </TableHead>
-                    //             <TableBody>
-                    //                 {students.map((student) => {
-                    //                     // Tính điểm tổng kết (giả sử công thức: TP1*0.2 + TP2*0.2 + CK*0.6)
-                    //                     // Ưu tiên lấy điểm CK lần 2 nếu có, nếu không thì lấy điểm CK lần 1
-                    //                     const finalExamScore = student.scores.CK2 !== null ? student.scores.CK2 : student.scores.CK1;
-                    //                     const totalScore = student.scores.TP1 * 0.2 + student.scores.TP2 * 0.2 + finalExamScore * 0.6;
-
-                    //                     return (
-                    //                         <TableRow key={student.id}>
-                    //                             <TableCell>{student.id}</TableCell>
-                    //                             <TableCell>{student.name}</TableCell>
-                    //                             <TableCell>{student.class}</TableCell>
-                    //                             <TableCell>{student.status}</TableCell>
-                    //                             <TableCell>{student.scores.TP1}</TableCell>
-                    //                             <TableCell>{student.scores.TP2}</TableCell>
-                    //                             <TableCell>{student.scores.CK1}</TableCell>
-                    //                             <TableCell>{student.scores.CK2 !== null ? student.scores.CK2 : '-'}</TableCell>
-                    //                             <TableCell>{totalScore.toFixed(1)}</TableCell>
-                    //                         </TableRow>
-                    //                     );
-                    //                 })}
-                    //             </TableBody>
-                    //         </Table>
-                    //     </TableContainer>
-
-                    //     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    //         <Button
-                    //             variant="contained"
-                    //             color="success"
-                    //             startIcon={<DownloadIcon />}
-                    //             onClick={handleExportData}
-                    //             sx={{ mr: 2 }}
-                    //         >
-                    //             Xuất Excel
-                    //         </Button>
-                    //     </Box>
-                    // </Paper>
-                    <XemDanhSachDiem/>
-                )}
-
-                {tabValue === 3 && (
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Báo cáo
-                        </Typography>
-
-                        <Grid container spacing={2} sx={{ mb: 3 }}>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Năm học</InputLabel>
-                                    <Select
-                                        value={year}
-                                        label="Năm học"
-                                        onChange={(e) => setYear(e.target.value)}
-                                    >
-                                        <MenuItem value="2023-2024">2023-2024</MenuItem>
-                                        <MenuItem value="2024-2025">2024-2025</MenuItem>
-                                        <MenuItem value="2025-2026">2025-2026</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Học kỳ</InputLabel>
-                                    <Select
-                                        value={semester}
-                                        label="Học kỳ"
-                                        onChange={(e) => setSemester(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Học kỳ 1</MenuItem>
-                                        <MenuItem value="2">Học kỳ 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Đợt học</InputLabel>
-                                    <Select
-                                        value={examPeriod}
-                                        label="Đợt học"
-                                        onChange={(e) => setExamPeriod(e.target.value)}
-                                    >
-                                        <MenuItem value="1">Đợt 1</MenuItem>
-                                        <MenuItem value="2">Đợt 2</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Loại báo cáo</InputLabel>
-                                    <Select
-                                        value={reportType}
-                                        label="Loại báo cáo"
-                                        onChange={(e) => setReportType(e.target.value)}
-                                    >
-                                        <MenuItem value="summary">Tổng kết điểm</MenuItem>
-                                        <MenuItem value="distribution">Phân bố điểm</MenuItem>
-                                        <MenuItem value="retake">Danh sách thi lại</MenuItem>
-                                        <MenuItem value="failRate">Tỷ lệ trượt theo lớp</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<SearchIcon />}
-                                    onClick={handleGenerateReport}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Tạo báo cáo
-                                </Button>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleExportReport}
-                                    sx={{ height: '56px' }}
-                                >
-                                    Xuất báo cáo
-                                </Button>
-                            </Grid>
-                        </Grid>
-
-                        <Divider sx={{ my: 2 }} />
-
-                        <Box sx={{ mt: 3 }}>
-                            <Typography variant="subtitle1" gutterBottom>
-                                Kết quả báo cáo sẽ hiển thị ở đây
-                            </Typography>
-
-                            {/* Placeholder for report visualization - would be replaced with actual charts */}
-                            <Paper
-                                elevation={0}
+                    {currentTab === 0 && (
+                        <Box>
+                            {/* Tab con */}
+                            <Tabs
+                                value={subTab}
+                                onChange={handleSubTabChange}
                                 sx={{
-                                    p: 2,
-                                    backgroundColor: '#f5f5f5',
-                                    height: '400px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
+                                    mb: 2,
+                                    '& .MuiTab-root': {
+                                        fontWeight: 'normal',
+                                        fontSize: '0.9rem',
+                                        color: 'text.secondary',
+                                        padding: '8px 16px',
+                                    },
+                                    '& .Mui-selected': {
+                                        color: 'primary.main',
+                                        borderBottom: '2px solid',
+                                        borderColor: 'primary.main',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                    },
                                 }}
                             >
-                                <Typography color="text.secondary">
-                                    Chọn các tiêu chí và nhấn "Tạo báo cáo" để xem kết quả
-                                </Typography>
-                            </Paper>
+                                <Tab label="Tạo bảng điểm" />
+                                <Tab label="Quản lý điểm" />
+                                <Tab label="Xem danh sách điểm" />
+                            </Tabs>
+                            {subTab === 0 && <TaoBangDiem />}
+                            {subTab === 1 && <QuanLyDiem />}
+                            {subTab === 2 && <XemDanhSachDiem />}
                         </Box>
-                    </Paper>
-                )}
-            </Box>
+                    )}
+
+                    {currentTab === 1 && (
+                        <Box>
+                            <Tabs value={subTab} onChange={handleSubTabChange}>
+                                <Tab label="Danh sách học viên" />
+                                <Tab label="Xét tốt nghiệp" />
+                                <Tab label="Quản lý bằng cấp" />
+                            </Tabs>
+                            {subTab === 0 && <StudentManagement />}
+                            {subTab === 1 && <DieuKienTotNghiep />}
+                            {subTab === 2 && <QuanLyBangCap />}
+                        </Box>
+                    )}
+
+                    {currentTab === 2 && (
+                        <QuanLyMonHoc />
+                    )}
+                    {currentTab === 3 && (
+                        <Box>
+                            <Tabs value={subTab} onChange={handleSubTabChange}>
+                                <Tab label="Thống kê" />
+                                <Tab label="Thống kê điểm" />
+                                
+                            </Tabs>
+                            <Grid container spacing={3} sx={{ mt: 2 }}>
+                                {subTab === 0 && <ThongKeTotNghiep />}
+                                {subTab === 1 && <ThongKeDiem />}
+
+                            </Grid>
+                        </Box>
+                    )}
+                </Paper>
+
+            </Container>
         </Box>
     );
 }

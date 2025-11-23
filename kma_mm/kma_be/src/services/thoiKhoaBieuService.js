@@ -96,7 +96,7 @@ class ThoiKhoaBieuService {
         limit: pageSize,
         offset: offset,
         order: [['id', 'DESC']]
-    });
+        });
 
     return {
         totalItems: count,
@@ -220,7 +220,7 @@ class ThoiKhoaBieuService {
     if (!record) throw new Error('Thời khóa biểu không tồn tại.');
 
     await record.destroy();
-    return { message: 'Xóa thành công!' };
+    return { message: 'Xóa thời khoá biểu thành công!' };
   }
 }
 

@@ -5,8 +5,10 @@ export const taoBangDiemChoSinhVien = async (data) => {
   return response.data;
 };
 
-export const layDanhSachSinhVienTheoTKB = async (id) => {
-  const response = await api.get(`/diem/filter?thoi_khoa_bieu_id=${id}`);
+export const layDanhSachSinhVienTheoTKB = async (params) => {
+  // Nếu params là string, sử dụng trực tiếp; nếu là object, convert thành query string
+  const queryString = typeof params === 'string' ? params : `thoi_khoa_bieu_id=${params}`;
+  const response = await api.get(`/diem/filter?${queryString}`);
   return response.data;
 };
 
@@ -43,4 +45,48 @@ export const themSinhVienHocLai = async (data) => {
 export const kiemTraBangDiemTonTai = async (id) => {
   const response = await api.get(`/diem/filter?thoi_khoa_bieu_id=${id}`);
   return response.data;
+};
+
+export const layDSSVTheoKhoaVaMonHoc = async (khoa_id, mon_hoc_id) => {
+  const response = await api.get(`/diem/khoadaotaovamonhoc/${khoa_id}/${mon_hoc_id}`);
+  return response.data;
+};
+
+export const fetchThongKeDiem = async (heDaoTaoId, khoaId, lopId, kyHocId) => {
+  try {
+    const queryParams = new URLSearchParams({
+      he_dao_tao_id: heDaoTaoId || '',
+      khoa_dao_tao_id: khoaId || '',
+      ky_hoc_id: kyHocId || '',
+      ...(lopId && { lop_id: lopId })
+    });
+    const response = await api.get(`/diem/thong-ke-diem?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Export kết quả kỳ học theo sinh viên
+export const exportKetQuaKyHoc = async (sinhVienId, soKyHoc) => {
+  try {
+    const response = await api.get(`/export-excel/ket-qua-ky-hoc/?sinh_vien_id=${sinhVienId}&so_ky_hoc=${soKyHoc}`, {
+      responseType: 'blob' // Để nhận file Excel
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Export kết quả năm học theo sinh viên
+export const exportKetQuaNamHoc = async (sinhVienId, namHoc) => {
+  try {
+    const response = await api.get(`/export-excel/ket-qua-nam-hoc/?sinh_vien_id=${sinhVienId}&nam_hoc=${namHoc}`, {
+      responseType: 'blob' // Để nhận file Excel
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
 };

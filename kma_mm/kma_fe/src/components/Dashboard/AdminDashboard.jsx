@@ -15,45 +15,28 @@ import {
   History as HistoryIcon,
   Delete as DeleteIcon,
   Business as BusinessIcon,
+  People as PeopleIcon, // Thêm icon cho Quản lý giảng viên, nhân viên
+  Groups as GroupsIcon, // Thêm icon cho Quản lý đối tượng
+  Settings as SettingsIcon, // Icon cho thiết lập quy định điểm
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
 const menuItems = [
-  {
-    title: "Thêm tài khoản",
-    description: "Create new accounts for users or admins.",
-    icon: <AddIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/add-account",
-    color: "success.main",
+   {
+    title: "Quản lý giảng viên, nhân viên",
+    description: "Thêm, sửa, quản lý giảng viên, nhân viên",
+    icon: <PeopleIcon sx={{ fontSize: 40 }} />, // Sử dụng PeopleIcon
+    href: "/admin/teacher-management",
+    color: "info.main",
   },
-  {
-    title: "Quản lý tài khoản",
-    description: "Edit, update, or disable user accounts.",
-    icon: <ManageAccountsIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/manage-accounts",
-    color: "primary.main",
-  },
-  {
+   {
     title: "Phân quyền",
-    description: "Assign or update roles for users.",
+    description: "Gán hoặc cập nhật vai trò cho người dùng.",
     icon: <SecurityIcon sx={{ fontSize: 40 }} />,
     href: "/admin/assign-roles",
     color: "secondary.main",
   },
-  {
-    title: "Lịch sử hoạt động",
-    description: "View login history or actions performed by users.",
-    icon: <HistoryIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/activity-logs",
-    color: "warning.main",
-  },
-  {
-    title: "Xóa tài khoản",
-    description: "Remove inactive or unwanted accounts.",
-    icon: <DeleteIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/delete-account",
-    color: "error.main",
-  },
+  
   {
     title: "Quản lý phòng ban",
     description: "Thêm, sửa, quản lý phòng ban.",
@@ -61,20 +44,43 @@ const menuItems = [
     href: "/admin/departments",
     color: "info.main",
   },
-  {
-    title: "Quản lý giảng viên, nhân viên",
-    description: "Thêm, sửa, quản lý giảng viên, nhân viên",
-    icon: <BusinessIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/teacher-management",
-    color: "info.main",
-  },
-  {
+ {
     title: "Quản lý đối tượng",
     description: "Thêm, sửa, quản lý đối tượng",
-    icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+    icon: <GroupsIcon sx={{ fontSize: 40 }} />, // Sử dụng GroupsIcon
     href: "/admin/manage-objects",
     color: "info.main",
   },
+  {
+    title: "Thêm tài khoản",
+    description: "Tạo tài khoản mới cho người dùng hoặc quản trị viên.",
+    icon: <AddIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/add-account",
+    color: "success.main",
+  },
+  {
+    title: "Quản lý tài khoản",
+    description: "Chỉnh sửa, cập nhật hoặc vô hiệu hóa tài khoản người dùng.",
+    icon: <ManageAccountsIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/manage-accounts",
+    color: "primary.main",
+  },
+ {
+    title: "Thiết lập quy định điểm",
+    description: "Điều chỉnh quy định về điểm qua môn, điểm thi lại và các quy định khác.",
+    icon: <SettingsIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/grade-settings",
+    color: "primary.main",
+  },
+  {
+    title: "Lịch sử hoạt động",
+    description: "Xem lịch sử đăng nhập hoặc hành động của người dùng.",
+    icon: <HistoryIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/activity-logs",
+    color: "warning.main",
+  },
+  
+  
 ];
 
 const AdminDashboard = () => {

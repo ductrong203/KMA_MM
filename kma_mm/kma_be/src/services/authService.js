@@ -1,6 +1,9 @@
-const { users } = require("../models");
+const { users, activity_logs } = require("../models");
 const bcrypt = require("bcrypt");
 const { generalAccessToken, generalRefreshToken } = require("./jwtService");
+const user = require("../models/user");
+const { where, Op } = require("sequelize");
+
 
 const register = async (newUser) => {
   const { username, password, confirmPassword, role, ho_ten } = newUser;
@@ -29,7 +32,7 @@ const register = async (newUser) => {
 
     return {
       status: "OK",
-      message: "Success!",
+      message: "Đăng kí thành công",
       data: createdUser,
     };
   } catch (error) {
@@ -89,7 +92,7 @@ const deleteUser = async (id) => {
     await users.destroy({ where: { id } });
     return {
       status: "OK",
-      message: "Deleted user successfully!",
+      message: "Xoá người dùng thành công ",
     };
   } catch (error) {
     throw new Error(error.message);
@@ -150,7 +153,7 @@ const updateUser = async (id, data) => {
 
     return {
       status: "OK",
-      message: "User is updated!",
+      message: "Cập nhật người dùng thành công",
       data: updatedUser,
     };
   } catch (error) {
@@ -179,12 +182,72 @@ const changePassword = async (id, oldPassword, newPassword) => {
     await users.update({ password: hashedPassword }, { where: { id } });
     return {
       status: "OK",
-      message: "Password has been changed successfully!",
+      message: "Thay đổi mật khẩu thành công",
     };
   } catch (error) {
     throw new Error(error.message);
   }
 };
+
+const get_logs = async (role, startDate, endDate) => {
+  try {
+    let logs= [] ; 
+   if (role) {
+     logs = await activity_logs.findAll({
+       where :{
+         role
+        }
+      })
+      // console.log(logs);
+    };
+
+// Result: "2025-06-17"
+   if (startDate && endDate){
+    if (role){
+      var bonus = await activity_logs.findAll({
+       where: {
+         created_at: {
+           [Op.gte]: startDate,
+           [Op.lte]: endDate,
+         },
+          role
+
+       }
+      })
+    }
+    else {
+       bonus = await activity_logs.findAll({
+        where: {
+          created_at: {
+            [Op.gte]: startDate,
+            [Op.lte]: endDate,
+            
+          },
+        }
+       })
+    }
+     logs.push(...bonus);
+
+   }
+   if (!role&&!startDate&&!endDate){
+    logs = await activity_logs.findAll();
+    
+   }
+    // const total_page = Math.ceil(count/limit);
+    // console.log("limit: " , page)
+    return {
+       status: "OK",
+       message: "get all activities",
+      //  current_page: page,
+      //  total_page,
+      //  total_items: count,
+       data: logs
+    }
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
   register,
   loginUser,
@@ -193,4 +256,6 @@ module.exports = {
   getDetailUser,
   updateUser,
   changePassword,
+  get_logs,
+
 };

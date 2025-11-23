@@ -10,7 +10,9 @@ class LopController {
       }
   
       const newLop = await LopService.createLop(khoa_dao_tao_id);
-      return res.status(201).json(newLop);
+      return res.status(201).json(
+        {message: "Tạo lớp thành công ",
+        data: newLop});
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
@@ -53,7 +55,9 @@ class LopController {
     try {
       const updatedLop = await LopService.updateLop(req.params.id, req.body);
       if (!updatedLop) return res.status(404).json({ message: "Lớp không tồn tại" });
-      res.json(updatedLop);
+      res.json(
+        {message: "Cập nhật lớp thành công ",
+        data: updatedLop});
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
