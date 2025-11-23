@@ -44,6 +44,12 @@ module.exports = function(sequelize, DataTypes) {
     created_at: {
       type: Sequelize.DATE,
       defaultValue: Sequelize.literal("CURRENT_TIMESTAMP")
+    },
+     is_list: {
+      type: DataTypes.TINYINT,     // hoặc BOOLEAN nếu bạn muốn kiểu logic
+      allowNull: false,
+      defaultValue: 0,
+      comment: '0 = No, 1 = Yes'
     }
   }, {
     sequelize,
