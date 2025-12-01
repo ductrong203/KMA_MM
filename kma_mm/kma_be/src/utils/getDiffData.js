@@ -1,60 +1,171 @@
-const mapRole = {
-        1: "daoTao",
-        2: "khaoThi",
-        3: "quanLiSinhVien",
-        4: "quanLiThuVien",
-        5: "giamDoc",
-        6: "sinhVien",
-        7: "admin"
+const { 
+  getRoleName,
+  getGenderLabel,
+  getActiveStatusLabel,
+  getStudyingStatusLabel,
+  getDepartmentTypeLabel
+} = require('../enums/roleEnum');
+const { formatDate } = require("../utils/formatDate");
 
+/**
+ * So sánh sự khác biệt giữa old data và new data
+ * @param {Object} oldData - Dữ liệu cũ
+ * @param {Object} newData - Dữ liệu mới
+ * @returns {String} - Chuỗi mô tả các thay đổi
+ */
+const getDiffData = (oldData, newData) => {
+  const changes = [];
+  
+  // Danh sách các field cần bỏ qua
+  const ignoredFields = ['create', 'update'];
+  
+  for (let key in newData) {
+    // Bỏ qua các field create/update
+    if (ignoredFields.some(field => key.includes(field))) {
+      continue;
+    }
+    
+    // Chuẩn hóa null thành chuỗi rỗng
+    const oldValue = oldData[key] === null ? "" : oldData[key];
+    const newValue = newData[key] === null ? "" : newData[key];
+    
+    // Chỉ xử lý khi có thay đổi
+    if (oldValue !== newValue) {
+      const formattedChange = formatChange(key, oldValue, newValue);
+      if (formattedChange) {
+        changes.push(formattedChange);
       }
-const {formatDate} = require("../utils/formatDate");
+    }
+  }
+  
+  return changes.length > 0 ? changes.join(" ; ") : "";
+};
 
-const  getDiffData =  (oldData, newData) => {
-        const change = [];
-        for (let key in newData) {
-            newData[key] = newData[key] === null ? "": newData[key]; 
-            oldData[key] = oldData[key] === null ? "": oldData[key]; 
-            if (key.includes("create") || key.includes("update")) continue;
+/**
+ * Format thay đổi theo từng loại field
+ * @param {String} fieldName - Tên field
+ * @param {*} oldValue - Giá trị cũ
+ * @param {*} newValue - Giá trị mới
+ * @returns {String} - Chuỗi mô tả thay đổi
+ */
+const formatChange = (fieldName, oldValue, newValue) => {
+  let formattedOld = oldValue;
+  let formattedNew = newValue;
+  
+  // Xử lý field ngày tháng
+  if (fieldName.includes("ngay_") || fieldName.includes("ngày ")) {
+    formattedOld = formatDate(oldValue);
+    formattedNew = formatDate(newValue);
+    return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Xử lý field thuộc khoa (case đặc biệt có format khác)
+  if (fieldName.includes("thuoc_khoa" || fieldName.includes("thuộc khoa"))) {
+    formattedOld = getDepartmentTypeLabel(oldValue);
+    formattedNew = getDepartmentTypeLabel(newValue);
+    return `chuyển từ ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Xử lý field role
+  if (fieldName === "role" || fieldName === "Role") {
+    formattedOld = getRoleName(oldValue) || oldValue;
+    formattedNew = getRoleName(newValue) || newValue;
+    return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Xử lý field trạng thái
+  if (fieldName === "trang_thai" || fieldName === "trạng thái") {
+    formattedOld = getActiveStatusLabel(oldValue);
+    formattedNew = getActiveStatusLabel(newValue);
+    return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Xử lý field giới tính
+  if (fieldName === "gioi_tinh" || fieldName === "giới tính") {
+    formattedOld = getGenderLabel(oldValue);
+    formattedNew = getGenderLabel(newValue);
+    return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Xử lý field đang học
+  if (fieldName === "dang_hoc") {
+    formattedOld = getStudyingStatusLabel(oldValue);
+    formattedNew = getStudyingStatusLabel(newValue);
+    return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+  }
+  
+  // Default: trả về format thông thường
+  return `${fieldName}: ${formattedOld} => ${formattedNew}`;
+};
 
-            if (oldData[key] !== newData[key]) {
-                console.log("oldData", oldData[key]);
-                console.log("newData", newData[key]);
+/**
+ * Version nâng cao: trả về array of objects thay vì string
+ * Dễ dàng hơn cho việc display hoặc log
+ */
+const getDiffDataDetailed = (oldData, newData) => {
+  const changes = [];
+  const ignoredFields = ['create', 'update'];
+  
+  for (let key in newData) {
+    if (ignoredFields.some(field => key.includes(field))) {
+      continue;
+    }
+    
+    const oldValue = oldData[key] === null ? "" : oldData[key];
+    const newValue = newData[key] === null ? "" : newData[key];
+    
+    if (oldValue !== newValue) {
+      changes.push({
+        field: key,
+        oldValue: formatValueByFieldName(key, oldValue),
+        newValue: formatValueByFieldName(key, newValue),
+        rawOldValue: oldValue,
+        rawNewValue: newValue
+      });
+    }
+  }
+  
+  return changes;
+};
 
-                if (key.includes("ngay_")){
-                    oldData[key] = formatDate(oldData[key]);
-                    newData[key] = formatDate(newData[key]);
-                }
+/**
+ * Helper function để format giá trị theo field name
+ */
+const formatValueByFieldName = (fieldName, value) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+  
+  if (fieldName.includes("ngay_")) {
+    return formatDate(value);
+  }
+  
+  if (fieldName.includes("thuoc_khoa")) {
+    return getDepartmentTypeLabel(value);
+  }
+  
+  if (fieldName === "role" || fieldName === "Role") {
+    return getRoleName(value) || value;
+  }
+  
+  if (fieldName === "trang_thai") {
+    return getActiveStatusLabel(value);
+  }
+  
+  if (fieldName === "gioi_tinh") {
+    return getGenderLabel(value);
+  }
+  
+  if (fieldName === "dang_hoc") {
+    return getStudyingStatusLabel(value);
+  }
+  
+  return value;
+};
 
-                if (key.includes("thuoc_khoa")) {
-                        oldData[key] = oldData[key] == 0 ? " phòng ban ": " khoa ";
-                        newData[key] = newData[key] == 0 ? " phòng ban ": " khoa ";
-                        change.push(`chuyển từ ${oldData[key]} => ${newData[key]}`);
-                        continue;
-
-                }
-                if (key === "role" || key === "Role") {
-                    oldData[key] = mapRole[oldData[key]];
-                    newData[key] = mapRole[newData[key]];
-                }
-                if (key==="trang_thai") {
-                    oldData[key] = oldData[key] == 1 ? "hoạt động": "không hoạt động";
-                    newData[key] = newData[key] == 1 ? "hoạt động": "không hoạt động";
-                }
-
-                if (key==="gioi_tinh") {
-                    oldData[key] = oldData[key] === 1 ? "nam": "nữ";
-                    newData[key] = newData[key] === 1 ? "nam": "nữ";
-                }
-                if (key==="dang_hoc") {
-                    oldData[key] = oldData[key] === 1 ? "có": "không";
-                    newData[key] = newData[key] === 1 ? "có": "không";
-                }
-
-                change.push(`${key}: ${oldData[key]} => ${newData[key]}`);
-
-            }
-        }
-        return change.length >0 ? change.join(" ; "): "";
-}
-module.exports = {getDiffData};
+module.exports = { 
+  getDiffData,
+  getDiffDataDetailed,
+  formatChange,
+  formatValueByFieldName
+};
