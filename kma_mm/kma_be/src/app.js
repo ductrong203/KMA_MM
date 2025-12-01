@@ -18,8 +18,8 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 
-const logActivity = require("./middelWare/logger");
-app.use(logActivity);
+// const logActivity = require("./middelWare/logger");
+// app.use(logActivity);
 
 
 routes(app);

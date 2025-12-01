@@ -1,5 +1,22 @@
 const chungChiService = require('../services/chungChiService');
 const loaiChungChiService = require('../services/loaiChungChiService');
+const { chung_chi, lop, khoa_dao_tao } = require('../models');
+
+
+const {logActivity} = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const {users} = require("../models");
+const {getDiffData} = require("../utils/getDiffData");
+const { verifyAccessToken } = require("../utils/decodedToken");
+const mapRole = {
+        1: "daoTao",
+        2: "khaoThi",
+        3: "quanLiSinhVien",
+        5: "giamDoc",
+        6: "sinhVien",
+        7: "admin"
+
+      }
 
 exports.layDanhSachLoaiChungChi = async (req, res) => {
   try {
@@ -102,7 +119,31 @@ exports.taoChungChi = async (req, res) => {
 
     // Gọi phương thức từ service
     const ketQua = await chungChiService.taoChungChi(data);
-
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            // console.log("$$$$$",ketQua.data);
+            const { hoTen, lop, loaiChungChi, tinhTrang } = ketQua.data;
+              if (ketQua) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Người dùng ${userN}  đã tạo chứng chỉ ${loaiChungChi} (${tinhTrang}) cho sinh viên ${hoTen} lớp ${lop} `,
+                response_status: 200,
+                resData: `Tạo thành công chứng chỉ cho sinh viên ${ma_sinh_vien}`,
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
     return res.status(201).json({
       thongBao: 'Tạo chứng chỉ thành công',
       duLieu: ketQua.data,
@@ -170,10 +211,55 @@ exports.chinhSuaChungChi = async (req, res) => {
       ngay_ky_quyet_dinh,
       tinh_trang,
     };
-
     // Gọi phương thức từ service
+    const oldDataRaw = await chung_chi.findByPk(id);
+    console.log("######", oldDataRaw);
+    const oldData = {
+        "Họ tên sinh viên": await getFieldById("sinh_vien", oldDataRaw.sinh_vien_id, "ma_sinh_vien"),
+  "Điểm trung bình": oldDataRaw.diem_trung_binh,
+  "Xếp loại": oldDataRaw.xep_loai,
+  "ghi chú": oldDataRaw.ghi_chu,
+  "quyết định": oldDataRaw.so_quyet_dinh,
+  "ngày ký quyết định": oldDataRaw.ngay_ky_quyet_dinh,
+  "tình trạng": oldDataRaw.tinh_trang,
+  "loại chứng chỉ": oldDataRaw.loai_chung_chi,
+    }
     const ketQua = await chungChiService.chinhSuaChungChi(id, data);
-
+   try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+              if (ketQua) {
+                const newDataRaw = await chung_chi.findByPk(id);
+    console.log("######", newDataRaw);
+    const newData = {
+        "Họ tên sinh viên": await getFieldById("sinh_vien", newDataRaw.sinh_vien_id, "ma_sinh_vien"),
+  "Điểm trung bình": newDataRaw.diem_trung_binh,
+  "Xếp loại": newDataRaw.xep_loai,
+  "ghi chú": newDataRaw.ghi_chu,
+  "quyết định": newDataRaw.so_quyet_dinh,
+  "ngày ký quyết định": newDataRaw.ngay_ky_quyet_dinh,
+  "tình trạng": newDataRaw.tinh_trang,
+  "loại chứng chỉ": newDataRaw.loai_chung_chi,
+    }
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: getDiffData(oldData, newData),
+                response_status: 200,
+                resData: `Người dùng ${userN} đã chỉnh sửa chứng chỉ cho sinh viên có mã ${req.body.ma_sinh_vien} `,
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
     return res.status(200).json({
       thongBao: 'Chỉnh sửa chứng chỉ thành công',
       duLieu: ketQua.data,
@@ -196,9 +282,36 @@ exports.xoaChungChi = async (req, res) => {
         thongBao: 'Tham số id phải là số nguyên dương',
       });
     }
-
+let sinhVienId =   await  getFieldById("chung_chi", id, "sinh_vien_id");
+            let loaiChungChi =  await  getFieldById("chung_chi", id, "loai_chung_chi");
+            let maSinhVien =  await  getFieldById("sinh_vien", sinhVienId, "ma_sinh_vien");
+            let hoTen = await  getFieldById("sinh_vien", sinhVienId, "ho_dem") + " " + await  getFieldById("sinh_vien", sinhVienId, "ten");
     // Gọi phương thức từ service
     const ketQua = await chungChiService.xoaChungChi(id);
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            
+              if (ketQua) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Người dùng ${userN}  đã xóa chứng chỉ ${loaiChungChi} của sinh viên ${hoTen}`,
+                response_status: 200,
+                resData: `Xóa chứng chỉ cho sinh viên có mã ${maSinhVien}`,
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
 
     return res.status(200).json({
       thongBao: 'Xóa chứng chỉ thành công',
@@ -215,6 +328,30 @@ exports.xoaChungChi = async (req, res) => {
 exports.taoLoaiChungChi = async (req, res) => {
     try {
       const ketQua = await loaiChungChiService.taoLoaiChungChi(req.body);
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+
+              if (ketQua) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Người dùng ${userN} đã tạo thành công chứng chỉ ${req.body.ten_loai_chung_chi} ${req.body.xet_tot_nghiep==false ? "không xét tốt nghiệp": "xét tốt nghiệp"}`,
+                response_status: 200,
+                resData: "Tạo loại chứng chỉ thành công",
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
       res.status(201).json({
         success: true,
         message: "Đã tạo loại chứng chỉ thành công ",
@@ -288,6 +425,30 @@ exports.xoaLoaiChungChi = async (req, res) => {
     }
 
     const ketQua = await loaiChungChiService.xoaLoaiChungChi(id);
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+            // console.log(token);
+            let user = verifyAccessToken(token);
+            let userN  = await  getFieldById("users", user.id, "username");
+            let  userR = await  getFieldById("users", user.id, "role");
+            let loaiChungChi = await  getFieldById("loai_chung_chi", id, "ten_loai_chung_chi");
+              if (ketQua) {
+              let inforActivity = {
+                username:   userN,
+                role: mapRole[userR],
+                action: req.method,
+                endpoint: req.originalUrl,
+                reqData: `Người dùng ${userN}  đã xóa thành công loại chứng chỉ ${loaiChungChi}`,
+                response_status: 200,
+                resData: "Xóa loại chứng chỉ thành công",
+                ip:  req._remoteAddress,
+        
+              }
+                await logActivity(inforActivity);
+              }
+     } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+     }
     res.status(200).json({
       success: true,
       data: ketQua.data,
