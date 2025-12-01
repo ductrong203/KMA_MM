@@ -4,7 +4,7 @@ async function logActivity({username, role, action, endpoint, reqData, response_
         Username: username,
         Role: role,
         action,
-        endpoint, 
+        endpoint,
         request_data: reqData,
         response_status,
         resonse_data: resData,

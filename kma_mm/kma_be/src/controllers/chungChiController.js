@@ -249,7 +249,7 @@ exports.chinhSuaChungChi = async (req, res) => {
                 role: mapRole[userR],
                 action: req.method,
                 endpoint: req.originalUrl,
-                reqData: `${getDiffData(oldData, newData)}`,
+                reqData: getDiffData(oldData, newData),
                 response_status: 200,
                 resData: `Người dùng ${userN} đã chỉnh sửa chứng chỉ cho sinh viên có mã ${req.body.ma_sinh_vien} `,
                 ip:  req._remoteAddress,

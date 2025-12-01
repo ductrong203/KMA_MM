@@ -91,7 +91,7 @@ const updateTraining = async (req, res) => {
             role: mapRole[userR],
             action: req.method,
             endpoint: req.originalUrl,
-            reqData: `${getDiffData(oldData.dataValues, newData.dataValues)}`,
+            reqData: getDiffData(oldData.dataValues, newData.dataValues),
             response_status: 200,
             resData: `Người dùng ${userN} đã cập nhật hệ đào tạo ${req.params.code} thành công`,
             ip:  req._remoteAddress,

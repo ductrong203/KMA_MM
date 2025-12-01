@@ -100,7 +100,7 @@ class KhoaDaoTaoController {
               role: mapRole[userR],
               action: req.method,
               endpoint: req.originalUrl,
-              reqData: `${getDiffData(oldData.dataValues, newData.dataValues)}`,
+              reqData: getDiffData(oldData.dataValues, newData.dataValues),
               response_status: 200,
               resData: `Người dùng ${userN} cập nhật khoa đào tạo có mã ${maKhoa} thành công`,
               ip:  req._remoteAddress,

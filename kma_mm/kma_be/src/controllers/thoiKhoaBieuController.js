@@ -146,7 +146,7 @@ class ThoiKhoaBieuController {
                       role: mapRole[userR],
                       action: req.method,
                       endpoint: req.originalUrl,
-                      reqData: `${getDiffData(oldData, newData)}`,
+                      reqData: getDiffData(oldData, newData),
                       response_status: 200,
                       resData: `Người dùng ${userN}  đã cập nhật thời khóa biểu của kì ${oldData["Kỳ học"]} môn ${oldData["Môn học"]} của lớp ${oldData["Lớp"]} `,
                       ip:  req._remoteAddress,

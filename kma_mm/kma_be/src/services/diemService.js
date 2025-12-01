@@ -440,20 +440,13 @@ class DiemService {
 
       // Xác định vị trí cột
       const maSVIndex = headers.indexOf("mã sinh viên");
-      const hoTenStartIndex = headers.indexOf("họ và tên");
+      const hoTenIndex = headers.indexOf("họ và tên");
       const lopIndex = headers.indexOf("lớp");
       const diemTP1Index = headers.indexOf("điểm thành phần 1");
       const diemTP2Index = headers.indexOf("điểm thành phần 2");
 
-      if (maSVIndex === -1 || hoTenStartIndex === -1 || lopIndex === -1) {
+      if (maSVIndex === -1 || hoTenIndex === -1 || lopIndex === -1) {
         throw new Error("Không tìm thấy cột hợp lệ!");
-      }
-
-      // Tìm tất cả các cột liên quan đến họ tên
-      let hoTenIndexes = [];
-      for (let i = hoTenStartIndex; i < headers.length; i++) {
-        if (headers[i] === "lớp") break;
-        hoTenIndexes.push(i);
       }
 
       const jsonResult = [];
@@ -465,19 +458,37 @@ class DiemService {
         // Lấy sinh_vien_id từ ma_sinh_vien
         const sv = await sinh_vien.findOne({
           where: { ma_sinh_vien },
-          attributes: ["id"],
+          attributes: ["id", "ho_dem", "ten"],
         });
         if (!sv) {
           console.warn(`Không tìm thấy sinh viên với mã: ${ma_sinh_vien}`);
           continue; // Bỏ qua nếu không tìm thấy sinh viên
         }
+
+        // Ghép họ và tên từ file Excel (lấy trực tiếp từ cột "Họ và tên")
+        let ho_va_ten_excel = row[hoTenIndex] ? row[hoTenIndex].toString().trim() : "";
+
+        // Ghép họ và tên từ database
+        const ho_va_ten_db = `${sv.ho_dem || ''} ${sv.ten || ''}`.trim();
+
+        // So sánh tên (loại bỏ khoảng trắng thừa và chuyển về chữ thường để so sánh)
+        const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+        const tenExcelNormalized = normalizeString(ho_va_ten_excel);
+        const tenDbNormalized = normalizeString(ho_va_ten_db);
+
+        if (tenExcelNormalized !== tenDbNormalized) {
+          console.warn(`Tên không khớp cho sinh viên ${ma_sinh_vien}: Excel="${ho_va_ten_excel}" vs DB="${ho_va_ten_db}"`);
+          // Có thể chọn continue để bỏ qua hoặc vẫn tiếp tục xử lý
+          continue; // Uncomment nếu muốn bỏ qua khi tên không khớp
+        }
+
         const sinh_vien_id = sv.id;
 
-        // Ghép họ và tên
-        let ho_va_ten = hoTenIndexes
-          .map((idx) => row[idx])
-          .filter((val) => val !== "")
-          .join(" ");        
+        // // Ghép họ và tên
+        // let ho_va_ten = hoTenIndexes
+        //   .map((idx) => row[idx])
+        //   .filter((val) => val !== "")
+        //   .join(" ");        
         let ghi_chu = null;
         let diem_tp1 = null;
         let diem_tp2 = null;
@@ -652,6 +663,22 @@ class DiemService {
           thoi_khoa_bieu_id: sv.diems[0]?.thoi_khoa_bieu_id,
         });
       });
+
+      // Lấy thông tin điểm giữa kỳ cho tất cả sinh viên
+      const diemGKMap = new Map();
+      if (sinhVienData.length > 0) {
+        const diemIds = sinhVienData.map(sv => sv.diems[0]?.id).filter(id => id);
+        if (diemIds.length > 0) {
+          const diemGKRecords = await diem.findAll({
+            where: { id: diemIds },
+            attributes: ['id', 'diem_gk'],
+            transaction,
+          });
+          diemGKRecords.forEach(record => {
+            diemGKMap.set(record.id, record.diem_gk);
+          });
+        }
+      }
   
       const jsonResult = [];
       const updates = [];
@@ -692,12 +719,23 @@ class DiemService {
             throw new Error(`Bản ghi điểm chưa tồn tại cho sinh viên ${ma_hvsv} trong khoá đào tạo có id ${khoa_dao_tao_id}`);
           }
 
+          // Lấy điểm giữa kỳ để kiểm tra điều kiện
+          const diem_gk = diemGKMap.get(diem_id);
+          
+          // Kiểm tra điều kiện diem_gk >= 4
+          let finalDiemCK = diem_ck;
+          if (diem_gk === null || diem_gk === undefined || diem_gk < 4) {
+            finalDiemCK = 0;
+            console.warn(`Sinh viên ${ma_hvsv} có điểm giữa kỳ ${diem_gk} < 4, gán điểm cuối kỳ = 0`);
+          }
+
           // Chuẩn bị dữ liệu để update
           const diemData = {
             id: diem_id,
             sinh_vien_id,
             thoi_khoa_bieu_id,
-            diem_ck,
+            diem_ck: finalDiemCK,
+            diem_gk_check: diem_gk, // Thêm để tracking
             updated: false, // Giá trị mặc định
           };
 
@@ -706,10 +744,10 @@ class DiemService {
           // Thêm thao tác update vào mảng updates
           updates.push(
             diem.update(
-              { diem_ck },
+              { diem_ck: finalDiemCK },
               { where: { id: diem_id }, transaction }
             ).then(([affectedCount]) => {
-              console.log(`Cập nhật diem_id=${diem_id}: affectedCount=${affectedCount}`);
+              console.log(`Cập nhật diem_id=${diem_id}: affectedCount=${affectedCount}, diem_ck=${finalDiemCK}`);
               diemData.updated = affectedCount > 0; // Đánh dấu bản ghi được cập nhật
               return [affectedCount];
             })
@@ -1157,6 +1195,8 @@ static async getThongKeDiem({ he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id 
     throw new Error('Không thể lấy thống kê điểm: ' + error.message);
   }
 }
+
+
 }
 
 

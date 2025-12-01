@@ -85,7 +85,7 @@ const getPhongBan = async (req, res) => {
         role: mapRole[userR],
         action: req.method,
         endpoint: req.originalUrl,
-        reqData: `${getDiffData(oldData[0].dataValues, newData[0].dataValues)}`,
+        reqData: getDiffData(oldData[0].dataValues, newData[0].dataValues),
         response_status: 200,
         resData: `Người dùng ${userN} đã cập nhật phòng ban có mã ${req.params.code} thành công`,
         ip:  req._remoteAddress,

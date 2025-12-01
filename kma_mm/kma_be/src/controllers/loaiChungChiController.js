@@ -170,7 +170,7 @@ class LoaiChungChiController {
             role: mapRole[userR],
             action: req.method,
             endpoint: req.originalUrl,
-            reqData: `${getDiffData(oldData, newData)}`,
+            reqData: getDiffData(oldData, newData),
             response_status: 200,
             resData: `Người dùng ${userN} đã cập nhật loại chứng chỉ ${data.ten_loai_chung_chi} `,
             ip: req._remoteAddress,

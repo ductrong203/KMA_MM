@@ -37,6 +37,7 @@ import {
   Info,
   School,
   Assignment,
+  VerifiedUser,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import PageHeader from '../../layout/PageHeader';
@@ -611,15 +612,36 @@ function DieuKienTotNghiep() {
   };
 
   // Hiển thị danh sách chứng chỉ theo format mới
-  const renderCertificates = (certificates) => {
+  const renderCertificates = (certificates, showDetails = false) => {
     if (!certificates || certificates.length === 0) return 'Chưa có';
     
     const validCerts = certificates.filter((cert) => cert.tinh_trang === 'tốt nghiệp');
     if (validCerts.length === 0) return 'Chưa có';
     
-    return validCerts
-      .map((cert) => cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi)
-      .join(', ');
+    if (!showDetails) {
+      return validCerts
+        .map((cert) => cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi)
+        .join(', ');
+    } else {
+      // Hiển thị chi tiết chứng chỉ
+      return validCerts.map((cert, index) => {
+        const certName = cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi || 'Chứng chỉ';
+        const formattedDate = cert.ngay_ky_quyet_dinh ? new Date(cert.ngay_ky_quyet_dinh).toLocaleDateString('vi-VN') : 'N/A';
+        
+        return (
+          <Typography key={index} variant="body2" sx={{ mb: 1 }}>
+            <strong>{certName}</strong>: {
+              `Điểm TB: ${cert.diem_trung_binh || 'N/A'}; ` +
+              `Xếp loại: ${cert.xep_loai || 'N/A'}; ` +
+              `Tình trạng: ${cert.tinh_trang || 'N/A'}; ` +
+              `Số QĐ: ${cert.so_quyet_dinh || 'N/A'}; ` +
+              `Ngày ký: ${formattedDate}; ` +
+              `Ghi chú: ${cert.ghi_chu || 'N/A'}; `
+            }
+          </Typography>
+        );
+      });
+    }
   };
 
   // Toggle chi tiết sinh viên
@@ -688,6 +710,19 @@ function DieuKienTotNghiep() {
                     variant="outlined"
                   />
                 ))}
+              </Box>
+            </Grid>
+          )}
+
+          {/* Hiển thị chi tiết chứng chỉ đã có */}
+          {graduationInfo.chung_chi_tot_nghiep && graduationInfo.chung_chi_tot_nghiep.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="primary" gutterBottom>
+                <VerifiedUser sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
+                Chi tiết chứng chỉ đã có:
+              </Typography>
+              <Box sx={{ pl: 1, borderLeft: '2px solid #2196f3', mt: 1 }}>
+                {renderCertificates(graduationInfo.chung_chi_tot_nghiep, true)}
               </Box>
             </Grid>
           )}

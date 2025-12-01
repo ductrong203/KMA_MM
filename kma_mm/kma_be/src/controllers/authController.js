@@ -159,7 +159,7 @@ const updateUser = async (req, res) => {
         role: mapRole[req.user.role],
         action: req.method,
         endpoint: req.originalUrl,
-        reqData: `${getDiffData(oldData.dataValues, newData.dataValues  )}`,
+        reqData: getDiffData(oldData.dataValues, newData.dataValues),
         response_status: 200,
         resData: `Cập nhật tài khoản ${userN2} của hệ ${mapRole[roleN2]} thành công`,
         ip:  req._remoteAddress,

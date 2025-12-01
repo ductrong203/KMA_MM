@@ -114,7 +114,7 @@ class DanhMucKhenKyLuatController {
             role: mapRole[userR],
             action: req.method,
             endpoint: req.originalUrl,
-            reqData: `${getDiffData(oldData, newData)}`,
+            reqData: getDiffData(oldData, newData),
             response_status: 200,
             resData: `Người dùng ${userN}  đã chỉnh sửa danh mục ${req.body.loai==="khen_thuong"? "khen thưởng" : "kỷ luật"} ${req.body.ten_danh_muc}`,
             ip: req._remoteAddress,
