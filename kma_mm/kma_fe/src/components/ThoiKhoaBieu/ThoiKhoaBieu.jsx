@@ -40,6 +40,8 @@ const ThoiKhoaBieu = () => {
     const [giangVien, setGiangVien] = useState("");
     const [phongHoc, setPhongHoc] = useState("");
     const [tietHoc, setTietHoc] = useState("");
+    const [ngayHoc, setNgayHoc] = useState("");
+    const [ghiChu, setGhiChu] = useState("");
     const [trangThai, setTrangThai] = useState(1);
     const [khoaDaoTaoId, setKhoaDaoTaoId] = useState("");
     const [heDaoTaoId, setHeDaoTaoId] = useState("");
@@ -89,8 +91,8 @@ const ThoiKhoaBieu = () => {
 
     // TÁCH RIÊNG state cho form
     const [khoaDaoTaoForm, setKhoaDaoTaoForm] = useState([]);
-    
-  
+
+
     useEffect(() => {
         const fetchInitialData = async () => {
             setIsLoading(true);
@@ -251,7 +253,7 @@ const ThoiKhoaBieu = () => {
             toast.warning("Vui lòng chọn lớp trước khi áp dụng bộ lọc");
             return;
         }
-        
+
         setIsLoading(true);
         try {
             await fetchThoiKhoaBieu();
@@ -302,11 +304,13 @@ const ThoiKhoaBieu = () => {
                     const thoiKhoaBieuData = {
                         ky_hoc: kyHoc,
                         lop_id: lopId,
-                        mon_hoc_id: selectedMonHocIds[0], // Chỉ một môn khi chỉnh sửa
+                        mon_hoc_id: selectedMonHocIds[0],
                         giang_vien_id: giangVienId,
                         giang_vien: giangVien,
                         phong_hoc: phongHoc,
                         tiet_hoc: tietHoc,
+                        ngay_hoc: ngayHoc,
+                        ghi_chu: ghiChu,
                         trang_thai: trangThai,
                     };
                     await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
@@ -322,6 +326,8 @@ const ThoiKhoaBieu = () => {
                             giang_vien: giangVien,
                             phong_hoc: phongHoc,
                             tiet_hoc: tietHoc,
+                            ngay_hoc: ngayHoc,
+                            ghi_chu: ghiChu,
                             trang_thai: trangThai,
                         };
                         return themThoiKhoaBieu(thoiKhoaBieuData);
@@ -329,11 +335,11 @@ const ThoiKhoaBieu = () => {
                     await Promise.all(createPromises);
                     toast.success("Thêm thời khóa biểu thành công!");
                 }
-                
+
                 // Cả thêm mới và chỉnh sửa đều giống nhau: chỉ reset form, giữ nguyên bộ lọc
                 await fetchThoiKhoaBieu();
                 resetFormOnly();
-                
+
             } catch (error) {
                 console.error("Lỗi khi lưu thời khóa biểu:", error);
                 toast.error("Lỗi khi lưu thời khóa biểu. Vui lòng thử lại!");
@@ -349,6 +355,8 @@ const ThoiKhoaBieu = () => {
         setGiangVien("");
         setPhongHoc("");
         setTietHoc("");
+        setNgayHoc("");
+        setGhiChu("");
         setTrangThai(1);
         setKyHoc("");
         setLopId("");
@@ -373,6 +381,8 @@ const ThoiKhoaBieu = () => {
         setGiangVien("");
         setPhongHoc("");
         setTietHoc("");
+        setNgayHoc("");
+        setGhiChu("");
         setTrangThai(1);
         setKyHoc("");
         setLopId("");
@@ -438,17 +448,17 @@ const ThoiKhoaBieu = () => {
     // Sửa hàm handleEdit:
     const handleEdit = async (tkb, index) => {
         console.log("Debug tkb data:", tkb); // Debug để xem dữ liệu
-        
+
         setKyHoc(tkb.ky_hoc || "");
         setLopId(tkb.lop_id || "");
         setMonHocId(tkb.mon_hoc_id || "");
         setSelectedMonHocIds([tkb.mon_hoc_id]);
-        
+
         // Debug giảng viên
         console.log("Giảng viên ID:", tkb.giang_vien_id);
         console.log("Giảng viên name:", tkb.giang_vien);
         console.log("Giảng viên list:", giangVienList);
-        
+
         // Xử lý giảng viên một cách an toàn
         if (tkb.giang_vien_id) {
             // Tìm giảng viên trong danh sách
@@ -471,9 +481,11 @@ const ThoiKhoaBieu = () => {
             setGiangVienId("");
             setGiangVien("");
         }
-        
+
         setPhongHoc(tkb.phong_hoc || "");
         setTietHoc(tkb.tiet_hoc || "");
+        setNgayHoc(tkb.ngay_hoc || "");
+        setGhiChu(tkb.ghi_chu || "");
         setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
         setEditIndex(index);
         setEditId(tkb.id);
@@ -499,7 +511,7 @@ const ThoiKhoaBieu = () => {
                 if (monHoc && monHoc.he_dao_tao_id) {
                     const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(monHoc.he_dao_tao_id);
                     setKhoaDaoTaoForm(khoaDaoTaoData); // Chỉ set cho form, KHÔNG động đến filter
-                    
+
                     const selectedKhoa = khoaDaoTaoData.find(khoa => khoa.id === khoaDaoTaoIdFromData);
                     if (selectedKhoa) {
                         const kyHocCount = selectedKhoa.so_ky_hoc;
@@ -546,7 +558,7 @@ const ThoiKhoaBieu = () => {
     const handleSelectAllChange = (event) => {
         const isChecked = event.target.checked;
         setSelectAllMonHoc(isChecked);
-        
+
         if (isChecked) {
             // Chọn tất cả môn học
             const allMonHocIds = keHoachMonHocList.map(item => item.mon_hoc_id);
@@ -769,265 +781,288 @@ const ThoiKhoaBieu = () => {
                     )}
                 </Paper>
 
-            <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>{editId !== null ? "Sửa" : "Thêm"} Thời Khóa Biểu</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={4}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
-                                <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
-                                    <MenuItem value="">Chọn hệ đào tạo</MenuItem>
-                                    {HeDaoTao.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_he_dao_tao}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>{editId !== null ? "Sửa" : "Thêm"} Thời Khóa Biểu</DialogTitle>
+                    <DialogContent>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12} sm={4}>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
+                                    <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
+                                        <MenuItem value="">Chọn hệ đào tạo</MenuItem>
+                                        {HeDaoTao.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.ten_he_dao_tao}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={8}>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
+                                    <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
+                                        <MenuItem value="">Chọn khóa đào tạo</MenuItem>
+                                        {khoaDaoTaoForm.map((option) => ( // Đổi từ khoaDaoTao thành khoaDaoTaoForm
+                                            <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12} sm={8}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
-                                <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
-                                    <MenuItem value="">Chọn khóa đào tạo</MenuItem>
-                                    {khoaDaoTaoForm.map((option) => ( // Đổi từ khoaDaoTao thành khoaDaoTaoForm
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Kỳ học</InputLabel>
-                                <Select value={kyHoc} onChange={handleKyHocChange} disabled={!khoaDaoTaoId}>
-                                    <MenuItem value="">Chọn kỳ học</MenuItem>
-                                    {kyHocOptionsForm.map((option) => (
-                                        <MenuItem key={option} value={option}>{option}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    {/* Thay thế phần lớp */}
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12}>
-                            <Autocomplete
-                                options={lopList}
-                                getOptionLabel={(option) => option.ma_lop}
-                                value={lopList.find((lop) => lop.id === lopId) || null}
-                                onChange={(event, newValue) => {
-                                    setLopId(newValue ? newValue.id : "");
-                                }}
-                                renderInput={(params) => (
-                                    <TextField 
-                                        {...params} 
-                                        label="Lớp" 
-                                        fullWidth 
-                                        size="small" 
-                                        placeholder="Tìm kiếm và chọn lớp..."
-                                    />
-                                )}
-                                noOptionsText="Không tìm thấy lớp nào"
-                                clearOnEscape
-                            />
-                        </Grid>
-                    </Grid>
-
-                    {editId === null && (
                         <Grid container spacing={2} sx={{ mt: 1 }}>
                             <Grid item xs={12}>
-                                <Box display="flex" alignItems="center">
-                                    <Checkbox
-                                        checked={useKeHoachDaoTao}
-                                        onChange={handleUseKeHoachDaoTaoChange}
-                                        disabled={!khoaDaoTaoId || !kyHoc}
-                                    />
-                                    <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
-                                </Box>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Kỳ học</InputLabel>
+                                    <Select value={kyHoc} onChange={handleKyHocChange} disabled={!khoaDaoTaoId}>
+                                        <MenuItem value="">Chọn kỳ học</MenuItem>
+                                        {kyHocOptionsForm.map((option) => (
+                                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                             </Grid>
                         </Grid>
-                    )}
+                        {/* Thay thế phần lớp */}
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12}>
+                                <Autocomplete
+                                    options={lopList}
+                                    getOptionLabel={(option) => option.ma_lop}
+                                    value={lopList.find((lop) => lop.id === lopId) || null}
+                                    onChange={(event, newValue) => {
+                                        setLopId(newValue ? newValue.id : "");
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Lớp"
+                                            fullWidth
+                                            size="small"
+                                            placeholder="Tìm kiếm và chọn lớp..."
+                                        />
+                                    )}
+                                    noOptionsText="Không tìm thấy lớp nào"
+                                    clearOnEscape
+                                />
+                            </Grid>
+                        </Grid>
 
-                    {editId === null && useKeHoachDaoTao ? (
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle1" sx={{ mb: 1 }}>Danh sách môn học từ kế hoạch đào tạo:</Typography>
-                            
-                            {/* Thêm checkbox "Chọn tất cả" */}
-                            {keHoachMonHocList.length > 0 && (
-                                <Box sx={{ mb: 2, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={selectAllMonHoc}
-                                                onChange={handleSelectAllChange}
-                                                indeterminate={selectedMonHocIds.length > 0 && selectedMonHocIds.length < keHoachMonHocList.length}
-                                            />
-                                        }
-                                        label={
-                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                                Chọn tất cả ({selectedMonHocIds.length}/{keHoachMonHocList.length})
-                                            </Typography>
-                                        }
-                                    />
-                                </Box>
-                            )}
-                            
-                            {keHoachMonHocList.length > 0 ? (
-                                <List dense>
-                                    {keHoachMonHocList.map((mon) => (
-                                        <ListItem key={mon.id}>
-                                            <Checkbox
-                                                checked={selectedMonHocIds.includes(mon.mon_hoc_id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedMonHocIds([...selectedMonHocIds, mon.mon_hoc_id]);
-                                                    } else {
-                                                        setSelectedMonHocIds(selectedMonHocIds.filter((id) => id !== mon.mon_hoc_id));
-                                                    }
-                                                }}
-                                            />
-                                            <ListItemText
-                                                primary={mon.ten_mon_hoc}
-                                                secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            ) : (
-                                <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
-                            )}
-                        </Box>
-                    ) : (
-                        <>
-                            {/* Thay thế phần môn học */}
+                        {editId === null && (
                             <Grid container spacing={2} sx={{ mt: 1 }}>
                                 <Grid item xs={12}>
-                                    <Autocomplete
-                                        multiple
-                                        options={monHocListForm}
-                                        getOptionLabel={(option) => option.ten_mon_hoc}
-                                        value={monHocListForm.filter((monHoc) => selectedMonHocIds.includes(monHoc.id))}
-                                        onChange={(event, newValue) => {
-                                            setSelectedMonHocIds(newValue.map(item => item.id));
-                                        }}
-                                        disabled={editId !== null}
-                                        renderInput={(params) => (
-                                            <TextField 
-                                                {...params} 
-                                                label="Môn học" 
-                                                fullWidth 
-                                                size="small" 
-                                                placeholder="Tìm kiếm và chọn môn học..."
-                                            />
-                                        )}
-                                        renderTags={(value, getTagProps) =>
-                                            value.map((option, index) => (
-                                                <Chip
-                                                    variant="outlined"
-                                                    label={option.ten_mon_hoc}
-                                                    {...getTagProps({ index })}
-                                                    key={option.id}
+                                    <Box display="flex" alignItems="center">
+                                        <Checkbox
+                                            checked={useKeHoachDaoTao}
+                                            onChange={handleUseKeHoachDaoTaoChange}
+                                            disabled={!khoaDaoTaoId || !kyHoc}
+                                        />
+                                        <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        )}
+
+                        {editId === null && useKeHoachDaoTao ? (
+                            <Box sx={{ mt: 2 }}>
+                                <Typography variant="subtitle1" sx={{ mb: 1 }}>Danh sách môn học từ kế hoạch đào tạo:</Typography>
+
+                                {/* Thêm checkbox "Chọn tất cả" */}
+                                {keHoachMonHocList.length > 0 && (
+                                    <Box sx={{ mb: 2, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={selectAllMonHoc}
+                                                    onChange={handleSelectAllChange}
+                                                    indeterminate={selectedMonHocIds.length > 0 && selectedMonHocIds.length < keHoachMonHocList.length}
                                                 />
-                                            ))
-                                        }
-                                        noOptionsText="Không tìm thấy môn học nào"
-                                        clearOnEscape
-                                    />
-                                </Grid>
-                            </Grid>
-
-                            {/* Thay thế phần giảng viên */}
-                            <Grid container spacing={2} sx={{ mt: 1 }}>
-                                <Grid item xs={12}>
-                                    <Autocomplete
-                                        freeSolo // Thêm freeSolo để cho phép nhập tên tự do
-                                        options={giangVienList}
-                                        getOptionLabel={(option) => {
-                                            if (typeof option === 'string') return option; // Trường hợp freeSolo
-                                            return option.ho_ten || "";
-                                        }}
-                                        value={
-                                            giangVienList.find((gv) => gv.id === giangVienId) || 
-                                            (giangVien ? giangVien : null) // Fallback về tên nếu không tìm thấy ID
-                                        }
-                                        onChange={(event, newValue) => {
-                                            if (typeof newValue === 'string') {
-                                                // Trường hợp nhập tự do
-                                                setGiangVienId("");
-                                                setGiangVien(newValue);
-                                            } else if (newValue) {
-                                                // Trường hợp chọn từ danh sách
-                                                setGiangVienId(newValue.id);
-                                                setGiangVien(newValue.ho_ten);
-                                            } else {
-                                                // Trường hợp clear
-                                                setGiangVienId("");
-                                                setGiangVien("");
                                             }
-                                        }}
-                                        renderInput={(params) => (
-                                            <TextField 
-                                                {...params} 
-                                                label="Giảng viên" 
-                                                fullWidth 
-                                                size="small" 
-                                                placeholder="Tìm kiếm và chọn giảng viên..."
-                                                value={giangVien} // Hiển thị tên giảng viên
-                                            />
-                                        )}
-                                        noOptionsText="Không tìm thấy giảng viên nào"
-                                        clearOnEscape
-                                    />
-                                </Grid>
-                            </Grid>
+                                            label={
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                    Chọn tất cả ({selectedMonHocIds.length}/{keHoachMonHocList.length})
+                                                </Typography>
+                                            }
+                                        />
+                                    </Box>
+                                )}
 
-                            <Grid container spacing={2} sx={{ mt: 1 }}>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Phòng học"
-                                        value={phongHoc}
-                                        onChange={(e) => setPhongHoc(e.target.value)}
-                                        placeholder="Ví dụ: 103 TA1"
-                                        margin="dense"
-                                    />
+                                {keHoachMonHocList.length > 0 ? (
+                                    <List dense>
+                                        {keHoachMonHocList.map((mon) => (
+                                            <ListItem key={mon.id}>
+                                                <Checkbox
+                                                    checked={selectedMonHocIds.includes(mon.mon_hoc_id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedMonHocIds([...selectedMonHocIds, mon.mon_hoc_id]);
+                                                        } else {
+                                                            setSelectedMonHocIds(selectedMonHocIds.filter((id) => id !== mon.mon_hoc_id));
+                                                        }
+                                                    }}
+                                                />
+                                                <ListItemText
+                                                    primary={mon.ten_mon_hoc}
+                                                    secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
+                                )}
+                            </Box>
+                        ) : (
+                            <>
+                                {/* Thay thế phần môn học */}
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12}>
+                                        <Autocomplete
+                                            multiple
+                                            options={monHocListForm}
+                                            getOptionLabel={(option) => option.ten_mon_hoc}
+                                            value={monHocListForm.filter((monHoc) => selectedMonHocIds.includes(monHoc.id))}
+                                            onChange={(event, newValue) => {
+                                                setSelectedMonHocIds(newValue.map(item => item.id));
+                                            }}
+                                            disabled={editId !== null}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Môn học"
+                                                    fullWidth
+                                                    size="small"
+                                                    placeholder="Tìm kiếm và chọn môn học..."
+                                                />
+                                            )}
+                                            renderTags={(value, getTagProps) =>
+                                                value.map((option, index) => (
+                                                    <Chip
+                                                        variant="outlined"
+                                                        label={option.ten_mon_hoc}
+                                                        {...getTagProps({ index })}
+                                                        key={option.id}
+                                                    />
+                                                ))
+                                            }
+                                            noOptionsText="Không tìm thấy môn học nào"
+                                            clearOnEscape
+                                        />
+                                    </Grid>
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Tiết học"
-                                        value={tietHoc}
-                                        onChange={(e) => setTietHoc(e.target.value)}
-                                        placeholder="Ví dụ: 2-4"
-                                        margin="dense"
-                                    />
-                                </Grid>
-                            </Grid>
-                        </>
-                    )}
 
-                    <FormControl fullWidth margin="dense">
-                        <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
-                        <Select value={trangThai} onChange={handleTrangThaiChange}>
-                            {trangThaiOptions.map((option) => (
-                                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={resetFormOnly} color="secondary">Hủy</Button>
-                    <Button
-                        onClick={handleSubmit}
-                        color="primary"
-                        variant="contained"
-                        disabled={!lopId || !kyHoc || selectedMonHocIds.length === 0 || isLoading}
-                    >
-                        {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                                {/* Thay thế phần giảng viên */}
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12}>
+                                        <Autocomplete
+                                            freeSolo // Thêm freeSolo để cho phép nhập tên tự do
+                                            options={giangVienList}
+                                            getOptionLabel={(option) => {
+                                                if (typeof option === 'string') return option; // Trường hợp freeSolo
+                                                return option.ho_ten || "";
+                                            }}
+                                            value={
+                                                giangVienList.find((gv) => gv.id === giangVienId) ||
+                                                (giangVien ? giangVien : null) // Fallback về tên nếu không tìm thấy ID
+                                            }
+                                            onChange={(event, newValue) => {
+                                                if (typeof newValue === 'string') {
+                                                    // Trường hợp nhập tự do
+                                                    setGiangVienId("");
+                                                    setGiangVien(newValue);
+                                                } else if (newValue) {
+                                                    // Trường hợp chọn từ danh sách
+                                                    setGiangVienId(newValue.id);
+                                                    setGiangVien(newValue.ho_ten);
+                                                } else {
+                                                    // Trường hợp clear
+                                                    setGiangVienId("");
+                                                    setGiangVien("");
+                                                }
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Giảng viên"
+                                                    fullWidth
+                                                    size="small"
+                                                    placeholder="Tìm kiếm và chọn giảng viên..."
+                                                    value={giangVien} // Hiển thị tên giảng viên
+                                                />
+                                            )}
+                                            noOptionsText="Không tìm thấy giảng viên nào"
+                                            clearOnEscape
+                                        />
+                                    </Grid>
+                                </Grid>
+
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Phòng học"
+                                            value={phongHoc}
+                                            onChange={(e) => setPhongHoc(e.target.value)}
+                                            placeholder="Ví dụ: 103 TA1"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Tiết học"
+                                            value={tietHoc}
+                                            onChange={(e) => setTietHoc(e.target.value)}
+                                            placeholder="Ví dụ: 2-4"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                </Grid>
+
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Ngày học"
+                                            value={ngayHoc}
+                                            onChange={(e) => setNgayHoc(e.target.value)}
+                                            placeholder="Ví dụ: Thứ 2, Thứ 4"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Ghi chú"
+                                            value={ghiChu}
+                                            onChange={(e) => setGhiChu(e.target.value)}
+                                            placeholder="Ghi chú thêm..."
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </>
+                        )}
+
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
+                            <Select value={trangThai} onChange={handleTrangThaiChange}>
+                                {trangThaiOptions.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={resetFormOnly} color="secondary">Hủy</Button>
+                        <Button
+                            onClick={handleSubmit}
+                            color="primary"
+                            variant="contained"
+                            disabled={!lopId || !kyHoc || selectedMonHocIds.length === 0 || isLoading}
+                        >
+                            {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Container>
         </ThemeProvider>
     );
