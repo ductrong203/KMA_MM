@@ -796,7 +796,7 @@ const StudentManagement = () => {
               setMilitary(prev => [...prev, createResult]);
             } catch (createError) {
               console.log("Lỗi tạo mới:", createError);
-              toast.error("Lỗi khi tạo thông tin quân nhân!");
+              toast.warning("Chưa có thông tin quân nhân");
             }
           }
         } catch (error) {
