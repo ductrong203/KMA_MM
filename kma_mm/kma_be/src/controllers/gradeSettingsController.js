@@ -18,24 +18,40 @@ const { QuyDinhDiem } = db;
 
 exports.getGradeSettings = async (req, res) => {
   try {
-    // Hệ thống chỉ nên có một bản ghi cài đặt điểm
-    let settings = await QuyDinhDiem.findOne();
+    const { he_dao_tao_id } = req.query;
+    const whereClause = isNaN(parseInt(he_dao_tao_id)) ? { heDaoTaoId: null } : { heDaoTaoId: he_dao_tao_id };
 
-    if (!settings) {
-      // Nếu không tồn tại cài đặt, tạo cài đặt mặc định
+    // Tìm kiếm cài đặt theo hệ đào tạo
+    let settings = await QuyDinhDiem.findOne({
+      where: whereClause
+    });
+
+    if (!settings && !he_dao_tao_id) {
+      // Nếu không tồn tại cài đặt chung (heDaoTaoId = null), tạo mặc định
       settings = await QuyDinhDiem.create({
         diemThiToiThieu: 2.0,
         diemTrungBinhDat: 4.0,
         diemGiuaKyToiThieu: 4.0,
         diemChuyenCanToiThieu: 4.0,
         chinhSachHienTai: 'moi',
-        chinhSachTuychinh: false
+        chinhSachTuychinh: false,
+        heDaoTaoId: null
+      });
+    } else if (!settings && he_dao_tao_id) {
+      // Nếu chưa có cài đặt riêng cho hệ này, trả về null hoặc trả về cài đặt mặc định để frontend hiển thị?
+      // Tốt nhất là trả về cài đặt chung để frontend fill vào form, nhưng kèm theo flag là chưa có
+      const defaultSettings = await QuyDinhDiem.findOne({ where: { heDaoTaoId: null } });
+      return res.status(200).json({
+        success: true,
+        data: defaultSettings || {},
+        isInherited: true // Flag để frontend biết đây là dữ liệu kế thừa
       });
     }
 
     return res.status(200).json({
       success: true,
-      data: settings
+      data: settings,
+      isInherited: false
     });
   } catch (error) {
     console.error('Error in getGradeSettings:', error);
@@ -55,7 +71,8 @@ exports.updateGradeSettings = async (req, res) => {
       diemGiuaKyToiThieu,
       diemChuyenCanToiThieu,
       chinhSachHienTai,
-      chinhSachTuychinh
+      chinhSachTuychinh,
+      he_dao_tao_id
     } = req.body;
 
     // Validate input
@@ -71,8 +88,12 @@ exports.updateGradeSettings = async (req, res) => {
       });
     }
 
-    // Lấy cài đặt hiện tại (chỉ nên có một bản ghi)
-    let settings = await QuyDinhDiem.findOne();
+    const heDaoTaoIdVal = isNaN(parseInt(he_dao_tao_id)) ? null : parseInt(he_dao_tao_id);
+
+    // Tìm setting hiện tại cho hệ này (hoặc chung)
+    let settings = await QuyDinhDiem.findOne({
+      where: { heDaoTaoId: heDaoTaoIdVal }
+    });
 
     const oldData = settings
       ? JSON.parse(JSON.stringify(settings.get({ plain: true })))
@@ -82,15 +103,18 @@ exports.updateGradeSettings = async (req, res) => {
     // console.log("OLD BEFORE UPDATE:", oldData);
 
     if (!settings) {
+      // Nếu chưa có thì tạo mới
       settings = await QuyDinhDiem.create({
         diemThiToiThieu,
         diemTrungBinhDat,
         diemGiuaKyToiThieu,
         diemChuyenCanToiThieu,
         chinhSachHienTai,
-        chinhSachTuychinh
+        chinhSachTuychinh,
+        heDaoTaoId: heDaoTaoIdVal
       });
     } else {
+      // Nếu có rồi thì update
       await settings.update({
         diemThiToiThieu,
         diemTrungBinhDat,
@@ -117,7 +141,7 @@ exports.updateGradeSettings = async (req, res) => {
       let user = verifyAccessToken(token);
       let userN = await getFieldById("users", user.id, "username");
       let userR = await getFieldById("users", user.id, "role");
-      
+
       if (settings) {
         let inforActivity = {
           username: userN,

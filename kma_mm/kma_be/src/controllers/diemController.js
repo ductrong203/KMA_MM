@@ -115,6 +115,9 @@ class DiemController {
 
       return res.status(201).json(result);
     } catch (error) {
+      console.error('Error in createDiemForClass:', error);
+      const fs = require('fs');
+      fs.writeFileSync('error_diem.txt', error.message + '\n' + error.stack);
       return res.status(500).json({ message: error.message });
     }
   }
