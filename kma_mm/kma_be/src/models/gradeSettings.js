@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       // định nghĩa các mối quan hệ ở đây
     }
   }
-  
+
   QuyDinhDiem.init({
     diemThiToiThieu: {
       type: DataTypes.FLOAT,
@@ -44,6 +44,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false,
       field: 'chinh_sach_tuy_chinh'
+    },
+    heDaoTaoId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'he_dao_tao_id',
+      references: {
+        model: 'danh_muc_dao_tao',
+        key: 'id'
+      }
     }
   }, {
     sequelize,
@@ -51,6 +60,6 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'quy_dinh_diem',
     underscored: true
   });
-  
+
   return QuyDinhDiem;
 };

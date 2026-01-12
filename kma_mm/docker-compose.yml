@@ -23,7 +23,7 @@ services:
       DB_HOST: mysql
       DB_DIALECT: mysql
     ports:
-      - "8000:8000"
+      - "8001:8000"
 
   frontend:
     build: ./kma_fe

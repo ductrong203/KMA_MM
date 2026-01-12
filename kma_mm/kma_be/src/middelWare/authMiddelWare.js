@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
+
 const authAdminMiddleWare = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
@@ -17,6 +18,9 @@ const authAdminMiddleWare = (req, res, next) => {
         Message: "Authentication failed. Token is invalid.",
       });
     }
+    
+    req.user = decoded?decoded:"" ;
+
     if (decoded.role === 7) {
       next();
     } else {
@@ -38,12 +42,14 @@ const authUSerMiddleWare = (req, res, next) => {
 
   const userId = parseInt(req?.params?.id, 10);
   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    
     if (err) {
       return res.status(401).json({
         status: "ERR",
         Message: "Authentication failed. Token is invalid.",
       });
     }
+    req.user = decoded?decoded:"" ;
     if (decoded?.id === userId || decoded?.role === 7) {
       next();
     } else {
