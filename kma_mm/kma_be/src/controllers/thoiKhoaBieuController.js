@@ -159,8 +159,10 @@ class ThoiKhoaBieuController {
            }
       
       res.json(
-        {message: "Cập nhật thời khoá biểu thành công  " ,
-        data});
+        {
+          message: "Cập nhật thời khoá biểu thành công  ",
+          data
+        });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -203,6 +205,28 @@ class ThoiKhoaBieuController {
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Lấy danh sách môn học có trong TKB nhưng chưa có trong KHMH
+   */
+  static async getMissingMonHocInKeHoach(req, res) {
+    try {
+      const { khoa_dao_tao_id, ky_hoc } = req.params;
+
+      if (!khoa_dao_tao_id) {
+        return res.status(400).json({ error: 'Thiếu khoa_dao_tao_id' });
+      }
+
+      const result = await ThoiKhoaBieuService.getMissingMonHocInKeHoach(
+        parseInt(khoa_dao_tao_id),
+        ky_hoc ? parseInt(ky_hoc) : null
+      );
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   }
 }

@@ -161,7 +161,7 @@ const StudentManagement = () => {
         const data4 = await getAllDoiTuongQuanLy();
         const data5 = await getDanhSachLop();
         const data6 = await fetchDanhSachKhoa();
-        
+
         console.log("danh sach he dao tao", data3);
         console.log("danh doi tuong quan ly", data4);
         console.log("danh sách lop", data5);
@@ -227,13 +227,13 @@ const StudentManagement = () => {
         console.log(`Gọi API getbylopid với lop_id: ${lopFilter}`);
         const studentsFromAPI = await getDanhSachSinhVienTheoLop(lopFilter);
         console.log("Dữ liệu từ API getbylopid:", studentsFromAPI);
-        
+
         // SỬA LỖI: Lấy data từ response object
         filtered = studentsFromAPI?.data || studentsFromAPI || [];
-        
+
         // THÊM: Cập nhật cả students state để các hàm khác có thể tìm thấy
         setStudents(filtered);
-        
+
         // Lọc thêm theo từ khóa tìm kiếm nếu có
         if (searchTerm) {
           filtered = filtered.filter((student) => {
@@ -471,7 +471,7 @@ const StudentManagement = () => {
     setOpen(true);
   };
 
-  // handleOpenDetail (giữ nguyên)
+  // handleOpenDetail - SỬA: Tìm từ đúng nguồn dữ liệu
   const handleOpenDetail = async (studentId) => {
     try {
       if (!studentId) {
@@ -479,7 +479,9 @@ const StudentManagement = () => {
         return;
       }
 
-      const student = students.find((s) => s.id === studentId);
+      // SỬA: Tìm từ displayStudents nếu filter được áp dụng, ngược lại tìm từ students
+      const searchList = isFilterApplied ? displayStudents : students;
+      const student = searchList.find((s) => s.id === studentId);
       if (!student) {
         toast.error("Không tìm thấy học viên!");
         return;
@@ -671,30 +673,38 @@ const StudentManagement = () => {
       if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
         toast.success("Thêm học viên thành công!");
-        
-        // THÊM MỚI: Tự động refresh danh sách sau khi thêm thành công
+
+        // SỬA LỖI: Trích xuất dữ liệu sinh viên từ response (API trả về {message, data})
+        const newStudent = res.data || res;
+
+        // Cập nhật cả students và displayStudents để UI hiển thị ngay lập tức
+        const updatedStudents = [...students, newStudent];
+        setStudents(updatedStudents);
+
+        // Cập nhật displayStudents nếu đang áp dụng filter
         if (isFilterApplied) {
-          // Gọi lại API để lấy dữ liệu mới nhất
-          await handleApplyFilter();
-        } else {
-          // Nếu chưa áp dụng filter, chỉ cần thêm vào students
-          const updatedStudents = [...students, res];
-          setStudents(updatedStudents);
+          const updatedDisplayStudents = [...displayStudents, newStudent];
+          setDisplayStudents(updatedDisplayStudents);
         }
       } else {
         res = await updateStudentById(formattedStudentData, formattedStudentData.id);
         toast.success("Cập nhật học viên thành công!");
-        
-        // THÊM MỚI: Tự động refresh danh sách sau khi cập nhật thành công  
+
+        // SỬA LỖI: Trích xuất dữ liệu sinh viên từ response (API trả về {message, data})
+        const updatedStudent = res.data || res;
+
+        // Cập nhật cả students và displayStudents để UI hiển thị ngay lập tức
+        const updatedStudents = students.map(student =>
+          student.id === updatedStudent.id ? updatedStudent : student
+        );
+        setStudents(updatedStudents);
+
+        // Cập nhật displayStudents nếu đang áp dụng filter
         if (isFilterApplied) {
-          // Gọi lại API để lấy dữ liệu mới nhất
-          await handleApplyFilter();
-        } else {
-          // Nếu chưa áp dụng filter, cập nhật students
-          const updatedStudents = students.map(student =>
-            student.id === res.id ? res : student
+          const updatedDisplayStudents = displayStudents.map(student =>
+            student.id === updatedStudent.id ? updatedStudent : student
           );
-          setStudents(updatedStudents);
+          setDisplayStudents(updatedDisplayStudents);
         }
       }
 
@@ -702,24 +712,24 @@ const StudentManagement = () => {
       console.log("=== SAVE STUDENT DEBUG ===");
       console.log("studentData:", studentData);
       console.log("res sau khi save:", res);
-      
+
       // SỬA: Lấy data từ res.data thay vì res
       const actualStudentData = res.data || res;
       console.log("actualStudentData:", actualStudentData);
       console.log("actualStudentData.doi_tuong_id:", actualStudentData.doi_tuong_id);
-      
+
       const doiTuongFound = danhSachDoiTuongQL.find(item => item.id === actualStudentData.doi_tuong_id);
       console.log("doiTuongFound:", doiTuongFound);
-      
+
       if (doiTuongFound) {
         console.log("ten_doi_tuong:", doiTuongFound.ten_doi_tuong);
         console.log("ten_doi_tuong.toLowerCase():", doiTuongFound.ten_doi_tuong.toLowerCase());
-        
+
         const quanNhanList = ["quân đội", "công an", "đảng chính quyền"];
         const isMatch = quanNhanList.includes(doiTuongFound.ten_doi_tuong.toLowerCase());
         console.log("isMatch với quân nhân list:", isMatch);
       }
-      
+
       const isQuanNhanResult = isQuanNhan(actualStudentData.doi_tuong_id);
       console.log("isQuanNhan result:", isQuanNhanResult);
 
@@ -730,7 +740,7 @@ const StudentManagement = () => {
           // Kiểm tra xem sinh viên đã có record quân nhân chưa
           const existingMilitaryRecord = await checkMilitaryRecordExists(actualStudentData.id);
           console.log("Existing military record:", existingMilitaryRecord);
-          
+
           const formattedMilitaryData = {
             ...militaryData,
             sinh_vien_id: actualStudentData.id, // ← SỬA: Dùng actualStudentData.id
@@ -745,53 +755,52 @@ const StudentManagement = () => {
           console.log("Dữ liệu quân nhân gửi đi:", formattedMilitaryData);
           console.log("militaryData hiện tại:", militaryData);
 
-          // Kiểm tra xem có dữ liệu quân nhân nào để cập nhật không
-          const hasAnyMilitaryData = Object.keys(militaryData).some(key => 
-            key !== 'sinh_vien_id' && militaryData[key] && militaryData[key] !== ''
+          // Kiểm tra xem có dữ liệu quân nhân nào để cập nhật không (loại bỏ id và sinh_vien_id)
+          const hasAnyMilitaryData = Object.keys(militaryData).some(key =>
+            key !== 'sinh_vien_id' && key !== 'id' && militaryData[key] && militaryData[key] !== ''
           );
-          
+
           console.log("hasAnyMilitaryData:", hasAnyMilitaryData);
 
           if (existingMilitaryRecord) {
-            // ĐÃ CÓ RECORD → Cập nhật bằng military record ID
+            // ĐÃ CÓ RECORD → Luôn cập nhật bằng military record ID
             console.log("Đã có record quân nhân, thực hiện cập nhật với ID:", existingMilitaryRecord.id);
-            if (hasAnyMilitaryData) {
-              try {
-                // SỬA: Dùng updateMilitaryInfo với military record ID
-                const updateResult = await updateMilitaryInfo(formattedMilitaryData, existingMilitaryRecord.id);
-                console.log("Cập nhật thông tin quân nhân thành công!", updateResult);
-                toast.success("Cập nhật thông tin quân nhân thành công!");
-              } catch (updateError) {
-                console.log("Lỗi cập nhật:", updateError);
-                toast.error("Lỗi khi cập nhật thông tin quân nhân!");
-              }
+            try {
+              // SỬA: Luôn gọi update API khi đã có record (bỏ điều kiện hasAnyMilitaryData)
+              const updateResult = await updateMilitaryInfo(formattedMilitaryData, existingMilitaryRecord.id);
+              console.log("Cập nhật thông tin quân nhân thành công!", updateResult);
+              toast.success("Cập nhật thông tin quân nhân thành công!");
+            } catch (updateError) {
+              console.log("Lỗi cập nhật:", updateError);
+              toast.error("Lỗi khi cập nhật thông tin quân nhân!");
             }
           } else {
-            // CHƯA CÓ RECORD → Tạo mới (giữ nguyên)
+            // CHƯA CÓ RECORD → Tạo mới
             console.log("Chưa có record quân nhân, tạo mới...");
-            const newMilitaryData = hasAnyMilitaryData 
-              ? formattedMilitaryData 
+            // SỬA: Sử dụng actualStudentData.id thay vì res.id
+            const newMilitaryData = hasAnyMilitaryData
+              ? formattedMilitaryData
               : {
-                  sinh_vien_id: res.id,
-                  ngay_nhap_ngu: null,
-                  cap_bac: '',
-                  trinh_do_van_hoa: '',
-                  noi_o_hien_nay: '',
-                  don_vi_cu_di_hoc: '',
-                  loai_luong: '',
-                  nhom_luong: '',
-                  bac_luong: '',
-                  he_so_luong: '',
-                  ngay_nhan_luong: null,
-                  chuc_vu: '',
-                  suc_khoe: '',
-                };
-            
+                sinh_vien_id: actualStudentData.id,
+                ngay_nhap_ngu: null,
+                cap_bac: '',
+                trinh_do_van_hoa: '',
+                noi_o_hien_nay: '',
+                don_vi_cu_di_hoc: '',
+                loai_luong: '',
+                nhom_luong: '',
+                bac_luong: '',
+                he_so_luong: '',
+                ngay_nhan_luong: null,
+                chuc_vu: '',
+                suc_khoe: '',
+              };
+
             try {
               const createResult = await createMilitaryInfo(newMilitaryData);
               console.log("Tạo mới record thông tin quân nhân thành công!", createResult);
               toast.success("Tạo mới thông tin quân nhân thành công!");
-              
+
               // Cập nhật state militarys để có dữ liệu mới
               setMilitary(prev => [...prev, createResult]);
             } catch (createError) {
@@ -846,7 +855,7 @@ const StudentManagement = () => {
 
       // SỬA: Xóa dòng lỗi này
       // setOpenMilitaryPopup(false);
-      
+
     } catch (error) {
       console.error("Lỗi khi xử lý thông tin quân nhân:", error);
       toast.error(`Lỗi khi lưu thông tin quân nhân: ${error.message || error}`);

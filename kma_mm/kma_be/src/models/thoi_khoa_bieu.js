@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   return sequelize.define('thoi_khoa_bieu', {
     id: {
       autoIncrement: true,
@@ -46,6 +46,14 @@ module.exports = function(sequelize, DataTypes) {
     },
     trang_thai: {
       type: DataTypes.TINYINT,
+      allowNull: true
+    },
+    ngay_hoc: {
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    ghi_chu: {
+      type: DataTypes.TEXT,
       allowNull: true
     }
   }, {
