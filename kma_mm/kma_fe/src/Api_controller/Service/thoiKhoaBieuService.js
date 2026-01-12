@@ -46,3 +46,26 @@ export const createAllThoiKhoaBieu = async (data) => {
     const response = await api.post('/thoikhoabieu/createall', data);
     return response.data;
 };
+
+/**
+ * Lấy danh sách môn học có trong TKB nhưng chưa có trong KHMH
+ * @param {number} khoaDaoTaoId - ID khóa đào tạo
+ * @param {number|null} kyHoc - Kỳ học (optional)
+ */
+export const getMissingMonHocInKeHoach = async (khoaDaoTaoId, kyHoc = null) => {
+    let url = `/thoikhoabieu/missing/${khoaDaoTaoId}`;
+    if (kyHoc) {
+        url += `/${kyHoc}`;
+    }
+    const response = await api.get(url);
+    return response.data;
+};
+
+/**
+ * Thêm nhiều môn học vào kế hoạch môn học nếu chưa tồn tại
+ * @param {Array} items - Mảng các { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc }
+ */
+export const bulkAddToKeHoachMonHoc = async (items) => {
+    const response = await api.post('/kehoachmonhoc/bulk-add', { items });
+    return response.data;
+};
