@@ -122,7 +122,7 @@ class ThoiKhoaBieuService {
 
     // Nếu đã tồn tại thì bỏ qua, không báo lỗi
     if (existingTKB) {
-      return { skipped: true, message: 'Môn học đã tồn tại trong TKB', existingId: existingTKB.id };
+      return { skipped: true, message: `Môn học đã tồn tại trong TKB`, existingId: existingTKB.id };
     }
 
     const newTKB = await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, ngay_hoc, ghi_chu, trang_thai, ky_hoc });
@@ -227,7 +227,10 @@ class ThoiKhoaBieuService {
   }
 
   /**
-   * Lấy danh sách môn học có trong TKB nhưng chưa có trong KHMH
+   * Lấy danh sách môn học có trong Thời khóa biểu nhưng chưa có trong Kế hoạch môn học
+   * @param {number} khoa_dao_tao_id - ID của khóa đào tạo
+   * @param {number|null} ky_hoc - Kỳ học (optional, nếu null sẽ lấy tất cả các kỳ)
+   * @returns {Array} Danh sách môn học thiếu trong KHMH
    */
   static async getMissingMonHocInKeHoach(khoa_dao_tao_id, ky_hoc = null) {
     try {
@@ -243,7 +246,7 @@ class ThoiKhoaBieuService {
 
       const lopIds = lopList.map(l => l.id);
 
-      // 2. Lấy danh sách môn học từ TKB
+      // 2. Lấy danh sách môn học từ Thời khóa biểu theo lớp và kỳ học
       const tkbWhereClause = { lop_id: lopIds };
       if (ky_hoc) {
         tkbWhereClause.ky_hoc = ky_hoc;
@@ -254,17 +257,17 @@ class ThoiKhoaBieuService {
         attributes: ['mon_hoc_id', 'ky_hoc']
       });
 
-      // Loại bỏ trùng lặp
+      // Loại bỏ trùng lặp dựa trên mon_hoc_id + ky_hoc
       const uniqueTkbMap = new Map();
       tkbList.forEach(tkb => {
         const key = `${tkb.mon_hoc_id}_${tkb.ky_hoc}`;
         if (!uniqueTkbMap.has(key)) {
-          uniqueTkbMap.set(key, { mon_hoc_id: tkb.mon_hoc_id, ky_hoc: tkb.ky_hoc });
+          uniqueTkbMap.set(key, tkb);
         }
       });
       const uniqueTkbList = Array.from(uniqueTkbMap.values());
 
-      // 3. Lấy danh sách môn học từ KHMH
+      // 3. Lấy danh sách môn học từ Kế hoạch môn học
       const khmhList = await KeHoachMonHocService.getByKhoaDaoTaoAndKyHoc(khoa_dao_tao_id, ky_hoc);
       const khmhMonHocIds = new Set(khmhList.map(item => `${item.mon_hoc_id}_${item.ky_hoc}`));
 
@@ -281,6 +284,7 @@ class ThoiKhoaBieuService {
         });
       }
 
+      // Map thông tin môn học
       const monHocMap = new Map(monHocDetails.map(m => [m.id, m]));
 
       const missingSubjects = missingTkb.map(tkb => {

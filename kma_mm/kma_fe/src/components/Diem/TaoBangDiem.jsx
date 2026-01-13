@@ -57,7 +57,7 @@ function TaoBangDiem({ sampleStudents }) {
     const [batchOptions, setBatchOptions] = useState([]);
     const [classGroup, setClassGroup] = useState('');
     const [classOptions, setClassOptions] = useState([]);
-    const [course, setCourse] = useState('');
+    const [course, setCourse] = useState([]); // Changed to array for multiple selection
     const [courseOptions, setCourseOptions] = useState([]);
     const [major, setMajor] = useState('');
     const [examNumber, setExamNumber] = useState('');
@@ -75,6 +75,7 @@ function TaoBangDiem({ sampleStudents }) {
     // State variables for student dialog
     const [openDialog, setOpenDialog] = useState(false);
     const [studentId, setStudentId] = useState('');
+    const [selectedStudents, setSelectedStudents] = useState([]); // Thêm state cho nhiều sinh viên
     const [dialogEducationType, setDialogEducationType] = useState('');
     const [dialogBatch, setDialogBatch] = useState('');
     const [dialogClass, setDialogClass] = useState('');
@@ -91,72 +92,92 @@ function TaoBangDiem({ sampleStudents }) {
     const [searchMode, setSearchMode] = useState(false);
 
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rowsPerPage, setRowsPerPage] = useState(40);
     
     // State cho hình thức bảo vệ
     const [defenseType, setDefenseType] = useState('');
 
     // Thêm hàm xử lý chức năng tìm kiếm
     const handleSearchStudents = async () => {
-        if (!batch || !classGroup || !semester || !course) {
+        if (!batch || !classGroup || !semester || !course.length) {
             toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên');
             return;
         }
+        
+        if (!scheduleId || scheduleId.length === 0) {
+            toast.error('Không tìm thấy thời khóa biểu cho các môn học đã chọn');
+            return;
+        }
+        
         setSearchMode(true);
         setLoadingStudents(true);
         try {
-            // Chuẩn bị tham số cho API tìm kiếm
-            let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
-            
-            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
-            if (defenseType === 'bao_ve_do_an') {
-                searchUrl += '&bao_ve_do_an=true';
-            } else if (defenseType === 'thi_tot_nghiep') {
-                searchUrl += '&bao_ve_do_an=false';
+            let allStudents = [];
+
+            // Process each schedule ID
+            for (const schedule of scheduleId) {
+                try {
+                    // Chuẩn bị tham số cho API tìm kiếm
+                    let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
+                    
+                    // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+                    if (defenseType === 'bao_ve_do_an') {
+                        searchUrl += '&bao_ve_do_an=true';
+                    } else if (defenseType === 'thi_tot_nghiep') {
+                        searchUrl += '&bao_ve_do_an=false';
+                    }
+                    
+                    const response = await layDanhSachSinhVienTheoTKB(searchUrl);
+
+                    // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
+                    const filteredByDefenseType = response.data;
+
+                    const formattedStudents = await Promise.all(
+                        filteredByDefenseType.map(async (student) => {
+                            const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                            const maLop = lopInfo?.ma_lop || student.lop_id;
+                            
+                            // Get course name from courseOptions
+                            const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
+                            const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
+
+                            return {
+                                ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                                ho_dem: student.sinh_vien.ho_dem,
+                                ten: student.sinh_vien.ten,
+                                lop: maLop,
+                                mon_hoc: courseName,
+                                lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                                diem: {
+                                    TP1: student.diem?.TP1 || null,
+                                    TP2: student.diem?.TP2 || null,
+                                    CK1: student.diem?.CK1 || null,
+                                    CK2: student.diem?.CK2 || null
+                                },
+                                retakeRegistered: student.retakeRegistered || false,
+                                scheduleId: schedule.scheduleId,
+                                courseId: schedule.courseId
+                            };
+                        })
+                    );
+                    allStudents = allStudents.concat(formattedStudents);
+                } catch {
+                    toast.error(`Có lỗi xảy ra khi tìm kiếm học viên cho môn học ${schedule.courseId}`);
+                }
             }
-            
-            const response = await layDanhSachSinhVienTheoTKB(searchUrl);
-            console.log("searchResponse:", response);
 
-            // Backend đã Flọc theo hình thức bảo vệ, không cần lọc lại ở frontend
-            const filteredByDefenseType = response.data;
-            console.log(filteredByDefenseType)
+            setStudents(allStudents);
 
-            const formattedStudents = await Promise.all(
-                filteredByDefenseType.map(async (student) => {
-                    const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                    const maLop = lopInfo?.ma_lop || student.lop_id;
-
-                    return {
-                        ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                        ho_dem: student.sinh_vien.ho_dem,
-                        ten: student.sinh_vien.ten,
-                        lop: maLop,
-                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                        diem: {
-                            TP1: student.diem?.TP1 || null,
-                            TP2: student.diem?.TP2 || null,
-                            CK1: student.diem?.CK1 || null,
-                            CK2: student.diem?.CK2 || null
-                        },
-                        retakeRegistered: student.retakeRegistered || false
-                    };
-                })
-            );
-            console.log(formattedStudents);
-            setStudents(formattedStudents);
-
-            if (formattedStudents.length > 0) {
-                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' : 
+            if (allStudents.length > 0) {
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
                                       defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'tất cả';
-                toast.success(`Đã tìm thấy ${formattedStudents.length} học viên đủ điều kiện ${defenseTypeText}.`);
+                toast.success(`Đã tìm thấy ${allStudents.length} học viên đủ điều kiện ${defenseTypeText}.`);
             } else {
-                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' : 
+                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
                                       defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'phù hợp';
                 toast.warn(`Không tìm thấy học viên nào đủ điều kiện ${defenseTypeText}.`);
             }
-        } catch (error) {
-            console.error('Error searching students:', error);
+        } catch {
             toast.error('Có lỗi xảy ra khi tìm kiếm học viên. Vui lòng thử lại sau.');
         } finally {
             setLoadingStudents(false);
@@ -243,7 +264,7 @@ function TaoBangDiem({ sampleStudents }) {
         const fetchClasses = async () => {
             setLoadingClasses(true);
             setClassGroup('');
-            setCourse('');
+            setCourse([]); // Reset to empty array
             try {
                 const response = await getDanhSachLopTheoKhoaDaoTao(batch);
                 setClassOptions(response);
@@ -263,7 +284,7 @@ function TaoBangDiem({ sampleStudents }) {
 
         const fetchCourses = async () => {
             setLoadingCourses(true);
-            setCourse(''); // Reset course selection
+            setCourse([]); // Reset course selection to empty array
             try {
                 // Lấy danh sách môn học từ API /courses
                 const response = await getDanhSachMonHocTheoKhoaVaKi({
@@ -306,149 +327,178 @@ function TaoBangDiem({ sampleStudents }) {
         fetchCourses();
     }, [classGroup, batch, semester]);
 
-    // Find schedule ID when course and class are selected
+    // Find schedule IDs when courses and class are selected
     useEffect(() => {
-        if (!classGroup || !course) return;
+        if (!classGroup || !course.length) return;
 
-        const fetchScheduleId = async () => {
+        const fetchScheduleIds = async () => {
             setLoading(true);
             try {
-                const response = await getThoiKhoaBieu(course, classGroup, semester);
-                console.log(response.data);
-                setScheduleId(response.data[0].id);
+                const scheduleIds = [];
+                for (const courseId of course) {
+                    const response = await getThoiKhoaBieu(courseId, classGroup, semester);
+                    if (response.data && response.data.length > 0) {
+                        scheduleIds.push({
+                            courseId: courseId,
+                            scheduleId: response.data[0].id
+                        });
+                    }
+                }
+                setScheduleId(scheduleIds);
             } catch (error) {
-                console.error('Error fetching schedule ID:', error);
+                console.error('Error fetching schedule IDs:', error);
+                setScheduleId([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchScheduleId();
+        fetchScheduleIds();
     }, [classGroup, course, semester]);
 
     console.log("scheduleId:", scheduleId);
 
     const handleCreateGradeSheet = async () => {
-        if (!scheduleId) {
+        if (!scheduleId || scheduleId.length === 0) {
             toast.error('Vui lòng chọn đầy đủ thông tin để tạo bảng điểm');
             return;
         }
 
         setLoadingStudents(true);
         try {
-            const existingGradeSheet = await kiemTraBangDiemTonTai(scheduleId);
-            console.log(existingGradeSheet);
-            if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
-                toast.warn('Bảng điểm cho thời khóa biểu này đã tồn tại. Vui lòng kiểm tra lại hoặc sử dụng bảng điểm hiện có.');
-                
-                // Chuẩn bị tham số cho API tìm kiếm khi bảng điểm đã tồn tại
-                let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
-                
-                // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
-                if (defenseType === 'bao_ve_do_an') {
-                    searchUrl += '&bao_ve_do_an=true';
-                } else if (defenseType === 'thi_tot_nghiep') {
-                    searchUrl += '&bao_ve_do_an=false';
+            let allStudents = [];
+            let existingGradeSheetsCount = 0;
+            let newGradeSheetsCount = 0;
+
+            // Process each schedule ID
+            for (const schedule of scheduleId) {
+                try {
+                    const existingGradeSheet = await kiemTraBangDiemTonTai(schedule.scheduleId);
+                    
+                    if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
+                        existingGradeSheetsCount++;
+                        
+                        // Chuẩn bị tham số cho API tìm kiếm khi bảng điểm đã tồn tại
+                        let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
+                        
+                        // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+                        if (defenseType === 'bao_ve_do_an') {
+                            searchUrl += '&bao_ve_do_an=true';
+                        } else if (defenseType === 'thi_tot_nghiep') {
+                            searchUrl += '&bao_ve_do_an=false';
+                        }
+                        
+                        const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
+                        const filteredByDefenseType = studentsResponse.data;
+                        
+                        const formattedStudents = await Promise.all(
+                            filteredByDefenseType.map(async (student) => {
+                                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                                const maLop = lopInfo?.ma_lop || student.lop_id;
+                                
+                                // Get course name from courseOptions
+                                const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
+                                const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
+
+                                return {
+                                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                                    ho_dem: student.sinh_vien.ho_dem,
+                                    ten: student.sinh_vien.ten,
+                                    lop: maLop,
+                                    mon_hoc: courseName,
+                                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                                    diem: {
+                                        TP1: student.diem_tp1 || null,
+                                        TP2: student.diem_tp2 || null,
+                                        CK1: student.diem_ck || null,
+                                        CK2: student.diem_ck2 || null
+                                    },
+                                    retakeRegistered: student.retakeRegistered || false,
+                                    scheduleId: schedule.scheduleId,
+                                    courseId: schedule.courseId
+                                };
+                            })
+                        );
+                        allStudents = allStudents.concat(formattedStudents);
+                    } else {
+                        // Tạo bảng điểm mới cho môn học này
+                        const gradeSheetParams = { thoi_khoa_bieu_id: schedule.scheduleId };
+                        
+                        // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+                        if (defenseType === 'bao_ve_do_an') {
+                            gradeSheetParams.bao_ve_do_an = true;
+                        } else if (defenseType === 'thi_tot_nghiep') {
+                            gradeSheetParams.bao_ve_do_an = false;
+                        }
+                        
+                        await taoBangDiemChoSinhVien(gradeSheetParams);
+                        newGradeSheetsCount++;
+
+                        // Chuẩn bị tham số cho API tìm kiếm sau khi tạo bảng điểm mới
+                        let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
+                        
+                        // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
+                        if (defenseType === 'bao_ve_do_an') {
+                            searchUrl += '&bao_ve_do_an=true';
+                        } else if (defenseType === 'thi_tot_nghiep') {
+                            searchUrl += '&bao_ve_do_an=false';
+                        }
+                        
+                        const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
+                        const filteredByDefenseType = studentsResponse.data;
+
+                        const formattedStudents = await Promise.all(
+                            filteredByDefenseType.map(async (student) => {
+                                const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
+                                const maLop = lopInfo?.ma_lop || student.lop_id;
+                                
+                                // Get course name from courseOptions
+                                const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
+                                const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
+
+                                return {
+                                    ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
+                                    ho_dem: student.sinh_vien.ho_dem,
+                                    ten: student.sinh_vien.ten,
+                                    lop: maLop,
+                                    mon_hoc: courseName,
+                                    lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
+                                    diem: {
+                                        TP1: student.diem_tp1 || null,
+                                        TP2: student.diem_tp2 || null,
+                                        CK1: student.diem_ck || null,
+                                        CK2: student.diem_ck2 || null
+                                    },
+                                    retakeRegistered: student.retakeRegistered || false,
+                                    scheduleId: schedule.scheduleId,
+                                    courseId: schedule.courseId
+                                };
+                            })
+                        );
+                        allStudents = allStudents.concat(formattedStudents);
+                    }
+                } catch (courseError) {
+                    console.error(`Error processing course ${schedule.courseId}:`, courseError);
+                    toast.error(`Có lỗi xảy ra khi xử lý môn học ${schedule.courseId}`);
                 }
-                
-                const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
-                
-                // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
-                const filteredByDefenseType = studentsResponse.data;
-                
-                const formattedStudents = await Promise.all(
-                    filteredByDefenseType.map(async (student) => {
-                        const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                        const maLop = lopInfo?.ma_lop || student.lop_id;
-
-                        return {
-                            ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                            ho_dem: student.sinh_vien.ho_dem,
-                            ten: student.sinh_vien.ten,
-                            lop: maLop,
-                            lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                            diem: {
-                                TP1: student.diem_tp1 || null,
-                                TP2: student.diem_tp2 || null,
-                                CK1: student.diem_ck || null,
-                                CK2: student.diem_ck2 || null
-                            },
-                            retakeRegistered: student.retakeRegistered || false
-                        };
-                    })
-                );
-                setStudents(formattedStudents);
-                return;
             }
 
-            // Chuẩn bị tham số cho API tạo bảng điểm
-            const gradeSheetParams = { thoi_khoa_bieu_id: scheduleId };
-            
-            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
-            if (defenseType === 'bao_ve_do_an') {
-                gradeSheetParams.bao_ve_do_an = true;
-            } else if (defenseType === 'thi_tot_nghiep') {
-                gradeSheetParams.bao_ve_do_an = false;
+            setStudents(allStudents);
+
+            // Tạo thông báo tổng hợp
+            let message = '';
+            if (newGradeSheetsCount > 0 && existingGradeSheetsCount > 0) {
+                message = `Đã tạo ${newGradeSheetsCount} bảng điểm mới và tìm thấy ${existingGradeSheetsCount} bảng điểm đã tồn tại. Tổng cộng ${allStudents.length} học viên.`;
+            } else if (newGradeSheetsCount > 0) {
+                message = `Đã tạo ${newGradeSheetsCount} bảng điểm mới với ${allStudents.length} học viên.`;
+            } else if (existingGradeSheetsCount > 0) {
+                message = `Tìm thấy ${existingGradeSheetsCount} bảng điểm đã tồn tại với ${allStudents.length} học viên.`;
             }
-            // Nếu không chọn hình thức bảo vệ, không truyền tham số bao_ve_do_an
-            
-            const gradeSheetResponse = await taoBangDiemChoSinhVien(gradeSheetParams);
-            console.log('Grade sheet response:', gradeSheetResponse);
 
-            // Chuẩn bị tham số cho API tìm kiếm sau khi tạo bảng điểm mới
-            let searchUrl = `thoi_khoa_bieu_id=${scheduleId}`;
-            
-            // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
-            if (defenseType === 'bao_ve_do_an') {
-                searchUrl += '&bao_ve_do_an=true';
-            } else if (defenseType === 'thi_tot_nghiep') {
-                searchUrl += '&bao_ve_do_an=false';
-            }
-            
-            const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
-            console.log("studentsResponse:", studentsResponse);
-
-            // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
-            const filteredByDefenseType = studentsResponse.data;
-
-            const formattedStudents = await Promise.all(
-                filteredByDefenseType.map(async (student) => {
-                    const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
-                    const maLop = lopInfo?.ma_lop || student.lop_id;
-
-                    return {
-                        ma_sinh_vien: student.sinh_vien.ma_sinh_vien,
-                        ho_dem: student.sinh_vien.ho_dem,
-                        ten: student.sinh_vien.ten,
-                        lop: maLop,
-                        lan_hoc: student.lan_hoc ? 'Học lần ' + student.lan_hoc : 'Học lần 1',
-                        diem: {
-                            TP1: student.diem_tp1 || null,
-                            TP2: student.diem_tp2 || null,
-                            CK1: student.diem_ck || null,
-                            CK2: student.diem_ck2 || null
-                        },
-                        retakeRegistered: student.retakeRegistered || false
-                    };
-                })
-            );
-            console.log(formattedStudents);
-            setStudents(formattedStudents);
-
-            if (formattedStudents.length > 0) {
-                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
-                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : '';
-                const message = defenseTypeText ? 
-                    `Đã tạo bảng điểm ${defenseTypeText} với ${formattedStudents.length} học viên.` :
-                    `Đã tạo bảng điểm với ${formattedStudents.length} học viên.`;
+            if (allStudents.length > 0) {
                 toast.success(message);
             } else {
-                const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
-                                      defenseType === 'thi_tot_nghiệp' ? 'thi tốt nghiệp' : '';
-                const message = defenseTypeText ? 
-                    `Không tìm thấy học viên nào đủ điều kiện ${defenseTypeText}.` :
-                    'Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.';
-                toast.warn(message);
+                toast.warn('Không tìm thấy học viên nào phù hợp với các tiêu chí đã chọn.');
             }
         } catch (error) {
             console.error('Error creating grade sheet:', error);
@@ -553,6 +603,7 @@ function TaoBangDiem({ sampleStudents }) {
         setOpenDialog(true);
         // Reset dialog fields
         setStudentId('');
+        setSelectedStudents([]); // Reset danh sách sinh viên đã chọn
         setDialogEducationType('');
         setDialogBatch('');
         setDialogClass('');
@@ -568,6 +619,7 @@ function TaoBangDiem({ sampleStudents }) {
         setOpenDialog(false);
         // Reset dialog fields
         setStudentId('');
+        setSelectedStudents([]); // Reset danh sách sinh viên đã chọn
         setDialogEducationType('');
         setDialogBatch('');
         setDialogClass('');
@@ -575,6 +627,27 @@ function TaoBangDiem({ sampleStudents }) {
         setDialogEducationTypeOptions([]);
         setDialogBatchOptions([]);
         setDialogClassOptions([]);
+    };
+
+    // Xử lý chọn/bỏ chọn một sinh viên
+    const handleSelectStudent = (studentCode) => {
+        setSelectedStudents(prev => {
+            if (prev.includes(studentCode)) {
+                return prev.filter(code => code !== studentCode);
+            } else {
+                return [...prev, studentCode];
+            }
+        });
+    };
+
+    // Xử lý chọn/bỏ chọn tất cả sinh viên
+    const handleSelectAllStudents = (checked) => {
+        if (checked) {
+            const allStudentCodes = filteredStudents.map(student => student.ma_sinh_vien);
+            setSelectedStudents(allStudentCodes);
+        } else {
+            setSelectedStudents([]);
+        }
     };
 
     // Fetch education types for dialog
@@ -650,63 +723,84 @@ function TaoBangDiem({ sampleStudents }) {
     }, [dialogBatch]);
 
     const handleAddRetakeStudent = async () => {
-        if (!studentId) {
-            toast.error('Vui lòng chọn học viên');
+        // Kiểm tra có sinh viên nào được chọn không
+        if (selectedStudents.length === 0) {
+            toast.error('Vui lòng chọn ít nhất một học viên');
             return;
         }
 
-        console.log('studentId:', studentId);
+        if (!scheduleId || scheduleId.length === 0) {
+            toast.error('Vui lòng chọn môn học trước khi thêm sinh viên học lại');
+            return;
+        }
+
+        // Xác nhận trước khi thêm học viên học lại (liệt kê các lớp học phần)
+        const classInfoConfirm = classOptions.find(option => option.id === classGroup);
+        const maLopConfirm = classInfoConfirm?.ma_lop || '';
+        const hpLines = (scheduleId || []).map((s) => {
+            const courseInfo = courseOptions.find(c => c.id === s.courseId);
+            const tenMon = courseInfo?.ten_mon_hoc || courseInfo?.name || s.courseId;
+            return `- ${tenMon} - ${maLopConfirm}`;
+        }).join('\n');
+        const plural = (scheduleId?.length || 0) > 1 ? 'các lớp học phần sau' : 'lớp học phần sau';
+        const confirmMsg = `Bạn có chắc chắn muốn thêm sinh viên học lại vào ${plural}:\n${hpLines}`;
+        const agreed = window.confirm(confirmMsg);
+        if (!agreed) return;
 
         try {
-            const isStudentExist = students.some(student => student.ma_sinh_vien === studentId);
-            if (isStudentExist) {
-                const existingStudent = students.find(student => student.ma_sinh_vien === studentId);
-                toast.warn(`học viên ${existingStudent.ho_dem} ${existingStudent.ten} đã có trong bảng điểm hiện tại (Lần ${existingStudent.lan_hoc}).`);
-                handleCloseDialog();
-                return;
-            }
+            let totalAdded = 0;
+            let totalSkipped = 0;
+            let errorCount = 0;
 
-            const response = await themSinhVienHocLai({
-                thoi_khoa_bieu_id: scheduleId,
-                ma_sinh_vien: studentId,
-            });
-
-            console.log('API Response:', response);
-
-            if (response.success) {
-                const retakeData = response.data;
-                const sinhVienData = await timSinhVienTheoMaHoacFilter({
-                    'ma_sinh_vien': studentId,
-                });
-
-                const sinhVienInfo = sinhVienData.success && sinhVienData.data.length > 0 ? sinhVienData.data[0] : null;
-                console.log(sinhVienInfo);
-                if (!sinhVienInfo) {
-                    throw new Error('Không tìm thấy thông tin học viên');
+            // Duyệt qua từng sinh viên được chọn
+            for (const studentCode of selectedStudents) {
+                // Kiểm tra sinh viên đã tồn tại trong danh sách chưa
+                const isStudentExist = students.some(student => student.ma_sinh_vien === studentCode);
+                if (isStudentExist) {
+                    totalSkipped++;
+                    continue;
                 }
 
-                const newStudent = {
-                    ma_sinh_vien: sinhVienInfo.ma_sinh_vien,
-                    ho_dem: sinhVienInfo.ho_dem,
-                    ten: sinhVienInfo.ten,
-                    lop: sinhVienInfo.lop,
-                    lan_hoc: retakeData.lan_hoc,
-                    diem: {
-                        TP1: null,
-                        TP2: null,
-                        CK1: null,
-                        CK2: null,
-                    },
-                    retakeRegistered: true,
-                };
+                // Thêm sinh viên vào tất cả các môn học được chọn
+                let addedToSchedules = 0;
+                for (const schedule of scheduleId) {
+                    try {
+                        const response = await themSinhVienHocLai({
+                            thoi_khoa_bieu_id: schedule.scheduleId,
+                            ma_sinh_vien: studentCode,
+                        });
 
-                setStudents(prevStudents => [...prevStudents, newStudent]);
-                toast.success(`Đã thêm học viên ${newStudent.ho_dem} ${newStudent.ten} vào danh sách học lại (Lần ${retakeData.lan_hoc}).`);
+                        if (response.success) {
+                            addedToSchedules++;
+                        }
+                    } catch {
+                        // Tiếp tục với schedule tiếp theo nếu có lỗi
+                        continue;
+                    }
+                }
+
+                if (addedToSchedules > 0) {
+                    totalAdded++;
+                } else {
+                    errorCount++;
+                }
+            }
+
+            // Hiển thị kết quả
+            if (totalAdded > 0) {
+                await handleSearchStudents(); // Tải lại danh sách sinh viên
+                let message = `Đã thêm thành công ${totalAdded} học viên`;
+                if (totalSkipped > 0) {
+                    message += `, bỏ qua ${totalSkipped} học viên đã tồn tại`;
+                }
+                if (errorCount > 0) {
+                    message += `, ${errorCount} học viên gặp lỗi`;
+                }
+                toast.success(message);
             } else {
-                toast.error(`Không thể thêm học viên: ${response.message || 'Lỗi không xác định'}`);
+                toast.error('Không thể thêm bất kỳ học viên nào');
             }
         } catch (error) {
-            console.error('Error adding retake student:', error);
             toast.error(`Có lỗi xảy ra khi thêm học viên: ${error.message || 'Vui lòng thử lại.'}`);
         }
 
@@ -733,9 +827,6 @@ function TaoBangDiem({ sampleStudents }) {
             toast.error('Không tìm thấy học viên.');
             setFilteredStudents([]);
         }
-    };
-    const handleSelectStudent = (id) => {
-        setStudentId(id);
     };
 
     console.log(classGroup);
@@ -871,10 +962,22 @@ function TaoBangDiem({ sampleStudents }) {
                     <FormControl fullWidth>
                         <InputLabel>Học phần</InputLabel>
                         <Select
+                            multiple
                             value={course}
                             label="Học phần"
                             onChange={(e) => setCourse(e.target.value)}
                             disabled={!classGroup || !semester || loadingCourses}
+                            renderValue={(selected) => {
+                                if (selected.length === 0) {
+                                    return 'Chọn môn học';
+                                }
+                                const selectedCourses = courseOptions.filter(option =>
+                                    selected.includes(option.id)
+                                );
+                                return selectedCourses.map(course =>
+                                    course.ten_mon_hoc || course.name || course.mon_hoc_id
+                                ).join(', ');
+                            }}
                         >
                             {loadingCourses ? (
                                 <MenuItem value="">
@@ -883,6 +986,7 @@ function TaoBangDiem({ sampleStudents }) {
                             ) : (
                                 courseOptions.map((option) => (
                                     <MenuItem key={option.id} value={option.id}>
+                                        <Checkbox checked={course.indexOf(option.id) > -1} />
                                         {option.ten_mon_hoc || option.name || option.mon_hoc_id}
                                     </MenuItem>
                                 ))
@@ -913,7 +1017,7 @@ function TaoBangDiem({ sampleStudents }) {
                             color="primary"
                             startIcon={<NoteAddIcon />}
                             onClick={handleCreateGradeSheet}
-                            disabled={!course || loading || loadingStudents}
+                            disabled={!course.length || loading || loadingStudents}
                         >
                             {loadingStudents && !searchMode ? <CircularProgress size={24} color="inherit" /> : 'Tạo Bảng Điểm'}
                         </Button>
@@ -922,7 +1026,7 @@ function TaoBangDiem({ sampleStudents }) {
                             color="secondary"
                             startIcon={<SearchIcon />}
                             onClick={handleSearchStudents}
-                            disabled={!course || loading || loadingStudents}
+                            disabled={!course.length || loading || loadingStudents}
                         >
                             {loadingStudents && searchMode ? <CircularProgress size={24} color="inherit" /> : 'Tìm Kiếm'}
                         </Button>
@@ -963,7 +1067,7 @@ function TaoBangDiem({ sampleStudents }) {
                     color="primary"
                     startIcon={<PersonAddIcon />}
                     onClick={handleOpenDialog}
-                    disabled={students.length === 0} // Chỉ vô hiệu hóa khi không có học viên
+                    disabled={!course.length || !scheduleId || scheduleId.length === 0} // Chỉ vô hiệu hóa khi chưa chọn môn học
                 >
                     Thêm học viên
                 </Button>
@@ -977,6 +1081,7 @@ function TaoBangDiem({ sampleStudents }) {
                             <TableCell>Họ đệm</TableCell>
                             <TableCell>Tên</TableCell>
                             <TableCell>Lớp</TableCell>
+                            <TableCell>Môn học</TableCell>
                             <TableCell>Lần học</TableCell>
                             <TableCell>TP1</TableCell>
                             <TableCell>TP2</TableCell>
@@ -988,7 +1093,7 @@ function TaoBangDiem({ sampleStudents }) {
                     <TableBody>
                         {loadingStudents ? (
                             <TableRow>
-                                <TableCell colSpan={10} align="center">
+                                <TableCell colSpan={11} align="center">
                                     <CircularProgress />
                                 </TableCell>
                             </TableRow>
@@ -1000,11 +1105,12 @@ function TaoBangDiem({ sampleStudents }) {
                                     const isRetakeStudent = student.lan_hoc !== 'Học lần 1';
 
                                     return (
-                                        <TableRow key={student.ma_sinh_vien}>
+                                        <TableRow key={`${student.ma_sinh_vien}-${student.courseId}`}>
                                             <TableCell>{student.ma_sinh_vien}</TableCell>
                                             <TableCell>{student.ho_dem}</TableCell>
                                             <TableCell>{student.ten}</TableCell>
                                             <TableCell>{student.lop}</TableCell>
+                                            <TableCell>{student.mon_hoc}</TableCell>
                                             <TableCell>{student.lan_hoc}</TableCell>
                                             <TableCell>
                                                 <TextField
@@ -1085,7 +1191,7 @@ function TaoBangDiem({ sampleStudents }) {
                                 })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={10} align="center">
+                                <TableCell colSpan={11} align="center">
                                     <Typography variant="body1" color="textSecondary">
                                         Chưa có dữ liệu. Vui lòng tạo bảng điểm trước.
                                     </Typography>
@@ -1096,7 +1202,7 @@ function TaoBangDiem({ sampleStudents }) {
                 </Table>
                 {students.length > 0 && (
                     <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
+                        rowsPerPageOptions={[5, 10, 25, 40, 50]}
                         component="div"
                         count={students.length}
                         rowsPerPage={rowsPerPage}
@@ -1214,33 +1320,36 @@ function TaoBangDiem({ sampleStudents }) {
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            indeterminate={selectedStudents.length > 0 && selectedStudents.length < filteredStudents.length}
+                                            checked={filteredStudents.length > 0 && selectedStudents.length === filteredStudents.length}
+                                            onChange={(e) => handleSelectAllStudents(e.target.checked)}
+                                        />
+                                    </TableCell>
                                     <TableCell>Mã SV</TableCell>
                                     <TableCell>Họ và tên</TableCell>
                                     <TableCell>Lớp</TableCell>
                                     <TableCell>Khóa đào tạo</TableCell>
                                     <TableCell>Hệ đào tạo</TableCell>
-                                    <TableCell>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {filteredStudents.length > 0 ? (
                                     filteredStudents.map((student) => (
                                         <TableRow key={student.ma_sinh_vien}>
+                                            <TableCell padding="checkbox">
+                                                <Checkbox
+                                                    checked={selectedStudents.includes(student.ma_sinh_vien)}
+                                                    onChange={() => handleSelectStudent(student.ma_sinh_vien)}
+                                                />
+                                            </TableCell>
                                             <TableCell>{student.ma_sinh_vien}</TableCell>
                                             <TableCell>{`${student.ho_dem || ''} ${student.ten || ''}`}</TableCell>
                                             <TableCell>{student.lop}</TableCell>
                                             <TableCell>{student.khoa}</TableCell>
                                             <TableCell>
                                                 {dialogEducationTypeOptions.find(et => et.id === student.he_dao_tao_id)?.ten_he_dao_tao || student.he_dao_tao_id}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Button
-                                                    variant="contained"
-                                                    size="small"
-                                                    onClick={() => handleSelectStudent(student.ma_sinh_vien)}
-                                                >
-                                                    Chọn
-                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -1263,9 +1372,9 @@ function TaoBangDiem({ sampleStudents }) {
                         onClick={handleAddRetakeStudent}
                         color="primary"
                         variant="contained"
-                        disabled={!studentId}
+                        disabled={selectedStudents.length === 0}
                     >
-                        Thêm vào danh sách học lại
+                        Thêm {selectedStudents.length > 0 ? `${selectedStudents.length} học viên` : ''} vào danh sách học lại
                     </Button>
                 </DialogActions>
             </Dialog>

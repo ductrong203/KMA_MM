@@ -207,41 +207,79 @@ class KeHoachMonHocService {
 
   /**
    * Tạo kế hoạch môn học nếu chưa tồn tại
+   * @param {Object} data - { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc }
+   * @returns {Object} - Kế hoạch môn học mới tạo hoặc đã tồn tại
    */
   static async createIfNotExists(data) {
     const { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc = 0 } = data;
 
-    const existingKeHoach = await ke_hoach_mon_hoc.findOne({
-      where: { khoa_dao_tao_id, mon_hoc_id, ky_hoc },
-    });
+    try {
+      // Kiểm tra xem kế hoạch đã tồn tại chưa
+      const existingKeHoach = await ke_hoach_mon_hoc.findOne({
+        where: { khoa_dao_tao_id, mon_hoc_id, ky_hoc }
+      });
 
-    if (existingKeHoach) {
-      return { created: false, data: existingKeHoach };
+      if (existingKeHoach) {
+        return {
+          created: false,
+          data: existingKeHoach,
+          message: 'Kế hoạch môn học đã tồn tại'
+        };
+      }
+
+      // Kiểm tra khóa đào tạo và môn học tồn tại
+      const khoa = await khoa_dao_tao.findByPk(khoa_dao_tao_id);
+      if (!khoa) throw new Error('Khóa đào tạo không tồn tại');
+
+      const monHoc = await mon_hoc.findByPk(mon_hoc_id);
+      if (!monHoc) throw new Error('Môn học không tồn tại');
+
+      // Tạo mới
+      const newKeHoach = await ke_hoach_mon_hoc.create({
+        khoa_dao_tao_id,
+        mon_hoc_id,
+        ky_hoc,
+        bat_buoc
+      });
+
+      return {
+        created: true,
+        data: newKeHoach,
+        message: 'Đã thêm môn học vào kế hoạch thành công'
+      };
+    } catch (error) {
+      throw new Error(`Lỗi khi tạo kế hoạch môn học: ${error.message}`);
     }
-
-    const newKeHoach = await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
-    return { created: true, data: newKeHoach };
   }
 
   /**
-   * Thêm nhiều môn học vào kế hoạch
+   * Tạo nhiều kế hoạch môn học nếu chưa tồn tại
+   * @param {Array} items - Mảng các { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc }
+   * @returns {Object} - Kết quả tạo
    */
   static async bulkCreateIfNotExists(items) {
-    const results = await Promise.all(
-      items.map(item => this.createIfNotExists(item))
-    );
+    try {
+      const results = await Promise.all(
+        items.map(item => this.createIfNotExists(item))
+      );
 
-    const created = results.filter(r => r.created).map(r => r.data);
-    const skipped = results.filter(r => !r.created).map(r => r.data);
+      const created = results.filter(r => r.created).length;
+      const skipped = results.filter(r => !r.created).length;
 
-    return {
-      success: true,
-      created: created.length,
-      skipped: skipped.length,
-      message: `Đã thêm ${created.length} môn học, bỏ qua ${skipped.length} môn đã tồn tại`
-    };
+      return {
+        success: true,
+        created,
+        skipped,
+        total: items.length,
+        message: `Đã thêm ${created} môn học, bỏ qua ${skipped} môn đã tồn tại`,
+        details: results
+      };
+    } catch (error) {
+      throw new Error(`Lỗi khi tạo hàng loạt kế hoạch môn học: ${error.message}`);
+    }
   }
 
 }
 
 module.exports = KeHoachMonHocService;
+

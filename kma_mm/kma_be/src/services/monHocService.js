@@ -60,7 +60,7 @@ const updateMonHoc = async (id, monHoc) => {
         // Kiểm tra xem môn học có tồn tại không
         const checkMonHoc = await mon_hoc.findOne({ where: { id: id } });
         if (!checkMonHoc) {
-            throw new Error("Không tìm thấy môn học");
+            throw new Error("Không tìm thấy  môn học");
         }
 
         // Dữ liệu môn học để cập nhật

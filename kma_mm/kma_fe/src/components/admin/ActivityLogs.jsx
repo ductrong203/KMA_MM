@@ -18,102 +18,327 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Badge,
 } from "@mui/material";
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import Modal from 'react-modal';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; 
-import InfoIcon from '@mui/icons-material/Info';
-import CloseIcon from '@mui/icons-material/Close';// Icon quay lại
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { getLogActivity } from "../../Api_controller/Service/adminService";
 
-Modal.setAppElement('#root');
+// Component hiển thị bảng động cho is_list = 1
+const DynamicTableView = ({ data }) => {
+    // console.log("###########################################", data)
+    
+    if (data.is_list == 1) {
+        return (
+            <Typography variant="body2" color="text.secondary">
+                Không có dữ liệu để hiển thị
+            </Typography>
+        );
+    }
+
+    const { course, semester, class: className, total_students, changed_students } = data;
+
+    // Lấy tất cả các loại thay đổi (các cột)
+    const getAllChangeTypes = () => {
+        const changeTypes = new Set();
+        changed_students.forEach(student => {
+            Object.keys(student.changes).forEach(changeType => {
+                changeTypes.add(changeType);
+            });
+        });
+        return Array.from(changeTypes).sort();
+    };
+
+    const changeTypes = getAllChangeTypes();
+
+    // Mapping tên cột tiếng Việt (có thể tùy chỉnh)
+    const columnMapping = {
+        'diem_tp1': 'TP1',
+        'diem_tp2': 'TP2',
+        'diem_tp3': 'TP3',
+        'diem_gk': 'Giữa kỳ',
+        'diem_ck2': 'Điểm thi lại',
+        'diem_chu': 'Điểm chữ',
+        'diem_ck': 'Cuối kỳ',
+        'diem_tb': 'Trung bình',
+        'diem_hp': 'Điểm học phần',
+        'trang_thai': 'Trạng thái',
+        'diem_he_4': 'Điểm hệ 4'
+    };
+
+    // Hàm format tên cột: nếu có trong mapping thì dùng, không thì capitalize
+    const formatColumnName = (key) => {
+        if (columnMapping[key]) return columnMapping[key];
+        return key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    return (
+        <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                Bảng thay đổi dữ liệu
+            </Typography>
+            
+            {/* Thông tin tổng quan */}
+            {(course || semester || className || total_students) && (
+                <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' }, gap: 1 }}>
+                        {course && (
+                            <Typography variant="body2">
+                                <strong>Môn học:</strong> {course}
+                            </Typography>
+                        )}
+                        {semester && (
+                            <Typography variant="body2">
+                                <strong>Học kỳ:</strong> {semester}
+                            </Typography>
+                        )}
+                        {className && (
+                            <Typography variant="body2">
+                                <strong>Lớp:</strong> {className}
+                            </Typography>
+                        )}
+                        {total_students && (
+                            <Typography variant="body2">
+                                <strong>Số lượng thay đổi:</strong> {total_students}
+                            </Typography>
+                        )}
+                    </Box>
+                </Box>
+            )}
+
+            {/* Bảng dữ liệu */}
+            <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
+                <Table>
+                    <TableHead>
+                        <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                            <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>
+                                Mã sinh viên
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>
+                                Tên sinh viên
+                            </TableCell>
+                            {changeTypes.map(changeType => (
+                                <TableCell 
+                                    key={changeType} 
+                                    sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}
+                                >
+                                    {formatColumnName(changeType)}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {changed_students.map((student, index) => (
+                            <TableRow 
+                                key={student.ma_sinh_vien || index}
+                                sx={{ 
+                                    '&:nth-of-type(odd)': { backgroundColor: 'grey.50' },
+                                    '&:hover': { backgroundColor: 'action.hover' }
+                                }}
+                            >
+                                <TableCell sx={{ fontWeight: 'medium' }}>
+                                    {student.ma_sinh_vien || '-'}
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 'medium' }}>
+                                    {student.ho_dem && student.ten 
+                                        ? `${student.ho_dem} ${student.ten}`
+                                        : student.name || '-'
+                                    }
+                                </TableCell>
+                                {changeTypes.map(changeType => {
+                                    const change = student.changes[changeType];
+                                    return (
+                                        <TableCell key={changeType} sx={{ textAlign: 'center' }}>
+                                            {change ? (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                    <Typography 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            color: 'error.main',
+                                                            textDecoration: 'line-through',
+                                                            fontWeight: 'medium'
+                                                        }}
+                                                    >
+                                                        {change.old !== null && change.old !== undefined ? change.old : '-'}
+                                                    </Typography>
+                                                    <Typography component="span" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+                                                        ||
+                                                    </Typography>
+                                                    <Typography 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            color: 'success.main',
+                                                            fontWeight: 'bold'
+                                                        }}
+                                                    >
+                                                        {change.new !== null && change.new !== undefined ? change.new : '-'}
+                                                    </Typography>
+                                                </Box>
+                                            ) : (
+                                                <Typography sx={{ color: 'text.disabled' }}>
+                                                    -
+                                                </Typography>
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            {/* Chú thích */}
+          
+        </Box>
+    );
+};
 
 const ActivityLogs = () => {
     const [logs, setLogs] = useState([]);
-    const [dateRange, setDateRange] = useState([null, null]);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [selectedRole, setSelectedRole] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [oldLogsCount, setOldLogsCount] = useState(0);
 
     const rowsPerPage = 8;
 
-    const handleDateChange = async (value) => {
-        setDateRange(value);
-        console.log(dateRange);
-        setIsModalOpen(false); // Đóng modal sau khi chọn
-        
-    };
-    // Hàm mở modal
-    const openModal = () => {
-        setIsModalOpen(true);
-    };
+    // Hàm tính số lượng log cũ hơn 30 ngày
+    const countOldLogs = (logsData) => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setHours(0, 0, 0, 0);
 
+        const count = logsData.filter(log => {
+            const logDate = new Date(log.created_at);
+            return logDate < thirtyDaysAgo;
+        }).length;
 
-    // Hàm đóng modal
-    const closeModal = () => {
-        setIsModalOpen(false);
+        setOldLogsCount(count);
     };
 
     const openDetailModal = (log) => {
-    setSelectedLog(log);
-    setIsDetailModalOpen(true);
-  };
+        setSelectedLog(log);
+        setIsDetailModalOpen(true);
+    };
+
     const closeDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedLog(null);
-  }
-  const renderJsonData = (data, indent=0) => {
-    if (typeof data !== "object" || data === null) {
-      return (
-          <Typography variant = "body2" sx= {{ml: indent}}>
-              {String(data)}
-          </Typography>
-      )
-    }
+        setIsDetailModalOpen(false);
+        setSelectedLog(null);
+    };
 
+    const openDeleteDialog = () => {
+        setIsDeleteDialogOpen(true);
+    };
+
+    const closeDeleteDialog = () => {
+        setIsDeleteDialogOpen(false);
+    };
+
+    const handleDeleteLogs = async () => {
+        try {
+            //Gọi APIII
+            // await deleteLogsOlderThan30Days();
+            
+            // Sau khi xóa thành công, fetch lại dữ liệu
+            const response = await getLogActivity();
+            if (response.status === 200) {
+                setLogs(response.data.data);
+                setFilteredLogs(response.data.data);
+                countOldLogs(response.data.data);
+            }
+            
+            closeDeleteDialog();
+            console.log('Đã xóa dữ liệu log cũ hơn 30 ngày');
+        } catch (error) {
+            console.error("Error deleting logs:", error);
+        }
+    };
+
+    // Hàm render dữ liệu dựa trên is_list
+    const renderJsonData = (data, isList, indent = 0) => {
+        // Parse nếu là string
+    // console.log("##############################",isList)
+        if (typeof data === 'string') {
+            try {
+                const parsedData = JSON.parse(data);
+                return renderJsonData(parsedData, isList, indent);
+            } catch (e) {
+                return (
+                    <Typography variant="body2" sx={{ ml: indent }}>
+                        {data}
+                    </Typography>
+                );
+            }
+        }
+
+        // Kiểm tra null hoặc không phải object
+        if (typeof data !== "object" || data === null) {
+            return (
+                <Typography variant="body2" sx={{ ml: indent }}>
+                    {String(data)}
+                </Typography>
+            );
+        }
+
+        // Kiểm tra is_list = 1 để hiển thị bảng
+        if (isList===1) {
+            return <DynamicTableView data={data} />;
+        }
+
+        // Hiển thị dạng box thông thường cho is_list = 0 hoặc không có is_list
         return (
-<Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-      }}
-    >
-      {Object.entries(data).map(([key, value]) => (
-        <Box
-          key={key}
-          sx={{
-            minWidth: '200px',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#f5f5f5',
-            p: 1.5,
-            borderRadius: 1,
-            boxShadow: 1,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 'bold', marginRight: 1, whiteSpace: 'nowrap' }}
-          >
-            {key}:
-          </Typography>
-          <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-          </Typography>
-        </Box>
-      ))}
-    </Box>          )
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                }}
+            >
+                {Object.entries(data).map(([key, value]) => {
+                    // Bỏ qua trường is_list khi hiển thị
+                    if (key === 'is_list') return null;
+                    
+                    return (
+                        <Box
+                            key={key}
+                            sx={{
+                                minWidth: '200px',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#f5f5f5',
+                                p: 1.5,
+                                borderRadius: 1,
+                                boxShadow: 1,
+                            }}
+                        >
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 'bold', marginRight: 1, whiteSpace: 'nowrap' }}
+                            >
+                                {key}:
+                            </Typography>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </Typography>
+                        </Box>
+                    );
+                })}
+            </Box>
+        );
+    };
 
-  }
-    const navigate = useNavigate(); // Hook điều hướng
+    const navigate = useNavigate();
     const roleMapping = {
         daoTao: "Đào tạo",
         khaoThi: "Khảo thí",
@@ -123,14 +348,17 @@ const ActivityLogs = () => {
         sinhVien: "Sinh viên",
         admin: "Admin",
     };
+
     const actionMap = {
-        POST: "Tạo mới ",
+        POST: "Tạo mới",
         PUT: "Chỉnh sửa",
         DELETE: "Xoá",
-    }
-    const handleBackToDashboard = () => {
-        navigate('/admin/dashboard'); // Điều hướng đến trang AdminDashboard
     };
+
+    const handleBackToDashboard = () => {
+        navigate('/admin/dashboard');
+    };
+
     useEffect(() => {
         const fetchLogs = async () => {
             try {
@@ -138,7 +366,7 @@ const ActivityLogs = () => {
                 if (response.status === 200) {
                     setLogs(response.data.data);
                     setFilteredLogs(response.data.data);
-                    console.log("check", logs);
+                    countOldLogs(response.data.data);
                 } else {
                     console.error("Failed to fetch logs:", response.message);
                 }
@@ -151,31 +379,38 @@ const ActivityLogs = () => {
 
         fetchLogs();
     }, []);
-    useEffect(() => {
-        // console.log(!selectedRole);
 
+    useEffect(() => {
         const filtered = logs.filter((log) => {
             const matchesRole = selectedRole
                 ? log?.Role === selectedRole
                 : true;
-            const start = new Date(dateRange[0]);
-            const end = new Date(dateRange[1]);
 
- 
+            if (!startDate) {
+                return matchesRole;
+            }
+
+            const start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
+            
+            const createdAt = new Date(log?.created_at);
 
+            if (!endDate) {
+                const dayEnd = new Date(startDate);
+                dayEnd.setHours(23, 59, 59, 999);
+                return matchesRole && createdAt >= start && createdAt <= dayEnd;
+            }
+
+            const end = new Date(endDate);
             end.setHours(23, 59, 59, 999);
-            const createdAt = new Date(log?.created_at); 
+            const matchesDate = createdAt >= start && createdAt <= end;
 
-            const matchesDate = (dateRange[0] && dateRange[1])  ? (createdAt >= start && createdAt <= end): true ;
-       
-
-            return  matchesDate && matchesRole;
-
+            return matchesDate && matchesRole;
         });
-        console.log(filtered);
+        
         setFilteredLogs(filtered);
-    }, [dateRange[0], dateRange[1], selectedRole, logs]); // Khi users, searchTerm hoặc selectedRole thay đổi
+        setCurrentPage(1);
+    }, [startDate, endDate, selectedRole, logs]);
 
     const convertUTCToVietnamTime = (utcDateString) => {
         const utcDate = new Date(utcDateString);
@@ -191,8 +426,6 @@ const ActivityLogs = () => {
         });
     };
 
-    // const vietnamTime = convertUTCToVietnamTime(utcTime);
-
     if (loading) {
         return <Typography>Loading...</Typography>;
     }
@@ -204,40 +437,69 @@ const ActivityLogs = () => {
     const handlePageChange = (event, value) => {
         setCurrentPage(value);
     };
-    // console.log(logs);   
 
-    // Hàm hủy lọc
     const handleResetFilter = () => {
-        setSelectedRole(""); // Đặt lại role về mặc định
-        setDateRange([null, null]); // Đặt lại khoảng ngày
-        setFilteredLogs(logs)
-        // setLogs([]); // Xóa dữ liệu logs
-        // fetchLogs();
+        setSelectedRole("");
+        setStartDate('');
+        setEndDate('');
+        setFilteredLogs(logs);
         console.log('Đã hủy lọc');
     };
+
     return (
         <Box sx={{ padding: 2 }}>
-            {/* Icon Button back to Dashboard */}
-            <Box display="flex" alignItems="center" mb={2}>
-                <IconButton
-                    color="primary"
-                    onClick={handleBackToDashboard}
-                    sx={{ mr: 2 }} // Khoảng cách giữa icon và tiêu đề
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                    <IconButton
+                        color="primary"
+                        onClick={handleBackToDashboard}
+                        sx={{ mr: 2 }}
+                    >
+                        <ArrowBackIcon />
+                    </IconButton>
+                    <Typography variant="h5">Lịch sử hoạt động</Typography>
+                </Box>
+                
+                <Badge 
+                    badgeContent={oldLogsCount} 
+                    color="error"
+                    max={999}
+                    sx={{
+                        '& .MuiBadge-badge': {
+                            right: -3,
+                            top: 3,
+                            border: '2px solid white',
+                            padding: '0 4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                        }
+                    }}
                 >
-                    <ArrowBackIcon />
-                </IconButton>
-                <Typography variant="h5">Lịch sử hoạt động</Typography>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={openDeleteDialog}
+                        disabled={oldLogsCount === 0}
+                        sx={{
+                            opacity: oldLogsCount === 0 ? 0.6 : 1,
+                            cursor: oldLogsCount === 0 ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        Xóa dữ liệu cũ
+                    </Button>
+                </Badge>
             </Box>
-            <Box display="flex" gap={2} alignItems="center" marginBottom={2}>
-                {/* Bộ lọc Role */}
+
+            <Box display="flex" gap={2} alignItems="center" marginBottom={2} flexWrap="wrap">
                 <TextField
                     select
-                    label="xét theo quyền"
+                    label="Xét theo quyền"
                     variant="outlined"
                     fullWidth
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    sx={{ flex: 1 }} // Chiếm 1 phần tỉ lệ
+                    sx={{ flex: 1, minWidth: '200px' }}
                 >
                     <MenuItem value="">Tất cả các quyền</MenuItem>
                     {Object.entries(roleMapping).map(([key, value]) => (
@@ -247,55 +509,53 @@ const ActivityLogs = () => {
                     ))}
                 </TextField>
 
-                {/* Bộ lọc ngày */}
-                <button
-                    onClick={openModal}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                    Chọn Khoảng Ngày
-                </button>
-                <button
+                <TextField
+                    label="Ngày bắt đầu"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                    sx={{ minWidth: '200px' }}
+                />
+
+                <TextField
+                    label="Ngày kết thúc"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                    inputProps={{
+                        min: startDate
+                    }}
+                    disabled={!startDate}
+                    sx={{ minWidth: '200px' }}
+                />
+
+                <Button
+                    variant="contained"
+                    color="error"
                     onClick={handleResetFilter}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    sx={{ minWidth: '120px' }}
                 >
                     Hủy Lọc
-                </button>
-
-                {dateRange[0] && dateRange[1] && (
-                    <p className="mt-2">
-                        Đã chọn: {dateRange[0].toLocaleDateString('vi-VN')} -{' '}
-                        {dateRange[1].toLocaleDateString('vi-VN')}
-                    </p>
-                )}
-
-                {/* Modal chứa react-calendar */}
-                <Modal
-                    isOpen={isModalOpen}
-                    onRequestClose={closeModal}
-                    className="flex items-center justify-center"
-                    overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-                    contentLabel="Chọn Khoảng Ngày"
-                >
-                    <div className="bg-white p-4 rounded shadow-lg max-w-md w-full">
-                        <h3 className="text-lg font-semibold mb-2">Chọn Khoảng Ngày</h3>
-                        <Calendar
-                            selectRange={true}
-                            onChange={handleDateChange}
-                            value={dateRange}
-                            className="border rounded p-2"
-                        />
-                        <button
-                            onClick={closeModal}
-                            className="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                        >
-                            Đóng
-                        </button>
-                    </div>
-                </Modal>
-
-
+                </Button>
             </Box>
-            {/* Danh sách hoạt động */}
+
+            {startDate && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        {endDate 
+                            ? `Đang lọc từ: ${new Date(startDate).toLocaleDateString('vi-VN')} đến ${new Date(endDate).toLocaleDateString('vi-VN')}`
+                            : `Đang lọc theo ngày: ${new Date(startDate).toLocaleDateString('vi-VN')}`
+                        }
+                    </Typography>
+                </Box>
+            )}
+
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -303,72 +563,82 @@ const ActivityLogs = () => {
                             <TableCell>STT</TableCell>
                             <TableCell>Tên tài khoản</TableCell>
                             <TableCell>Quyền</TableCell>
-                            <TableCell>Hành động </TableCell>
-                            <TableCell>Mô tả </TableCell>
+                            <TableCell>Hành động</TableCell>
+                            <TableCell>Mô tả ngắn gọn</TableCell>
                             <TableCell>Thời gian</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentLogs.map((log, index) => (
-                            <TableRow key={log.ID}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>{log.Username}</TableCell>
-                                <TableCell>{roleMapping[log.Role]}</TableCell>
-                                <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
-                                <TableCell>
-                                 <Box 
-                                        display="flex" 
-                                        alignItems="center" 
-                                        gap={1}
-                                        sx={{ minHeight: '48px' }} // Ensure consistent row height
-                                    >
-                                        <Typography 
-                                            variant="body2" 
-                                            sx={{ 
-                                                maxWidth: '200px', 
-                                                overflow: 'hidden', 
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                lineHeight: 1.2,
-                                                flex: 1
-                                            }}
+                        {currentLogs.length > 0 ? (
+                            currentLogs.map((log, index) => (
+                                <TableRow key={log.ID}>
+                                    <TableCell>{indexOfFirstLog + index + 1}</TableCell>
+                                    <TableCell>{log.Username}</TableCell>
+                                    <TableCell>{roleMapping[log.Role]}</TableCell>
+                                    <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
+                                    <TableCell>
+                                        <Box 
+                                            display="flex" 
+                                            alignItems="center" 
+                                            gap={1}
+                                            sx={{ minHeight: '48px' }}
                                         >
-                                            {log.resonse_data}
-                                        </Typography>
-                                        <IconButton
-                                            size="small"
-                                            color="primary"
-                                            onClick={() => openDetailModal(log)}
-                                            title="Xem chi tiết"
-                                            sx={{
-                                                padding: '4px',
-                                                alignSelf: 'center',
-                                                flexShrink: 0
-                                            }}
-                                        >
-                                            <InfoIcon fontSize="small" />
-                                        </IconButton>
-                                    </Box> 
+                                            <Typography 
+                                                variant="body2" 
+                                                sx={{ 
+                                                    maxWidth: '200px', 
+                                                    overflow: 'hidden', 
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    lineHeight: 1.2,
+                                                    flex: 1
+                                                }}
+                                            >
+                                                {log.resonse_data}
+                                            </Typography>
+                                            <IconButton
+                                                size="small"
+                                                color="primary"
+                                                onClick={() => openDetailModal(log)}
+                                                title="Xem chi tiết"
+                                                sx={{
+                                                    padding: '4px',
+                                                    alignSelf: 'center',
+                                                    flexShrink: 0
+                                                }}
+                                            >
+                                                <VisibilityIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box> 
+                                    </TableCell>
+                                    <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={6} align="center">
+                                    <Typography variant="body2" color="text.secondary">
+                                        Không tìm thấy dữ liệu phù hợp
+                                    </Typography>
                                 </TableCell>
-                                <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
-
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
-{/* Detail Modal */}
+
+            {/* Dialog xem chi tiết */}
             <Dialog
                 open={isDetailModalOpen}
                 onClose={closeDetailModal}
-                maxWidth="md"
+                maxWidth="lg"
                 fullWidth
                 PaperProps={{
                     sx: { minHeight: '400px' }
                 }}
             >
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">Chi tiết hoạt động</Typography>
+                    <Typography variant="h6">Mô tả chi tiết</Typography>
                     <IconButton
                         onClick={closeDetailModal}
                         sx={{ color: 'grey.500' }}
@@ -397,9 +667,6 @@ const ActivityLogs = () => {
                                         <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                        <strong>Action chi tiết:</strong> {selectedLog.action.split("/").join(" ")}
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         <strong>Thời gian:</strong> {convertUTCToVietnamTime(selectedLog.created_at)}
                                     </Typography>
                                 </Box>
@@ -407,7 +674,7 @@ const ActivityLogs = () => {
                             
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                    Mô tả chi tiết:
+                                    Mô tả hành động
                                 </Typography>
                                 <Paper 
                                     sx={{ 
@@ -424,22 +691,21 @@ const ActivityLogs = () => {
                                 </Paper>
                             </Box>
 
-                            {/* Additional fields if available */}
                             {selectedLog.request_data && (
                                 <Box>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        Dữ liệu yêu cầu:
+                                        Chi tiết thực hiện:
                                     </Typography>
                                     <Paper 
                                         sx={{ 
                                             p: 2, 
                                             backgroundColor: 'grey.50', 
-                                            maxHeight: '200px', 
+                                            maxHeight: '400px', 
                                             overflow: 'auto',
                                             whiteSpace: 'pre-wrap'
                                         }}
                                     >
-                                        {renderJsonData(selectedLog.request_data)}
+                                        {renderJsonData(selectedLog.request_data, selectedLog.is_list)}
                                     </Paper>
                                 </Box>
                             )}
@@ -452,6 +718,50 @@ const ActivityLogs = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Dialog xác nhận xóa */}
+            <Dialog
+                open={isDeleteDialogOpen}
+                onClose={closeDeleteDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+                    <DeleteIcon />
+                    Xác nhận xóa dữ liệu
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Box sx={{ py: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                            Cảnh báo: Hành động này không thể hoàn tác!
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Có <strong style={{ color: '#d32f2f' }}>{oldLogsCount}</strong> bản ghi log cũ hơn 30 ngày sẽ bị xóa vĩnh viễn khỏi hệ thống.
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Bạn có chắc chắn muốn tiếp tục?
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button 
+                        onClick={closeDeleteDialog} 
+                        variant="outlined"
+                        color="inherit"
+                    >
+                        Hủy
+                    </Button>
+                    <Button 
+                        onClick={handleDeleteLogs} 
+                        variant="contained" 
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                    >
+                        Xác nhận xóa
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <Pagination
                 count={Math.ceil(filteredLogs.length / rowsPerPage)}
                 page={currentPage}

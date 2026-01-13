@@ -224,7 +224,7 @@ const GraduationManagement = ({ curriculums, role }) => {
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
-        Quản lý đồ án tốt nghiệp
+        Quản lý đồ án tốt nghiệp 
       </Typography>
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <FormControl sx={{ minWidth: 200 }}>

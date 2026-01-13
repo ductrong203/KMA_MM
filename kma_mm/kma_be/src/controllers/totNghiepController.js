@@ -1,5 +1,18 @@
 const totNghiepService = require('../services/totNghiepService');
+const { extraDanhSachTotNghiep } = require("../utils/extraList");
 
+const { logActivity } = require("../services/activityLogService");
+const { getFieldById } = require("../utils/detailData");
+const { verifyAccessToken } = require("../utils/decodedToken");
+const mapRole = {
+  1: "daoTao",
+  2: "khaoThi",
+  3: "quanLiSinhVien",
+  5: "giamDoc",
+  6: "sinhVien",
+  7: "admin"
+
+};
 class TotNghiepController {
   // Xét duyệt tốt nghiệp
   async approveGraduation(req, res) {
@@ -40,6 +53,33 @@ class TotNghiepController {
 
       const result = await totNghiepService.approveGraduation(graduationData);
 
+      try {
+        const token = req.headers.authorization?.split(" ")[1];
+        // console.log(token);
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        let maLop = await getFieldById("lop", lop_id, "ma_lop");
+        let maKhoa = await getFieldById("khoa_dao_tao", khoa_dao_tao_id, "ma_khoa");
+        const extraList = await extraDanhSachTotNghiep(result, maLop, maKhoa);
+        if (result) {
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: extraList,
+            response_status: 200,
+            resData: `Đã xét duyệt tốt nghiệp cho ${result.length} sinh viên trong lớp ${maLop} - khóa đào tạo ${maKhoa}`,
+            ip: req._remoteAddress,
+            is_list: 1
+
+          }
+          await logActivity(inforActivity);
+        }
+      } catch (error) {
+        console.error("Lỗi kìa ní:", error.message);
+      }
       res.status(200).json({
         status: 'success',
         message: `Đã xét duyệt tốt nghiệp cho ${result.length} sinh viên`,

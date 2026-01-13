@@ -37,11 +37,12 @@ import {
   Info,
   School,
   Assignment,
+  VerifiedUser,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import PageHeader from '../../layout/PageHeader';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
-import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
+import { getDanhSachKhoaTheoDanhMucDaoTao, updateKhoa } from '../../Api_controller/Service/khoaService';
 import { getDanhSachSinhVienTheoLop } from '../../Api_controller/Service/sinhVienService';
 import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
 import { kiemTraTotNghiep } from '../../Api_controller/Service/sinhVienService';
@@ -64,6 +65,7 @@ function DieuKienTotNghiep() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+  const [requiredCredits, setRequiredCredits] = useState(130);
   const [graduationStatus, setGraduationStatus] = useState({
     isApproved: false,
     approvedCount: 0,
@@ -121,6 +123,7 @@ function DieuKienTotNghiep() {
           setSelectedCourse(null);
           setSelectedClass(null);
           setGraduationResults({});
+          setRequiredCredits(130); // Reset về giá trị mặc định
         } catch (error) {
           setSnackbar({
             open: true,
@@ -141,6 +144,7 @@ function DieuKienTotNghiep() {
       setSelectedCourse(null);
       setSelectedClass(null);
       setGraduationResults({});
+      setRequiredCredits(130); // Reset về giá trị mặc định
     }
   }, [selectedTrainingSystem]);
 
@@ -153,6 +157,10 @@ function DieuKienTotNghiep() {
           const response = await getDanhSachLopTheoKhoaDaoTao(selectedCourse.id);
           const data = Array.isArray(response) ? response : [];
           setClasses(data);
+          // Cập nhật giá trị tín chỉ yêu cầu từ khóa đào tạo được chọn
+          if (selectedCourse.tong_tin_chi_yeu_cau) {
+            setRequiredCredits(selectedCourse.tong_tin_chi_yeu_cau);
+          }
           // Reset các state phụ thuộc
           setStudents([]);
           setSelectedClass(null);
@@ -207,7 +215,11 @@ function DieuKienTotNghiep() {
           const results = {};
           for (const student of data) {
             try {
-              const gradResponse = await kiemTraTotNghiep(student.sinh_vien_id || student.id);
+              // Pass the required credits to the API
+              const gradResponse = await kiemTraTotNghiep(
+                student.sinh_vien_id || student.id,
+                selectedCourse?.tong_tin_chi_yeu_cau || requiredCredits
+              );
               results[student.sinh_vien_id || student.id] = gradResponse.data;
             } catch {
               // Xử lý lỗi khi kiểm tra tốt nghiệp
@@ -244,7 +256,7 @@ function DieuKienTotNghiep() {
         approvalDate: null
       });
     }
-  }, [selectedClass, selectedCourse, selectedTrainingSystem]);
+  }, [selectedClass, selectedCourse, selectedTrainingSystem, requiredCredits]);
 
   const handleNext = () => {
     // Chỉ chuyển step, không gọi API
@@ -257,6 +269,84 @@ function DieuKienTotNghiep() {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Hàm cập nhật tín chỉ yêu cầu cho khóa đào tạo
+  const handleUpdateRequiredCredits = async () => {
+    if (!selectedCourse?.id) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng chọn khóa đào tạo trước khi cập nhật tín chỉ yêu cầu',
+        severity: 'warning',
+      });
+      return;
+    }
+
+    setConfirmDialog({
+      open: true,
+      title: 'Xác nhận cập nhật tín chỉ yêu cầu',
+      content: `Bạn có chắc chắn muốn cập nhật số tín chỉ yêu cầu để xét tốt nghiệp của khóa ${selectedCourse.ma_khoa} - ${selectedCourse.ten_khoa} thành ${requiredCredits} tín chỉ?`,
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          
+          // Chuẩn bị dữ liệu cập nhật
+          const updateData = {
+            ...selectedCourse,
+            tong_tin_chi_yeu_cau: requiredCredits
+          };
+          
+          // Gọi API cập nhật
+          await updateKhoa(selectedCourse.id, updateData);
+          
+          // Cập nhật khóa đào tạo trong state
+          setCourses(prevCourses => 
+            prevCourses.map(course => 
+              course.id === selectedCourse.id 
+                ? { ...course, tong_tin_chi_yeu_cau: requiredCredits } 
+                : course
+            )
+          );
+          
+          // Cập nhật selectedCourse
+          setSelectedCourse(prev => ({ ...prev, tong_tin_chi_yeu_cau: requiredCredits }));
+          
+          setSnackbar({
+            open: true,
+            message: 'Cập nhật số tín chỉ yêu cầu thành công',
+            severity: 'success',
+          });
+          
+          // Cập nhật lại thông tin xét tốt nghiệp nếu đã có sinh viên được chọn
+          if (students.length > 0 && selectedClass?.id) {
+            // Gọi lại API kiểm tra điều kiện tốt nghiệp cho từng sinh viên
+            const results = {};
+            for (const student of students) {
+              try {
+                const gradResponse = await kiemTraTotNghiep(
+                  student.sinh_vien_id || student.id,
+                  requiredCredits
+                );
+                results[student.sinh_vien_id || student.id] = gradResponse.data;
+              } catch {
+                results[student.sinh_vien_id || student.id] = null;
+              }
+            }
+            setGraduationResults(results);
+          }
+          
+        } catch (error) {
+          setSnackbar({
+            open: true,
+            message: error.response?.data?.message || 'Lỗi khi cập nhật số tín chỉ yêu cầu',
+            severity: 'error',
+          });
+        } finally {
+          setLoading(false);
+          setConfirmDialog({ ...confirmDialog, open: false });
+        }
+      }
+    });
   };
 
   // Function in bằng tốt nghiệp cho sinh viên đã xét duyệt
@@ -320,7 +410,7 @@ function DieuKienTotNghiep() {
               📊 Thông tin học tập:
             </Typography>
             <Typography variant="body2">
-              • Tổng tín chỉ: {graduationInfo.tong_tin_chi || 0}/130
+              • Tổng tín chỉ: {graduationInfo.tong_tin_chi || 0}/{selectedCourse?.tong_tin_chi_yeu_cau || requiredCredits}
             </Typography>
             <Typography variant="body2">
               • Điểm trung bình tích lũy: {graduationInfo.diem_trung_binh_tich_luy || 'Chưa có'}
@@ -522,15 +612,36 @@ function DieuKienTotNghiep() {
   };
 
   // Hiển thị danh sách chứng chỉ theo format mới
-  const renderCertificates = (certificates) => {
+  const renderCertificates = (certificates, showDetails = false) => {
     if (!certificates || certificates.length === 0) return 'Chưa có';
     
     const validCerts = certificates.filter((cert) => cert.tinh_trang === 'tốt nghiệp');
     if (validCerts.length === 0) return 'Chưa có';
     
-    return validCerts
-      .map((cert) => cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi)
-      .join(', ');
+    if (!showDetails) {
+      return validCerts
+        .map((cert) => cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi)
+        .join(', ');
+    } else {
+      // Hiển thị chi tiết chứng chỉ
+      return validCerts.map((cert, index) => {
+        const certName = cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi || 'Chứng chỉ';
+        const formattedDate = cert.ngay_ky_quyet_dinh ? new Date(cert.ngay_ky_quyet_dinh).toLocaleDateString('vi-VN') : 'N/A';
+        
+        return (
+          <Typography key={index} variant="body2" sx={{ mb: 1 }}>
+            <strong>{certName}</strong>: {
+              `Điểm TB: ${cert.diem_trung_binh || 'N/A'}; ` +
+              `Xếp loại: ${cert.xep_loai || 'N/A'}; ` +
+              `Tình trạng: ${cert.tinh_trang || 'N/A'}; ` +
+              `Số QĐ: ${cert.so_quyet_dinh || 'N/A'}; ` +
+              `Ngày ký: ${formattedDate}; ` +
+              `Ghi chú: ${cert.ghi_chu || 'N/A'}; `
+            }
+          </Typography>
+        );
+      });
+    }
   };
 
   // Toggle chi tiết sinh viên
@@ -556,7 +667,7 @@ function DieuKienTotNghiep() {
               Tín chỉ
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Hiện tại: {details?.tong_tin_chi_hien_tai || 0}/{details?.tong_tin_chi_yeu_cau || 130} tín chỉ
+              Hiện tại: {details?.tong_tin_chi_hien_tai || 0}/{details?.tong_tin_chi_yeu_cau || selectedCourse?.tong_tin_chi_yeu_cau || requiredCredits} tín chỉ
             </Typography>
             <Chip
               size="small"
@@ -599,6 +710,19 @@ function DieuKienTotNghiep() {
                     variant="outlined"
                   />
                 ))}
+              </Box>
+            </Grid>
+          )}
+
+          {/* Hiển thị chi tiết chứng chỉ đã có */}
+          {graduationInfo.chung_chi_tot_nghiep && graduationInfo.chung_chi_tot_nghiep.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="primary" gutterBottom>
+                <VerifiedUser sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
+                Chi tiết chứng chỉ đã có:
+              </Typography>
+              <Box sx={{ pl: 1, borderLeft: '2px solid #2196f3', mt: 1 }}>
+                {renderCertificates(graduationInfo.chung_chi_tot_nghiep, true)}
               </Box>
             </Grid>
           )}
@@ -752,7 +876,7 @@ function DieuKienTotNghiep() {
                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Typography variant="body2">
                                           {graduationInfo ?
-                                            `${graduationInfo.tong_tin_chi || 0}/130` :
+                                            `${graduationInfo.tong_tin_chi || 0}/${selectedCourse?.tong_tin_chi_yeu_cau || requiredCredits}` :
                                             '-'
                                           }
                                         </Typography>
@@ -1383,10 +1507,46 @@ function DieuKienTotNghiep() {
               <Info sx={{ mr: 1, verticalAlign: 'middle' }} />
               Điều kiện tốt nghiệp
             </Typography>
+            
+            {/* Thiết lập tín chỉ yêu cầu */}
+            {selectedCourse && (
+              <Box sx={{ mt: 2, mb: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Thiết lập tín chỉ yêu cầu:
+                </Typography>
+                <TextField
+                  label="Tín chỉ yêu cầu để xét tốt nghiệp"
+                  type="number"
+                  value={requiredCredits}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    setRequiredCredits(value > 0 ? value : 0);
+                  }}
+                  InputProps={{
+                    endAdornment: <Typography variant="body2" color="textSecondary">tín chỉ</Typography>,
+                    inputProps: { min: 0 }
+                  }}
+                  fullWidth
+                  size="small"
+                  helperText={`Giá trị hiện tại: ${selectedCourse.tong_tin_chi_yeu_cau || 130} tín chỉ`}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleUpdateRequiredCredits}
+                  disabled={!selectedCourse || requiredCredits === selectedCourse.tong_tin_chi_yeu_cau}
+                  fullWidth
+                  size="small"
+                >
+                  Cập nhật tín chỉ yêu cầu
+                </Button>
+              </Box>
+            )}
+            
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                 <School sx={{ fontSize: 16, mr: 1 }} />
-                Tích lũy đủ 130 tín chỉ
+                Tích lũy đủ {selectedCourse?.tong_tin_chi_yeu_cau || requiredCredits} tín chỉ
               </Typography>
               <Typography variant="body2" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                 <Assignment sx={{ fontSize: 16, mr: 1 }} />

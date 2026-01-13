@@ -20,6 +20,7 @@ import AssignRoles from "./components/admin/AssignRoles";
 import ActivityLogs from "./components/admin/ActivityLogs";
 import DeleteAccount from "./components/admin/DeleteAccount";
 import ExamDashboard from "./components/Dashboard/ExaminationDashboard";
+import GradeSettings from "./components/admin/GradeSettings";
 
 import DirectorDashboard from "./components/Dashboard/DirectorDashboard";
 import LibraryDashBoard from "./components/Dashboard/LibraryDashboard";
@@ -154,6 +155,18 @@ const App = () => {
             <PrivateRoute role={role} allowedRoles={["admin"]}>
               <Layout Info={info} title="Admin Dashboard">
                 <ManageDepartments />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        
+        {/* Route thiết lập quy định điểm */}
+        <Route
+          path="/admin/grade-settings"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Thiết lập quy định điểm">
+                <GradeSettings />
               </Layout>
             </PrivateRoute>
           }
