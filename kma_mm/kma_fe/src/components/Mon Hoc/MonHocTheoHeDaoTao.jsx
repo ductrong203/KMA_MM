@@ -4,8 +4,11 @@ import {
   Box, Typography, Grid, List, ListItem, ListItemText, IconButton,
   FormControl, InputLabel, Select, MenuItem, Paper, Chip, Divider,
   Button, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox,
-  Autocomplete, TextField // Thêm Autocomplete và TextField
+  Autocomplete, TextField, Collapse
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   DndContext,
@@ -32,6 +35,7 @@ import {
   updateSubjectPlan,
   copySubjectPlans
 } from '../../Api_controller/Service/keHoachMonHoc';
+import { getMissingMonHocInKeHoach, bulkAddToKeHoachMonHoc } from '../../Api_controller/Service/thoiKhoaBieuService';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
@@ -60,6 +64,10 @@ const MonHocTheoHeDaoTao = () => {
     toKhoaDaoTaoId: '',
     heDaoTaoId: ''
   });
+  // State cho tính năng phát hiện môn thiếu
+  const [missingSubjects, setMissingSubjects] = useState([]);
+  const [loadingMissing, setLoadingMissing] = useState(false);
+  const [expandMissing, setExpandMissing] = useState(false);
   const role = localStorage.getItem("role") || "";
   useEffect(() => {
     const fetchCurriculums = async () => {
@@ -150,12 +158,99 @@ const MonHocTheoHeDaoTao = () => {
     }
   }, [selectedBatch, batches, subjects]);
 
+  // Fetch missing subjects khi chọn khóa đào tạo
+  useEffect(() => {
+    const fetchMissingSubjects = async () => {
+      if (selectedBatch) {
+        setLoadingMissing(true);
+        try {
+          const result = await getMissingMonHocInKeHoach(selectedBatch);
+          setMissingSubjects(result.data || []);
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra môn thiếu:', error);
+          setMissingSubjects([]);
+        } finally {
+          setLoadingMissing(false);
+        }
+      } else {
+        setMissingSubjects([]);
+      }
+    };
+    fetchMissingSubjects();
+  }, [selectedBatch, subjectsBySemester]);
+
   const handleCurriculumChange = (event) => setSelectedCurriculum(event.target.value);
   const handleBatchChange = (event) => {
     setSelectedBatch(event.target.value);
     setSelectedSemester('');
   };
   const handleSemesterChange = (event) => setSelectedSemester(event.target.value);
+
+  // Thêm một môn thiếu vào KHMH
+  const handleAddMissingSubject = async (subject) => {
+    try {
+      const result = await bulkAddToKeHoachMonHoc([{
+        khoa_dao_tao_id: selectedBatch,
+        mon_hoc_id: subject.mon_hoc_id,
+        ky_hoc: subject.ky_hoc,
+        bat_buoc: 0
+      }]);
+      if (result.success) {
+        toast.success(`Đã thêm "${subject.ten_mon_hoc}" vào kế hoạch`);
+        // Refresh data
+        const updatedMissing = await getMissingMonHocInKeHoach(selectedBatch);
+        setMissingSubjects(updatedMissing.data || []);
+        // Refresh subject plans
+        const plans = await getSubjectPlansByBatch(selectedBatch);
+        const enrichedPlans = plans.map(plan => ({
+          ...plan,
+          ten_mon_hoc: subjects.find(s => s.id === plan.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+        }));
+        const subjectsPerSemester = {};
+        for (let ky = 1; ky <= maxSemesters; ky++) {
+          subjectsPerSemester[ky] = enrichedPlans.filter(s => s.ky_hoc === ky);
+        }
+        setSubjectsBySemester(subjectsPerSemester);
+      }
+    } catch (error) {
+      console.error('Lỗi khi thêm môn:', error);
+      toast.error('Không thể thêm môn học. Vui lòng thử lại!');
+    }
+  };
+
+  // Thêm tất cả môn thiếu vào KHMH
+  const handleAddAllMissingSubjects = async () => {
+    if (missingSubjects.length === 0) return;
+    try {
+      const items = missingSubjects.map(subject => ({
+        khoa_dao_tao_id: selectedBatch,
+        mon_hoc_id: subject.mon_hoc_id,
+        ky_hoc: subject.ky_hoc,
+        bat_buoc: 0
+      }));
+      const result = await bulkAddToKeHoachMonHoc(items);
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh missing subjects
+        const updatedMissing = await getMissingMonHocInKeHoach(selectedBatch);
+        setMissingSubjects(updatedMissing.data || []);
+        // Refresh subject plans
+        const plans = await getSubjectPlansByBatch(selectedBatch);
+        const enrichedPlans = plans.map(plan => ({
+          ...plan,
+          ten_mon_hoc: subjects.find(s => s.id === plan.mon_hoc_id)?.ten_mon_hoc || 'Không xác định'
+        }));
+        const subjectsPerSemester = {};
+        for (let ky = 1; ky <= maxSemesters; ky++) {
+          subjectsPerSemester[ky] = enrichedPlans.filter(s => s.ky_hoc === ky);
+        }
+        setSubjectsBySemester(subjectsPerSemester);
+      }
+    } catch (error) {
+      console.error('Lỗi khi thêm tất cả môn:', error);
+      toast.error('Không thể thêm môn học. Vui lòng thử lại!');
+    }
+  };
 
   const handleRemoveSubject = async (semester, subjectId) => {
     if (!semester || !subjectId) {
@@ -204,7 +299,7 @@ const MonHocTheoHeDaoTao = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (formData.mon_hoc_ids.length === 0) {
       toast.error('Vui lòng chọn ít nhất một môn học!');
       return;
@@ -212,7 +307,7 @@ const MonHocTheoHeDaoTao = () => {
 
     try {
       // Tạo promise cho tất cả môn học được chọn
-      const createPromises = formData.mon_hoc_ids.map(mon_hoc_id => 
+      const createPromises = formData.mon_hoc_ids.map(mon_hoc_id =>
         createSubjectPlan({
           ...formData,
           mon_hoc_id: mon_hoc_id
@@ -220,7 +315,7 @@ const MonHocTheoHeDaoTao = () => {
       );
 
       const results = await Promise.all(createPromises);
-      
+
       // Cập nhật state với tất cả môn học mới
       const newSubjects = results.map((newSubjectPlan, index) => ({
         ...newSubjectPlan,
@@ -231,7 +326,7 @@ const MonHocTheoHeDaoTao = () => {
         ...prev,
         [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), ...newSubjects]
       }));
-      
+
       setInitialSubjectsBySemester(prev => ({
         ...prev,
         [formData.ky_hoc]: [...(prev[formData.ky_hoc] || []), ...newSubjects]
@@ -342,7 +437,7 @@ const MonHocTheoHeDaoTao = () => {
         >
           <ListItemText
             primary={
-              <Typography variant="body2" sx={{ 
+              <Typography variant="body2" sx={{
                 fontWeight: 500,
                 mb: 0.5,
                 lineHeight: 1.3
@@ -351,9 +446,9 @@ const MonHocTheoHeDaoTao = () => {
               </Typography>
             }
             secondary={
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 1, 
+              <Box sx={{
+                display: 'flex',
+                gap: 1,
                 alignItems: 'center',
                 flexWrap: 'wrap'
               }}>
@@ -361,8 +456,8 @@ const MonHocTheoHeDaoTao = () => {
                   label={`${subject.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}`}
                   size="small"
                   color={subject.bat_buoc ? 'primary' : 'default'}
-                  sx={{ 
-                    height: 20, 
+                  sx={{
+                    height: 20,
                     fontSize: '0.7rem',
                     '& .MuiChip-label': { px: 1 }
                   }}
@@ -371,8 +466,8 @@ const MonHocTheoHeDaoTao = () => {
                   label={`${credits} TC`}
                   size="small"
                   variant="outlined"
-                  sx={{ 
-                    height: 20, 
+                  sx={{
+                    height: 20,
                     fontSize: '0.65rem',
                     fontWeight: 600,
                     color: 'success.main',
@@ -382,7 +477,7 @@ const MonHocTheoHeDaoTao = () => {
                 />
               </Box>
             }
-            sx={{ 
+            sx={{
               margin: 0,
               '& .MuiListItemText-primary': { mb: 0.5 },
               '& .MuiListItemText-secondary': { mt: 0 }
@@ -813,6 +908,102 @@ const MonHocTheoHeDaoTao = () => {
         </Grid>
       </Paper>
 
+      {/* Compact Alert Bar - Hiển thị khi có môn thiếu */}
+      {selectedBatch && missingSubjects.length > 0 && (
+        <Paper
+          elevation={2}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            overflow: 'hidden',
+            border: '1px solid #ff9800'
+          }}
+        >
+          {/* Header - Luôn hiển thị */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+              bgcolor: '#fff3e0',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#ffe0b2' }
+            }}
+            onClick={() => setExpandMissing(!expandMissing)}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <WarningAmberIcon sx={{ color: '#e65100', fontSize: 22 }} />
+              <Typography variant="body1" sx={{ color: '#e65100', fontWeight: 600 }}>
+                Phát hiện {missingSubjects.length} môn thiếu trong Kế hoạch
+              </Typography>
+              <Chip
+                label="Chưa thể nhập điểm"
+                size="small"
+                sx={{ bgcolor: '#ffcc80', color: '#e65100', fontSize: '0.7rem', height: 20 }}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="contained"
+                size="small"
+                color="warning"
+                onClick={(e) => { e.stopPropagation(); handleAddAllMissingSubjects(); }}
+                sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+              >
+                Thêm tất cả
+              </Button>
+              <IconButton size="small">
+                {expandMissing ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+          </Box>
+
+          {/* Content - Có thể thu gọn */}
+          <Collapse in={expandMissing}>
+            <Divider />
+            <Box sx={{ maxHeight: 250, overflow: 'auto', bgcolor: 'white' }}>
+              <List dense>
+                {missingSubjects.map((subject, index) => (
+                  <ListItem
+                    key={`${subject.mon_hoc_id}_${subject.ky_hoc}`}
+                    divider={index < missingSubjects.length - 1}
+                    sx={{ py: 1 }}
+                    secondaryAction={
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="warning"
+                        onClick={() => handleAddMissingSubject(subject)}
+                        sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.25 }}
+                      >
+                        Thêm
+                      </Button>
+                    }
+                  >
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {subject.ten_mon_hoc}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box component="span" sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                          <Chip label={subject.ma_mon_hoc} size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem' }} />
+                          <Chip label={`Kỳ ${subject.ky_hoc}`} size="small" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                          <Chip label={`${subject.so_tin_chi} TC`} size="small" color="success" variant="outlined" sx={{ height: 18, fontSize: '0.65rem' }} />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          </Collapse>
+        </Paper>
+      )}
+
       <Dialog
         open={openForm}
         onClose={handleCloseForm}
@@ -835,187 +1026,187 @@ const MonHocTheoHeDaoTao = () => {
               <InputLabel>Kỳ học</InputLabel>
               <Select
                 name="ky_hoc"
-              value={formData.ky_hoc}
-              onChange={handleFormChange}
-              required
-              sx={{ borderRadius: 2 }}
-            >
-              <MenuItem value="">Chọn kỳ học</MenuItem>
-              {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
-                <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                value={formData.ky_hoc}
+                onChange={handleFormChange}
+                required
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="">Chọn kỳ học</MenuItem>
+                {Array.from({ length: maxSemesters }, (_, i) => i + 1).map(ky => (
+                  <MenuItem key={ky} value={ky}>Học kỳ {ky}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          <Box sx={{ mt: 2 }}>
-            <Autocomplete
-              multiple
-              options={subjectsByCurriculum.filter(subject => {
-                // Lọc bỏ những môn đã có trong kế hoạch của kỳ được chọn
-                const currentSemesterSubjects = formData.ky_hoc ? 
-                  (subjectsBySemester[formData.ky_hoc] || []) : [];
-                return !currentSemesterSubjects.some(existing => existing.mon_hoc_id === subject.id);
-              })}
-              getOptionLabel={(option) => option.ten_mon_hoc}
-              value={formData.mon_hoc_ids.map(id => 
-                subjectsByCurriculum.find(subject => subject.id === id)
-              ).filter(Boolean)}
-              onChange={(event, newValue) => {
-                const selectedIds = newValue.map(subject => subject.id);
-                setFormData(prev => ({
-                  ...prev,
-                  mon_hoc_ids: selectedIds
-                }));
-              }}
-              renderTags={(tagValue, getTagProps) =>
-                tagValue.map((option, index) => {
+            <Box sx={{ mt: 2 }}>
+              <Autocomplete
+                multiple
+                options={subjectsByCurriculum.filter(subject => {
+                  // Lọc bỏ những môn đã có trong kế hoạch của kỳ được chọn
+                  const currentSemesterSubjects = formData.ky_hoc ?
+                    (subjectsBySemester[formData.ky_hoc] || []) : [];
+                  return !currentSemesterSubjects.some(existing => existing.mon_hoc_id === subject.id);
+                })}
+                getOptionLabel={(option) => option.ten_mon_hoc}
+                value={formData.mon_hoc_ids.map(id =>
+                  subjectsByCurriculum.find(subject => subject.id === id)
+                ).filter(Boolean)}
+                onChange={(event, newValue) => {
+                  const selectedIds = newValue.map(subject => subject.id);
+                  setFormData(prev => ({
+                    ...prev,
+                    mon_hoc_ids: selectedIds
+                  }));
+                }}
+                renderTags={(tagValue, getTagProps) =>
+                  tagValue.map((option, index) => {
+                    const subjectData = subjects.find(s => s.id === option.id);
+                    const credits = subjectData?.so_tin_chi || 0;
+                    return (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={`${option.ten_mon_hoc} (${credits} TC)`}
+                        size="small"
+                        sx={{
+                          backgroundColor: 'primary.light',
+                          color: 'white',
+                          '& .MuiChip-deleteIcon': {
+                            color: 'white'
+                          }
+                        }}
+                      />
+                    );
+                  })
+                }
+                renderOption={(props, option, { selected }) => {
                   const subjectData = subjects.find(s => s.id === option.id);
                   const credits = subjectData?.so_tin_chi || 0;
                   return (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={option.id}
-                      label={`${option.ten_mon_hoc} (${credits} TC)`}
-                      size="small"
-                      sx={{
-                        backgroundColor: 'primary.light',
-                        color: 'white',
-                        '& .MuiChip-deleteIcon': {
-                          color: 'white'
-                        }
-                      }}
-                    />
-                  );
-                })
-              }
-              renderOption={(props, option, { selected }) => {
-                const subjectData = subjects.find(s => s.id === option.id);
-                const credits = subjectData?.so_tin_chi || 0;
-                return (
-                  <li {...props}>
-                    <Checkbox
-                      checked={selected}
-                      sx={{ mr: 1 }}
-                    />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                      <Typography variant="body2">
-                        {option.ten_mon_hoc}
-                      </Typography>
-                      <Chip
-                        label={`${credits} TC`}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          ml: 1,
-                          height: 20,
-                          fontSize: '0.65rem',
-                          color: 'primary.main',
-                          borderColor: 'primary.main'
-                        }}
+                    <li {...props}>
+                      <Checkbox
+                        checked={selected}
+                        sx={{ mr: 1 }}
                       />
-                    </Box>
-                  </li>
-                );
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Môn học"
-                  placeholder="Tìm kiếm và chọn môn học..."
-                  required={formData.mon_hoc_ids.length === 0}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2
-                    }
-                  }}
-                  helperText={`${formData.mon_hoc_ids.length} môn học đã chọn`}
-                />
-              )}
-              noOptionsText="Không tìm thấy môn học phù hợp"
-              filterOptions={(options, { inputValue }) => {
-                // Custom filter để tìm kiếm cả tên môn học và mã môn học
-                const filterValue = inputValue.toLowerCase();
-                return options.filter(option => 
-                  option.ten_mon_hoc.toLowerCase().includes(filterValue) ||
-                  (option.ma_mon_hoc && option.ma_mon_hoc.toLowerCase().includes(filterValue))
-                );
-              }}
-              sx={{
-                '& .MuiAutocomplete-tag': {
-                  maxWidth: '100%'
-                }
-              }}
-            />
-          </Box>
-
-          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
-            <Checkbox
-              name="bat_buoc"
-              checked={formData.bat_buoc === 1}
-              onChange={handleFormChange}
-              sx={{ mr: 1 }}
-            />
-            <Typography component="span" variant="body1">
-              Môn học bắt buộc (áp dụng cho tất cả môn được chọn)
-            </Typography>
-          </Box>
-
-          {formData.mon_hoc_ids.length > 0 && (
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              backgroundColor: 'grey.50', 
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200'
-            }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                <strong>Tóm tắt:</strong>
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Chip 
-                  label={`${formData.mon_hoc_ids.length} môn học`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Chip 
-                  label={`${formData.mon_hoc_ids.reduce((total, id) => {
-                    const subject = subjects.find(s => s.id === id);
-                    return total + (subject?.so_tin_chi || 0);
-                  }, 0)} tín chỉ`}
-                  size="small"
-                  color="success"
-                  variant="outlined"
-                />
-                <Chip 
-                  label={formData.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}
-                  size="small"
-                  color={formData.bat_buoc ? 'primary' : 'default'}
-                />
-              </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography variant="body2">
+                          {option.ten_mon_hoc}
+                        </Typography>
+                        <Chip
+                          label={`${credits} TC`}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            ml: 1,
+                            height: 20,
+                            fontSize: '0.65rem',
+                            color: 'primary.main',
+                            borderColor: 'primary.main'
+                          }}
+                        />
+                      </Box>
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Môn học"
+                    placeholder="Tìm kiếm và chọn môn học..."
+                    required={formData.mon_hoc_ids.length === 0}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2
+                      }
+                    }}
+                    helperText={`${formData.mon_hoc_ids.length} môn học đã chọn`}
+                  />
+                )}
+                noOptionsText="Không tìm thấy môn học phù hợp"
+                filterOptions={(options, { inputValue }) => {
+                  // Custom filter để tìm kiếm cả tên môn học và mã môn học
+                  const filterValue = inputValue.toLowerCase();
+                  return options.filter(option =>
+                    option.ten_mon_hoc.toLowerCase().includes(filterValue) ||
+                    (option.ma_mon_hoc && option.ma_mon_hoc.toLowerCase().includes(filterValue))
+                  );
+                }}
+                sx={{
+                  '& .MuiAutocomplete-tag': {
+                    maxWidth: '100%'
+                  }
+                }}
+              />
             </Box>
-          )}
-        </form>
-      </DialogContent>
-      <DialogActions sx={{ p: 3, gap: 1 }}>
-        <Button
-          onClick={handleCloseForm}
-          variant="outlined"
-          sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-        >
-          Hủy
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={formData.mon_hoc_ids.length === 0}
-          sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-        >
-          Thêm {formData.mon_hoc_ids.length > 0 ? `(${formData.mon_hoc_ids.length} môn)` : ''}
-        </Button>
-      </DialogActions>
-    </Dialog>
+
+            <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
+              <Checkbox
+                name="bat_buoc"
+                checked={formData.bat_buoc === 1}
+                onChange={handleFormChange}
+                sx={{ mr: 1 }}
+              />
+              <Typography component="span" variant="body1">
+                Môn học bắt buộc (áp dụng cho tất cả môn được chọn)
+              </Typography>
+            </Box>
+
+            {formData.mon_hoc_ids.length > 0 && (
+              <Box sx={{
+                mt: 2,
+                p: 2,
+                backgroundColor: 'grey.50',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>Tóm tắt:</strong>
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Chip
+                    label={`${formData.mon_hoc_ids.length} môn học`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={`${formData.mon_hoc_ids.reduce((total, id) => {
+                      const subject = subjects.find(s => s.id === id);
+                      return total + (subject?.so_tin_chi || 0);
+                    }, 0)} tín chỉ`}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={formData.bat_buoc ? 'Bắt buộc' : 'Tùy chọn'}
+                    size="small"
+                    color={formData.bat_buoc ? 'primary' : 'default'}
+                  />
+                </Box>
+              </Box>
+            )}
+          </form>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={handleCloseForm}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={formData.mon_hoc_ids.length === 0}
+            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+          >
+            Thêm {formData.mon_hoc_ids.length > 0 ? `(${formData.mon_hoc_ids.length} môn)` : ''}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={openCopyDialog}

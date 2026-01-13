@@ -46,3 +46,17 @@ export const createAllThoiKhoaBieu = async (data) => {
     const response = await api.post('/thoikhoabieu/createall', data);
     return response.data;
 };
+
+// Lấy danh sách môn học có trong TKB nhưng chưa có trong KHMH
+export const getMissingMonHocInKeHoach = async (khoaDaoTaoId, kyHoc = null) => {
+    let url = `/thoikhoabieu/missing/${khoaDaoTaoId}`;
+    if (kyHoc) url += `/${kyHoc}`;
+    const response = await api.get(url);
+    return response.data;
+};
+
+// Thêm nhiều môn học vào KHMH
+export const bulkAddToKeHoachMonHoc = async (items) => {
+    const response = await api.post('/kehoachmonhoc/bulk-add', { items });
+    return response.data;
+};

@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import {
     Box, MenuItem, FormControl, InputLabel, Select, Typography, Paper, Button, Grid, Container, Dialog,
     DialogTitle, DialogContent, DialogActions, Card, CardContent, CardActions, IconButton, createTheme,
-    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText
+    ThemeProvider, TextField, InputAdornment, Autocomplete, Pagination as MuiPagination, Checkbox, List, ListItem, ListItemText,
+    FormControlLabel, Chip
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -39,6 +40,8 @@ const ThoiKhoaBieu = () => {
     const [giangVien, setGiangVien] = useState("");
     const [phongHoc, setPhongHoc] = useState("");
     const [tietHoc, setTietHoc] = useState("");
+    const [ngayHoc, setNgayHoc] = useState("");
+    const [ghiChu, setGhiChu] = useState("");
     const [trangThai, setTrangThai] = useState(1);
     const [khoaDaoTaoId, setKhoaDaoTaoId] = useState("");
     const [heDaoTaoId, setHeDaoTaoId] = useState("");
@@ -49,15 +52,22 @@ const ThoiKhoaBieu = () => {
     const [useKeHoachDaoTao, setUseKeHoachDaoTao] = useState(false);
     const [keHoachMonHocList, setKeHoachMonHocList] = useState([]);
     const [selectedMonHocIds, setSelectedMonHocIds] = useState([]); // Danh sách môn học được chọn
+    const [selectAllMonHoc, setSelectAllMonHoc] = useState(false);
 
     const [trangThaiOptions] = useState([
         { value: 1, label: "Hoạt động" },
         { value: 0, label: "Không hoạt động" }
     ]);
 
-    const [lopSearch, setLopSearch] = useState("");
-    const [monHocSearch, setMonHocSearch] = useState("");
-    const [giangVienSearch, setGiangVienSearch] = useState("");
+    // Loại bỏ các state search không cần thiết
+    // const [lopSearch, setLopSearch] = useState("");
+    // const [monHocSearch, setMonHocSearch] = useState("");
+    // const [giangVienSearch, setGiangVienSearch] = useState("");
+
+    // Loại bỏ các filtered list, sử dụng trực tiếp trong Autocomplete
+    // const filteredLopList = lopList.filter(lop => lop.ma_lop.toLowerCase().includes(lopSearch.toLowerCase()));
+    // const filteredMonHocList = monHocListForm.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
+    // const filteredGiangVienList = giangVienList.filter(giangVien => giangVien.ho_ten.toLowerCase().includes(giangVienSearch.toLowerCase()));
 
     const [originalLopList, setOriginalLopList] = useState([]);
     const [lopList, setLopList] = useState([]);
@@ -75,20 +85,24 @@ const ThoiKhoaBieu = () => {
     const [lopIdFilter, setLopIdFilter] = useState("");
     const [monHocIdFilter, setMonHocIdFilter] = useState("");
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(6);
+    const [pageSize] = useState(8);
     const [totalPages, setTotalPages] = useState(1);
+    const [isFilterApplied, setIsFilterApplied] = useState(false);
+
+    // TÁCH RIÊNG state cho form
+    const [khoaDaoTaoForm, setKhoaDaoTaoForm] = useState([]);
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
             setIsLoading(true);
             try {
-                const [heDaoTao, giangVien, khoaDaoTao, monHoc, lop, thoiKhoaBieu] = await Promise.all([
+                const [heDaoTao, giangVien, khoaDaoTao, monHoc, lop] = await Promise.all([
                     fetchDanhSachHeDaoTao(),
                     getGiangVien(),
                     getDanhSachKhoaDaoTao(),
                     getMonHoc(),
-                    getDanhSachLop(),
-                    fetchThoiKhoaBieuByPage(page, pageSize)
+                    getDanhSachLop()
                 ]);
                 setHeDaoTao(heDaoTao);
                 setGiangVienList(giangVien);
@@ -98,8 +112,9 @@ const ThoiKhoaBieu = () => {
                 setOriginalLopList(lop);
                 setLopList(lop);
                 setLopListView(lop);
-                setThoiKhoaBieuList(thoiKhoaBieu.data || []);
-                setTotalPages(thoiKhoaBieu.totalPages || 1);
+                // Không tải thời khóa biểu ban đầu
+                setThoiKhoaBieuList([]);
+                setTotalPages(1);
                 console.log("monhoclist>>", monHocList);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu ban đầu:", error);
@@ -154,17 +169,34 @@ const ThoiKhoaBieu = () => {
         }
     }, [heDaoTaoFilter, originalLopList, monHocList]);
 
+    // Cập nhật useEffect cho form
     useEffect(() => {
         if (heDaoTaoId) {
-            getDanhSachKhoaDaoTaobyId(heDaoTaoId).then(setKhoaDaoTao);
+            getDanhSachKhoaDaoTaobyId(heDaoTaoId).then(setKhoaDaoTaoForm); // Dùng setKhoaDaoTaoForm
             fetchMonHocByHeDaoTao(heDaoTaoId).then(setMonHocListForm);
         } else {
-            setKhoaDaoTao([]);
+            setKhoaDaoTaoForm([]);
             setKyHocOptionsForm([]);
             setLopList(originalLopList);
             setMonHocListForm(monHocList);
         }
     }, [heDaoTaoId, originalLopList, monHocList]);
+
+    // useEffect cho form - kỳ học options
+    useEffect(() => {
+        if (khoaDaoTaoId) {
+            const selectedKhoa = khoaDaoTaoForm.find(khoa => khoa.id === khoaDaoTaoId); // Dùng khoaDaoTaoForm
+            if (selectedKhoa) {
+                const kyHocCount = selectedKhoa.so_ky_hoc;
+                const kyHocArray = Array.from({ length: kyHocCount }, (_, i) => i + 1);
+                setKyHocOptionsForm(kyHocArray);
+                fetchLopByKhoaDaoTao(khoaDaoTaoId).then(setLopList);
+            }
+        } else {
+            setKyHocOptionsForm([]);
+            setLopList(originalLopList);
+        }
+    }, [khoaDaoTaoId, khoaDaoTaoForm, originalLopList]); // Dependency là khoaDaoTaoForm
 
     useEffect(() => {
         if (khoaDaoTaoFilter) {
@@ -208,9 +240,43 @@ const ThoiKhoaBieu = () => {
         }
     }, [useKeHoachDaoTao, khoaDaoTaoId, kyHoc, editId]);
 
+    // Chỉ xử lý phân trang khi đã áp dụng filter
     useEffect(() => {
-        fetchThoiKhoaBieu();
-    }, [page, kyHocFilter, lopIdFilter, monHocIdFilter]);
+        if (isFilterApplied) {
+            fetchThoiKhoaBieu();
+        }
+    }, [page]);
+
+    // Logic áp dụng bộ lọc
+    const handleApplyFilter = async () => {
+        if (!lopIdFilter) {
+            toast.warning("Vui lòng chọn lớp trước khi áp dụng bộ lọc");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await fetchThoiKhoaBieu();
+            setIsFilterApplied(true);
+            setPage(1);
+            toast.success("Đã áp dụng bộ lọc thành công");
+        } catch (error) {
+            console.error("Lỗi khi áp dụng bộ lọc:", error);
+            toast.error("Có lỗi xảy ra khi tải dữ liệu");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Hủy bộ lọc
+    const handleClearFilter = () => {
+        resetFilters(); // Chỉ reset filter
+        setThoiKhoaBieuList([]);
+        setTotalPages(1);
+        setPage(1);
+        setIsFilterApplied(false);
+        toast.info("Đã hủy bộ lọc");
+    };
 
     const handlePageChange = (event, value) => setPage(value);
     const handlekhoaChange = (event) => setKhoaDaoTaoId(event.target.value);
@@ -227,9 +293,6 @@ const ThoiKhoaBieu = () => {
     const handleTrangThaiChange = (event) => setTrangThai(event.target.value);
     const handleUseKeHoachDaoTaoChange = (event) => setUseKeHoachDaoTao(event.target.checked);
 
-    const filteredLopList = lopList.filter(lop => lop.ma_lop.toLowerCase().includes(lopSearch.toLowerCase()));
-    const filteredMonHocList = monHocListForm.filter(monHoc => monHoc.ten_mon_hoc.toLowerCase().includes(monHocSearch.toLowerCase()));
-    const filteredGiangVienList = giangVienList.filter(giangVien => giangVien.ho_ten.toLowerCase().includes(giangVienSearch.toLowerCase()));
     const role = localStorage.getItem("role") || "";
 
     const handleSubmit = async () => {
@@ -241,11 +304,13 @@ const ThoiKhoaBieu = () => {
                     const thoiKhoaBieuData = {
                         ky_hoc: kyHoc,
                         lop_id: lopId,
-                        mon_hoc_id: selectedMonHocIds[0], // Chỉ một môn khi chỉnh sửa
+                        mon_hoc_id: selectedMonHocIds[0],
                         giang_vien_id: giangVienId,
                         giang_vien: giangVien,
                         phong_hoc: phongHoc,
                         tiet_hoc: tietHoc,
+                        ngay_hoc: ngayHoc,
+                        ghi_chu: ghiChu,
                         trang_thai: trangThai,
                     };
                     await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
@@ -261,6 +326,8 @@ const ThoiKhoaBieu = () => {
                             giang_vien: giangVien,
                             phong_hoc: phongHoc,
                             tiet_hoc: tietHoc,
+                            ngay_hoc: ngayHoc,
+                            ghi_chu: ghiChu,
                             trang_thai: trangThai,
                         };
                         return themThoiKhoaBieu(thoiKhoaBieuData);
@@ -268,8 +335,11 @@ const ThoiKhoaBieu = () => {
                     await Promise.all(createPromises);
                     toast.success("Thêm thời khóa biểu thành công!");
                 }
+
+                // Cả thêm mới và chỉnh sửa đều giống nhau: chỉ reset form, giữ nguyên bộ lọc
                 await fetchThoiKhoaBieu();
-                resetForm();
+                resetFormOnly();
+
             } catch (error) {
                 console.error("Lỗi khi lưu thời khóa biểu:", error);
                 toast.error("Lỗi khi lưu thời khóa biểu. Vui lòng thử lại!");
@@ -279,29 +349,67 @@ const ThoiKhoaBieu = () => {
         }
     };
 
+    // Hàm reset chỉ form (không động đến filter)
     const resetForm = () => {
         setGiangVienId("");
         setGiangVien("");
         setPhongHoc("");
         setTietHoc("");
+        setNgayHoc("");
+        setGhiChu("");
         setTrangThai(1);
         setKyHoc("");
         setLopId("");
-        setHeDaoTaoId("")//
-        setKhoaDaoTaoId("")//
-        setHeDaoTaoFilter("")
+        setHeDaoTaoId(""); // Form hệ đào tạo (không phải filter)
+        setKhoaDaoTaoId(""); // Form khóa đào tạo (không phải filter)
+        // KHÔNG reset heDaoTaoFilter - giữ nguyên bộ lọc đang hiển thị
         setMonHocId("");
-        setSelectedMonHocIds([]); // Reset danh sách môn học được chọn
+        setSelectedMonHocIds([]);
+        setSelectAllMonHoc(false); // Reset checkbox chọn tất cả
         setKyHocOptionsForm([]);
-        setLopSearch("");
-        setMonHocSearch("");
-        setGiangVienSearch("");
+        setLopList(originalLopList);
         setEditIndex(null);
         setEditId(null);
         setOpen(false);
         setUseKeHoachDaoTao(false);
         setKeHoachMonHocList([]);
+    };
+
+    // Hàm reset form khi đóng dialog (giữ nguyên như cũ)
+    const resetFormOnly = () => {
+        setGiangVienId("");
+        setGiangVien("");
+        setPhongHoc("");
+        setTietHoc("");
+        setNgayHoc("");
+        setGhiChu("");
+        setTrangThai(1);
+        setKyHoc("");
+        setLopId("");
+        setHeDaoTaoId("");
+        setKhoaDaoTaoId("");
+        setMonHocId("");
+        setSelectedMonHocIds([]);
+        setKyHocOptionsForm([]);
+        setKhoaDaoTaoForm([]); // Reset form data
+        // KHÔNG reset khoaDaoTao (filter data)
+        setEditIndex(null);
+        setEditId(null);
+        setOpen(false);
+        setUseKeHoachDaoTao(false);
+        setKeHoachMonHocList([]);
+    };
+
+    // Hàm chỉ reset filter (dùng trong handleClearFilter)
+    const resetFilters = () => {
+        setHeDaoTaoFilter("");
+        setKhoaDaoTaoFilter("");
+        setKyHocFilter("");
+        setLopIdFilter("");
+        setMonHocIdFilter("");
         setLopList(originalLopList);
+        setLopListView(originalLopList);
+        setMonHocListForm(monHocList);
     };
 
     const handleOpenForm = () => {
@@ -337,15 +445,47 @@ const ThoiKhoaBieu = () => {
         setOpen(true);
     };
 
+    // Sửa hàm handleEdit:
     const handleEdit = async (tkb, index) => {
+        console.log("Debug tkb data:", tkb); // Debug để xem dữ liệu
+
         setKyHoc(tkb.ky_hoc || "");
         setLopId(tkb.lop_id || "");
         setMonHocId(tkb.mon_hoc_id || "");
         setSelectedMonHocIds([tkb.mon_hoc_id]);
-        setGiangVienId(tkb.giang_vien_id || "");
-        setGiangVien(tkb.giang_vien || "");
+
+        // Debug giảng viên
+        console.log("Giảng viên ID:", tkb.giang_vien_id);
+        console.log("Giảng viên name:", tkb.giang_vien);
+        console.log("Giảng viên list:", giangVienList);
+
+        // Xử lý giảng viên một cách an toàn
+        if (tkb.giang_vien_id) {
+            // Tìm giảng viên trong danh sách
+            const foundGiangVien = giangVienList.find(gv => gv.id === tkb.giang_vien_id);
+            if (foundGiangVien) {
+                setGiangVienId(tkb.giang_vien_id);
+                setGiangVien(foundGiangVien.ho_ten);
+            } else {
+                // Nếu không tìm thấy trong danh sách, dùng tên có sẵn
+                setGiangVienId(tkb.giang_vien_id);
+                setGiangVien(tkb.giang_vien || "");
+                console.warn("Giảng viên không tồn tại trong danh sách:", tkb.giang_vien_id);
+            }
+        } else if (tkb.giang_vien) {
+            // Nếu chỉ có tên mà không có ID (dữ liệu cũ)
+            setGiangVienId("");
+            setGiangVien(tkb.giang_vien);
+        } else {
+            // Không có thông tin giảng viên
+            setGiangVienId("");
+            setGiangVien("");
+        }
+
         setPhongHoc(tkb.phong_hoc || "");
         setTietHoc(tkb.tiet_hoc || "");
+        setNgayHoc(tkb.ngay_hoc || "");
+        setGhiChu(tkb.ghi_chu || "");
         setTrangThai(tkb.trang_thai !== undefined ? tkb.trang_thai : 1);
         setEditIndex(index);
         setEditId(tkb.id);
@@ -370,7 +510,8 @@ const ThoiKhoaBieu = () => {
                 setKhoaDaoTaoId(khoaDaoTaoIdFromData);
                 if (monHoc && monHoc.he_dao_tao_id) {
                     const khoaDaoTaoData = await getDanhSachKhoaDaoTaobyId(monHoc.he_dao_tao_id);
-                    setKhoaDaoTao(khoaDaoTaoData);
+                    setKhoaDaoTaoForm(khoaDaoTaoData); // Chỉ set cho form, KHÔNG động đến filter
+
                     const selectedKhoa = khoaDaoTaoData.find(khoa => khoa.id === khoaDaoTaoIdFromData);
                     if (selectedKhoa) {
                         const kyHocCount = selectedKhoa.so_ky_hoc;
@@ -412,6 +553,29 @@ const ThoiKhoaBieu = () => {
     const findMonHoc = (id) => monHocList.find(item => item.id === id) || { ten_mon_hoc: "Môn học không xác định", ma_mon_hoc: "N/A", so_tin_chi: "N/A", tinh_diem: "N/A", he_dao_tao_id: null, ghi_chu: "N/A" };
     const findGiangVienName = (id) => giangVienList.find(item => item.id === id)?.ho_ten || "Giảng viên không xác định";
     const findHeDaoTaoName = (id) => HeDaoTao.find(item => item.id === id)?.ten_he_dao_tao || "Hệ đào tạo không xác định";
+
+    // Thêm hàm xử lý checkbox "Chọn tất cả":
+    const handleSelectAllChange = (event) => {
+        const isChecked = event.target.checked;
+        setSelectAllMonHoc(isChecked);
+
+        if (isChecked) {
+            // Chọn tất cả môn học
+            const allMonHocIds = keHoachMonHocList.map(item => item.mon_hoc_id);
+            setSelectedMonHocIds(allMonHocIds);
+        } else {
+            // Bỏ chọn tất cả
+            setSelectedMonHocIds([]);
+        }
+    };
+
+    // Thêm useEffect để cập nhật trạng thái checkbox "Chọn tất cả" khi selectedMonHocIds thay đổi:
+    useEffect(() => {
+        if (keHoachMonHocList.length > 0) {
+            const allSelected = keHoachMonHocList.every(item => selectedMonHocIds.includes(item.mon_hoc_id));
+            setSelectAllMonHoc(allSelected);
+        }
+    }, [selectedMonHocIds, keHoachMonHocList]);
 
     return (
         <ThemeProvider theme={theme}>
@@ -491,336 +655,415 @@ const ThoiKhoaBieu = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} textAlign="center">
+                            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
                                 <Button
                                     variant="contained"
-                                    sx={{
-                                        minWidth: 180,
-                                        textTransform: "none",
-                                        mt: 2,
-                                        backgroundColor: kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter || monHocIdFilter ? "#d32f2f" : "#1976d2",
-                                        "&:hover": { backgroundColor: kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter || monHocIdFilter ? "#b71c1c" : "#115293" }
-                                    }}
-                                    onClick={() => {
-                                        if (kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter || monHocIdFilter) {
-                                            setKyHocFilter("");
-                                            setLopIdFilter("");
-                                            setHeDaoTaoFilter("");
-                                            setKhoaDaoTaoFilter("");
-                                            setMonHocIdFilter("");
-                                            setLopList(originalLopList);
-                                            setLopListView(originalLopList);
-                                            setMonHocListForm(monHocList);
-                                            fetchThoiKhoaBieu();
-                                        } else {
-                                            fetchThoiKhoaBieu();
-                                        }
-                                    }}
+                                    color="primary"
+                                    sx={{ minWidth: 100, textTransform: "none" }}
+                                    onClick={handleApplyFilter}
+                                    disabled={!lopIdFilter} // Chỉ enable khi đã chọn lớp
                                 >
-                                    {kyHocFilter || lopIdFilter || heDaoTaoFilter || khoaDaoTaoFilter || monHocIdFilter ? "Hủy Bộ Lọc" : "Áp Dụng"}
+                                    Áp dụng
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    sx={{ minWidth: 100, textTransform: "none" }}
+                                    onClick={handleClearFilter}
+                                    disabled={!isFilterApplied}
+                                >
+                                    Hủy bộ lọc
                                 </Button>
                             </Grid>
                         </Grid>
                     </Box>
 
-                    {isLoading ? (
-                        <Typography variant="body1" textAlign="center" sx={{ my: 4 }}>Đang tải dữ liệu...</Typography>
-                    ) : thoiKhoaBieuList.length === 0 ? (
-                        <Typography variant="body1" color="textSecondary" textAlign="center" sx={{ my: 4, fontStyle: 'italic' }}>
-                            Chưa có thời khóa biểu nào được thêm
-                        </Typography>
-                    ) : (
-                        <Grid container spacing={3} sx={{ mt: 2 }}>
-                            {thoiKhoaBieuList.map((tkb, index) => {
-                                const monHoc = findMonHoc(tkb.mon_hoc_id);
-                                return (
-                                    <Grid item xs={12} sm={4} md={3} key={tkb.id || index}>
-                                        <Card variant="outlined">
-                                            <CardContent>
-                                                <Typography variant="h6" color="primary" gutterBottom>
-                                                    {monHoc.ten_mon_hoc}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Mã môn học:</strong> {monHoc.ma_mon_hoc}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Số tín chỉ:</strong> {monHoc.so_tin_chi}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Tính điểm:</strong> {monHoc.tinh_diem === 1 ? "Có" : "Không"}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Hệ đào tạo:</strong> {findHeDaoTaoName(monHoc.he_dao_tao_id)}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Ghi chú:</strong> {monHoc.ghi_chu}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Lớp:</strong> {findLopName(tkb.lop_id)}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Kỳ học:</strong> {tkb.ky_hoc || "Chưa xác định"}
-                                                </Typography>
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Giảng viên:</strong> {tkb.giang_vien || findGiangVienName(tkb.giang_vien_id)}
-                                                </Typography>
-                                                {tkb.phong_hoc && (
-                                                    <Typography variant="body2" color="textSecondary">
-                                                        <strong>Phòng học:</strong> {tkb.phong_hoc}
-                                                    </Typography>
-                                                )}
-                                                {tkb.tiet_hoc && (
-                                                    <Typography variant="body2" color="textSecondary">
-                                                        <strong>Tiết học:</strong> {tkb.tiet_hoc}
-                                                    </Typography>
-                                                )}
-                                                <Typography variant="body2" color="textSecondary">
-                                                    <strong>Trạng thái:</strong> {tkb.trang_thai === 1 ? "Hoạt động" : "Không hoạt động"}
-                                                </Typography>
-                                            </CardContent>
-                                            {role !== "examination" && (
-                                                <CardActions sx={{ justifyContent: "center" }}>
-                                                    <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                    <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
-                                                        <DeleteIcon />
-                                                    </IconButton>
-                                                </CardActions>
-                                            )}
-                                        </Card>
-                                    </Grid>
-                                );
-                            })}
-                        </Grid>
+                    {/* Hướng dẫn khi chưa áp dụng bộ lọc */}
+                    {!isFilterApplied && (
+                        <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                💡 Vui lòng chọn lớp và nhấn "Áp dụng" để hiển thị danh sách thời khóa biểu.
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {/* Danh sách thời khóa biểu chỉ hiển thị khi đã áp dụng bộ lọc */}
+                    {isFilterApplied && (
+                        <Paper elevation={2} sx={{ p: 3 }}>
+                            {isLoading ? (
+                                <Box textAlign="center" py={4}>
+                                    <Typography>Đang tải dữ liệu...</Typography>
+                                </Box>
+                            ) : thoiKhoaBieuList.length === 0 ? (
+                                <Box textAlign="center" py={4}>
+                                    <Typography>Không có thời khóa biểu nào được tìm thấy.</Typography>
+                                </Box>
+                            ) : (
+                                <Grid container spacing={3} sx={{ mt: 2 }}>
+                                    {thoiKhoaBieuList.map((tkb, index) => {
+                                        const monHoc = findMonHoc(tkb.mon_hoc_id);
+                                        return (
+                                            <Grid item xs={12} sm={4} md={3} key={tkb.id || index}>
+                                                <Card variant="outlined">
+                                                    <CardContent>
+                                                        <Typography variant="h6" color="primary" gutterBottom>
+                                                            {monHoc.ten_mon_hoc}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Mã môn học:</strong> {monHoc.ma_mon_hoc}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Số tín chỉ:</strong> {monHoc.so_tin_chi}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Tính điểm:</strong> {monHoc.tinh_diem === 1 ? "Có" : "Không"}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Hệ đào tạo:</strong> {findHeDaoTaoName(monHoc.he_dao_tao_id)}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Ghi chú:</strong> {monHoc.ghi_chu}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Lớp:</strong> {findLopName(tkb.lop_id)}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Kỳ học:</strong> {tkb.ky_hoc || "Chưa xác định"}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Giảng viên:</strong> {tkb.giang_vien || findGiangVienName(tkb.giang_vien_id)}
+                                                        </Typography>
+                                                        {tkb.phong_hoc && (
+                                                            <Typography variant="body2" color="textSecondary">
+                                                                <strong>Phòng học:</strong> {tkb.phong_hoc}
+                                                            </Typography>
+                                                        )}
+                                                        {tkb.tiet_hoc && (
+                                                            <Typography variant="body2" color="textSecondary">
+                                                                <strong>Tiết học:</strong> {tkb.tiet_hoc}
+                                                            </Typography>
+                                                        )}
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            <strong>Trạng thái:</strong> {tkb.trang_thai === 1 ? "Hoạt động" : "Không hoạt động"}
+                                                        </Typography>
+                                                    </CardContent>
+                                                    {role !== "examination" && (
+                                                        <CardActions sx={{ justifyContent: "center" }}>
+                                                            <IconButton color="primary" size="small" onClick={() => handleEdit(tkb, index)}>
+                                                                <EditIcon />
+                                                            </IconButton>
+                                                            <IconButton color="error" size="small" onClick={() => handleDelete(tkb.id)}>
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </CardActions>
+                                                    )}
+                                                </Card>
+                                            </Grid>
+                                        );
+                                    })}
+                                </Grid>
+                            )}
+                        </Paper>
+                    )}
+
+                    {/* Pagination chỉ hiển thị khi đã áp dụng filter và có dữ liệu */}
+                    {isFilterApplied && totalPages > 1 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+                            <MuiPagination
+                                color="primary"
+                                count={totalPages}
+                                page={page}
+                                onChange={handlePageChange}
+                                variant="outlined"
+                                shape="rounded"
+                            />
+                        </Box>
                     )}
                 </Paper>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
-                    <MuiPagination
-                        color="primary"
-                        count={totalPages}
-                        page={page}
-                        onChange={handlePageChange}
-                        variant="outlined"
-                        shape="rounded"
-                    />
-                </Box>
-            </Container>
 
-            <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>{editId !== null ? "Sửa" : "Thêm"} Thời Khóa Biểu</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={4}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
-                                <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
-                                    <MenuItem value="">Chọn hệ đào tạo</MenuItem>
-                                    {HeDaoTao?.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_he_dao_tao}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>{editId !== null ? "Sửa" : "Thêm"} Thời Khóa Biểu</DialogTitle>
+                    <DialogContent>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12} sm={4}>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Hệ đào tạo</InputLabel>
+                                    <Select value={heDaoTaoId} onChange={handleHeDaoTaoChange}>
+                                        <MenuItem value="">Chọn hệ đào tạo</MenuItem>
+                                        {HeDaoTao.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.ten_he_dao_tao}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={8}>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
+                                    <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
+                                        <MenuItem value="">Chọn khóa đào tạo</MenuItem>
+                                        {khoaDaoTaoForm.map((option) => ( // Đổi từ khoaDaoTao thành khoaDaoTaoForm
+                                            <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12} sm={8}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Khóa đào tạo</InputLabel>
-                                <Select value={khoaDaoTaoId} onChange={handlekhoaChange} disabled={!heDaoTaoId}>
-                                    <MenuItem value="">Chọn khóa đào tạo</MenuItem>
-                                    {khoaDaoTao.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.ten_khoa} | niên khóa {option.nam_hoc}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel sx={{ backgroundColor: "white" }}>Kỳ học</InputLabel>
-                                <Select value={kyHoc} onChange={handleKyHocChange} disabled={!khoaDaoTaoId}>
-                                    <MenuItem value="">Chọn kỳ học</MenuItem>
-                                    {kyHocOptionsForm.map((option) => (
-                                        <MenuItem key={option} value={option}>{option}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={8}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Lớp</InputLabel>
-                                <Select
-                                    value={lopId}
-                                    onChange={handleLopChange}
-                                    label="Lớp"
-                                    MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
-                                >
-                                    <MenuItem value="">Chọn lớp</MenuItem>
-                                    {filteredLopList.map((lop) => (
-                                        <MenuItem key={lop.id} value={lop.id}>{lop.ma_lop}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="Tìm kiếm lớp..."
-                                value={lopSearch}
-                                onChange={(e) => setLopSearch(e.target.value)}
-                                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                            />
-                        </Grid>
-                    </Grid>
-
-                    {editId === null && (
                         <Grid container spacing={2} sx={{ mt: 1 }}>
                             <Grid item xs={12}>
-                                <Box display="flex" alignItems="center">
-                                    <Checkbox
-                                        checked={useKeHoachDaoTao}
-                                        onChange={handleUseKeHoachDaoTaoChange}
-                                        disabled={!khoaDaoTaoId || !kyHoc}
-                                    />
-                                    <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
-                                </Box>
+                                <FormControl fullWidth margin="dense">
+                                    <InputLabel sx={{ backgroundColor: "white" }}>Kỳ học</InputLabel>
+                                    <Select value={kyHoc} onChange={handleKyHocChange} disabled={!khoaDaoTaoId}>
+                                        <MenuItem value="">Chọn kỳ học</MenuItem>
+                                        {kyHocOptionsForm.map((option) => (
+                                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                             </Grid>
                         </Grid>
-                    )}
+                        {/* Thay thế phần lớp */}
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12}>
+                                <Autocomplete
+                                    options={lopList}
+                                    getOptionLabel={(option) => option.ma_lop}
+                                    value={lopList.find((lop) => lop.id === lopId) || null}
+                                    onChange={(event, newValue) => {
+                                        setLopId(newValue ? newValue.id : "");
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Lớp"
+                                            fullWidth
+                                            size="small"
+                                            placeholder="Tìm kiếm và chọn lớp..."
+                                        />
+                                    )}
+                                    noOptionsText="Không tìm thấy lớp nào"
+                                    clearOnEscape
+                                />
+                            </Grid>
+                        </Grid>
 
-                    {editId === null && useKeHoachDaoTao ? (
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle1">Danh sách môn học từ kế hoạch đào tạo:</Typography>
-                            {keHoachMonHocList.length > 0 ? (
-                                <List dense>
-                                    {keHoachMonHocList.map((mon) => (
-                                        <ListItem key={mon.id}>
-                                            <Checkbox
-                                                checked={selectedMonHocIds.includes(mon.mon_hoc_id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedMonHocIds([...selectedMonHocIds, mon.mon_hoc_id]);
-                                                    } else {
-                                                        setSelectedMonHocIds(selectedMonHocIds.filter((id) => id !== mon.mon_hoc_id));
-                                                    }
-                                                }}
-                                            />
-                                            <ListItemText
-                                                primary={mon.ten_mon_hoc}
-                                                secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            ) : (
-                                <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
-                            )}
-                        </Box>
-                    ) : (
-                        <>
-                            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                                <Grid item xs={12} sm={8}>
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel>Môn học</InputLabel>
-                                        <Select
-                                            multiple
-                                            value={selectedMonHocIds}
-                                            onChange={(e) => setSelectedMonHocIds(e.target.value)}
-                                            label="Môn học"
-                                            disabled={editId !== null} // Chỉ cho phép chọn một môn khi chỉnh sửa
-                                            renderValue={(selected) => selected.map(id => filteredMonHocList.find(m => m.id === id)?.ten_mon_hoc || "").join(", ")}
-                                        >
-                                            {filteredMonHocList.map((monHoc) => (
-                                                <MenuItem key={monHoc.id} value={monHoc.id}>
-                                                    <Checkbox checked={selectedMonHocIds.includes(monHoc.id)} />
-                                                    <ListItemText primary={monHoc.ten_mon_hoc} />
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        placeholder="Tìm kiếm môn học..."
-                                        value={monHocSearch}
-                                        onChange={(e) => setMonHocSearch(e.target.value)}
-                                        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                                <Grid item xs={12} sm={8}>
-                                    <Autocomplete
-                                        freeSolo
-                                        options={filteredGiangVienList}
-                                        getOptionLabel={(option) => option.ho_ten}
-                                        value={filteredGiangVienList.find((g) => g.id === giangVienId) || null}
-                                        onChange={(event, newValue) => handleGiangVienChange({ target: { value: newValue ? newValue.id : "" } })}
-                                        renderInput={(params) => <TextField {...params} label="Giảng viên" fullWidth size="small" />}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        placeholder="Tìm kiếm giảng viên..."
-                                        value={giangVienSearch}
-                                        onChange={(e) => setGiangVienSearch(e.target.value)}
-                                        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                                    />
-                                </Grid>
-                            </Grid>
+                        {editId === null && (
                             <Grid container spacing={2} sx={{ mt: 1 }}>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Phòng học"
-                                        value={phongHoc}
-                                        onChange={(e) => setPhongHoc(e.target.value)}
-                                        placeholder="Ví dụ: 103 TA1"
-                                        margin="dense"
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Tiết học"
-                                        value={tietHoc}
-                                        onChange={(e) => setTietHoc(e.target.value)}
-                                        placeholder="Ví dụ: 2-4"
-                                        margin="dense"
-                                    />
+                                <Grid item xs={12}>
+                                    <Box display="flex" alignItems="center">
+                                        <Checkbox
+                                            checked={useKeHoachDaoTao}
+                                            onChange={handleUseKeHoachDaoTaoChange}
+                                            disabled={!khoaDaoTaoId || !kyHoc}
+                                        />
+                                        <Typography>Dùng phương án bên kế hoạch đào tạo</Typography>
+                                    </Box>
                                 </Grid>
                             </Grid>
-                        </>
-                    )}
+                        )}
 
-                    <FormControl fullWidth margin="dense">
-                        <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
-                        <Select value={trangThai} onChange={handleTrangThaiChange}>
-                            {trangThaiOptions.map((option) => (
-                                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={resetForm} color="secondary">Hủy</Button>
-                    <Button
-                        onClick={handleSubmit}
-                        color="primary"
-                        variant="contained"
-                        disabled={!lopId || !kyHoc || selectedMonHocIds.length === 0 || isLoading}
-                    >
-                        {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        {editId === null && useKeHoachDaoTao ? (
+                            <Box sx={{ mt: 2 }}>
+                                <Typography variant="subtitle1" sx={{ mb: 1 }}>Danh sách môn học từ kế hoạch đào tạo:</Typography>
+
+                                {/* Thêm checkbox "Chọn tất cả" */}
+                                {keHoachMonHocList.length > 0 && (
+                                    <Box sx={{ mb: 2, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={selectAllMonHoc}
+                                                    onChange={handleSelectAllChange}
+                                                    indeterminate={selectedMonHocIds.length > 0 && selectedMonHocIds.length < keHoachMonHocList.length}
+                                                />
+                                            }
+                                            label={
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                    Chọn tất cả ({selectedMonHocIds.length}/{keHoachMonHocList.length})
+                                                </Typography>
+                                            }
+                                        />
+                                    </Box>
+                                )}
+
+                                {keHoachMonHocList.length > 0 ? (
+                                    <List dense>
+                                        {keHoachMonHocList.map((mon) => (
+                                            <ListItem key={mon.id}>
+                                                <Checkbox
+                                                    checked={selectedMonHocIds.includes(mon.mon_hoc_id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedMonHocIds([...selectedMonHocIds, mon.mon_hoc_id]);
+                                                        } else {
+                                                            setSelectedMonHocIds(selectedMonHocIds.filter((id) => id !== mon.mon_hoc_id));
+                                                        }
+                                                    }}
+                                                />
+                                                <ListItemText
+                                                    primary={mon.ten_mon_hoc}
+                                                    secondary={`Bắt buộc: ${mon.bat_buoc ? "Có" : "Không"}`}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">Không có môn học nào trong kế hoạch.</Typography>
+                                )}
+                            </Box>
+                        ) : (
+                            <>
+                                {/* Thay thế phần môn học */}
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12}>
+                                        <Autocomplete
+                                            multiple
+                                            options={monHocListForm}
+                                            getOptionLabel={(option) => option.ten_mon_hoc}
+                                            value={monHocListForm.filter((monHoc) => selectedMonHocIds.includes(monHoc.id))}
+                                            onChange={(event, newValue) => {
+                                                setSelectedMonHocIds(newValue.map(item => item.id));
+                                            }}
+                                            disabled={editId !== null}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Môn học"
+                                                    fullWidth
+                                                    size="small"
+                                                    placeholder="Tìm kiếm và chọn môn học..."
+                                                />
+                                            )}
+                                            renderTags={(value, getTagProps) =>
+                                                value.map((option, index) => (
+                                                    <Chip
+                                                        variant="outlined"
+                                                        label={option.ten_mon_hoc}
+                                                        {...getTagProps({ index })}
+                                                        key={option.id}
+                                                    />
+                                                ))
+                                            }
+                                            noOptionsText="Không tìm thấy môn học nào"
+                                            clearOnEscape
+                                        />
+                                    </Grid>
+                                </Grid>
+
+                                {/* Thay thế phần giảng viên */}
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12}>
+                                        <Autocomplete
+                                            freeSolo // Thêm freeSolo để cho phép nhập tên tự do
+                                            options={giangVienList}
+                                            getOptionLabel={(option) => {
+                                                if (typeof option === 'string') return option; // Trường hợp freeSolo
+                                                return option.ho_ten || "";
+                                            }}
+                                            value={
+                                                giangVienList.find((gv) => gv.id === giangVienId) ||
+                                                (giangVien ? giangVien : null) // Fallback về tên nếu không tìm thấy ID
+                                            }
+                                            onChange={(event, newValue) => {
+                                                if (typeof newValue === 'string') {
+                                                    // Trường hợp nhập tự do
+                                                    setGiangVienId("");
+                                                    setGiangVien(newValue);
+                                                } else if (newValue) {
+                                                    // Trường hợp chọn từ danh sách
+                                                    setGiangVienId(newValue.id);
+                                                    setGiangVien(newValue.ho_ten);
+                                                } else {
+                                                    // Trường hợp clear
+                                                    setGiangVienId("");
+                                                    setGiangVien("");
+                                                }
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Giảng viên"
+                                                    fullWidth
+                                                    size="small"
+                                                    placeholder="Tìm kiếm và chọn giảng viên..."
+                                                    value={giangVien} // Hiển thị tên giảng viên
+                                                />
+                                            )}
+                                            noOptionsText="Không tìm thấy giảng viên nào"
+                                            clearOnEscape
+                                        />
+                                    </Grid>
+                                </Grid>
+
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Phòng học"
+                                            value={phongHoc}
+                                            onChange={(e) => setPhongHoc(e.target.value)}
+                                            placeholder="Ví dụ: 103 TA1"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Tiết học"
+                                            value={tietHoc}
+                                            onChange={(e) => setTietHoc(e.target.value)}
+                                            placeholder="Ví dụ: 2-4"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                </Grid>
+
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Ngày học"
+                                            value={ngayHoc}
+                                            onChange={(e) => setNgayHoc(e.target.value)}
+                                            placeholder="Ví dụ: Thứ 2, Thứ 4"
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            label="Ghi chú"
+                                            value={ghiChu}
+                                            onChange={(e) => setGhiChu(e.target.value)}
+                                            placeholder="Ghi chú thêm..."
+                                            margin="dense"
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </>
+                        )}
+
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel sx={{ backgroundColor: "white" }}>Trạng thái</InputLabel>
+                            <Select value={trangThai} onChange={handleTrangThaiChange}>
+                                {trangThaiOptions.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={resetFormOnly} color="secondary">Hủy</Button>
+                        <Button
+                            onClick={handleSubmit}
+                            color="primary"
+                            variant="contained"
+                            disabled={!lopId || !kyHoc || selectedMonHocIds.length === 0 || isLoading}
+                        >
+                            {isLoading ? "Đang xử lý..." : (editId !== null ? "Cập nhật" : "Xác nhận")}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Container>
         </ThemeProvider>
     );
 };

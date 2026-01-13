@@ -444,7 +444,9 @@ const StudentManagement = () => {
         return;
       }
 
-      const student = students.find((s) => s.id === studentId);
+      // FIX: Tìm từ displayStudents nếu filter được áp dụng, ngược lại tìm từ students
+      const searchList = isFilterApplied ? displayStudents : students;
+      const student = searchList.find((s) => s.id === studentId);
       if (!student) {
         toast.error("Không tìm thấy học viên!");
         return;
@@ -633,27 +635,46 @@ const StudentManagement = () => {
       // Lưu thông tin sinh viên
       let res;
       let updatedStudents;
+      let actualStudentData; // Biến để lưu dữ liệu sinh viên thực tế
 
       if (!studentData.id) {
         res = await createNewStudent(formattedStudentData);
-        updatedStudents = [...students, res];
+        // FIX: Trích xuất dữ liệu từ response (API trả về {message, data})
+        actualStudentData = res.data || res;
+        updatedStudents = [...students, actualStudentData];
         setStudents(updatedStudents);
+
+        // FIX: Cập nhật displayStudents nếu đang áp dụng filter
+        if (isFilterApplied) {
+          setDisplayStudents([...displayStudents, actualStudentData]);
+        }
         toast.success("Thêm học viên thành công!");
       } else {
         res = await updateStudentById(formattedStudentData, formattedStudentData.id);
+        // FIX: Trích xuất dữ liệu từ response (API trả về {message, data})
+        actualStudentData = res.data || res;
         updatedStudents = students.map(student =>
-          student.id === res.id ? res : student
+          student.id === actualStudentData.id ? actualStudentData : student
         );
         setStudents(updatedStudents);
+
+        // FIX: Cập nhật displayStudents nếu đang áp dụng filter
+        if (isFilterApplied) {
+          const updatedDisplayStudents = displayStudents.map(student =>
+            student.id === actualStudentData.id ? actualStudentData : student
+          );
+          setDisplayStudents(updatedDisplayStudents);
+        }
         toast.success("Cập nhật học viên thành công!");
       }
 
       // THÊM MỚI: Xử lý thông tin quân nhân nếu là đối tượng quân nhân
-      if (isQuanNhan(res.doi_tuong_id)) {
+      // FIX: Sử dụng actualStudentData thay vì res
+      if (isQuanNhan(actualStudentData.doi_tuong_id)) {
         try {
           const formattedMilitaryData = {
             ...militaryData,
-            sinh_vien_id: res.id,
+            sinh_vien_id: actualStudentData.id,
             ngay_nhap_ngu: militaryData.ngay_nhap_ngu
               ? new Date(militaryData.ngay_nhap_ngu).toISOString()
               : null,
@@ -664,9 +685,9 @@ const StudentManagement = () => {
 
           console.log("Dữ liệu quân nhân gửi đi:", formattedMilitaryData);
 
-          // Thử cập nhật trước, nếu không có thì tạo mới
+          // FIX: Luôn gọi update API khi đã có record quân nhân
           try {
-            await updateMilitaryInfoByStudentId(res.id, formattedMilitaryData);
+            await updateMilitaryInfoByStudentId(actualStudentData.id, formattedMilitaryData);
             console.log("Cập nhật thông tin quân nhân thành công!");
             toast.success("Cập nhật thông tin quân nhân thành công!");
           } catch (updateError) {
@@ -680,28 +701,6 @@ const StudentManagement = () => {
           toast.error(`Lỗi khi lưu thông tin quân nhân: ${error.message || error}`);
           // Không return ở đây để vẫn đóng dialog
         }
-      }
-
-      // Refresh filtered data nếu đang áp dụng bộ lọc (giữ nguyên logic)
-      if (isFilterApplied) {
-        let filtered = updatedStudents;
-
-        if (searchTerm) {
-          filtered = filtered.filter((student) => {
-            const fullName = `${student.ho_dem} ${student.ten}`.toLowerCase();
-            const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
-            const matchesSearch =
-              searchWords.every((word) => fullName.includes(word)) ||
-              student.ma_sinh_vien.includes(searchTerm);
-            return matchesSearch;
-          });
-        }
-
-        if (lopFilter) {
-          filtered = filtered.filter(student => student.lop_id === lopFilter);
-        }
-
-        setDisplayStudents(filtered);
       }
 
       setOpen(false);

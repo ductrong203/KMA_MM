@@ -18,7 +18,7 @@ class KeHoachMonHocService {
       if (ky_hoc) {
         whereClause.ky_hoc = ky_hoc;
       }
-      
+
       const data = await ke_hoach_mon_hoc.findAll({ where: whereClause });
       return data;
     } catch (error) {
@@ -39,7 +39,7 @@ class KeHoachMonHocService {
 
       const danhSachMonHoc = await mon_hoc.findAll({
         where: { id: monHocIds },
-        attributes: ["id", "ma_mon_hoc", "ten_mon_hoc", "so_tin_chi","tinh_diem"],
+        attributes: ["id", "ma_mon_hoc", "ten_mon_hoc", "so_tin_chi", "tinh_diem"],
       });
 
       return danhSachMonHoc;
@@ -63,7 +63,7 @@ class KeHoachMonHocService {
     if (existingKeHoach) {
       throw new Error('Kế hoạch môn học đã tồn tại cho khoá đào tạo, môn học và kỳ học này.');
     }
-    
+
     return await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
   }
 
@@ -111,7 +111,7 @@ class KeHoachMonHocService {
           {
             model: mon_hoc,
             as: 'mon_hoc',
-            attributes: ['id', 'ma_mon_hoc', 'ten_mon_hoc', 'so_tin_chi','he_dao_tao_id'],
+            attributes: ['id', 'ma_mon_hoc', 'ten_mon_hoc', 'so_tin_chi', 'he_dao_tao_id'],
           },
           {
             model: khoa_dao_tao,
@@ -176,7 +176,7 @@ class KeHoachMonHocService {
       });
 
       const existingKeys = existingKeHoach.map(kh => `${kh.mon_hoc_id}_${kh.ky_hoc}`);
-      
+
       const filteredKeHoachData = newKeHoachData.filter(kh => {
         const key = `${kh.mon_hoc_id}_${kh.ky_hoc}`;
         return !existingKeys.includes(key);
@@ -203,6 +203,43 @@ class KeHoachMonHocService {
     } catch (error) {
       throw new Error(`Lỗi khi sao chép kế hoạch môn học: ${error.message}`);
     }
+  }
+
+  /**
+   * Tạo kế hoạch môn học nếu chưa tồn tại
+   */
+  static async createIfNotExists(data) {
+    const { khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc = 0 } = data;
+
+    const existingKeHoach = await ke_hoach_mon_hoc.findOne({
+      where: { khoa_dao_tao_id, mon_hoc_id, ky_hoc },
+    });
+
+    if (existingKeHoach) {
+      return { created: false, data: existingKeHoach };
+    }
+
+    const newKeHoach = await ke_hoach_mon_hoc.create({ khoa_dao_tao_id, mon_hoc_id, ky_hoc, bat_buoc });
+    return { created: true, data: newKeHoach };
+  }
+
+  /**
+   * Thêm nhiều môn học vào kế hoạch
+   */
+  static async bulkCreateIfNotExists(items) {
+    const results = await Promise.all(
+      items.map(item => this.createIfNotExists(item))
+    );
+
+    const created = results.filter(r => r.created).map(r => r.data);
+    const skipped = results.filter(r => !r.created).map(r => r.data);
+
+    return {
+      success: true,
+      created: created.length,
+      skipped: skipped.length,
+      message: `Đã thêm ${created.length} môn học, bỏ qua ${skipped.length} môn đã tồn tại`
+    };
   }
 
 }
