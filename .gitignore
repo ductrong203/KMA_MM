@@ -4,11 +4,6 @@
 .env.production
 .env.development
 
-# Config files
-config.js
-*/config/config.js
-kma_be/src/config/config.js
-kma_fe/src/config/
 
 # Node modules
 node_modules/

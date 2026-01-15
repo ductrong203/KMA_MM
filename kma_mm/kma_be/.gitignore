@@ -3,9 +3,6 @@
 /excel
 /docx
 
-# Config files
-src/config/config.js
-config.js
 
 # Upload and export directories
 uploads/
