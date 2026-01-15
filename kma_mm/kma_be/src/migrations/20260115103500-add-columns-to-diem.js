@@ -7,7 +7,7 @@ module.exports = {
             type: Sequelize.INTEGER,
             allowNull: true,
             defaultValue: null,
-            after: 'diem_chuyen_can_1' // Position guess, optional
+            after: 'ghi_chu' // Position guess, optional
         });
 
         // Add quy_dinh_id_ck2
@@ -15,7 +15,7 @@ module.exports = {
             type: Sequelize.INTEGER,
             allowNull: true,
             defaultValue: null,
-            after: 'diem_chuyen_can_2' // Position guess, optional
+            after: 'quy_dinh_id_ck1' // Position guess, optional
         });
     },
 

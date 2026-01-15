@@ -564,6 +564,41 @@ class SinhVienService {
           if (dt) doi_tuong_id = dt.id;
         }
 
+        // --- Xác nhận thông tin ---
+        const missingFields = [];
+        if (!ma_sinh_vien) missingFields.push("Mã sinh viên");
+        if (!ho_dem) missingFields.push("Họ tên đệm");
+        if (!ten) missingFields.push("Tên");
+        if (!ngay_sinh) missingFields.push("Ngày sinh (hợp lệ)");
+        if (gioi_tinh === null) missingFields.push("Giới tính (Nam/Nữ hoặc 1/0)");
+
+        const que_quan = getVal(colMap.noi_sinh);
+        if (!que_quan) missingFields.push("Nơi sinh");
+
+        const dan_toc = getVal(colMap.dan_toc);
+        if (!dan_toc) missingFields.push("Dân tộc");
+
+        if (!cccd) missingFields.push("Số CCCD/Hộ chiếu");
+
+        const so_dien_thoai = getVal(colMap.so_dien_thoai);
+        if (!so_dien_thoai) {
+          missingFields.push("Số điện thoại");
+        } else {
+          if (!/^\d{10,11}$/.test(so_dien_thoai)) missingFields.push("Số điện thoại không đúng định dạng (10-11 số)");
+        }
+
+        const email = getVal(colMap.email);
+        if (!email) missingFields.push("Email");
+
+        // User requested 'Doi tuong' required.
+        if (!dtMa) missingFields.push("Đối tượng (không được để trống)");
+        else if (!doi_tuong_id) missingFields.push(`Đối tượng '${dtMa}' không tồn tại trong hệ thống`);
+
+        if (missingFields.length > 0) {
+          const rowNum = Number(dataRows.indexOf(row)) + headerRowIndex + 2;
+          throw new Error(`Dòng ${rowNum}: Thiếu hoặc sai thông tin: ${missingFields.join(', ')}`);
+        }
+
         // Check Existing
         let existing = null;
         if (ma_sinh_vien) {
@@ -578,20 +613,21 @@ class SinhVienService {
           ten,
           ngay_sinh,
           gioi_tinh,
-          que_quan: getVal(colMap.noi_sinh),
-          dan_toc: getVal(colMap.dan_toc),
+          que_quan,
+          dan_toc,
           ton_giao: getVal(colMap.ton_giao),
           quoc_tich: getVal(colMap.quoc_tich),
           CCCD: cccd,
           ngay_cap_CCCD,
           noi_cap_CCCD: getVal(colMap.noi_cap_cccd),
-          so_dien_thoai: getVal(colMap.so_dien_thoai),
-          email: getVal(colMap.email),
+          so_dien_thoai,
+          email,
           dien_thoai_gia_dinh: getVal(colMap.dien_thoai_gia_dinh),
           dien_thoai_CQ: getVal(colMap.dien_thoai_cq), // Correct field name
           ngay_vao_doan,
           ngay_vao_dang,
           doi_tuong_id,
+          ghi_chu: getVal(colMap.ghi_chu),
           lop_id
         };
 

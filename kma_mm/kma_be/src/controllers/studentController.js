@@ -16,7 +16,7 @@ const mapRole = {
   6: "sinhVien",
   7: "admin"
 
-}              
+}
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");
 if (!fs.existsSync(exportDir)) {
@@ -331,6 +331,9 @@ class SinhVienController {
       }
       res.status(200).json({ success: true, data: result });
     } catch (error) {
+      if (error.message && error.message.startsWith("Dòng")) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
       res.status(500).json({ success: false, message: error.message });
     }
   }

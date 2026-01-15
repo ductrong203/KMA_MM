@@ -1056,7 +1056,12 @@ const StudentManagement = () => {
       }
     } catch (error) {
       console.error('Lỗi khi kiểm tra học viên:', error);
-      toast.error(`Có lỗi xảy ra khi kiểm tra file Excel: ${error.message || error}`);
+      if (error.response && error.response.status === 400) {
+        toast.error("Phải nhập đủ thông tin cần thiết (Mã SV, Họ tên, Ngày sinh, v.v.)");
+      } else {
+        const msg = error.response?.data?.message || error.message || error;
+        toast.error(`Có lỗi xảy ra khi kiểm tra file Excel: ${msg}`);
+      }
       event.target.value = null; // Reset input file
     }
   };
@@ -1106,21 +1111,25 @@ const StudentManagement = () => {
       }
     } catch (error) {
       console.error('Lỗi khi nhập danh sách học viên:', error);
-      toast.error(`Có lỗi xảy ra khi nhập file Excel: ${error.message || error}`);
+      if (error.response && error.response.status === 400) {
+        toast.error("Phải nhập đủ thông tin cần thiết (Mã SV, Họ tên, Ngày sinh, v.v.)");
+      } else {
+        const msg = error.response?.data?.message || error.message || error;
+        toast.error(`Có lỗi xảy ra khi nhập file Excel: ${msg}`);
+      }
     } finally {
-      event.target.value = null; // Reset input file
+      if (event && event.target) event.target.value = null; // Reset input file safely
     }
   };
 
-  const handleDialogClose = (action, event) => {
+  const handleDialogClose = (action) => { // Removed 'event' param
     setOpenDialog(false);
     if (action === 'ghi_de') {
-      performImport(importData.file, importData.lopFilter, 1, event);
+      performImport(importData.file, importData.lopFilter, 1, null);
     } else if (action === 'them_moi') {
-      performImport(importData.file, importData.lopFilter, 0, event);
+      performImport(importData.file, importData.lopFilter, 0, null);
     }
-    // Nếu chọn Hủy, không làm gì, chỉ reset input file
-    event.target.value = null;
+    // No event reset needed here as it was done in handleImportFromExcel
   };
 
   // Sửa function này
