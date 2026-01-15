@@ -244,9 +244,7 @@ class SinhVienService {
           ngay_qd_gdqpan: formatDate(gdqpan?.ngay_ky_quyet_dinh),
 
           qd_ta: chuanTA?.so_quyet_dinh || '',
-          ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh),
-
-          ghi_chu: sv.ghi_chu || ''
+          ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh)
         }
       });
 
@@ -378,17 +376,20 @@ class SinhVienService {
       fillCell(resultCols, 'DDEBF7');
 
       // --- Style cho các ô dữ liệu (Thêm border) ---
+      const totalColumns = 50; // Tổng 50 cột
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber > 1) {
           row.alignment = { vertical: 'middle', wrapText: true };
-          row.eachCell({ includeEmpty: true }, (cell) => {
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-          });
+        }
+        // Apply border cho tất cả cột từ 1 đến 50
+        for (let colIndex = 1; colIndex <= totalColumns; colIndex++) {
+          const cell = row.getCell(colIndex);
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
         }
       });
 
@@ -478,8 +479,7 @@ class SinhVienService {
         ngay_vao_doan: headers.findIndex(h => h.includes("ngày vào đoàn")),
         ngay_vao_dang: headers.findIndex(h => h.includes("ngày vào đảng")),
         doi_tuong: headers.findIndex(h => h.includes("đối tượng")),
-        don_vi_gui: headers.findIndex(h => h.includes("đơn vị gửi") || h.includes("đơn vị cử")),
-        ghi_chu: headers.findIndex(h => h.includes("số vào sổ cấp bằng"))
+        don_vi_gui: headers.findIndex(h => h.includes("đơn vị gửi") || h.includes("đơn vị cử"))
       };
 
       // Refine Date Issue: There are many "Ngày ...".
@@ -592,7 +592,6 @@ class SinhVienService {
           ngay_vao_doan,
           ngay_vao_dang,
           doi_tuong_id,
-          ghi_chu: getVal(colMap.ghi_chu),
           lop_id
         };
 
