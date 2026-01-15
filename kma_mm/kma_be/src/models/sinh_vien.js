@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   const SinhVien = sequelize.define('sinh_vien', {
     id: {
       autoIncrement: true,
@@ -186,20 +186,20 @@ module.exports = function(sequelize, DataTypes) {
       defaultValue: 0
     },
     diem_trung_binh_tich_luy: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-        defaultValue: 0.0,
-      },
-      bao_ve_do_an: {
-        type: DataTypes.BOOLEAN,
-        allowNull: true,
-        defaultValue: false,
-      },
-      diem_trung_binh_he_4: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-        defaultValue: 0.0,
-      },
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0.0,
+    },
+    bao_ve_do_an: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    diem_trung_binh_he_4: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0.0,
+    },
   }, {
     sequelize,
     tableName: 'sinh_vien',
@@ -231,7 +231,7 @@ module.exports = function(sequelize, DataTypes) {
   });
 
   // Định nghĩa associations cho sinh_vien
-  SinhVien.associate = function(models) {
+  SinhVien.associate = function (models) {
     // Mối quan hệ với lop
     SinhVien.belongsTo(models.lop, {
       foreignKey: 'lop_id',
@@ -266,6 +266,12 @@ module.exports = function(sequelize, DataTypes) {
     SinhVien.hasMany(models.khen_thuong_ky_luat, {
       foreignKey: 'sinh_vien_id',
       as: 'khen_thuong_ky_luats',
+    });
+
+    // Mối quan hệ với tot_nghiep
+    SinhVien.hasMany(models.tot_nghiep, {
+      foreignKey: 'sinh_vien_id',
+      as: 'tot_nghieps',
     });
   };
 
