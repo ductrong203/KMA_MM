@@ -387,19 +387,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                             TP1: tp1,
                             TP2: tp2,
                             CK1: student.diem_ck !== null && student.diem_ck !== undefined ? student.diem_ck : null,
-                            CK2: student.diem_ck2 !== null && student.diem_ck2 !== undefined ? student.diem_ck2 : null
+                            CK2: student.diem_ck2 !== null && student.diem_ck2 !== undefined ? student.diem_ck2 : null,
+
+                            he_4: student.diem_he_4, // Map từ backend
+                            chu: student.diem_chu, // Map từ backend
+                            HP: student.diem_hp, // Map từ backend
+                            trang_thai: student.trang_thai, // Map từ backend used for 'passed' check
+                            quy_dinh_ck1: student.quy_dinh_ck1,
+                            quy_dinh_ck2: student.quy_dinh_ck2
                         },
                         retakeRegistered: student.trang_thai === 'thi_lai',
                         trang_thai: student.trang_thai || null
                     };
-
-                    // Tính toán và gán trạng thái dựa trên điểm số hiện tại
-                    const tempCurrentSubjectInfo = courseOptions.find(option => option.id === course);
-                    if (tempCurrentSubjectInfo) {
-                        const { trang_thai } = calculateAverageScoreForStudent(studentData, tempCurrentSubjectInfo);
-                        studentData.trang_thai = trang_thai || student.trang_thai;
-                    }
-
                     return studentData;
                 })
             );
@@ -419,16 +418,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     };
 
     const eligibleForRetake = (student) => {
-        if (student.diem.CK1 === null || student.diem.CK1 === undefined) return false;
-        const { score: averageScore } = calculateAverageScore(student);
-
-        // Học viên đủ điều kiện thi lại nếu:
-        // 1. Điểm thi CK1 < điểm thi tối thiểu HOẶC
-        // 2. Điểm trung bình < điểm trung bình đạt HOẶC
-        // 3. Đã có điểm CK2 (đã thi lại rồi)
-        return student.diem.CK1 < gradeSettings.diemThiToiThieu ||
-            (averageScore !== null && averageScore < gradeSettings.diemTrungBinhDat) ||
-            student.diem.CK2 !== null;
+        // Simple check: allow retake if status is fail or already has CK2
+        if (!student.trang_thai) return false; // Not graded yet
+        const failStatuses = ['rot_mon', 'hoc_lai', 'thi_lai'];
+        return failStatuses.includes(student.trang_thai) || student.diem.CK2 !== null;
     };
 
     const canTakeFinalExam = (student) => {
@@ -465,7 +458,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             else if (finalScore >= 4.0 && finalScore <= 4.7) { he4 = 1.0; chu = 'D'; }
             else if (finalScore >= 0.0 && finalScore <= 3.9) { he4 = 0.0; chu = 'F'; }
 
-            const trang_thai = passed ? 'qua_mon' : 'truot_mon';
+            const trang_thai = passed ? 'qua_mon' : 'rot_mon';
             return { score: finalScore, passed, he4, chu, trang_thai };
         }
 
@@ -511,7 +504,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             else if (averageScore >= 0.0 && averageScore <= 3.9) { he4 = 0.0; chu = 'F'; }
         }
 
-        const trang_thai = passed ? 'qua_mon' : 'truot_mon';
+        const trang_thai = passed ? 'qua_mon' : 'rot_mon';
 
         return { score: averageScore, passed, he4, chu, trang_thai };
     };
@@ -552,7 +545,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 else if (finalScore >= 0.0 && finalScore <= 3.9) { he4 = 0.0; chu = 'F'; }
             }
 
-            const trang_thai = passed ? 'qua_mon' : 'truot_mon';
+            const trang_thai = passed ? 'qua_mon' : 'rot_mon';
             return { score: finalScore, passed, he4, chu, trang_thai };
         }
 
@@ -582,7 +575,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         // Kiểm tra các điều kiện để qua môn:
         // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
         // 2. Điểm trung bình phải >= diemTrungBinhDat
-        const passed = finalScore >= gradeSettings.diemThiToiThieu && averageScore >= gradeSettings.diemTrungBinhDat;
+
+        // Priority Logic: Use student specific rule if available
+        // If checking CK2 (and CK2 exists or is being entered), prefer CK2 rule.
+        // Otherwise use CK1 rule.
+        const specificRule = (student.diem.CK2 !== null || student.diem.quy_dinh_ck2)
+            ? (student.diem.quy_dinh_ck2 || student.diem.quy_dinh_ck1)
+            : student.diem.quy_dinh_ck1;
+
+        const minExamScore = specificRule ? specificRule.diemThiToiThieu : gradeSettings.diemThiToiThieu;
+        const minAvgScore = specificRule ? specificRule.diemTrungBinhDat : gradeSettings.diemTrungBinhDat;
+
+        const passed = finalScore >= minExamScore && averageScore >= minAvgScore;
 
         let he4 = null;
         let chu = null;
@@ -611,7 +615,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             }
         }
 
-        const trang_thai = passed ? 'qua_mon' : 'truot_mon';
+        const trang_thai = passed ? 'qua_mon' : 'rot_mon';
 
         return { score: averageScore, passed, he4, chu, trang_thai };
     };
@@ -689,7 +693,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         return student;
                     }
                     if (scoreType === 'CK2' && !eligibleForRetake(student)) {
-                        toast.error(`Không thể nhập điểm thi lại cho học viên ${student.ho_dem} ${student.ten}. Điểm thi lần 1 (CK1) phải < ${gradeSettings.diemThiToiThieu} hoặc điểm tổng kết < ${gradeSettings.diemTrungBinhDat}.`);
+                        const specificRule = student.diem.quy_dinh_ck1;
+                        const minExam = specificRule ? specificRule.diemThiToiThieu : gradeSettings.diemThiToiThieu;
+                        const minAvg = specificRule ? specificRule.diemTrungBinhDat : gradeSettings.diemTrungBinhDat;
+                        toast.error(`Không thể nhập điểm thi lại cho học viên ${student.ho_dem} ${student.ten}. Điểm thi lần 1 (CK1) phải < ${minExam} hoặc điểm tổng kết < ${minAvg}.`);
                         return student;
                     }
                     return { ...student, diem: { ...student.diem, [scoreType]: numericValue } };
@@ -1412,7 +1419,19 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     </TableHead>
                                     <TableBody>
                                         {students.map((student) => {
-                                            const { score: averageScore, passed, he4: diem_he_4, chu: diem_chu } = calculateAverageScore(student);
+                                            let averageScore = null, passed = false, diem_he_4 = null, diem_chu = null;
+
+                                            if (student.diem && student.diem.he_4 !== null && student.diem.he_4 !== undefined) {
+                                                diem_he_4 = student.diem.he_4;
+                                                diem_chu = student.diem.chu;
+                                                averageScore = student.diem.HP;
+                                            }
+                                            const calculationResult = calculateAverageScore(student);
+                                            averageScore = calculationResult.score;
+                                            passed = calculationResult.passed;
+                                            diem_he_4 = calculationResult.he4;
+                                            diem_chu = calculationResult.chu;
+
                                             const canRetake = eligibleForRetake(student);
                                             const componentScore = calculateComponentScore(student);
                                             return (
@@ -1454,7 +1473,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         </Tooltip>
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        <Tooltip title={!canRetake ? `Học viên phải có điểm CK1 < ${gradeSettings.diemThiToiThieu} hoặc điểm TB < ${gradeSettings.diemTrungBinhDat} để thi lại` : ''}>
+                                                        <Tooltip title={!canRetake ? "Học viên phải trượt cuối kỳ để thi lại" : ''}>
                                                             <span>
                                                                 <TextField
                                                                     type="number"

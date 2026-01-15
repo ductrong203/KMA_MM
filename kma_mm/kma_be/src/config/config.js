@@ -9,7 +9,7 @@ module.exports = {
     username: process.env.DB_USERNAME || "root",
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_DATABASE || "quan_ly_dao_tao",
-    host: process.env.DB_HOST || "localhost",
+    host: process.env.DB_HOST || "hn-fornix-testing-bigdata-5",
     port: process.env.PORT || "3301",
     dialect: process.env.DB_DIALECT || "mysql",
   },
