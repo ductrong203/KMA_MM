@@ -1,5 +1,5 @@
 const db = require("../models");
-const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi: LoaiChungChiModel, chung_chi } = db;
+const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi: LoaiChungChiModel, chung_chi, tot_nghiep } = db;
 const { sequelize } = db;
 const ExcelJS = require('exceljs');
 const fs = require("fs");
@@ -16,7 +16,7 @@ class SinhVienService {
       const maSinhVien = `${lopInfo.ma_lop}${String(count + 1).padStart(2, "0")}`;
       data.ma_sinh_vien = maSinhVien;
       const sinhVien = await sinh_vien.create(data);
-        
+
       // Chuyển đối tượng thành JSON và xóa password
       const sinhVienData = sinhVien.toJSON();
       delete sinhVienData.password;
@@ -89,18 +89,18 @@ class SinhVienService {
     });
   }
 
-  static async getDanhSachSinhVienExcel({khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id}) {
+  static async getDanhSachSinhVienExcel({ khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id }) {
     try {
       // Kiểm tra tham số đầu vào
       if (!khoa_dao_tao_id && !lop_id && !doi_tuong_quan_ly_id) {
         throw new Error("Phải cung cấp ít nhất một tham số: khoa_dao_tao_id, lop_id, hoặc doi_tuong_quan_ly_id");
       }
       if (lop_id) {
-        const lopCheck = await lop.findOne({ 
-          where: { 
-            id: lop_id, 
-            ...(khoa_dao_tao_id && { khoa_dao_tao_id }) // Kiểm tra khoa_dao_tao_id nếu có
-          } 
+        const lopCheck = await lop.findOne({
+          where: {
+            id: lop_id,
+            ...(khoa_dao_tao_id && { khoa_dao_tao_id })
+          }
         });
         if (!lopCheck) {
           throw new Error("Lớp không tồn tại hoặc không thuộc khóa đào tạo này");
@@ -122,71 +122,136 @@ class SinhVienService {
       }
 
       const sinhViens = await sinh_vien.findAll({
-        attributes: [
-          'ho_dem',
-          'ten',
-          'ngay_sinh',
-          'gioi_tinh',
-          'que_quan',
-          'so_dien_thoai',
-          'email',
-          'ghi_chu',
-          'CCCD',
-          'ngay_cap_CCCD',
-          'noi_cap_CCCD'
-        ],
         include: [
           {
             model: doi_tuong_quan_ly,
             as: 'doi_tuong',
-            attributes: ['ma_doi_tuong'],
-            required: true 
+            required: false // Left Join
           },
           {
             model: thong_tin_quan_nhan,
             as: 'thong_tin_quan_nhans',
-            attributes: ['don_vi_cu_di_hoc'],
             required: false
           },
           {
             model: lop,
             as: 'lop',
-            attributes: [],
             required: true,
             where: {
-              ...(khoa_dao_tao_id && { khoa_dao_tao_id }) // Lọc khoa_dao_tao_id nếu có
-            }
+              ...(khoa_dao_tao_id && { khoa_dao_tao_id })
+            },
+            include: [
+              {
+                model: khoa_dao_tao,
+                as: 'khoa_dao_tao',
+              }
+            ]
+          },
+          {
+            model: tot_nghiep,
+            as: 'tot_nghieps',
+            required: false
+          },
+          {
+            model: chung_chi,
+            as: 'chungChis',
+            required: false
           }
         ],
         where: whereCondition,
-        order: [['ten', 'ASC']], // Sắp xếp theo tên
-        subQuery: false, // Tối ưu hóa truy vấn
-        raw: true // Trả về JSON thuần
+        order: [['ten', 'ASC']],
+        distinct: true
       });
 
       if (!sinhViens || sinhViens.length === 0) {
         return { message: "Không tìm thấy sinh viên phù hợp", students: [] };
       }
 
-      // Định dạng dữ liệu cho Excel
-      const formattedData = sinhViens.map((sv, index) => ({
-        stt: index + 1,
-        ho_dem: sv.ho_dem || '',
-        ten: sv.ten || '',
-        ngay_sinh: sv.ngay_sinh ? new Date(sv.ngay_sinh).toLocaleDateString('vi-VN') : '',
-        gioi_tinh: sv.gioi_tinh === 1 ? 'Nam' : sv.gioi_tinh === 0 ? 'Nữ' : '',
-        noi_sinh: sv.que_quan || '',
-        doi_tuong: sv['doi_tuong.ma_doi_tuong'] || '',
-        don_vi_gui_dao_tao: sv['thong_tin_quan_nhans.don_vi_cu_di_hoc'] || '',
-        dien_thoai: sv.so_dien_thoai || '',
-        email: sv.email || '',
-        cccd: sv.CCCD || '',
-        ngay_cap_cccd: sv.ngay_cap_CCCD ? new Date(sv.ngay_cap_CCCD).toLocaleDateString('vi-VN') : '',
-        noi_cap_cccd: sv.noi_cap_CCCD || '',
-        ghi_chu: sv.ghi_chu || ''
-      }));
+      // Định dạng dữ liệu cho Excel theo Template mới
+      const formattedData = sinhViens.map((sv, index) => {
+        const formatDate = (dateVal) => dateVal ? new Date(dateVal).toLocaleDateString('vi-VN') : '';
+
+        // Extract complex data
+        const gradInfo = (sv.tot_nghieps && sv.tot_nghieps.length > 0) ? sv.tot_nghieps[0] : {};
+        const chungChis = sv.chungChis || [];
+
+        // Find Certificates by Type ID (Assuming: 7=GDQPAN, 6=TA, 3=TotNghiep/DaiHoc from logic discussion)
+        // User request: "khác loai_chung_chi_id". I will assume ID 3 for Graduation Decision based on loai_chung_chi table image.
+        const gdqpan = chungChis.find(c => c.loai_chung_chi_id === 7);
+        const chuanTA = chungChis.find(c => c.loai_chung_chi_id === 6);
+        const qdTn = chungChis.find(c => c.loai_chung_chi_id === 3); // Adjust ID if needed
+
+        // Split Nam Hoc (2021-2025)
+        let dao_tao_tu = '';
+        let dao_tao_den = '';
+        const namHoc = sv.lop?.khoa_dao_tao?.nam_hoc;
+        if (namHoc) {
+          const parts = namHoc.split('-');
+          if (parts.length > 0) dao_tao_tu = parts[0];
+          if (parts.length > 1) dao_tao_den = parts[1];
+        }
+
+        const donViGui = (sv.thong_tin_quan_nhans && sv.thong_tin_quan_nhans.length > 0)
+          ? sv.thong_tin_quan_nhans[0].don_vi_cu_di_hoc
+          : '';
+
+        return {
+          stt: index + 1,
+          ma_sinh_vien: sv.ma_sinh_vien || '',
+          ho_dem: sv.ho_dem || '',
+          ten: sv.ten || '',
+          lop: sv.lop?.ma_lop || '',
+          ngay_sinh: formatDate(sv.ngay_sinh),
+          noi_sinh: sv.que_quan || '',
+          gioi_tinh: sv.gioi_tinh === 1 ? 'Nam' : sv.gioi_tinh === 0 ? 'Nữ' : '',
+          dan_toc: sv.dan_toc || '',
+          ton_giao: sv.ton_giao || '',
+          quoc_tich: sv.quoc_tich || '',
+          cccd: sv.CCCD || '',
+          ngay_cap_cccd: formatDate(sv.ngay_cap_CCCD),
+          noi_cap_cccd: sv.noi_cap_CCCD || '',
+          so_dien_thoai: sv.so_dien_thoai || '',
+          email: sv.email || '',
+          dien_thoai_gia_dinh: sv.dien_thoai_gia_dinh || '',
+          dien_thoai_cq: sv.dien_thoai_CQ || '',
+          ngay_vao_doan: formatDate(sv.ngay_vao_doan),
+          ngay_vao_dang: formatDate(sv.ngay_vao_dang),
+
+          doi_tuong: sv.doi_tuong?.ma_doi_tuong || '', // Use CODE as requested
+          don_vi_gui: donViGui,
+          nam_tot_nghiep: formatDate(sv.nam_tot_nghiep_PTTH),
+
+          // New/Mapped Fields
+          ngay_nhap_hoc: formatDate(sv.ngay_vao_truong), // User request: Ngày nhập học=sv.ngay_vao_truong
+          ma_chuong_trinh_dt: sv.lop?.khoa_dao_tao?.ten_khoa || '',
+          dao_tao_tu: dao_tao_tu,
+          dao_tao_den: dao_tao_den,
+
+          tin_chi: sv.tong_tin_chi || 0,
+          diem_tbtl_10: sv.diem_trung_binh_tich_luy || '',
+          diem_tbtl_4: sv.diem_trung_binh_he_4 || '',
+
+          // Graduation
+          xep_loai_tn: gradInfo.xep_loai || '',
+          so_hieu_bang: gradInfo.so_hieu_bang || '',
+          ngay_cap_bang: formatDate(gradInfo.ngay_cap_bang),
+
+          // Certificates Decisions
+          so_qd_tn: qdTn?.so_quyet_dinh || '',
+          ngay_qd_tn: formatDate(qdTn?.ngay_ky_quyet_dinh),
+
+          qd_gdqpan: gdqpan?.so_quyet_dinh || '',
+          ngay_qd_gdqpan: formatDate(gdqpan?.ngay_ky_quyet_dinh),
+
+          qd_ta: chuanTA?.so_quyet_dinh || '',
+          ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh),
+
+          ghi_chu: sv.ghi_chu || ''
+        }
+      });
 
       return {
+        message: "Lấy danh sách thành công",
         students: formattedData,
         total: sinhViens.length
       };
@@ -195,32 +260,76 @@ class SinhVienService {
     }
   }
 
-  static async exportSinhVienToExcel({khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id}) {
+  static async exportSinhVienToExcel({ khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id }) {
     try {
-      const { students } = await this.getDanhSachSinhVienExcel( {khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id});
-      // if (!students || students.length === 0) {
-      //   throw new Error("Không có sinh viên để xuất Excel");
-      // }
+      const { students } = await this.getDanhSachSinhVienExcel({ khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id });
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Danh sách sinh viên');
 
-      // Định nghĩa tiêu đề cột
+      // Định nghĩa tiêu đề cột - FULL 40+ CỘT
+      // Các cột "kệ nó" sẽ để key là null hoặc empty để không map data
       worksheet.columns = [
-        { header: 'STT', key: 'stt', width: 5 },
-        { header: 'Họ đệm', key: 'ho_dem', width: 20 },
-        { header: 'Tên', key: 'ten', width: 15 },
+        { header: 'TT', key: 'stt', width: 5 },
+        { header: 'Mã sinh viên', key: 'ma_sinh_vien', width: 15 },
+        { header: 'Họ tên đệm', key: 'ho_dem', width: 20 },
+        { header: 'Tên', key: 'ten', width: 10 },
+        { header: 'Lớp', key: 'lop', width: 10 },
         { header: 'Ngày sinh', key: 'ngay_sinh', width: 12 },
-        { header: 'Giới tính', key: 'gioi_tinh', width: 10 },
-        { header: 'Nơi sinh', key: 'noi_sinh', width: 25 },
-        { header: 'Đối tượng', key: 'doi_tuong', width: 15 },
-        { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui_dao_tao', width: 25 },
-        { header: 'Điện thoại', key: 'dien_thoai', width: 15 },
-        { header: 'Email', key: 'email', width: 25 },
-        { header: 'CCCD', key: 'cccd', width: 15 },
-        { header: 'Ngày cấp', key: 'ngay_cap_cccd', width: 15 },
-        { header: 'Nơi cấp', key: 'noi_cap_cccd', width: 25 },
-        { header: 'Ghi chú', key: 'ghi_chu', width: 30 }
+        { header: 'Nơi sinh', key: 'noi_sinh', width: 15 },
+        { header: 'Giới tính', key: 'gioi_tinh', width: 8 },
+        { header: 'Dân tộc', key: 'dan_toc', width: 10 },
+        { header: 'Tôn giáo', key: 'ton_giao', width: 10 },
+        { header: 'Quốc tịch', key: 'quoc_tich', width: 10 },
+        { header: 'Số CCCD/Hộ chiếu', key: 'cccd', width: 15 },
+        { header: 'Ngày cấp CCCD/Hộ chiếu', key: 'ngay_cap_cccd', width: 15 },
+        { header: 'Nơi cấp CCCD/Hộ chiếu', key: 'noi_cap_cccd', width: 20 },
+        { header: 'Số điện thoại', key: 'so_dien_thoai', width: 12 },
+        { header: 'Email', key: 'email', width: 20 },
+        { header: 'Điện thoại gia đình', key: 'dien_thoai_gia_dinh', width: 15 },
+        { header: 'Điện thoại cơ quan', key: 'dien_thoai_cq', width: 15 },
+        { header: 'Ngày vào đoàn', key: 'ngay_vao_doan', width: 12 },
+        { header: 'Ngày vào Đảng', key: 'ngay_vao_dang', width: 12 },
+        { header: 'Đối tượng', key: 'doi_tuong', width: 10 },
+        { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui', width: 20 },
+        { header: 'Năm tốt nghiệp THPT', key: 'nam_tot_nghiep', width: 12 },
+
+        // Nhóm Tuyển Sinh & Đào Tạo
+        { header: 'Tổ hợp xét tuyển', key: '', width: 10 },
+        { header: 'Điểm trúng tuyển', key: '', width: 10 },
+        { header: 'Ngày nhập học', key: 'ngay_nhap_hoc', width: 12 },
+        { header: 'Quyết định trúng tuyển', key: '', width: 15 },
+        { header: 'Ngày ban hành QĐ trúng tuyển', key: '', width: 15 },
+        { header: 'Ngành/Chuyên ngành', key: '', width: 20 },
+        { header: 'Loại hình đào tạo', key: '', width: 15 },
+        { header: 'Mã chương trình ĐT', key: 'ma_chuong_trinh_dt', width: 20 },
+        { header: 'Đào tạo từ năm', key: 'dao_tao_tu', width: 10 },
+        { header: 'Đào tạo đến năm', key: 'dao_tao_den', width: 10 },
+        { header: 'Số ngày QĐ thôi học; ngày phát hành', key: '', width: 20 }, // Giữ nguyên title
+        { header: 'Số QĐ bảo lưu; ngày phát hành', key: '', width: 20 },
+        { header: 'Cảnh báo học tập; ngày ký', key: '', width: 20 },
+
+        // Nhóm Kết Quả & Tốt Nghiệp
+        { header: 'Số tín chỉ tích lũy', key: 'tin_chi', width: 10 },
+        { header: 'Điểm TBTL (hệ 10)', key: 'diem_tbtl_10', width: 10 },
+        { header: 'Điểm TBTL (hệ 4)', key: 'diem_tbtl_4', width: 10 },
+        { header: 'Xếp loại TN', key: 'xep_loai_tn', width: 10 },
+
+        { header: 'Số QĐ tốt nghiệp', key: 'so_qd_tn', width: 15 },
+        { header: 'Ngày ban hành QĐ tốt nghiệp', key: 'ngay_qd_tn', width: 15 },
+
+        { header: 'QĐ đạt chuẩn GDQPAN', key: 'qd_gdqpan', width: 15 },
+        { header: 'Ngày phát hành QĐ đạt chuẩn GDQPAN', key: 'ngay_qd_gdqpan', width: 15 },
+
+        { header: 'Xếp loại GDTC', key: '', width: 10 },
+
+        { header: 'QĐ công nhận đạt chuẩn TA', key: 'qd_ta', width: 15 },
+        { header: 'Ngày phát hành QĐ/ký CCTA', key: 'ngay_qd_ta', width: 15 },
+
+        { header: 'Ngày cấp bằng', key: 'ngay_cap_bang', width: 15 },
+        { header: 'Số hiệu văn bằng', key: 'so_hieu_bang', width: 15 },
+
+        { header: 'Số vào sổ cấp bằng', key: '', width: 20 }
       ];
 
       // Thêm dữ liệu
@@ -228,16 +337,61 @@ class SinhVienService {
         worksheet.addRow(student);
       });
 
-      // Định dạng tiêu đề
-      worksheet.getRow(1).font = { bold: true };
-      worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      // --- Style cho Header (Định dạng hàng đầu tiên) ---
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { name: 'Times New Roman', size: 11, color: { argb: '000000' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true, };
+      headerRow.height = 45; // Tăng chiều cao để hiển thị đẹp hơn
 
-      // Định dạng các cột
-      worksheet.columns.forEach(column => {
-        column.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      // Hàm hỗ trợ tô màu nền cho các ô
+      const fillCell = (colIndices, colorHex) => {
+        colIndices.forEach(idx => {
+          const cell = headerRow.getCell(idx);
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorHex }
+          };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      };
+
+      // Tô màu theo nhóm (Dựa trên template ảnh)
+      // Nhóm 1: Thông tin cá nhân (Cột 1->18) - Màu Cam nhạt
+      const personalCols = [];
+      for (let i = 1; i <= 18; i++) personalCols.push(i);
+      fillCell(personalCols, 'FFE699');
+
+      // Nhóm 2: Đảng/Đoàn & Tuyển sinh (Cột 19->36) - Màu Xanh lá nhạt
+      const admissionCols = [];
+      for (let i = 19; i <= 36; i++) admissionCols.push(i);
+      fillCell(admissionCols, 'E2EFDA');
+
+      // Nhóm 3: Kết quả & Tốt nghiệp (Cột 37->50) - Màu Xanh dương nhạt
+      const resultCols = [];
+      for (let i = 37; i <= 50; i++) resultCols.push(i);
+      fillCell(resultCols, 'DDEBF7');
+
+      // --- Style cho các ô dữ liệu (Thêm border) ---
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) {
+          row.alignment = { vertical: 'middle', wrapText: true };
+          row.eachCell({ includeEmpty: true }, (cell) => {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+          });
+        }
       });
 
-      // Lưu file vào buffer
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;
     } catch (error) {
@@ -245,407 +399,258 @@ class SinhVienService {
     }
   }
 
-  static async updateSinhVien(id, data) {
-    const sinhVien = await sinh_vien.findByPk(id);
-    if (!sinhVien) return null;
-    return await sinhVien.update(data);
-  }
-
-  static async deleteSinhVien(id) {
-    const sinhVien = await sinh_vien.findByPk(id);
-    if (!sinhVien) return null;
-    await sinhVien.destroy();
-    return sinhVien;
-  }  
-  
-  static async importSinhVien({lop_id, filePath, ghi_de = 0}) {
-    const transaction = await sequelize.transaction(); // Bắt đầu transaction
+  static async importSinhVien({ lop_id, filePath, ghi_de = 0 }) {
+    const transaction = await sequelize.transaction();
     try {
-      // Kiểm tra tham số đầu vào
-      if (!lop_id) {
-        throw new Error("Thiếu lop_id");
-      }
-      if (!filePath || !fs.existsSync(filePath)) {
-        throw new Error("File Excel không tồn tại");
-      }
-      // Kiểm tra ghi_de là 0 hoặc 1
-      if (ghi_de != 0 && ghi_de != 1) {
-        throw new Error("Tham số ghi_de phải có giá trị là 0 hoặc 1");
-      }
+      if (!lop_id) throw new Error("Thiếu lop_id");
+      if (!filePath || !fs.existsSync(filePath)) throw new Error("File Excel không tồn tại");
 
-      // Kiểm tra lớp tồn tại
       const lopCheck = await lop.findByPk(lop_id, { transaction });
-      if (!lopCheck) {
-        throw new Error(`Lớp với id ${lop_id} không tồn tại`);
-      }
+      if (!lopCheck) throw new Error(`Lớp với id ${lop_id} không tồn tại`);
 
-      // Đọc file Excel
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
-      const worksheet = workbook.getWorksheet(1); // Lấy worksheet đầu tiên
+      const worksheet = workbook.getWorksheet(1);
 
       const rows = [];
-      worksheet.eachRow((row, rowNumber) => {
-        rows.push(row.values.slice(1)); // Bỏ cột đầu tiên nếu là index
-      });
+      worksheet.eachRow((row) => rows.push(row.values)); // values is array, index 0 is empty usually
 
-      if (rows.length === 0) {
-        throw new Error("File Excel rỗng");
+      if (rows.length === 0) throw new Error("File Excel rỗng");
+
+      // 1. Tìm dòng tiêu đề chứa "Mã sinh viên"
+      let headerRowIndex = -1;
+      let headers = [];
+
+      // Helper function to safely get text from cell value (handling rich text objects)
+      const getCellText = (cellValue) => {
+        if (cellValue === null || cellValue === undefined) return '';
+        if (typeof cellValue === 'object') {
+          // Handle rich text or other objects if ExcelJS returns them
+          if (cellValue.richText) return cellValue.richText.map(t => t.text).join('');
+          if (cellValue.text) return cellValue.text;
+          if (cellValue.result) return cellValue.result; // Formula result
+        }
+        return cellValue.toString();
+      };
+
+      // Quét 20 dòng đầu tiên
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        const rowVal = rows[i];
+        if (Array.isArray(rowVal)) {
+          // Use helper to check content
+          const isHeader = rowVal.some(c => {
+            const text = getCellText(c).toLowerCase().trim();
+            return text.includes("mã sinh viên") || text === "mã sv";
+          });
+
+          if (isHeader) {
+            headerRowIndex = i;
+            headers = Array.from(rowVal).map(c => getCellText(c).toLowerCase().trim());
+            break;
+          }
+        }
       }
 
-      // Tìm dòng tiêu đề
-      const headerRowIndex = rows.findIndex((row) =>
-        row.some((cell) => cell && cell.toString().toLowerCase().includes("họ đệm"))
-      );
-      if (headerRowIndex === -1) {
-        throw new Error("Không tìm thấy tiêu đề hợp lệ");
+      if (headerRowIndex === -1) throw new Error("Không tìm thấy dòng tiêu đề chứa 'Mã sinh viên' (hoặc 'Mã SV'). Vui lòng kiểm tra file Excel.");
+
+      // 2. Map cột (Chỉ map các cột có trong DB)
+      // Headers array index corresponds to correct column index in row
+      const colMap = {
+        ma_sinh_vien: headers.findIndex(h => h.includes("mã sinh viên") || h === "mã sv"),
+        ho_dem: headers.findIndex(h => h.includes("họ tên đệm") || h === "họ đệm"),
+        ten: headers.findIndex(h => h === "tên"),
+        ngay_sinh: headers.findIndex(h => h.includes("ngày sinh")),
+        gioi_tinh: headers.findIndex(h => h === "giới tính"),
+        noi_sinh: headers.findIndex(h => h.includes("nơi sinh")),
+        dan_toc: headers.findIndex(h => h === "dân tộc"),
+        ton_giao: headers.findIndex(h => h === "tôn giáo"),
+        quoc_tich: headers.findIndex(h => h === "quốc tịch"),
+
+        // Cố gắng match chính xác các tiêu đề mới sửa
+        cccd: headers.findIndex(h => h.includes("cccd") || h.includes("hộ chiếu") || h.includes("cmnd")),
+        ngay_cap_cccd: headers.findIndex(h => h.includes("ngày cấp") && (h.includes("cccd") || h.includes("hộ chiếu") || h.includes("cmnd"))),
+        noi_cap_cccd: headers.findIndex(h => h.includes("nơi cấp") && (h.includes("cccd") || h.includes("hộ chiếu") || h.includes("cmnd"))),
+
+        so_dien_thoai: headers.findIndex(h => h === "số điện thoại" || h === "sđt"),
+        email: headers.findIndex(h => h === "email"),
+        dien_thoai_gia_dinh: headers.findIndex(h => h.includes("điện thoại gia đình")),
+        dien_thoai_cq: headers.findIndex(h => h.includes("điện thoại cơ quan")),
+        ngay_vao_doan: headers.findIndex(h => h.includes("ngày vào đoàn")),
+        ngay_vao_dang: headers.findIndex(h => h.includes("ngày vào đảng")),
+        doi_tuong: headers.findIndex(h => h.includes("đối tượng")),
+        don_vi_gui: headers.findIndex(h => h.includes("đơn vị gửi") || h.includes("đơn vị cử")),
+        ghi_chu: headers.findIndex(h => h.includes("số vào sổ cấp bằng"))
+      };
+
+      // Refine Date Issue: There are many "Ngày ...".
+      // "Ngày cấp" (CCCD), "Ngày vào đoàn", "Ngày vào đảng".
+      // Fix 'ngay_cap_cccd' specific search:
+      if (colMap.ngay_cap_cccd === -1 || headers[colMap.ngay_cap_cccd] === 'ngày cấp') { // Ambiguous?
+        // Try exact string from template if possible, or relative position?
+        // Using includes("ngày cấp") might match "ngày cấp bằng"?
+        // Template: "Ngày cấp CCCD/Hộ chiếu"
+        const idx = headers.findIndex(h => h.includes("ngày cấp cccd") || h.includes("ngày cấp")); // Priority
+        if (idx !== -1) colMap.ngay_cap_cccd = idx;
       }
 
-      // Chuyển tiêu đề về chữ thường
-      const headers = rows[headerRowIndex].map((h) => h.toString().toLowerCase().trim());
+      // Check mandatory
+      if (colMap.ma_sinh_vien === -1 || colMap.ho_dem === -1 || colMap.ten === -1) {
+        throw new Error("File thiếu cột bắt buộc: Mã sinh viên, Họ tên đệm, hoặc Tên");
+      }
+
       const dataRows = rows.slice(headerRowIndex + 1);
-
-      // Xác định vị trí cột
-      const sttIndex = headers.indexOf("stt");
-      const hoDemIndex = headers.indexOf("họ đệm");
-      const tenIndex = headers.indexOf("tên");
-      const ngaySinhIndex = headers.indexOf("ngày sinh");
-      const gioiTinhIndex = headers.indexOf("giới tính");
-      const noiSinhIndex = headers.indexOf("nơi sinh");
-      const doiTuongIndex = headers.indexOf("đối tượng");
-      const donViGuiDaoTaoIndex = headers.indexOf("đơn vị gửi đào tạo");
-      const dienThoaiIndex = headers.indexOf("điện thoại");
-      const emailIndex = headers.indexOf("email");
-      const ghiChuIndex = headers.indexOf("ghi chú");
-      const cccdIndex = headers.indexOf("cccd");
-      const ngayCapCCCDIndex = headers.indexOf("ngày cấp");
-      const noiCapCCCDIndex = headers.indexOf("nơi cấp");
-
-      if (
-        hoDemIndex === -1 ||
-        tenIndex === -1 ||
-        ngaySinhIndex === -1 ||
-        gioiTinhIndex === -1 ||
-        noiSinhIndex === -1 ||
-        doiTuongIndex === -1 ||
-        donViGuiDaoTaoIndex === -1 ||
-        dienThoaiIndex === -1 ||
-        emailIndex === -1 ||
-        ghiChuIndex === -1 ||
-        cccdIndex === -1
-      ) {
-        throw new Error("Không tìm thấy các cột hợp lệ trong file Excel");
-      }
-
       const newSinhViens = [];
       const thongTinQuanNhanRecords = [];
-      let updateCount = 0; // Biến đếm số lượng sinh viên được cập nhật
+      let updateCount = 0;
 
-      // Tính toán số thứ tự bắt đầu cho mã sinh viên
-      const currentCount = await sinh_vien.count({ where: { lop_id }, transaction });
-      let nextSeq = currentCount + 1; // Bắt đầu từ currentCount + 1
-
-      // Xử lý từng dòng dữ liệu
       for (let row of dataRows) {
-        // Xử lý họ đệm và tên
-        const ho_dem = row[hoDemIndex] ? row[hoDemIndex].toString().trim() : "";
-        const ten = row[tenIndex] ? row[tenIndex].toString().trim() : "";
-        if (!ho_dem || !ten) {
-          throw new Error(`Dòng dữ liệu thiếu họ đệm hoặc tên: ${JSON.stringify(row)}`);
-        }
+        if (!row || row.length === 0) continue;
 
-        // Xử lý ngày sinh
-        let ngay_sinh = null;
-        if (row[ngaySinhIndex]) {
-          let date;
-          const ngaySinhRaw = row[ngaySinhIndex];
+        // Helper to get raw value
+        const getVal = (idx) => (idx !== -1 && row[idx]) ? getCellText(row[idx]).trim() : null;
 
-          // Trường hợp 1: Giá trị là đối tượng Date (từ Excel)
-          if (ngaySinhRaw instanceof Date) {
-            date = ngaySinhRaw;
-            if (!isNaN(date)) {
-              ngay_sinh = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
-            }
-          } else {
-            // Trường hợp 2: Giá trị là chuỗi
-            const ngaySinhStr = ngaySinhRaw.toString().trim();
-            // Hỗ trợ định dạng D/M/YYYY, DD/MM/YYYY, D-M-YYYY, DD-MM-YYYY
-            const regex = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/;
-            const match = ngaySinhStr.match(regex);
-            if (match) {
-              let [_, day, month, year] = match.map(Number);
-              day = day.toString().padStart(2, "0");
-              month = month.toString().padStart(2, "0");
-              date = new Date(year, month - 1, day);
-              if (
-                !isNaN(date) &&
-                date.getDate() === Number(day) &&
-                date.getMonth() === Number(month) - 1 &&
-                date.getFullYear() === year
-              ) {
-                ngay_sinh = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
-              }
-            }
+        const ma_sinh_vien = getVal(colMap.ma_sinh_vien);
+        const ho_dem = getVal(colMap.ho_dem);
+        const ten = getVal(colMap.ten);
+
+        if (!ma_sinh_vien && (!ho_dem || !ten)) continue; // Skip empty rows
+
+        // Parse Dates
+        const parseDate = (raw) => {
+          if (!raw) return null;
+          // IMPORTANT: If raw is object (rich text), convert to string first, UNLESS it is a Date object
+          if (raw instanceof Date) return raw.toISOString().split("T")[0];
+
+          const textVal = getCellText(raw).trim();
+          if (!textVal) return null;
+
+          // Try regex DD/MM/YYYY
+          const parts = textVal.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+          if (parts) {
+            return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
           }
+          return null;
+        };
 
-          // Ném lỗi nếu không phân tích được ngày sinh
-          if (!ngay_sinh) {
-            throw new Error(`Định dạng ngày sinh không hợp lệ: ${ngaySinhRaw} cho ${ho_dem} ${ten}`);
-          }
-        } else {
-          throw new Error(`Dòng dữ liệu thiếu ngày sinh: ${ho_dem} ${ten}`);
-        }
+        const ngay_sinh = parseDate(row[colMap.ngay_sinh]);
+        const ngay_cap_CCCD = parseDate(row[colMap.ngay_cap_cccd]);
+        const ngay_vao_doan = parseDate(row[colMap.ngay_vao_doan]);
+        const ngay_vao_dang = parseDate(row[colMap.ngay_vao_dang]);
+        // const nam_tot_nghiep = parseDate(row[colMap.nam_tot_nghiep]); // If needed
 
-        // Xử lý giới tính
+        // Gender
         let gioi_tinh = null;
-        if (row[gioiTinhIndex]) {
-          const gioiTinhStr = row[gioiTinhIndex].toString().trim().toLowerCase();
-          if (gioiTinhStr === "nam") {
-            gioi_tinh = 1;
-          } else if (gioiTinhStr === "nữ") {
-            gioi_tinh = 0;
-          } else {
-            throw new Error(`Giới tính không hợp lệ: ${gioiTinhStr} cho ${ho_dem} ${ten}`);
-          }
-        } else {
-          throw new Error(`Dòng dữ liệu thiếu giới tính: ${ho_dem} ${ten}`);
+        const gtStr = getVal(colMap.gioi_tinh);
+        if (gtStr) {
+          gioi_tinh = (gtStr.toLowerCase() === 'nam' || gtStr === '1') ? 1 : 0;
         }
 
-        // Xử lý nơi sinh
-        const que_quan = row[noiSinhIndex] ? row[noiSinhIndex].toString().trim() : null;
+        const cccd = getVal(colMap.cccd);
 
-        // Xử lý đối tượng
+        // Object mapping (Doi Tuong)
         let doi_tuong_id = null;
-        if (row[doiTuongIndex]) {
-          const ma_doi_tuong = row[doiTuongIndex].toString().trim();
-          const doiTuong = await doi_tuong_quan_ly.findOne({
-            where: { ma_doi_tuong },
-            attributes: ["id"],
-            transaction,
-          });
-          if (doiTuong) {
-            doi_tuong_id = doiTuong.id;
-          } else {
-            throw new Error(`Không tìm thấy đối tượng với mã: ${ma_doi_tuong} cho ${ho_dem} ${ten}`);
-          }
-        } else {
-          throw new Error(`Dòng dữ liệu thiếu mã đối tượng: ${ho_dem} ${ten}`);
-        }
-
-        // Xử lý đơn vị gửi đào tạo
-        const don_vi_cu_di_hoc = row[donViGuiDaoTaoIndex]
-          ? row[donViGuiDaoTaoIndex].toString().trim()
-          : null;
-
-        // Xử lý điện thoại, email, ghi chú
-        const so_dien_thoai = row[dienThoaiIndex] ? row[dienThoaiIndex].toString().trim() : null;
-        const ghi_chu = row[ghiChuIndex] ? row[ghiChuIndex].toString().trim() : null;
-
-        let email = null;
-        if (row[emailIndex] != null) {
-          const emailRaw = row[emailIndex];
-          try {
-            let emailStr;
-            if (typeof emailRaw === "object" && emailRaw !== null) {
-              // Xử lý đối tượng từ ExcelJS
-              if (emailRaw.text) {
-                emailStr = String(emailRaw.text).trim();
-              } else if (emailRaw.value) {
-                emailStr = String(emailRaw.value).trim();
-              } else if (emailRaw.result) {
-                emailStr = String(emailRaw.result).trim();
-              } else {
-                throw new Error(`Không tìm thấy giá trị chuỗi trong đối tượng email: ${JSON.stringify(emailRaw)}`);
-              }
-            } else {
-              // Xử lý chuỗi hoặc các giá trị khác
-              emailStr = String(emailRaw).trim();
-            }
-
-            if (emailStr) {
-              // Kiểm tra định dạng email (tùy chọn, có thể bỏ nếu không cần)
-              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-              if (emailRegex.test(emailStr)) {
-                email = emailStr;
-              } else {
-                throw new Error(`Định dạng email không hợp lệ: ${emailStr} cho ${ho_dem} ${ten}`);
-              }
-            }
-          } catch (err) {
-            throw new Error(`Không thể xử lý email: ${JSON.stringify(emailRaw)} cho ${ho_dem} ${ten}. Lỗi: ${err.message}`);
-          }
-        }
-        
-        // Xử lý CCCD, ngày cấp và nơi cấp
-        let CCCD = null;
-        let ngay_cap_CCCD = null;
-        let noi_cap_CCCD = null;
-        
-        // Xử lý CCCD
-        if (cccdIndex !== -1 && row[cccdIndex]) {
-          CCCD = row[cccdIndex].toString().trim();
-        }
-        if (CCCD==null) throw new Error(`Không tồn tại cccd cho ${ho_dem} ${ten}`);
-        
-        // Xử lý ngày cấp CCCD
-        if (ngayCapCCCDIndex !== -1 && row[ngayCapCCCDIndex]) {
-          let date;
-          const ngayCapRaw = row[ngayCapCCCDIndex];
-          
-          // Trường hợp 1: Giá trị là đối tượng Date (từ Excel)
-          if (ngayCapRaw instanceof Date) {
-            date = ngayCapRaw;
-            if (!isNaN(date)) {
-              ngay_cap_CCCD = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
-            }
-          } else {
-            // Trường hợp 2: Giá trị là chuỗi
-            const ngayCapStr = ngayCapRaw.toString().trim();
-            // Hỗ trợ định dạng D/M/YYYY, DD/MM/YYYY, D-M-YYYY, DD-MM-YYYY
-            const regex = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/;
-            const match = ngayCapStr.match(regex);
-            if (match) {
-              let [_, day, month, year] = match.map(Number);
-              day = day.toString().padStart(2, "0");
-              month = month.toString().padStart(2, "0");
-              date = new Date(year, month - 1, day);
-              if (
-                !isNaN(date) &&
-                date.getDate() === Number(day) &&
-                date.getMonth() === Number(month) - 1 &&
-                date.getFullYear() === year
-              ) {
-                ngay_cap_CCCD = date.toISOString().split("T")[0]; // Định dạng YYYY-MM-DD
-              }
-            }
-          }
-        }
-        
-        // Xử lý nơi cấp CCCD
-        if (noiCapCCCDIndex !== -1 && row[noiCapCCCDIndex]) {
-          noi_cap_CCCD = row[noiCapCCCDIndex].toString().trim();
-        }
-        
-        // Kiểm tra sinh viên đã tồn tại theo CCCD
-        let existingSinhVien = null;
-        if (CCCD) {
-          existingSinhVien = await sinh_vien.findOne({
-            where: { CCCD },
+        const dtMa = getVal(colMap.doi_tuong);
+        if (dtMa) {
+          const { Op } = db.Sequelize;
+          const dt = await doi_tuong_quan_ly.findOne({
+            where: {
+              [Op.or]: [
+                { ma_doi_tuong: dtMa },
+                { ten_doi_tuong: dtMa }
+              ]
+            },
             transaction
           });
+          if (dt) doi_tuong_id = dt.id;
         }
-        
-        // Xử lý theo tham số ghi_de
-        if (existingSinhVien) {
+
+        // Check Existing
+        let existing = null;
+        if (ma_sinh_vien) {
+          existing = await sinh_vien.findOne({ where: { ma_sinh_vien }, transaction });
+        } else if (cccd) {
+          existing = await sinh_vien.findOne({ where: { CCCD: cccd }, transaction });
+        }
+
+        const svData = {
+          ma_sinh_vien,
+          ho_dem,
+          ten,
+          ngay_sinh,
+          gioi_tinh,
+          que_quan: getVal(colMap.noi_sinh),
+          dan_toc: getVal(colMap.dan_toc),
+          ton_giao: getVal(colMap.ton_giao),
+          quoc_tich: getVal(colMap.quoc_tich),
+          CCCD: cccd,
+          ngay_cap_CCCD,
+          noi_cap_CCCD: getVal(colMap.noi_cap_cccd),
+          so_dien_thoai: getVal(colMap.so_dien_thoai),
+          email: getVal(colMap.email),
+          dien_thoai_gia_dinh: getVal(colMap.dien_thoai_gia_dinh),
+          dien_thoai_CQ: getVal(colMap.dien_thoai_cq), // Correct field name
+          ngay_vao_doan,
+          ngay_vao_dang,
+          doi_tuong_id,
+          ghi_chu: getVal(colMap.ghi_chu),
+          lop_id
+        };
+
+        // Remove undefined/null keys if validation requires? No, updates handle nulls.
+
+        if (existing) {
           if (ghi_de == 1) {
-            // Cập nhật thông tin sinh viên đã tồn tại
-            await existingSinhVien.update({
-              ho_dem,
-              ten,
-              ngay_sinh,
-              gioi_tinh,
-              que_quan,
-              doi_tuong_id,
-              so_dien_thoai,
-              email,
-              ghi_chu,
-              CCCD,
-              ngay_cap_CCCD,
-              noi_cap_CCCD
-            }, { transaction });
-            updateCount++; // Tăng số đếm sinh viên được cập nhật
-            
-            // Cập nhật thông tin quân nhân nếu có
-            if (don_vi_cu_di_hoc) {
-              await thong_tin_quan_nhan.findOrCreate({
-                where: { sinh_vien_id: existingSinhVien.id },
-                defaults: {
-                  sinh_vien_id: existingSinhVien.id,
-                  don_vi_cu_di_hoc
-                },
-                transaction
-              });
+            await existing.update(svData, { transaction });
+            updateCount++;
+            // Update quan nhan
+            const dv = getVal(colMap.don_vi_gui);
+            if (dv) {
+              await thong_tin_quan_nhan.findOrCreate({ where: { sinh_vien_id: existing.id }, defaults: { don_vi_cu_di_hoc: dv }, transaction });
+              // Or update if exists?
+              await thong_tin_quan_nhan.update({ don_vi_cu_di_hoc: dv }, { where: { sinh_vien_id: existing.id }, transaction });
             }
           }
-          // Nếu ghi_de = 0, bỏ qua bản ghi này
         } else {
-          // Tạo mã sinh viên cho bản ghi mới
-          const ma_sinh_vien = `${lopCheck.ma_lop}${nextSeq.toString().padStart(2, "0")}`;
-          nextSeq++; // Tăng số thứ tự cho sinh viên tiếp theo
-          
-          // Thêm sinh viên mới
-          newSinhViens.push({
-            ma_sinh_vien,
-            ho_dem,
-            ten,
-            ngay_sinh,
-            gioi_tinh,
-            que_quan,
-            doi_tuong_id,
-            so_dien_thoai,
-            email,
-            ghi_chu,
-            lop_id,
-            CCCD,
-            ngay_cap_CCCD,
-            noi_cap_CCCD,
-            dang_hoc: 1, // Giả sử sinh viên đang học
-          });
+          newSinhViens.push({ ...svData, dang_hoc: 1 });
+          if (getVal(colMap.don_vi_gui)) {
+            // Store index to map later
+            svData._temp_dv = getVal(colMap.don_vi_gui);
+          }
         }
-        // Chuẩn bị thong_tin_quan_nhan
-        if (don_vi_cu_di_hoc) {
-          thongTinQuanNhanRecords.push({
-            sinh_vien_id: null, // Sẽ cập nhật sau khi tạo sinh viên
-            don_vi_cu_di_hoc,
-          });
-        }
-      }
+      } // End Loop
 
-      // Thêm sinh viên mới
-      const createdSinhViens = await sinh_vien.bulkCreate(newSinhViens, {
-        transaction,
-        validate: true, // Kích hoạt validation của model
-      });
-
-      // Cập nhật sinh_vien_id cho thong_tin_quan_nhan, chỉ cho các sinh viên mới thêm vào
-      const thongTinQuanNhanFinal = thongTinQuanNhanRecords.map((record, index) => ({
-        ...record,
-        sinh_vien_id: createdSinhViens[index] ? createdSinhViens[index].id : null,
-      }));
-
-      // Thêm thong_tin_quan_nhan cho các sinh viên mới
-      if (thongTinQuanNhanFinal.length > 0) {
-        await thong_tin_quan_nhan.bulkCreate(thongTinQuanNhanFinal, {
-          transaction,
-          validate: true,
+      if (newSinhViens.length > 0) {
+        const created = await sinh_vien.bulkCreate(newSinhViens, { transaction });
+        // Handle Info Quan Nhan
+        const qnRecords = [];
+        created.forEach((sv, idx) => {
+          if (newSinhViens[idx]._temp_dv) {
+            qnRecords.push({ sinh_vien_id: sv.id, don_vi_cu_di_hoc: newSinhViens[idx]._temp_dv });
+          }
         });
+        if (qnRecords.length > 0) await thong_tin_quan_nhan.bulkCreate(qnRecords, { transaction });
       }
 
-      // Commit transaction
       await transaction.commit();
-
       return {
-        message: "Nhập danh sách sinh viên thành công",
-        newCount: createdSinhViens.length,
-        updateCount: updateCount, // Thêm số lượng sinh viên được cập nhật
-        thongTinQuanNhanCount: thongTinQuanNhanFinal.length,
+        message: "Import thành công",
+        newCount: newSinhViens.length,
+        updateCount
       };
+
     } catch (error) {
-      // Rollback transaction nếu có lỗi
       await transaction.rollback();
-      throw new Error("Lỗi khi nhập danh sách sinh viên: " + error.message);
+      console.error("Import Error Details:", error); // Log full error
+      throw error;
     } finally {
-        // Xóa file sau khi xử lý, bất kể thành công hay thất bại
-        if (filePath && fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
+      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
   }
-  
+
   static async timSinhVienTheoMaHoacFilter(filters) {
     try {
       const { ma_sinh_vien, he_dao_tao_id, khoa_id, lop_id } = filters;
-      
+
       // Build WHERE conditions for sinh_vien
       const sinhVienWhere = {};
       if (ma_sinh_vien) sinhVienWhere.ma_sinh_vien = ma_sinh_vien;
@@ -697,7 +702,7 @@ class SinhVienService {
           attributes: ['id'],
         });
         const khoaIds = khoaList.map(k => k.id);
-        
+
         if (khoaIds.length === 0) {
           throw new Error('Không tìm thấy khóa đào tạo phù hợp');
         }
@@ -781,105 +786,142 @@ class SinhVienService {
   }
 
   static async kiemTraTonTai({ lop_id, filePath }) {
-      const transaction = await sequelize.transaction(); // Bắt đầu transaction
-      try {
-        // Kiểm tra tham số đầu vào
-        if (!lop_id) {
-          throw new Error("Thiếu lop_id");
+    const transaction = await sequelize.transaction(); // Bắt đầu transaction
+    try {
+      // Kiểm tra tham số đầu vào
+      if (!lop_id) {
+        throw new Error("Thiếu lop_id");
+      }
+      if (!filePath || !fs.existsSync(filePath)) {
+        throw new Error("File Excel không tồn tại");
+      }
+
+      // Kiểm tra lớp tồn tại
+      const lopCheck = await lop.findByPk(lop_id, { transaction });
+      if (!lopCheck) {
+        throw new Error(`Lớp với id ${lop_id} không tồn tại`);
+      }
+
+      // Đọc file Excel
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1); // Lấy worksheet đầu tiên
+
+      const rows = [];
+      worksheet.eachRow((row, rowNumber) => {
+        rows.push(row.values.slice(1)); // Bỏ cột đầu tiên nếu là index
+      });
+
+      if (rows.length === 0) {
+        throw new Error("File Excel rỗng");
+      }
+
+      // Helper function to safely get text (COPY from importSinhVien)
+      const getCellText = (cellValue) => {
+        if (cellValue === null || cellValue === undefined) return '';
+        if (typeof cellValue === 'object') {
+          if (cellValue.richText) return cellValue.richText.map(t => t.text).join('');
+          if (cellValue.text) return cellValue.text;
+          if (cellValue.result) return cellValue.result;
         }
-        if (!filePath || !fs.existsSync(filePath)) {
-          throw new Error("File Excel không tồn tại");
-        }
+        return cellValue.toString();
+      };
 
-        // Kiểm tra lớp tồn tại
-        const lopCheck = await lop.findByPk(lop_id, { transaction });
-        if (!lopCheck) {
-          throw new Error(`Lớp với id ${lop_id} không tồn tại`);
-        }
+      // Tìm dòng tiêu đề (quét 20 dòng đầu)
+      let headerRowIndex = -1;
+      let headers = [];
 
-        // Đọc file Excel
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(filePath);
-        const worksheet = workbook.getWorksheet(1); // Lấy worksheet đầu tiên
-
-        const rows = [];
-        worksheet.eachRow((row, rowNumber) => {
-          rows.push(row.values.slice(1)); // Bỏ cột đầu tiên nếu là index
-        });
-
-        if (rows.length === 0) {
-          throw new Error("File Excel rỗng");
-        }
-
-        // Tìm dòng tiêu đề
-        const headerRowIndex = rows.findIndex((row) =>
-          row.some((cell) => cell && cell.toString().toLowerCase().includes("họ đệm"))
-        );
-        if (headerRowIndex === -1) {
-          throw new Error("Không tìm thấy tiêu đề hợp lệ");
-        }
-
-        // Chuyển tiêu đề về chữ thường
-        const headers = rows[headerRowIndex].map((h) => h.toString().toLowerCase().trim());
-        const dataRows = rows.slice(headerRowIndex + 1);
-
-        // Xác định vị trí cột
-        const hoDemIndex = headers.indexOf("họ đệm");
-        const tenIndex = headers.indexOf("tên");
-        const cccdIndex = headers.indexOf("cccd");
-
-        if (hoDemIndex === -1 || tenIndex === -1 || cccdIndex === -1) {
-          throw new Error("Không tìm thấy các cột hợp lệ (họ đệm, tên, cccd) trong file Excel");
-        }
-
-        const existingStudents = [];
-
-        // Xử lý từng dòng dữ liệu
-        for (let row of dataRows) {
-          const ho_dem = row[hoDemIndex] ? row[hoDemIndex].toString().trim() : "";
-          const ten = row[tenIndex] ? row[tenIndex].toString().trim() : "";
-          const CCCD = row[cccdIndex] ? row[cccdIndex].toString().trim() : null;
-
-          if (!ho_dem || !ten || !CCCD) {
-            continue; // Bỏ qua dòng thiếu thông tin cần thiết
-          }
-
-          // Kiểm tra sinh viên đã tồn tại theo CCCD
-          const existingSinhVien = await sinh_vien.findOne({
-            where: { CCCD },
-            attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'CCCD', 'lop_id'],
-            transaction
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        const rowVal = rows[i];
+        if (Array.isArray(rowVal)) {
+          const isHeader = rowVal.some(c => {
+            const text = getCellText(c).toLowerCase().trim();
+            return text.includes("mã sinh viên") || text === "mã sv";
           });
-
-          if (existingSinhVien) {
-            existingStudents.push({
-              ma_sinh_vien: existingSinhVien.ma_sinh_vien,
-              ho_dem: existingSinhVien.ho_dem,
-              ten: existingSinhVien.ten,
-              CCCD: existingSinhVien.CCCD,
-              lop_id: existingSinhVien.lop_id
-            });
+          if (isHeader) {
+            headerRowIndex = i;
+            headers = Array.from(rowVal).map(c => getCellText(c).toLowerCase().trim());
+            break;
           }
-        }
-
-        // Commit transaction
-        await transaction.commit();
-
-        return {
-          message: "Kiểm tra danh sách sinh viên thành công",
-          existingStudents: existingStudents,
-          existingCount: existingStudents.length
-        };
-      } catch (error) {
-        // Rollback transaction nếu có lỗi
-        await transaction.rollback();
-        throw new Error("Lỗi khi kiểm tra danh sách sinh viên: " + error.message);
-      } finally {
-        // Xóa file sau khi xử lý, bất kể thành công hay thất bại
-        if (filePath && fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
         }
       }
+
+      if (headerRowIndex === -1) {
+        throw new Error("Không tìm thấy dòng tiêu đề hợp lệ (Mã sinh viên). Vui lòng kiểm tra file Excel.");
+      }
+
+      const dataRows = rows.slice(headerRowIndex + 1);
+
+      // Xác định vị trí cột (Sync with importSinhVien)
+      const hoDemIndex = headers.findIndex(h => h.includes("họ tên đệm") || h.includes("họ đệm"));
+      const tenIndex = headers.findIndex(h => h === "tên");
+
+      // CCCD Header: "Số CCCD/Hộ chiếu" or "CCCD" or "Hộ chiếu"
+      const cccdIndex = headers.findIndex(h => h.includes("cccd") || h.includes("hộ chiếu") || h.includes("cmnd"));
+      const maSvIndex = headers.findIndex(h => h.includes("mã sinh viên") || h === "mã sv");
+
+      // Validating columns
+      if (maSvIndex === -1 && (hoDemIndex === -1 || tenIndex === -1)) {
+        throw new Error("File thiếu cột bắt buộc: Mã sinh viên HOẶC (Họ đệm + Tên)");
+      }
+
+      if (cccdIndex === -1 && maSvIndex === -1) {
+        // If we don't have Ma SV, we typically rely on CCCD to check ID. 
+        // But strict req from user is "Họ đệm, Tên, Mã sinh viên..."
+        // So MaSV is prio.
+      }
+
+      const existingStudents = [];
+
+      // Xử lý từng dòng dữ liệu
+      for (let row of dataRows) {
+        const getVal = (idx) => (idx !== -1 && row[idx]) ? getCellText(row[idx]).trim() : "";
+
+        const ho_dem = getVal(hoDemIndex);
+        const ten = getVal(tenIndex);
+        const CCCD = getVal(cccdIndex);
+        const ma_sinh_vien = getVal(maSvIndex);
+
+        if ((!ho_dem || !ten) && !ma_sinh_vien) {
+          continue;
+        }
+
+        // Kiểm tra sinh viên đã tồn tại theo CCCD
+        const existingSinhVien = await sinh_vien.findOne({
+          where: { CCCD },
+          attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'CCCD', 'lop_id'],
+          transaction
+        });
+
+        if (existingSinhVien) {
+          existingStudents.push({
+            ma_sinh_vien: existingSinhVien.ma_sinh_vien,
+            ho_dem: existingSinhVien.ho_dem,
+            ten: existingSinhVien.ten,
+            CCCD: existingSinhVien.CCCD,
+            lop_id: existingSinhVien.lop_id
+          });
+        }
+      }
+
+      // Commit transaction
+      await transaction.commit();
+
+      return {
+        message: "Kiểm tra danh sách sinh viên thành công",
+        existingStudents: existingStudents,
+        existingCount: existingStudents.length
+      };
+    } catch (error) {
+      // Rollback transaction nếu có lỗi
+      await transaction.rollback();
+      throw new Error("Lỗi khi kiểm tra danh sách sinh viên: " + error.message);
+    } finally {
+      // Xóa file sau khi xử lý, bất kể thành công hay thất bại
+      if (filePath && fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
   }
 
   static async checkGraduationConditions(sinhVienId, requiredCredits = null) {
@@ -894,22 +936,22 @@ class SinhVienService {
           }
         ]
       });
-      
+
       if (!sinhVien) {
         throw new Error("Sinh viên không tồn tại");
       }
-      
+
       // Lấy tổng tín chỉ từ bảng sinh_vien
       const tongTinChi = sinhVien.tong_tin_chi || 0;
-      
+
       // Lấy thông tin khóa đào tạo để lấy số tín chỉ yêu cầu
       let tongTinChiYeuCau = requiredCredits;
-      
+
       if (!tongTinChiYeuCau && sinhVien.lop && sinhVien.lop.khoa_dao_tao_id) {
         const khoaDaoTao = await khoa_dao_tao.findByPk(sinhVien.lop.khoa_dao_tao_id, {
           attributes: ['id', 'tong_tin_chi_yeu_cau']
         });
-        
+
         if (khoaDaoTao && khoaDaoTao.tong_tin_chi_yeu_cau) {
           tongTinChiYeuCau = khoaDaoTao.tong_tin_chi_yeu_cau;
           console.log(`Lấy tín chỉ yêu cầu từ khóa đào tạo: ${tongTinChiYeuCau}`);
@@ -917,10 +959,10 @@ class SinhVienService {
           console.log(`Không tìm thấy tín chỉ yêu cầu trong khóa đào tạo ID: ${sinhVien.lop.khoa_dao_tao_id}`);
         }
       }
-      
+
       // Nếu không có giá trị từ tham số hoặc từ khóa đào tạo, dùng giá trị mặc định là 130
       tongTinChiYeuCau = tongTinChiYeuCau || 130;
-      
+
       // Kiểm tra điều kiện tín chỉ
       const isTinChiValid = tongTinChi >= tongTinChiYeuCau;
 
@@ -1047,47 +1089,47 @@ class SinhVienService {
 
   static async getStudentsByKhoaDaoTaoId(khoaDaoTaoId) {
     try {
-        // Kiểm tra khóa đào tạo có tồn tại
-        const khoaCheck = await khoa_dao_tao.findByPk(khoaDaoTaoId);
-        if (!khoaCheck) {
-            throw new Error("Khóa đào tạo không tồn tại");
-        }
+      // Kiểm tra khóa đào tạo có tồn tại
+      const khoaCheck = await khoa_dao_tao.findByPk(khoaDaoTaoId);
+      if (!khoaCheck) {
+        throw new Error("Khóa đào tạo không tồn tại");
+      }
 
-        // Lấy danh sách sinh viên thuộc các lớp của khóa đào tạo
-        const sinhViens = await sinh_vien.findAll({
-            include: [
-                {
-                    model: lop,
-                    as: 'lop',
-                    attributes: ['ma_lop'],
-                    required: true,
-                    where: {
-                        khoa_dao_tao_id: khoaDaoTaoId
-                    }
-                },
-                {
-                    model: doi_tuong_quan_ly,
-                    as: 'doi_tuong',
-                    attributes: ['ten_doi_tuong', 'ma_doi_tuong'],
-                    required: false
-                }
-            ],
-            order: [['ten', 'ASC']],
-        });
+      // Lấy danh sách sinh viên thuộc các lớp của khóa đào tạo
+      const sinhViens = await sinh_vien.findAll({
+        include: [
+          {
+            model: lop,
+            as: 'lop',
+            attributes: ['ma_lop'],
+            required: true,
+            where: {
+              khoa_dao_tao_id: khoaDaoTaoId
+            }
+          },
+          {
+            model: doi_tuong_quan_ly,
+            as: 'doi_tuong',
+            attributes: ['ten_doi_tuong', 'ma_doi_tuong'],
+            required: false
+          }
+        ],
+        order: [['ten', 'ASC']],
+      });
 
-        if (!sinhViens || sinhViens.length === 0) {
-            return { message: "Không tìm thấy sinh viên thuộc khóa đào tạo này", students: [], total: 0 };
-        }
+      if (!sinhViens || sinhViens.length === 0) {
+        return { message: "Không tìm thấy sinh viên thuộc khóa đào tạo này", students: [], total: 0 };
+      }
 
-        return {
-            students: sinhViens,
-            total: sinhViens.length
-        };
+      return {
+        students: sinhViens,
+        total: sinhViens.length
+      };
     } catch (error) {
-        throw new Error("Lỗi khi lấy danh sách sinh viên theo khóa đào tạo: " + error.message);
+      throw new Error("Lỗi khi lấy danh sách sinh viên theo khóa đào tạo: " + error.message);
     }
-}
-static async updateSinhVienByKhoaDaoTao(khoaDaoTaoId, sinhVienList) {
+  }
+  static async updateSinhVienByKhoaDaoTao(khoaDaoTaoId, sinhVienList) {
     const transaction = await sequelize.transaction();
     try {
       // Kiểm tra khóa đào tạo tồn tại

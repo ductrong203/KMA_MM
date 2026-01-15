@@ -21,9 +21,10 @@ exports.getGradeSettings = async (req, res) => {
     const { he_dao_tao_id } = req.query;
     const whereClause = isNaN(parseInt(he_dao_tao_id)) ? { heDaoTaoId: null } : { heDaoTaoId: he_dao_tao_id };
 
-    // Tìm kiếm cài đặt theo hệ đào tạo
+    // Tìm kiếm cài đặt mới nhất theo hệ đào tạo
     let settings = await QuyDinhDiem.findOne({
-      where: whereClause
+      where: whereClause,
+      order: [['created_at', 'DESC']]
     });
 
     if (!settings && !he_dao_tao_id) {
@@ -38,9 +39,11 @@ exports.getGradeSettings = async (req, res) => {
         heDaoTaoId: null
       });
     } else if (!settings && he_dao_tao_id) {
-      // Nếu chưa có cài đặt riêng cho hệ này, trả về null hoặc trả về cài đặt mặc định để frontend hiển thị?
-      // Tốt nhất là trả về cài đặt chung để frontend fill vào form, nhưng kèm theo flag là chưa có
-      const defaultSettings = await QuyDinhDiem.findOne({ where: { heDaoTaoId: null } });
+      // Nếu chưa có cài đặt riêng cho hệ này, tìm cài đặt chung mới nhất
+      const defaultSettings = await QuyDinhDiem.findOne({
+        where: { heDaoTaoId: null },
+        order: [['created_at', 'DESC']]
+      });
       return res.status(200).json({
         success: true,
         data: defaultSettings || {},
@@ -90,59 +93,38 @@ exports.updateGradeSettings = async (req, res) => {
 
     const heDaoTaoIdVal = isNaN(parseInt(he_dao_tao_id)) ? null : parseInt(he_dao_tao_id);
 
-    // Tìm setting hiện tại cho hệ này (hoặc chung)
-    let settings = await QuyDinhDiem.findOne({
-      where: { heDaoTaoId: heDaoTaoIdVal }
+    // Tìm setting hiện tại mới nhất để so sánh (không update cái này)
+    let currentSettings = await QuyDinhDiem.findOne({
+      where: { heDaoTaoId: heDaoTaoIdVal },
+      order: [['created_at', 'DESC']]
     });
 
-    const oldData = settings
-      ? JSON.parse(JSON.stringify(settings.get({ plain: true })))
+    const oldData = currentSettings
+      ? JSON.parse(JSON.stringify(currentSettings.get({ plain: true })))
       : {};
     Object.freeze(oldData);
 
-    // console.log("OLD BEFORE UPDATE:", oldData);
+    // LUÔN LUÔN TẠO MỚI bản ghi (Soft Update / Versioning)
+    const newSettings = await QuyDinhDiem.create({
+      diemThiToiThieu,
+      diemTrungBinhDat,
+      diemGiuaKyToiThieu,
+      diemChuyenCanToiThieu,
+      chinhSachHienTai,
+      chinhSachTuychinh,
+      heDaoTaoId: heDaoTaoIdVal
+    });
 
-    if (!settings) {
-      // Nếu chưa có thì tạo mới
-      settings = await QuyDinhDiem.create({
-        diemThiToiThieu,
-        diemTrungBinhDat,
-        diemGiuaKyToiThieu,
-        diemChuyenCanToiThieu,
-        chinhSachHienTai,
-        chinhSachTuychinh,
-        heDaoTaoId: heDaoTaoIdVal
-      });
-    } else {
-      // Nếu có rồi thì update
-      await settings.update({
-        diemThiToiThieu,
-        diemTrungBinhDat,
-        diemGiuaKyToiThieu,
-        diemChuyenCanToiThieu,
-        chinhSachHienTai,
-        chinhSachTuychinh
-      });
-
-      var newData = settings.get({ plain: true });
-    }
-
-    // console.log("OLD FINAL:", oldData);
-    // console.log("NEW FINAL:", newData);
+    var newData = newSettings.get({ plain: true });
 
     // Ghi log hành động
-    // console.info(`Người dùng ${req.user?.id || 'Không xác định'} đã cập nhật thiết lập điểm`, {
-    //   userId: req.user?.id,
-    //   settings: req.body
-    // });
     try {
       const token = req.headers.authorization?.split(" ")[1];
-      // console.log(token);
       let user = verifyAccessToken(token);
       let userN = await getFieldById("users", user.id, "username");
       let userR = await getFieldById("users", user.id, "role");
 
-      if (settings) {
+      if (newSettings) {
         let inforActivity = {
           username: userN,
           role: mapRole[userR],
@@ -163,7 +145,7 @@ exports.updateGradeSettings = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Đã cập nhật thiết lập điểm thành công',
-      data: settings
+      data: newSettings
     });
   } catch (error) {
     console.error('Error in updateGradeSettings:', error);

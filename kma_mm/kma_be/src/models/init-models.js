@@ -40,6 +40,8 @@ function initModels(sequelize) {
   var thong_tin_quan_nhan = _thong_tin_quan_nhan(sequelize, DataTypes);
   var tot_nghiep = _tot_nghiep(sequelize, DataTypes);
   var users = _users(sequelize, DataTypes);
+  var chung_chi = require("./chung_chi")(sequelize, DataTypes);
+  var loai_chung_chi = require("./loai_chung_chi")(sequelize, DataTypes);
 
   khoa_dao_tao.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id" });
   danh_muc_dao_tao.hasMany(khoa_dao_tao, { as: "khoa_dao_taos", foreignKey: "he_dao_tao_id" });
@@ -78,6 +80,8 @@ function initModels(sequelize) {
   sinh_vien.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "sinh_vien_id" });
   diem.belongsTo(thoi_khoa_bieu, { as: "thoi_khoa_bieu", foreignKey: "thoi_khoa_bieu_id" });
   thoi_khoa_bieu.hasMany(diem, { as: "diems", foreignKey: "thoi_khoa_bieu_id" });
+  diem.belongsTo(QuyDinhDiem, { as: "quy_dinh_ck1", foreignKey: "quy_dinh_id_ck1" });
+  diem.belongsTo(QuyDinhDiem, { as: "quy_dinh_ck2", foreignKey: "quy_dinh_id_ck2" });
 
   // Associations for tot_nghiep
   tot_nghiep.belongsTo(lop, { as: "lop", foreignKey: "lop_id" });
@@ -86,6 +90,12 @@ function initModels(sequelize) {
   khoa_dao_tao.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "khoa_dao_tao_id" });
   tot_nghiep.belongsTo(danh_muc_dao_tao, { as: "he_dao_tao", foreignKey: "he_dao_tao_id" });
   danh_muc_dao_tao.hasMany(tot_nghiep, { as: "tot_nghieps", foreignKey: "he_dao_tao_id" });
+
+  // Associations for chung_chi
+  chung_chi.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id" });
+  sinh_vien.hasMany(chung_chi, { as: "chung_chis", foreignKey: "sinh_vien_id" });
+  chung_chi.belongsTo(loai_chung_chi, { as: "loai_chung_chi_detail", foreignKey: "loai_chung_chi_id" });
+  loai_chung_chi.hasMany(chung_chi, { as: "chung_chis", foreignKey: "loai_chung_chi_id" });
 
   return {
     danh_muc_dao_tao,
@@ -107,6 +117,8 @@ function initModels(sequelize) {
     thong_tin_quan_nhan,
     tot_nghiep,
     users,
+    chung_chi,
+    loai_chung_chi
   };
 }
 module.exports = initModels;

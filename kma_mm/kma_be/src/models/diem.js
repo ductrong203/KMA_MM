@@ -85,6 +85,14 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      quy_dinh_id_ck1: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      quy_dinh_id_ck2: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      }
     },
     {
       sequelize,

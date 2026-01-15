@@ -18,6 +18,24 @@ class DiemService {
     return lopInfo?.khoa_dao_tao?.he_dao_tao_id;
   }
 
+  static async getLatestRuleId(he_dao_tao_id) {
+    const rule = await QuyDinhDiem.findOne({
+      where: { heDaoTaoId: he_dao_tao_id },
+      order: [['created_at', 'DESC']],
+      attributes: ['id']
+    });
+    // If no specific rule, try default
+    if (!rule) {
+      const defaultRule = await QuyDinhDiem.findOne({
+        where: { heDaoTaoId: null },
+        order: [['created_at', 'DESC']],
+        attributes: ['id']
+      });
+      return defaultRule ? defaultRule.id : null;
+    }
+    return rule.id;
+  }
+
   static async calculateGradeFields(diem_tong_ket, he_dao_tao_id) {
     if (diem_tong_ket === null || diem_tong_ket === undefined || !he_dao_tao_id) {
       return { diem_he_4: null, diem_chu: null, xep_loai: null };
@@ -218,6 +236,16 @@ class DiemService {
           as: 'sinh_vien',
           attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id', 'bao_ve_do_an'],
           where: Object.keys(sinhVienWhere).length > 0 ? sinhVienWhere : undefined
+        },
+        {
+          model: QuyDinhDiem,
+          as: 'quy_dinh_ck1',
+          attributes: ['id', 'diemThiToiThieu', 'diemTrungBinhDat', 'diemGiuaKyToiThieu', 'diemChuyenCanToiThieu']
+        },
+        {
+          model: QuyDinhDiem,
+          as: 'quy_dinh_ck2',
+          attributes: ['id', 'diemThiToiThieu', 'diemTrungBinhDat']
         }
       ]
     });
@@ -328,7 +356,14 @@ class DiemService {
       }
 
       // Lấy thông tin khóa đào tạo của lớp mở môn này
-      const lopInfo = await lop.findByPk(tkb.lop_id, { attributes: ["khoa_dao_tao_id"] });
+      const lopInfo = await lop.findByPk(tkb.lop_id, {
+        attributes: ["khoa_dao_tao_id"],
+        include: [{
+          model: khoa_dao_tao,
+          as: 'khoa_dao_tao',
+          attributes: ['id', 'he_dao_tao_id']
+        }]
+      });
       if (!lopInfo) {
         throw new Error("Không tìm thấy thông tin lớp học của thời khóa biểu!");
       }
@@ -381,6 +416,10 @@ class DiemService {
 
       // Lọc ra những sinh viên chưa có điểm (tránh tạo trùng trong cùng khóa và cùng môn)
       const existingStudentIds = new Set(duplicates.map(d => d.sinh_vien_id));
+
+      // Lấy quy định điểm hiện tại để snapshot
+      const currentRuleId = await DiemService.getLatestRuleId(lopInfo.khoa_dao_tao.he_dao_tao_id);
+
       const newDiemList = sinhViens
         .filter(sv => !existingStudentIds.has(sv.id))
         .map(sv => ({
@@ -396,7 +435,9 @@ class DiemService {
           diem_chu: null,
           ngay_cap_nhat: null,
           trang_thai: null,
-          diem_hp: null
+          diem_hp: null,
+          quy_dinh_id_ck1: currentRuleId, // SNAPSHOT ID
+          quy_dinh_id_ck2: null
         }));
 
       // Chỉ thêm bản ghi nếu có sinh viên mới
@@ -486,13 +527,78 @@ class DiemService {
         const newGK = updateData.diem_gk !== undefined ? updateData.diem_gk : record.diem_gk;
         const newCK = updateData.diem_ck !== undefined ? updateData.diem_ck : record.diem_ck;
 
-        // Cho phép tính toán nếu có đủ điểm (hoặc xử lý null nếu cần)
-        // Logic hiện tại: Chỉ tính HP khi có GK và CK
-        if (newGK !== null && newGK !== undefined && newCK !== null && newCK !== undefined) {
-          const lopId = targetTKB.lop_id;
-          let heDaoTaoId = rulesCache.get(lopId);
+        // --- Xử lý Version Quy định điểm (CK1) ---
+        let ruleIdCK1 = record.quy_dinh_id_ck1;
+        const lopId = targetTKB.lop_id;
 
-          if (heDaoTaoId === undefined) { // Check undefined explicitly as it might be null
+        // Nếu chưa có quy định CK1, lấy quy định mới nhất và lưu lại
+        if (!ruleIdCK1) {
+          let heDaoTaoId = rulesCache.get(lopId);
+          if (heDaoTaoId === undefined) {
+            heDaoTaoId = await DiemService.getHeDaoTaoId(lopId);
+            rulesCache.set(lopId, heDaoTaoId);
+          }
+          ruleIdCK1 = await DiemService.getLatestRuleId(heDaoTaoId);
+          updateData.quy_dinh_id_ck1 = ruleIdCK1;
+        }
+
+        // --- Xử lý Version Quy định điểm (CK2 - Thi lại) ---
+        // Nếu có cập nhật điểm CK2, cần đảm bảo có quy định CK2
+        if (updateData.diem_ck2 !== undefined && updateData.diem_ck2 !== null) {
+          if (!record.quy_dinh_id_ck2) {
+            let heDaoTaoId = rulesCache.get(lopId);
+            if (heDaoTaoId === undefined) {
+              heDaoTaoId = await DiemService.getHeDaoTaoId(lopId);
+              rulesCache.set(lopId, heDaoTaoId);
+            }
+            // Lấy quy định MỚI NHẤT tại thời điểm nhập điểm thi lại
+            const ruleIdCK2 = await DiemService.getLatestRuleId(heDaoTaoId);
+            updateData.quy_dinh_id_ck2 = ruleIdCK2;
+          }
+          // Logic tính toán cho CK2
+          let specificRuleCK2 = null;
+          const ruleIdCK2 = updateData.quy_dinh_id_ck2 || record.quy_dinh_id_ck2;
+          if (ruleIdCK2) {
+            specificRuleCK2 = await QuyDinhDiem.findByPk(Number(ruleIdCK2));
+          }
+
+          const newCK2 = updateData.diem_ck2;
+          const currentGK = updateData.diem_gk !== undefined ? updateData.diem_gk : record.diem_gk;
+
+          if (newCK2 !== null && currentGK !== null && currentGK !== undefined) {
+            // Tính HP2 using same formula: GK * 0.3 + CK2 * 0.7
+            const diemHP2 = parseFloat((currentGK * 0.3 + newCK2 * 0.7).toFixed(2));
+
+            let heDaoTaoId = rulesCache.get(lopId);
+            if (heDaoTaoId === undefined) {
+              heDaoTaoId = await DiemService.getHeDaoTaoId(lopId);
+              rulesCache.set(lopId, heDaoTaoId);
+            }
+            const grades2 = await DiemService.calculateGradeFields(diemHP2, heDaoTaoId);
+
+            updateData.diem_hp_2 = diemHP2;
+            updateData.diem_he_4_2 = grades2.diem_he_4;
+            updateData.diem_chu_2 = grades2.diem_chu;
+
+            if (specificRuleCK2) {
+              const ruleScore = Number(specificRuleCK2.diemThiToiThieu);
+              const ruleAvg = Number(specificRuleCK2.diemTrungBinhDat);
+              const ck2Val = Number(newCK2);
+              const hp2Val = Number(diemHP2);
+
+              const passed2 = ck2Val >= ruleScore && hp2Val >= ruleAvg;
+
+              updateData.trang_thai = passed2 ? 'qua_mon' : 'rot_mon';
+            } else {
+              // Fallback if no rule found for CK2
+            }
+          }
+        }
+
+        // --- Tính toán điểm HP (Lần 1) ---
+        if (newGK !== null && newGK !== undefined && newCK !== null && newCK !== undefined) {
+          let heDaoTaoId = rulesCache.get(lopId);
+          if (heDaoTaoId === undefined) {
             heDaoTaoId = await DiemService.getHeDaoTaoId(lopId);
             rulesCache.set(lopId, heDaoTaoId);
           }
@@ -500,16 +606,43 @@ class DiemService {
           // Tính diem_hp
           const diemHP = parseFloat((newGK * 0.3 + newCK * 0.7).toFixed(2));
 
-          // Quy đổi
-          const grades = await DiemService.calculateGradeFields(diemHP, heDaoTaoId);
+          // Quy đổi - CẦN TRUYỀN ruleIdCK1 vào hàm calculateGradeFields
+          // Nhưng hàm calculateGradeFields hiện tại dùng heDaoTaoId để fetch current rules.
+          // Ta cần sửa hàm đó hoặc fetch rule ở đây và truyền vào.
+          // Để tối ưu, ta sẽ dùng ruleIdCK1 để lấy rule cụ thể.
+
+          let specificRule = null;
+          if (ruleIdCK1) {
+            specificRule = await QuyDinhDiem.findByPk(ruleIdCK1);
+          }
+
+          // Fallback nếu không tìm thấy rule cũ (hiếm), dùng hiện tại?? Hay báo lỗi?
+          // Fallback logic cũ
+          const grades = await DiemService.calculateGradeFields(diemHP, heDaoTaoId, specificRule);
 
           updateData.diem_hp = diemHP;
           updateData.diem_he_4 = grades.diem_he_4;
           updateData.diem_chu = grades.diem_chu;
+
+          // Cập nhật trạng thái qua môn/trượt môn dựa trên specificRule
+          if (specificRule) {
+            const ruleScore = Number(specificRule.diemThiToiThieu);
+            const ruleAvg = Number(specificRule.diemTrungBinhDat);
+            const passed = newCK >= ruleScore && diemHP >= ruleAvg;
+
+            // Chỉ cập nhật trạng thái nếu không có thi lại (CK2) đang được nhập hoặc đã tồn tại
+            const isCK2Present = (updateData.diem_ck2 !== undefined && updateData.diem_ck2 !== null && updateData.diem_ck2 !== '')
+              || record.diem_ck2 || record.diem_hp_2;
+
+            if (!isCK2Present) {
+              updateData.trang_thai = passed ? 'qua_mon' : 'rot_mon';
+            }
+          }
         }
         // --- Kết thúc Logic tính lại điểm ---
 
         await record.update(updateData);
+
         updatedRecords.push(record);
       }
 
