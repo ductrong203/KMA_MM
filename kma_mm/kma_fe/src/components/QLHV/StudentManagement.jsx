@@ -1059,7 +1059,7 @@ const StudentManagement = () => {
     } catch (error) {
       console.error('Lỗi khi kiểm tra học viên:', error);
       if (error.response && error.response.status === 400) {
-        toast.error("Phải nhập đủ thông tin cần thiết (Mã SV, Họ tên, Ngày sinh, v.v.)");
+        toast.error(error.response.data.message || "Lỗi dữ liệu đầu vào. Vui lòng kiểm tra file Excel.");
       } else {
         const msg = error.response?.data?.message || error.message || error;
         toast.error(`Có lỗi xảy ra khi kiểm tra file Excel: ${msg}`);
@@ -1114,7 +1114,7 @@ const StudentManagement = () => {
     } catch (error) {
       console.error('Lỗi khi nhập danh sách học viên:', error);
       if (error.response && error.response.status === 400) {
-        toast.error("Phải nhập đủ thông tin cần thiết (Mã SV, Họ tên, Ngày sinh, v.v.)");
+        toast.error(error.response.data.message || "Lỗi dữ liệu đầu vào. Vui lòng kiểm tra file Excel.");
       } else {
         const msg = error.response?.data?.message || error.message || error;
         toast.error(`Có lỗi xảy ra khi nhập file Excel: ${msg}`);
