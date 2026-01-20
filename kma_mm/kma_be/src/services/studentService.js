@@ -525,12 +525,14 @@ class SinhVienService {
         let doi_tuong_id = null;
         const dtMa = getVal(colMap.doi_tuong);
         if (dtMa) {
-          const { Op } = db.Sequelize;
+          const { Op } = db.Sequelize
+          const cleanDtMa = dtMa.toString().normalize('NFC').trim();
+
           const dt = await doi_tuong_quan_ly.findOne({
             where: {
               [Op.or]: [
-                { ma_doi_tuong: dtMa },
-                { ten_doi_tuong: dtMa }
+                { ma_doi_tuong: cleanDtMa },
+                { ten_doi_tuong: cleanDtMa }
               ]
             },
             transaction
