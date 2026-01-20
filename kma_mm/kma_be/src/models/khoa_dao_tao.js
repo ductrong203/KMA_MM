@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('khoa_dao_tao', {
+module.exports = function (sequelize, DataTypes) {
+  const KhoaDaoTao = sequelize.define('khoa_dao_tao', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -29,6 +29,10 @@ module.exports = function(sequelize, DataTypes) {
       }
     },
     so_ky_hoc: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    so_ky_hoc_1_nam: {
       type: DataTypes.INTEGER,
       allowNull: true
     },
@@ -74,4 +78,21 @@ module.exports = function(sequelize, DataTypes) {
       },
     ]
   });
+
+  KhoaDaoTao.associate = function (models) {
+    KhoaDaoTao.belongsTo(models.danh_muc_dao_tao, {
+      foreignKey: 'he_dao_tao_id',
+      as: 'he_dao_tao'
+    });
+    KhoaDaoTao.hasMany(models.lop, {
+      foreignKey: 'khoa_dao_tao_id',
+      as: 'lops'
+    });
+    KhoaDaoTao.hasMany(models.tot_nghiep, {
+      foreignKey: 'khoa_dao_tao_id',
+      as: 'tot_nghieps'
+    });
+  };
+
+  return KhoaDaoTao;
 };

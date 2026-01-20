@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  Checkbox,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -83,6 +84,8 @@ function DieuKienTotNghiep() {
     message: '',
     severity: 'success',
   });
+  // State quản lý trạng thái đúng hạn (mapping studentId -> boolean)
+  const [dungHanStatus, setDungHanStatus] = useState({});
 
   const graduationSteps = ['Kiểm tra điều kiện', 'Xét duyệt', 'Hoàn thành'];
 
@@ -289,34 +292,34 @@ function DieuKienTotNghiep() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          
+
           // Chuẩn bị dữ liệu cập nhật
           const updateData = {
             ...selectedCourse,
             tong_tin_chi_yeu_cau: requiredCredits
           };
-          
+
           // Gọi API cập nhật
           await updateKhoa(selectedCourse.id, updateData);
-          
+
           // Cập nhật khóa đào tạo trong state
-          setCourses(prevCourses => 
-            prevCourses.map(course => 
-              course.id === selectedCourse.id 
-                ? { ...course, tong_tin_chi_yeu_cau: requiredCredits } 
+          setCourses(prevCourses =>
+            prevCourses.map(course =>
+              course.id === selectedCourse.id
+                ? { ...course, tong_tin_chi_yeu_cau: requiredCredits }
                 : course
             )
           );
-          
+
           // Cập nhật selectedCourse
           setSelectedCourse(prev => ({ ...prev, tong_tin_chi_yeu_cau: requiredCredits }));
-          
+
           setSnackbar({
             open: true,
             message: 'Cập nhật số tín chỉ yêu cầu thành công',
             severity: 'success',
           });
-          
+
           // Cập nhật lại thông tin xét tốt nghiệp nếu đã có sinh viên được chọn
           if (students.length > 0 && selectedClass?.id) {
             // Gọi lại API kiểm tra điều kiện tốt nghiệp cho từng sinh viên
@@ -334,7 +337,7 @@ function DieuKienTotNghiep() {
             }
             setGraduationResults(results);
           }
-          
+
         } catch (error) {
           setSnackbar({
             open: true,
@@ -358,16 +361,16 @@ function DieuKienTotNghiep() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          
+
           // TODO: Gọi API in bằng tốt nghiệp
           // await printDiploma(student.sinh_vien_id || student.id);
-          
+
           setSnackbar({
             open: true,
             message: `Đã gửi yêu cầu in bằng tốt nghiệp cho sinh viên ${student.ma_sinh_vien}`,
             severity: 'success'
           });
-          
+
         } catch (error) {
           setSnackbar({
             open: true,
@@ -385,7 +388,7 @@ function DieuKienTotNghiep() {
   // Function xem chi tiết xét duyệt
   const handleViewGraduationDetails = (student) => {
     const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
-    
+
     if (!graduationInfo) {
       setSnackbar({
         open: true,
@@ -404,7 +407,7 @@ function DieuKienTotNghiep() {
           <Typography variant="h6" gutterBottom>
             {`${student.ho_dem || ''} ${student.ten || ''}`.trim()}
           </Typography>
-          
+
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               📊 Thông tin học tập:
@@ -422,7 +425,21 @@ function DieuKienTotNghiep() {
               • Đủ chứng chỉ: {graduationInfo.dieu_kien_tot_nghiep?.co_chung_chi_xet_tot_nghiep ? '✅ Có' : '❌ Không'}
             </Typography>
           </Box>
+          {(() => {
 
+            let isDungHan = false;
+            if (student.hasOwnProperty('dung_han')) {
+              isDungHan = student.dung_han === 1;
+            } else {
+              isDungHan = !!dungHanStatus[student.sinh_vien_id || student.id];
+            }
+
+            return (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                • {isDungHan ? 'Tốt nghiệp đúng hạn' : 'Tốt nghiệp không đúng hạn'}
+              </Typography>
+            );
+          })()}
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               🏆 Chứng chỉ đã có:
@@ -469,16 +486,16 @@ function DieuKienTotNghiep() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          
+
           // TODO: Gọi API in bằng hàng loạt
           // await batchPrintDiplomas(graduationStatus.approvedStudents.map(s => s.sinh_vien_id || s.id));
-          
+
           setSnackbar({
             open: true,
             message: `Đã gửi yêu cầu in bằng tốt nghiệp cho ${graduationStatus.approvedCount} sinh viên`,
             severity: 'success'
           });
-          
+
         } catch (error) {
           setSnackbar({
             open: true,
@@ -498,14 +515,14 @@ function DieuKienTotNghiep() {
     // Lấy danh sách sinh viên đủ điều kiện tốt nghiệp nhưng chưa được xét duyệt
     const eligibleStudents = students.filter(student => {
       const studentId = student.sinh_vien_id || student.id;
-      
+
       // Kiểm tra xem sinh viên đã được xét duyệt chưa
       const isAlreadyApproved = graduationStatus.approvedStudents.some(
         approvedStudent => approvedStudent.id === studentId
       );
-      
+
       if (isAlreadyApproved) return false;
-      
+
       // Kiểm tra điều kiện tốt nghiệp
       const graduationInfo = graduationResults[studentId];
       return graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien;
@@ -528,7 +545,7 @@ function DieuKienTotNghiep() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          
+
           // Chuẩn bị dữ liệu để gửi API xét duyệt
           const graduationData = {
             sinh_vien_ids: eligibleStudents.map(student => student.sinh_vien_id || student.id),
@@ -540,14 +557,15 @@ function DieuKienTotNghiep() {
               return {
                 sinh_vien_id: student.sinh_vien_id || student.id,
                 dieu_kien_tot_nghiep: graduationInfo.dieu_kien_tot_nghiep,
-                certificates: graduationInfo.chung_chi || []
+                certificates: graduationInfo.chung_chi || [],
+                dung_han: dungHanStatus[student.sinh_vien_id || student.id] ? 1 : 0
               };
             })
           };
 
           // Gọi API xét duyệt tốt nghiệp
           await approveGraduation(graduationData);
-          
+
           // Cập nhật trạng thái đã xét duyệt
           setGraduationStatus(prevStatus => ({
             ...prevStatus,
@@ -556,7 +574,7 @@ function DieuKienTotNghiep() {
             approvedStudents: [...prevStatus.approvedStudents, ...eligibleStudents],
             approvalDate: new Date()
           }));
-          
+
           setSnackbar({
             open: true,
             message: `Đã xét duyệt tốt nghiệp thành công cho ${eligibleStudents.length} sinh viên`,
@@ -570,12 +588,12 @@ function DieuKienTotNghiep() {
             const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
             return graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien;
           });
-          
+
           if (wasFirstApproval && graduationStatus.approvedCount + eligibleStudents.length >= totalEligibleStudents.length) {
             // Chỉ chuyển sang Step 3 nếu đây là lần xét duyệt đầu tiên và xét hết tất cả sinh viên
             setActiveStep(2);
           }
-          
+
         } catch (error) {
           setSnackbar({
             open: true,
@@ -596,13 +614,13 @@ function DieuKienTotNghiep() {
     const isApproved = graduationStatus.approvedStudents.some(
       approvedStudent => approvedStudent.id === (student.sinh_vien_id || student.id)
     );
-    
+
     if (isApproved) {
       return { text: 'Đã xét duyệt', color: 'info' };
     }
-    
+
     if (!graduationInfo) return { text: 'Đang kiểm tra...', color: 'default' };
-    
+
     const condition = graduationInfo.dieu_kien_tot_nghiep;
     if (condition?.du_dieu_kien) {
       return { text: 'Đủ điều kiện', color: 'success' };
@@ -614,10 +632,10 @@ function DieuKienTotNghiep() {
   // Hiển thị danh sách chứng chỉ theo format mới
   const renderCertificates = (certificates, showDetails = false) => {
     if (!certificates || certificates.length === 0) return 'Chưa có';
-    
+
     const validCerts = certificates.filter((cert) => cert.tinh_trang === 'tốt nghiệp');
     if (validCerts.length === 0) return 'Chưa có';
-    
+
     if (!showDetails) {
       return validCerts
         .map((cert) => cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi)
@@ -627,7 +645,7 @@ function DieuKienTotNghiep() {
       return validCerts.map((cert, index) => {
         const certName = cert.loai_chung_chi || cert.loaiChungChi?.ten_loai_chung_chi || 'Chứng chỉ';
         const formattedDate = cert.ngay_ky_quyet_dinh ? new Date(cert.ngay_ky_quyet_dinh).toLocaleDateString('vi-VN') : 'N/A';
-        
+
         return (
           <Typography key={index} variant="body2" sx={{ mb: 1 }}>
             <strong>{certName}</strong>: {
@@ -657,7 +675,7 @@ function DieuKienTotNghiep() {
     if (!graduationInfo?.dieu_kien_tot_nghiep) return null;
 
     const details = graduationInfo.dieu_kien_tot_nghiep.chi_tiet;
-    
+
     return (
       <Box sx={{ p: 2, bgcolor: 'grey.50', mt: 1, borderRadius: 1 }}>
         <Grid container spacing={2}>
@@ -677,7 +695,7 @@ function DieuKienTotNghiep() {
               sx={{ mt: 0.5 }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               <Assignment sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
@@ -847,7 +865,7 @@ function DieuKienTotNghiep() {
                               const graduationInfo = graduationResults[studentId];
                               const isExpanded = expandedRows[studentId];
                               const status = getGraduationStatus(graduationInfo, student);
-                              
+
                               return (
                                 <>
                                   <TableRow key={studentId}>
@@ -915,7 +933,7 @@ function DieuKienTotNghiep() {
                                       />
                                     </TableCell>
                                   </TableRow>
-                                  
+
                                   {/* Chi tiết mở rộng */}
                                   {isExpanded && graduationInfo && (
                                     <TableRow>
@@ -944,26 +962,26 @@ function DieuKienTotNghiep() {
 
                 {activeStep === 1 && (
                   <Box>
-                    
+
                     <Typography variant="body1" sx={{ mb: 3 }}>
                       Xác nhận xét tốt nghiệp cho các sinh viên đủ điều kiện trong lớp {selectedClass?.ma_lop}.
                     </Typography>
 
                     {/* Cảnh báo nếu đã có sinh viên được xét duyệt */}
-                 
+
 
                     {/* Danh sách sinh viên đủ điều kiện nhưng chưa xét duyệt */}
                     {(() => {
                       const eligibleStudents = students.filter(student => {
                         const studentId = student.sinh_vien_id || student.id;
-                        
+
                         // Kiểm tra xem sinh viên đã được xét duyệt chưa
                         const isAlreadyApproved = graduationStatus.approvedStudents.some(
                           approvedStudent => approvedStudent.id === studentId
                         );
-                        
+
                         if (isAlreadyApproved) return false;
-                        
+
                         // Kiểm tra điều kiện tốt nghiệp
                         const graduationInfo = graduationResults[studentId];
                         return graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien;
@@ -985,7 +1003,7 @@ function DieuKienTotNghiep() {
                       if (eligibleStudents.length === 0) {
                         return (
                           <Box>
-                           
+
 
                             {/* Hiển thị danh sách sinh viên đã xét duyệt */}
                             {graduationStatus.approvedCount > 0 && (
@@ -993,7 +1011,7 @@ function DieuKienTotNghiep() {
                                 <Typography variant="h6" gutterBottom>
                                   📋 Danh sách sinh viên đã xét duyệt:
                                 </Typography>
-                                
+
                                 <TableContainer component={Paper} sx={{ mt: 2 }}>
                                   <Table>
                                     <TableHead>
@@ -1126,6 +1144,7 @@ function DieuKienTotNghiep() {
                                   <TableCell>Tín chỉ</TableCell>
                                   <TableCell>Chứng chỉ</TableCell>
                                   <TableCell>Trạng thái</TableCell>
+                                  <TableCell align="center">Đúng hạn</TableCell>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
@@ -1162,6 +1181,19 @@ function DieuKienTotNghiep() {
                                           icon={<CheckCircle />}
                                         />
                                       </TableCell>
+                                      <TableCell align="center">
+                                        <Checkbox
+                                          checked={!!dungHanStatus[student.sinh_vien_id || student.id]}
+                                          onChange={(e) => {
+                                            const studentId = student.sinh_vien_id || student.id;
+                                            setDungHanStatus(prev => ({
+                                              ...prev,
+                                              [studentId]: e.target.checked
+                                            }));
+                                          }}
+                                          color="primary"
+                                        />
+                                      </TableCell>
                                     </TableRow>
                                   );
                                 })}
@@ -1175,7 +1207,7 @@ function DieuKienTotNghiep() {
                               <Typography variant="h6" gutterBottom>
                                 Danh sách sinh viên đã xét duyệt:
                               </Typography>
-                              
+
                               <TableContainer component={Paper} sx={{ mt: 2 }}>
                                 <Table>
                                   <TableHead>
@@ -1255,8 +1287,8 @@ function DieuKienTotNghiep() {
                       💡 <strong>Lưu ý:</strong> Step 3 chỉ hiển thị khi xét duyệt tất cả sinh viên trong lần đầu tiên.
                       Các lần xét duyệt tiếp theo sẽ dừng tại Step 2 để thực hiện các hành động cụ thể cho từng sinh viên.
                     </Alert>
-                    
-                    
+
+
                     {(() => {
                       const eligibleStudents = students.filter(student => {
                         const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
@@ -1283,7 +1315,7 @@ function DieuKienTotNghiep() {
                               <Typography variant="h6" gutterBottom>
                                 📋 Danh sách sinh viên đã xét duyệt:
                               </Typography>
-                              
+
                               <TableContainer component={Paper} sx={{ mt: 2 }}>
                                 <Table>
                                   <TableHead>
@@ -1440,14 +1472,14 @@ function DieuKienTotNghiep() {
                     // Logic hiển thị button dựa trên trạng thái xét duyệt
                     const eligibleStudents = students.filter(student => {
                       const studentId = student.sinh_vien_id || student.id;
-                      
+
                       // Kiểm tra xem sinh viên đã được xét duyệt chưa
                       const isAlreadyApproved = graduationStatus.approvedStudents.some(
                         approvedStudent => approvedStudent.id === studentId
                       );
-                      
+
                       if (isAlreadyApproved) return false;
-                      
+
                       // Kiểm tra điều kiện tốt nghiệp
                       const graduationInfo = graduationResults[studentId];
                       return graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien;
@@ -1455,7 +1487,7 @@ function DieuKienTotNghiep() {
 
                     // Kiểm tra xem có sinh viên nào đã được xét duyệt không
                     const hasApprovedStudents = graduationStatus.approvedCount > 0;
-                    
+
                     if (activeStep === 0) {
                       // Step 0: Luôn hiển thị button "Xét duyệt"
                       return (
@@ -1492,7 +1524,7 @@ function DieuKienTotNghiep() {
                       // Step này chỉ dành cho trường hợp xét duyệt lần đầu
                       return null;
                     }
-                    
+
                     return null;
                   })()}
                 </Box>
@@ -1507,7 +1539,7 @@ function DieuKienTotNghiep() {
               <Info sx={{ mr: 1, verticalAlign: 'middle' }} />
               Điều kiện tốt nghiệp
             </Typography>
-            
+
             {/* Thiết lập tín chỉ yêu cầu */}
             {selectedCourse && (
               <Box sx={{ mt: 2, mb: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1542,7 +1574,7 @@ function DieuKienTotNghiep() {
                 </Button>
               </Box>
             )}
-            
+
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                 <School sx={{ fontSize: 16, mr: 1 }} />
@@ -1565,7 +1597,7 @@ function DieuKienTotNghiep() {
               <Typography variant="h6" gutterBottom>
                 📊 Thống kê lớp {selectedClass?.ma_lop}
               </Typography>
-              
+
               {(() => {
                 const totalStudents = students.length;
                 const totalEligibleStudents = students.filter(student => {
@@ -1576,12 +1608,12 @@ function DieuKienTotNghiep() {
                 const eligibleCount = totalEligibleStudents.length;
                 const approvedCount = graduationStatus.approvedCount;
                 const pendingCount = eligibleCount - approvedCount;
-                
+
                 const sufficientCreditsCount = students.filter(student => {
                   const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
                   return graduationInfo?.dieu_kien_tot_nghiep?.du_tin_chi;
                 }).length;
-                
+
                 const sufficientCertificatesCount = students.filter(student => {
                   const graduationInfo = graduationResults[student.sinh_vien_id || student.id];
                   return graduationInfo?.dieu_kien_tot_nghiep?.co_chung_chi_xet_tot_nghiep;
@@ -1593,7 +1625,7 @@ function DieuKienTotNghiep() {
                       <Typography variant="body2">Tổng số sinh viên:</Typography>
                       <Chip label={totalStudents} color="primary" size="small" />
                     </Box>
-                    
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="body2">Đủ điều kiện:</Typography>
                       <Chip

@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   return sequelize.define('tot_nghiep', {
     id: {
       autoIncrement: true,
@@ -79,7 +79,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     diem_trung_binh_tich_luy: {
-      type: DataTypes.DECIMAL(3,2),
+      type: DataTypes.DECIMAL(3, 2),
       allowNull: true
     },
     ghi_chu: {
@@ -93,6 +93,11 @@ module.exports = function(sequelize, DataTypes) {
     noi_cap_bang: {
       type: DataTypes.STRING(255),
       allowNull: true
+    },
+    dung_han: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1
     },
     created_at: {
       type: DataTypes.DATE,

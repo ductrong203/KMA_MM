@@ -15,12 +15,12 @@ class TotNghiepService {
   // Xét duyệt tốt nghiệp cho nhiều sinh viên
   async approveGraduation(graduationData) {
     try {
-      const { 
-        sinh_vien_ids, 
-        lop_id, 
-        khoa_dao_tao_id, 
-        he_dao_tao_id, 
-        graduation_results 
+      const {
+        sinh_vien_ids,
+        lop_id,
+        khoa_dao_tao_id,
+        he_dao_tao_id,
+        graduation_results
       } = graduationData;
 
       const graduations = [];
@@ -28,7 +28,7 @@ class TotNghiepService {
       for (let i = 0; i < sinh_vien_ids.length; i++) {
         const sinh_vien_id = sinh_vien_ids[i];
         const graduationInfo = graduation_results[i]; // Lấy theo index thay vì key
-        
+
         // Kiểm tra xem sinh viên đã có bản ghi tốt nghiệp chưa
         const existingGraduation = await tot_nghiep.findOne({
           where: {
@@ -46,7 +46,8 @@ class TotNghiepService {
             du_tin_chi: graduationInfo?.dieu_kien_tot_nghiep?.du_tin_chi || false,
             co_chung_chi: graduationInfo?.dieu_kien_tot_nghiep?.co_chung_chi_xet_tot_nghiep || false,
             du_dieu_kien: graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien || false,
-            diem_trung_binh_tich_luy: graduationInfo?.diem_trung_binh_tich_luy || null
+            diem_trung_binh_tich_luy: graduationInfo?.diem_trung_binh_tich_luy || null,
+            dung_han: graduationInfo?.dung_han || 0
           });
           graduations.push(existingGraduation);
         } else {
@@ -62,7 +63,8 @@ class TotNghiepService {
             du_tin_chi: graduationInfo?.dieu_kien_tot_nghiep?.du_tin_chi || false,
             co_chung_chi: graduationInfo?.dieu_kien_tot_nghiep?.co_chung_chi_xet_tot_nghiep || false,
             du_dieu_kien: graduationInfo?.dieu_kien_tot_nghiep?.du_dieu_kien || false,
-            diem_trung_binh_tich_luy: graduationInfo?.diem_trung_binh_tich_luy || null
+            diem_trung_binh_tich_luy: graduationInfo?.diem_trung_binh_tich_luy || null,
+            dung_han: graduationInfo?.dung_han || 0
           });
           graduations.push(newGraduation);
         }
@@ -78,19 +80,19 @@ class TotNghiepService {
   async getGraduationList(filters = {}) {
     try {
       const whereClause = {};
-      
+
       if (filters.he_dao_tao_id) {
         whereClause.he_dao_tao_id = filters.he_dao_tao_id;
       }
-      
+
       if (filters.khoa_dao_tao_id) {
         whereClause.khoa_dao_tao_id = filters.khoa_dao_tao_id;
       }
-      
+
       if (filters.lop_id) {
         whereClause.lop_id = filters.lop_id;
       }
-      
+
       if (filters.trang_thai) {
         whereClause.trang_thai = filters.trang_thai;
       }
@@ -138,7 +140,7 @@ class TotNghiepService {
   async getStudentGraduation(sinh_vien_id, khoa_dao_tao_id = null) {
     try {
       const whereClause = { sinh_vien_id };
-      
+
       if (khoa_dao_tao_id) {
         whereClause.khoa_dao_tao_id = khoa_dao_tao_id;
       }
@@ -179,7 +181,7 @@ class TotNghiepService {
   async updateGraduationCertificate(graduation_id, certificateData) {
     try {
       const graduation = await tot_nghiep.findByPk(graduation_id);
-      
+
       if (!graduation) {
         throw new Error('Không tìm thấy bản ghi tốt nghiệp');
       }
@@ -202,11 +204,11 @@ class TotNghiepService {
   async getGraduationStatistics(filters = {}) {
     try {
       const whereClause = {};
-      
+
       if (filters.he_dao_tao_id) {
         whereClause.he_dao_tao_id = filters.he_dao_tao_id;
       }
-      
+
       if (filters.khoa_dao_tao_id) {
         whereClause.khoa_dao_tao_id = filters.khoa_dao_tao_id;
       }
@@ -240,7 +242,7 @@ class TotNghiepService {
   async deleteGraduation(graduation_id) {
     try {
       const graduation = await tot_nghiep.findByPk(graduation_id);
-      
+
       if (!graduation) {
         throw new Error('Không tìm thấy bản ghi tốt nghiệp');
       }
@@ -275,7 +277,10 @@ class TotNghiepService {
       });
 
       const isApproved = existingGraduations.length > 0;
-      const approvedStudents = existingGraduations.map(grad => grad.sinh_vien);
+      const approvedStudents = existingGraduations.map(grad => ({
+        ...grad.sinh_vien.toJSON(),
+        dung_han: grad.dung_han
+      }));
 
       return {
         is_approved: isApproved,

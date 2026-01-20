@@ -18,25 +18,26 @@ import {
   People as PeopleIcon, // Thêm icon cho Quản lý giảng viên, nhân viên
   Groups as GroupsIcon, // Thêm icon cho Quản lý đối tượng
   Settings as SettingsIcon, // Icon cho thiết lập quy định điểm
+  School as SchoolIcon, // Icon cho loại hình đào tạo
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
 const menuItems = [
-   {
+  {
     title: "Quản lý giảng viên, nhân viên",
     description: "Thêm, sửa, quản lý giảng viên, nhân viên",
     icon: <PeopleIcon sx={{ fontSize: 40 }} />, // Sử dụng PeopleIcon
     href: "/admin/teacher-management",
     color: "info.main",
   },
-   {
+  {
     title: "Phân quyền",
     description: "Gán hoặc cập nhật vai trò cho người dùng.",
     icon: <SecurityIcon sx={{ fontSize: 40 }} />,
     href: "/admin/assign-roles",
     color: "secondary.main",
   },
-  
+
   {
     title: "Quản lý phòng ban",
     description: "Thêm, sửa, quản lý phòng ban.",
@@ -44,7 +45,7 @@ const menuItems = [
     href: "/admin/departments",
     color: "info.main",
   },
- {
+  {
     title: "Quản lý đối tượng",
     description: "Thêm, sửa, quản lý đối tượng",
     icon: <GroupsIcon sx={{ fontSize: 40 }} />, // Sử dụng GroupsIcon
@@ -65,7 +66,7 @@ const menuItems = [
     href: "/admin/manage-accounts",
     color: "primary.main",
   },
- {
+  {
     title: "Thiết lập quy định điểm",
     description: "Điều chỉnh quy định về điểm qua môn, điểm thi lại và các quy định khác.",
     icon: <SettingsIcon sx={{ fontSize: 40 }} />,
@@ -79,8 +80,15 @@ const menuItems = [
     href: "/admin/activity-logs",
     color: "warning.main",
   },
-  
-  
+
+
+  {
+    title: "Quản lý loại hình đào tạo",
+    description: "Thêm, sửa, xóa loại hình đào tạo (ĐHCQ, VLVH, LTĐH).",
+    icon: <SchoolIcon sx={{ fontSize: 40 }} />,
+    href: "/admin/training-types",
+    color: "primary.main",
+  },
 ];
 
 const AdminDashboard = () => {

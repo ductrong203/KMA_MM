@@ -93,7 +93,8 @@ const StudentManagement = () => {
     dan_toc: "",
     ton_giao: "",
     quoc_tich: "",
-    trung_tuyen_theo_nguyen_vong: "",
+    to_hop_xet_tuyen: "",
+    diem_trung_tuyen: "",
     nam_tot_nghiep_PTTH: "",
     thanh_phan_gia_dinh: "",
     doi_tuong_dao_tao: "",
@@ -437,7 +438,8 @@ const StudentManagement = () => {
         dan_toc: "Kinh",
         ton_giao: "Không",
         quoc_tich: "",
-        trung_tuyen_theo_nguyen_vong: "",
+        to_hop_xet_tuyen: "",
+        diem_trung_tuyen: "",
         nam_tot_nghiep_PTTH: "",
         thanh_phan_gia_dinh: "",
         doi_tuong_dao_tao: "",
@@ -515,7 +517,8 @@ const StudentManagement = () => {
         dan_toc: student.dan_toc || "",
         ton_giao: student.ton_giao || "",
         quoc_tich: student.quoc_tich || "",
-        trung_tuyen_theo_nguyen_vong: student.trung_tuyen_theo_nguyen_vong || "",
+        to_hop_xet_tuyen: student.to_hop_xet_tuyen || "",
+        diem_trung_tuyen: student.diem_trung_tuyen || "",
         nam_tot_nghiep_PTTH: student.nam_tot_nghiep_PTTH || "",
         thanh_phan_gia_dinh: student.thanh_phan_gia_dinh || "",
         doi_tuong_dao_tao: student.doi_tuong_dao_tao || "",
@@ -601,7 +604,6 @@ const StudentManagement = () => {
         newErrors.ma_sinh_vien = "Mã học viên không được để trống";
       if (!studentData.ngay_sinh)
         newErrors.ngay_sinh = "Ngày sinh không được để trống";
-      if (!studentData.email) newErrors.email = "Email không được để trống";
       if (!studentData.so_dien_thoai)
         newErrors.so_dien_thoai = "Số điện thoại không được để trống";
       if (!studentData.lop_id) newErrors.lop_id = "Lớp không được để trống";
@@ -660,9 +662,9 @@ const StudentManagement = () => {
         ngay_ra_truong: studentData.ngay_ra_truong
           ? new Date(studentData.ngay_ra_truong).toISOString().split("T")[0]
           : null,
-        nam_tot_nghiep_PTTH: studentData.ngay_ra_truong
-          ? new Date(studentData.ngay_ra_truong).toISOString().split("T")[0]
-          : null,
+        nam_tot_nghiep_PTTH: studentData.nam_tot_nghiep_PTTH // Keep as string or date? Form uses text field for year? No, code used string earlier
+          ? studentData.nam_tot_nghiep_PTTH // Assuming it's just a year string or text from previous code
+          : "",
       };
 
       console.log("Dữ liệu học viên gửi đi:", formattedStudentData);
@@ -1460,7 +1462,8 @@ const StudentManagement = () => {
                 { label: "Dân tộc", value: studentData.dan_toc || "Chưa cập nhật" },
                 { label: "Tôn giáo", value: studentData.ton_giao || "Chưa cập nhật" },
                 { label: "Quốc tịch", value: studentData.quoc_tich || "Chưa cập nhật" },
-                { label: "Trúng tuyển theo nguyện vọng", value: studentData.trung_tuyen_theo_nguyen_vong || "Chưa cập nhật" },
+                { label: "Tổ hợp xét tuyển", value: studentData.to_hop_xet_tuyen || "Chưa cập nhật" },
+                { label: "Điểm trúng tuyển", value: studentData.diem_trung_tuyen || "Chưa cập nhật" },
                 { label: "Năm tốt nghiệp THPT", value: studentData.nam_tot_nghiep_PTTH || "Chưa cập nhật" },
                 { label: "Thành phần gia đình", value: studentData.thanh_phan_gia_dinh || "Chưa cập nhật" },
                 //  { label: "Đối tượng đào tạo", value: studentData.doi_tuong_dao_tao || "Chưa cập nhật" },
@@ -1598,7 +1601,8 @@ const StudentManagement = () => {
               { label: "Kỳ nhập học", key: "ky_nhap_hoc" },
               { label: "Ngày vào trường", key: "ngay_vao_truong", type: "date" },
               { label: "Ngày ra trường", key: "ngay_ra_truong", type: "date" },
-              { label: "Trúng tuyển theo nguyện vọng", key: "trung_tuyen_theo_nguyen_vong" },
+              { label: "Tổ hợp xét tuyển", key: "to_hop_xet_tuyen" },
+              { label: "Điểm trúng tuyển", key: "diem_trung_tuyen" },
               { label: "Năm tốt nghiệp THPT", key: "nam_tot_nghiep_PTTH" },
               { label: "Thành phần gia đình", key: "thanh_phan_gia_dinh" },
               // { label: "Đối tượng đào tạo", key: "doi_tuong_dao_tao" },

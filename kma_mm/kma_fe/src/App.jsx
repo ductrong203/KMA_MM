@@ -159,7 +159,7 @@ const App = () => {
             </PrivateRoute>
           }
         />
-        
+
         {/* Route thiết lập quy định điểm */}
         <Route
           path="/admin/grade-settings"
