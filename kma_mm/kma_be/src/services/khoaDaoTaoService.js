@@ -3,8 +3,8 @@ const { khoa_dao_tao, danh_muc_dao_tao } = require("../models");
 class KhoaDaoTaoService {
   static async createKhoaDaoTao(data) {
     try {
-      const {he_dao_tao_id, ma_khoa, ten_khoa, nam_hoc, so_ky_hoc} = data
-      
+      const { he_dao_tao_id, ma_khoa, ten_khoa, nam_hoc, so_ky_hoc, so_ky_hoc_1_nam } = data
+
       const danhMuc = await danh_muc_dao_tao.findByPk(he_dao_tao_id);
       if (!danhMuc) {
         throw new Error("Danh mục đào tạo không tồn tại");
@@ -21,7 +21,8 @@ class KhoaDaoTaoService {
         ten_khoa,
         nam_hoc,
         he_dao_tao_id,
-        so_ky_hoc
+        so_ky_hoc,
+        so_ky_hoc_1_nam
       });
       return newKhoa;
     } catch (error) {

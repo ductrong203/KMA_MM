@@ -118,7 +118,7 @@ function initModels(sequelize) {
     tot_nghiep,
     users,
     chung_chi,
-    loai_chung_chi
+    loai_chung_chi,
   };
 }
 module.exports = initModels;

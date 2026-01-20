@@ -35,6 +35,7 @@ import FormGiangVien from "./components/admin/TeacherForm";
 import QuanLyGiangViens from "./components/admin/QuanlyGiangVien";
 import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 import QuanLyChungChi from "./components/QuanLyChungChi/QuanLyChungChi";
+import TrainingTypeManagement from "./components/Admin/TrainingTypeManagement";
 
 import { ToastContainer } from 'react-toastify';
 const App = () => {
@@ -159,7 +160,19 @@ const App = () => {
             </PrivateRoute>
           }
         />
-        
+
+        {/* Route quản lý loại hình đào tạo */}
+        <Route
+          path="/admin/training-types"
+          element={
+            <PrivateRoute role={role} allowedRoles={["admin"]}>
+              <Layout Info={info} title="Quản lý loại hình đào tạo">
+                <TrainingTypeManagement />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
         {/* Route thiết lập quy định điểm */}
         <Route
           path="/admin/grade-settings"

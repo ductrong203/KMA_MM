@@ -50,6 +50,7 @@ const QuanLyKhoa = () => {
     nam_bat_dau: "",
     nam_ket_thuc: "",
     so_ky_hoc: "",
+    so_ky_hoc_1_nam: "",
   });
   const [selectedHeDaoTao, setSelectedHeDaoTao] = useState(null);
 
@@ -103,6 +104,7 @@ const QuanLyKhoa = () => {
       nam_bat_dau: "",
       nam_ket_thuc: "",
       so_ky_hoc: "",
+      so_ky_hoc_1_nam: "",
     });
     setSelectedHeDaoTao(null);
   };
@@ -167,6 +169,7 @@ const QuanLyKhoa = () => {
       he_dao_tao_id: formData.he_dao_tao_id,
       nam_hoc: convertToNamHoc(formData.nam_bat_dau, formData.nam_ket_thuc),
       so_ky_hoc: formData.so_ky_hoc,
+      so_ky_hoc_1_nam: formData.so_ky_hoc_1_nam,
     };
 
     setLoading(true);
@@ -213,6 +216,7 @@ const QuanLyKhoa = () => {
       nam_bat_dau: nam_bat_dau,
       nam_ket_thuc: nam_ket_thuc,
       so_ky_hoc: khoa.so_ky_hoc || "",
+      so_ky_hoc_1_nam: khoa.so_ky_hoc_1_nam || "",
     });
     const heDaoTao = danhSachHeDaoTao.find((item) => item.id === khoa.he_dao_tao_id);
     setSelectedHeDaoTao(heDaoTao || null);
@@ -423,6 +427,21 @@ const QuanLyKhoa = () => {
               label="Số kỳ học"
               name="so_ky_hoc"
               value={formData.so_ky_hoc}
+              onChange={handleInputChange}
+              margin="normal"
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 1 }}
+            />
+
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 2, fontWeight: 600 }}>
+              Số kỳ học 1 năm
+            </Typography>
+            <TextField
+              fullWidth
+              label="Số kỳ học 1 năm"
+              name="so_ky_hoc_1_nam"
+              value={formData.so_ky_hoc_1_nam}
               onChange={handleInputChange}
               margin="normal"
               variant="outlined"

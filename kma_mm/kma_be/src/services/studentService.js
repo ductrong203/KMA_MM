@@ -219,13 +219,18 @@ class SinhVienService {
 
           doi_tuong: sv.doi_tuong?.ma_doi_tuong || '', // Use CODE as requested
           don_vi_gui: donViGui,
-          nam_tot_nghiep: formatDate(sv.nam_tot_nghiep_PTTH),
+          nam_tot_nghiep_PTTH: formatDate(sv.nam_tot_nghiep_PTTH),
 
           // New/Mapped Fields
-          ngay_nhap_hoc: formatDate(sv.ngay_vao_truong), // User request: Ngày nhập học=sv.ngay_vao_truong
+          ngay_nhap_hoc: formatDate(sv.ngay_vao_truong),
           ma_chuong_trinh_dt: sv.lop?.khoa_dao_tao?.ten_khoa || '',
           dao_tao_tu: dao_tao_tu,
           dao_tao_den: dao_tao_den,
+
+          to_hop_xet_tuyen: sv.to_hop_xet_tuyen || '',
+          diem_trung_tuyen: sv.diem_trung_tuyen || '',
+          quyet_dinh_trung_tuyen: sv.quyet_dinh_trung_tuyen || '',
+          ngay_ban_hanh_qd_trung_tuyen: formatDate(sv.ngay_ban_hanh_qd_trung_tuyen),
 
           tin_chi: sv.tong_tin_chi || 0,
           diem_tbtl_10: sv.diem_trung_binh_tich_luy || '',
@@ -290,44 +295,10 @@ class SinhVienService {
         { header: 'Ngày vào Đảng', key: 'ngay_vao_dang', width: 12 },
         { header: 'Đối tượng', key: 'doi_tuong', width: 10 },
         { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui', width: 20 },
-        { header: 'Năm tốt nghiệp THPT', key: 'nam_tot_nghiep', width: 12 },
-
         // Nhóm Tuyển Sinh & Đào Tạo
-        { header: 'Tổ hợp xét tuyển', key: '', width: 10 },
-        { header: 'Điểm trúng tuyển', key: '', width: 10 },
-        { header: 'Ngày nhập học', key: 'ngay_nhap_hoc', width: 12 },
-        { header: 'Quyết định trúng tuyển', key: '', width: 15 },
-        { header: 'Ngày ban hành QĐ trúng tuyển', key: '', width: 15 },
-        { header: 'Ngành/Chuyên ngành', key: '', width: 20 },
-        { header: 'Loại hình đào tạo', key: '', width: 15 },
-        { header: 'Mã chương trình ĐT', key: 'ma_chuong_trinh_dt', width: 20 },
-        { header: 'Đào tạo từ năm', key: 'dao_tao_tu', width: 10 },
-        { header: 'Đào tạo đến năm', key: 'dao_tao_den', width: 10 },
-        { header: 'Số ngày QĐ thôi học; ngày phát hành', key: '', width: 20 }, // Giữ nguyên title
-        { header: 'Số QĐ bảo lưu; ngày phát hành', key: '', width: 20 },
-        { header: 'Cảnh báo học tập; ngày ký', key: '', width: 20 },
-
-        // Nhóm Kết Quả & Tốt Nghiệp
-        { header: 'Số tín chỉ tích lũy', key: 'tin_chi', width: 10 },
-        { header: 'Điểm TBTL (hệ 10)', key: 'diem_tbtl_10', width: 10 },
-        { header: 'Điểm TBTL (hệ 4)', key: 'diem_tbtl_4', width: 10 },
-        { header: 'Xếp loại TN', key: 'xep_loai_tn', width: 10 },
-
-        { header: 'Số QĐ tốt nghiệp', key: 'so_qd_tn', width: 15 },
-        { header: 'Ngày ban hành QĐ tốt nghiệp', key: 'ngay_qd_tn', width: 15 },
-
-        { header: 'QĐ đạt chuẩn GDQPAN', key: 'qd_gdqpan', width: 15 },
-        { header: 'Ngày phát hành QĐ đạt chuẩn GDQPAN', key: 'ngay_qd_gdqpan', width: 15 },
-
-        { header: 'Xếp loại GDTC', key: '', width: 10 },
-
-        { header: 'QĐ công nhận đạt chuẩn TA', key: 'qd_ta', width: 15 },
-        { header: 'Ngày phát hành QĐ/ký CCTA', key: 'ngay_qd_ta', width: 15 },
-
-        { header: 'Ngày cấp bằng', key: 'ngay_cap_bang', width: 15 },
-        { header: 'Số hiệu văn bằng', key: 'so_hieu_bang', width: 15 },
-
-        { header: 'Số vào sổ cấp bằng', key: '', width: 20 }
+        { header: 'Năm tốt nghiệp THPT', key: 'nam_tot_nghiep_PTTH', width: 12 },
+        { header: 'Tổ hợp xét tuyển', key: 'to_hop_xet_tuyen', width: 10 },
+        { header: 'Điểm trúng tuyển', key: 'diem_trung_tuyen', width: 10 },
       ];
 
       // Thêm dữ liệu
@@ -362,26 +333,24 @@ class SinhVienService {
       // Tô màu theo nhóm (Dựa trên template ảnh)
       // Nhóm 1: Thông tin cá nhân (Cột 1->18) - Màu Cam nhạt
       const personalCols = [];
-      for (let i = 1; i <= 18; i++) personalCols.push(i);
+      for (let i = 1; i <= 14; i++) personalCols.push(i);
       fillCell(personalCols, 'FFE699');
 
-      // Nhóm 2: Đảng/Đoàn & Tuyển sinh (Cột 19->36) - Màu Xanh lá nhạt
+      // Nhóm 2: Thông tin liên lạc(Cột 15->18) - Màu Xanh lá nhạt
+      const contactCols = [];
+      for (let i = 15; i <= 18; i++) contactCols.push(i);
+      fillCell(contactCols, 'E2EFDA');
+      // Nhóm 3: Đảng/Đoàn & Tuyển sinh (Cột 19->25) - Màu Xanh lá nhạt
       const admissionCols = [];
-      for (let i = 19; i <= 36; i++) admissionCols.push(i);
-      fillCell(admissionCols, 'E2EFDA');
-
-      // Nhóm 3: Kết quả & Tốt nghiệp (Cột 37->50) - Màu Xanh dương nhạt
-      const resultCols = [];
-      for (let i = 37; i <= 50; i++) resultCols.push(i);
-      fillCell(resultCols, 'DDEBF7');
-
+      for (let i = 19; i <= 25; i++) admissionCols.push(i);
+      fillCell(admissionCols, 'DDEBF7');
       // --- Style cho các ô dữ liệu (Thêm border) ---
-      const totalColumns = 50; // Tổng 50 cột
+      const totalColumns = 25; // Tổng 25 cột
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber > 1) {
           row.alignment = { vertical: 'middle', wrapText: true };
         }
-        // Apply border cho tất cả cột từ 1 đến 50
+        // Apply border cho tất cả cột từ 1 đến 25
         for (let colIndex = 1; colIndex <= totalColumns; colIndex++) {
           const cell = row.getCell(colIndex);
           cell.border = {
@@ -466,6 +435,11 @@ class SinhVienService {
         dan_toc: headers.findIndex(h => h === "dân tộc"),
         ton_giao: headers.findIndex(h => h === "tôn giáo"),
         quoc_tich: headers.findIndex(h => h === "quốc tịch"),
+
+        to_hop_xet_tuyen: headers.findIndex(h => h.includes("tổ hợp xét tuyển")),
+        diem_trung_tuyen: headers.findIndex(h => h.includes("điểm trúng tuyển")),
+        // quyet_dinh_trung_tuyen: headers.findIndex(h => h.includes("quyết định trúng tuyển")),
+        // ngay_ban_hanh_qd_trung_tuyen: headers.findIndex(h => h.includes("ngày ban hành qđ trúng tuyển") || h.includes("ngày ký qđ trúng tuyển")),
 
         // Cố gắng match chính xác các tiêu đề mới sửa
         cccd: headers.findIndex(h => h.includes("cccd") || h.includes("hộ chiếu") || h.includes("cmnd")),
@@ -588,7 +562,6 @@ class SinhVienService {
         }
 
         const email = getVal(colMap.email);
-        if (!email) missingFields.push("Email");
 
         // User requested 'Doi tuong' required.
         if (!dtMa) missingFields.push("Đối tượng (không được để trống)");
@@ -617,6 +590,10 @@ class SinhVienService {
           dan_toc,
           ton_giao: getVal(colMap.ton_giao),
           quoc_tich: getVal(colMap.quoc_tich),
+          to_hop_xet_tuyen: getVal(colMap.to_hop_xet_tuyen),
+          diem_trung_tuyen: getVal(colMap.diem_trung_tuyen),
+          // quyet_dinh_trung_tuyen: getVal(colMap.quyet_dinh_trung_tuyen),
+          // ngay_ban_hanh_qd_trung_tuyen: parseDate(row[colMap.ngay_ban_hanh_qd_trung_tuyen]),
           CCCD: cccd,
           ngay_cap_CCCD,
           noi_cap_CCCD: getVal(colMap.noi_cap_cccd),
@@ -627,7 +604,6 @@ class SinhVienService {
           ngay_vao_doan,
           ngay_vao_dang,
           doi_tuong_id,
-          ghi_chu: getVal(colMap.ghi_chu),
           lop_id
         };
 

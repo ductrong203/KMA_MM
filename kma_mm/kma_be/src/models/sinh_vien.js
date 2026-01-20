@@ -128,8 +128,21 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.STRING(50),
       allowNull: true
     },
-    trung_tuyen_theo_nguyen_vong: {
+    to_hop_xet_tuyen: {
       type: DataTypes.STRING(50),
+      allowNull: true
+    },
+    diem_trung_tuyen: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0
+    },
+    quyet_dinh_trung_tuyen: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    ngay_ban_hanh_qd_trung_tuyen: {
+      type: DataTypes.DATEONLY,
       allowNull: true
     },
     nam_tot_nghiep_PTTH: {
