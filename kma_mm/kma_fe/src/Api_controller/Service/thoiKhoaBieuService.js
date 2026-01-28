@@ -69,3 +69,12 @@ export const bulkAddToKeHoachMonHoc = async (items) => {
     const response = await api.post('/kehoachmonhoc/bulk-add', { items });
     return response.data;
 };
+
+// Lấy danh sách duyệt điểm
+export const fetchApprovalList = async (khoaDaoTaoId, kyHoc, lopId) => {
+    let url = `/thoikhoabieu/get-approval-list?khoa_dao_tao_id=${khoaDaoTaoId}`;
+    if (kyHoc) url += `&ky_hoc=${kyHoc}`;
+    if (lopId) url += `&lop_id=${lopId}`;
+    const response = await api.get(url);
+    return response.data;
+};

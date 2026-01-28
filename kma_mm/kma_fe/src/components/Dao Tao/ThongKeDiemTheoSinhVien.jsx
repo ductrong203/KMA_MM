@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Grid, Paper, Typography, FormControl, InputLabel, Select, MenuItem, 
-  Button, Table, TableBody, TableCell, TableContainer, TableHead, 
+  Grid, Paper, Typography, FormControl, InputLabel, Select, MenuItem,
+  Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Box, Autocomplete, TextField, Skeleton, Chip,
   TablePagination, Card, CardContent, Dialog, DialogTitle, DialogContent,
   DialogActions
@@ -11,13 +11,13 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PersonIcon from '@mui/icons-material/Person';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { toast } from 'react-toastify';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import {
   fetchDanhSachHeDaoTao,
   getDanhSachKhoaDaoTao
 } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLop } from '../../Api_controller/Service/lopService';
-import { 
+import {
   fetchThongKeDiem
 } from '../../Api_controller/Service/diemService';
 import api from '../../Api_controller/Api_setup/axiosConfig';
@@ -34,18 +34,18 @@ const ThongKeDiemTheoSinhVien = () => {
   const [filterLop, setFilterLop] = useState(null);
   const [filterKyHoc, setFilterKyHoc] = useState('');
   const [filterType, setFilterType] = useState('lop');
-  
+
   // States cho dữ liệu
   const [thongKeTongQuan, setThongKeTongQuan] = useState([]);
   const [chiTietMonHoc, setChiTietMonHoc] = useState([]);
   const [monHocList, setMonHocList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingSemester, setLoadingSemester] = useState(false);
-  
+
   // States cho pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // States cho dialog chi tiết sinh viên
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -180,16 +180,16 @@ const ThongKeDiemTheoSinhVien = () => {
     setSelectedStudent(student);
     setDetailDialogOpen(true);
     setLoadingDetail(true);
-    
+
     try {
       // Lấy chi tiết từ dữ liệu có sẵn (từ fetchThongKeDiem)
-      const studentChiTiet = chiTietMonHoc.find(item => 
+      const studentChiTiet = chiTietMonHoc.find(item =>
         item.ma_sinh_vien === student.ma_sinh_vien
       );
-      
+
       // Lấy thêm chi tiết điểm từ API (bao gồm các lần học lại)
       const detailResult = await layChiTietDiemSinhVien(student.id);
-      
+
       // Kết hợp và xử lý dữ liệu
       const processedData = combineGradeData(studentChiTiet, detailResult.data || [], monHocList);
       setStudentDetailGrades(processedData);
@@ -204,14 +204,14 @@ const ThongKeDiemTheoSinhVien = () => {
   // Kết hợp dữ liệu từ fetchThongKeDiem và diem/filter
   const combineGradeData = (studentChiTiet, detailGrades, monHocList) => {
     const result = [];
-    
+
     // Tạo map từ detailGrades để dễ lookup
     const detailMap = {};
     detailGrades.forEach(detail => {
       const key = `${detail.thoi_khoa_bieu?.mon_hoc_id}-${detail.lan_hoc || 1}`;
       detailMap[key] = detail;
     });
-    
+
     // Xử lý dữ liệu từ fetchThongKeDiem trước
     if (studentChiTiet && studentChiTiet.mon_hoc) {
       monHocList.forEach(monHoc => {
@@ -223,42 +223,51 @@ const ThongKeDiemTheoSinhVien = () => {
             const maMonHoc = detail.thoi_khoa_bieu?.mon_hoc?.ma_mon_hoc;
             return tenMonHoc === monHoc || maMonHoc === monHoc;
           });
-          
+
+          // Logic hiển thị điểm theo yêu cầu: ưu tiên điểm lần 2 nếu có
+          const diemHe4 = matchingDetail?.diem_he_4_2 != null ? matchingDetail.diem_he_4_2 : matchingDetail?.diem_he_4;
+          const diemChu = matchingDetail?.diem_chu_2 != null ? matchingDetail.diem_chu_2 : matchingDetail?.diem_chu;
+          const diemHp = matchingDetail?.diem_hp_2 != null ? matchingDetail.diem_hp_2 : (matchingDetail?.diem_hp || diemMonHoc.diem_hp);
+
           result.push({
-            ma_mon_hoc: matchingDetail?.thoi_khoa_bieu?.mon_hoc?.ma_mon_hoc || monHoc,
-            ten_mon_hoc: monHoc, // Sử dụng tên từ monHocList
+            ma_mon_hoc: matchingDetail?.thoi_khoa_bieu?.mon_hoc?.ma_mon_hoc || monHoc, // monHocKey might be code or name
+            ten_mon_hoc: matchingDetail?.thoi_khoa_bieu?.mon_hoc?.ten_mon_hoc || monHoc,
             so_tin_chi: matchingDetail?.thoi_khoa_bieu?.mon_hoc?.so_tin_chi || 0,
             ky_hoc: studentChiTiet.ky_hoc || matchingDetail?.thoi_khoa_bieu?.ky_hoc || 'N/A',
             dot_hoc: matchingDetail?.thoi_khoa_bieu?.dot_hoc || 'N/A',
             lan_hoc: 1,
-            lan_thi: matchingDetail?.lan_thi || 1,
+            lan_thi: matchingDetail?.diem_ck2 != null ? 2 : 1,
             diem_tp1: diemMonHoc.tp1,
             diem_tp2: diemMonHoc.tp2,
-            diem_gk: diemMonHoc.diem_thi_ktph,
             diem_ck: matchingDetail?.diem_ck,
-            diem_ck2: matchingDetail?.diem_ck2,
-            diem_he_4: matchingDetail?.diem_he_4,
-            diem_chu: matchingDetail?.diem_chu,
-            diem_hp: diemMonHoc.diem_hp,
-            trang_thai: matchingDetail.trang_thai,
+            diem_ck2: matchingDetail?.diem_ck2, // Sẽ hiển thị "không có" khi render nếu null
+            diem_he_4: diemHe4,
+            diem_chu: diemChu,
+            diem_hp: diemHp,
+            trang_thai: matchingDetail?.trang_thai,
             ngay_cap_nhat: matchingDetail?.ngay_cap_nhat,
             ghi_chu: matchingDetail?.ghi_chu
           });
         }
       });
     }
-    
+
     // Thêm các lần học lại từ API diem/filter (lan_hoc > 1)
     detailGrades.forEach(detail => {
       if (detail.lan_hoc && detail.lan_hoc > 1) {
         const tenMonHoc = detail.thoi_khoa_bieu?.mon_hoc?.ten_mon_hoc;
         const maMonHoc = detail.thoi_khoa_bieu?.mon_hoc?.ma_mon_hoc;
-        
+
         // Ưu tiên tên môn học từ monHocList nếu có
-        const finalTenMonHoc = monHocList.find(mon => 
+        const finalTenMonHoc = monHocList.find(mon =>
           mon === tenMonHoc || mon === maMonHoc
         ) || tenMonHoc || maMonHoc || 'N/A';
-        
+
+        // Logic hiển thị điểm theo yêu cầu: ưu tiên điểm lần 2 nếu có
+        const diemHe4 = detail.diem_he_4_2 != null ? detail.diem_he_4_2 : detail.diem_he_4;
+        const diemChu = detail.diem_chu_2 != null ? detail.diem_chu_2 : detail.diem_chu;
+        const diemHp = detail.diem_hp_2 != null ? detail.diem_hp_2 : detail.diem_hp;
+
         result.push({
           ma_mon_hoc: maMonHoc || 'N/A',
           ten_mon_hoc: finalTenMonHoc,
@@ -266,22 +275,21 @@ const ThongKeDiemTheoSinhVien = () => {
           ky_hoc: detail.thoi_khoa_bieu?.ky_hoc || 'N/A',
           dot_hoc: detail.thoi_khoa_bieu?.dot_hoc || 'N/A',
           lan_hoc: detail.lan_hoc,
-          lan_thi: detail.lan_thi || 1,
+          lan_thi: detail.diem_ck2 != null ? 2 : 1,
           diem_tp1: detail.diem_tp1,
           diem_tp2: detail.diem_tp2,
-          diem_gk: detail.diem_gk,
           diem_ck: detail.diem_ck,
-          diem_ck2: detail.diem_ck2,
-          diem_he_4: detail.diem_he_4,
-          diem_chu: detail.diem_chu,
-          diem_hp: detail.diem_hp,
+          diem_ck2: detail.diem_ck2, // Sẽ hiển thị "không có" khi render nếu null
+          diem_he_4: diemHe4,
+          diem_chu: diemChu,
+          diem_hp: diemHp,
           trang_thai: detail.trang_thai,
           ngay_cap_nhat: detail.ngay_cap_nhat,
           ghi_chu: detail.ghi_chu
         });
       }
     });
-    
+
     return result.sort((a, b) => {
       // Sắp xếp theo tên môn học, sau đó theo lần học
       if (a.ten_mon_hoc !== b.ten_mon_hoc) {
@@ -313,34 +321,125 @@ const ThongKeDiemTheoSinhVien = () => {
       return;
     }
 
-    const worksheetData = studentDetailGrades.map((item, index) => ({
-      'STT': index + 1,
-      'Mã môn học': item.ma_mon_hoc,
-      'Tên môn học': item.ten_mon_hoc,
-      'Số tín chỉ': item.so_tin_chi,
-      'Kỳ học': item.ky_hoc,
-      'Đợt học': item.dot_hoc,
-      'Lần học': item.lan_hoc,
-      'Lần thi': item.lan_thi || '-',
-      'Điểm TP1': item.diem_tp1 ?? '-',
-      'Điểm TP2': item.diem_tp2 ?? '-',
-      'Điểm GK': item.diem_gk ?? '-',
-      'Điểm CK': item.diem_ck ?? '-',
-      'Điểm CK lần 2': item.diem_ck2 ?? '-',
-      'Điểm hệ 4': item.diem_he_4 ?? '-',
-      'Điểm chữ': item.diem_chu || '-',
-      'Điểm HP': item.diem_hp ?? '-',
-      'Trạng thái': item.trang_thai || '-',
-      'Ngày cập nhật': item.ngay_cap_nhat ? new Date(item.ngay_cap_nhat).toLocaleDateString('vi-VN') : '-',
-      'Ghi chú': item.ghi_chu || '-'
-    }));
+    // Định nghĩa headers
+    const headers = [
+      'STT', 'Mã môn học', 'Tên môn học', 'Số tín chỉ', 'Kỳ học', 'Đợt học', 'Lần học', 'Lần thi',
+      'Điểm TP1', 'Điểm TP2', 'Điểm CK', 'Điểm CK lần 2', 'Điểm hệ 4', 'Điểm chữ', 'Điểm HP',
+      'Trạng thái', 'Ngày cập nhật', 'Ghi chú'
+    ];
 
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Bảng điểm sinh viên');
-    
+    // Chuẩn bị dữ liệu
+    const data = studentDetailGrades.map((item, index) => [
+      index + 1,
+      item.ma_mon_hoc,
+      item.ten_mon_hoc,
+      item.so_tin_chi,
+      item.ky_hoc,
+      item.dot_hoc,
+      item.lan_hoc,
+      item.lan_thi || '-',
+      item.diem_tp1 ?? '-',
+      item.diem_tp2 ?? '-',
+      item.diem_ck ?? '-',
+      item.diem_ck2 != null ? item.diem_ck2 : 'không có',
+      item.diem_he_4_2 != null ? item.diem_he_4_2 : (item.diem_he_4 ?? '-'),
+      item.diem_chu_2 != null ? item.diem_chu_2 : (item.diem_chu || '-'),
+      item.diem_hp_2 != null ? item.diem_hp_2 : (item.diem_hp ?? '-'),
+      item.trang_thai === "qua_mon" ? 'qua môn' : "trượt môn",
+      item.ngay_cap_nhat ? new Date(item.ngay_cap_nhat).toLocaleDateString('vi-VN') : '-',
+      item.ghi_chu || '-'
+    ]);
+
+    // Tạo workbook và worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+
+    // Định nghĩa độ rộng cột
+    ws['!cols'] = [
+      { wch: 5 },  // STT
+      { wch: 15 }, // Mã môn
+      { wch: 15 }, // Tên môn
+      { wch: 8 },  // TC
+      { wch: 8 },  // Kỳ
+      { wch: 8 },  // Đợt
+      { wch: 8 },  // Lần học
+      { wch: 8 },  // Lần thi
+      { wch: 10 }, // TP1
+      { wch: 10 }, // TP2
+      { wch: 10 }, // CK
+      { wch: 15 }, // CK2
+      { wch: 10 }, // Hệ 4
+      { wch: 10 }, // Chữ
+      { wch: 10 }, // HP
+      { wch: 15 }, // Trạng thái
+      { wch: 15 }, // Ngày cập nhật
+      { wch: 20 }  // Ghi chú
+    ];
+
+    // Style cho Header
+    const headerStyleBase = {
+      font: { bold: true, color: { rgb: "000000" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin" }, bottom: { style: "thin" },
+        left: { style: "thin" }, right: { style: "thin" }
+      }
+    };
+
+    const range1Style = { ...headerStyleBase, fill: { fgColor: { rgb: "D9E1F2" } } }; // Blue-ish (A-H)
+    const range2Style = { ...headerStyleBase, fill: { fgColor: { rgb: "FFF2CC" } } }; // Yellow-ish (I-O)
+    const range3Style = { ...headerStyleBase, fill: { fgColor: { rgb: "FCE4D6" } } }; // Orange-ish (P-R)
+
+    // Apply header styles
+    for (let c = 0; c < headers.length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: c });
+      if (!ws[cellRef]) continue;
+
+      if (c <= 7) ws[cellRef].s = range1Style;
+      else if (c <= 14) ws[cellRef].s = range2Style;
+      else ws[cellRef].s = range3Style;
+    }
+
+    // Style cho data rows và validation trượt môn
+    const centerStyle = { alignment: { horizontal: "center", vertical: "center" } };
+    const borderStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+
+    // Style cho row bị trượt môn (đỏ nhạt)
+    const redRowStyle = {
+      fill: { fgColor: { rgb: "FFCCCC" } }, // Light Red
+      ...borderStyle,
+      ...centerStyle
+    };
+
+    const normalRowStyle = {
+      ...borderStyle,
+      ...centerStyle
+    };
+
+    data.forEach((row, rowIndex) => {
+      // Cột trạng thái là index 15
+      const isFail = row[15] === "trượt môn";
+      const rowStyle = isFail ? redRowStyle : normalRowStyle;
+
+      for (let c = 0; c < headers.length; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIndex + 1, c: c }); // +1 vì row 0 là header
+        if (!ws[cellRef]) ws[cellRef] = { v: row[c], t: 's' };
+
+        // Merge styles
+        if (c === 2) { // Tên môn học
+          ws[cellRef].s = {
+            ...rowStyle,
+            alignment: { horizontal: "left", vertical: "center" }
+          };
+        } else {
+          ws[cellRef].s = rowStyle;
+        }
+      }
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Bảng điểm sinh viên');
     const fileName = `BangDiem_${selectedStudent?.ma_sinh_vien || 'SinhVien'}_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(wb, fileName);
   };
 
   // Xử lý phân trang
@@ -369,7 +468,7 @@ const ThongKeDiemTheoSinhVien = () => {
             Danh sách sinh viên ({thongKeTongQuan.length})
           </Typography>
         </Box>
-        
+
         <TableContainer sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
@@ -388,8 +487,8 @@ const ThongKeDiemTheoSinhVien = () => {
             </TableHead>
             <TableBody>
               {paginatedData.map((sv, index) => (
-                <TableRow 
-                  key={sv.ma_sinh_vien} 
+                <TableRow
+                  key={sv.ma_sinh_vien}
                   sx={{ backgroundColor: index % 2 ? '#fafafa' : 'white' }}
                 >
                   <TableCell>{startIndex + index + 1}</TableCell>
@@ -417,7 +516,7 @@ const ThongKeDiemTheoSinhVien = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        
+
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
@@ -436,8 +535,8 @@ const ThongKeDiemTheoSinhVien = () => {
   // Render dialog chi tiết điểm sinh viên
   const renderGradeDetailDialog = () => {
     return (
-      <Dialog 
-        open={detailDialogOpen} 
+      <Dialog
+        open={detailDialogOpen}
         onClose={() => setDetailDialogOpen(false)}
         maxWidth="xl"
         fullWidth
@@ -477,7 +576,8 @@ const ThongKeDiemTheoSinhVien = () => {
                     <TableCell sx={{ fontWeight: 'bold' }}>Lần thi</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>ĐTP1</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>ĐTP2</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Đ.GK</TableCell>
+                    {/* Bỏ cột Đ.GK */}
+                    {/* <TableCell sx={{ fontWeight: 'bold' }}>Đ.GK</TableCell> */}
                     <TableCell sx={{ fontWeight: 'bold' }}>Đ.CK</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Đ.CK2</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Đ.Hệ 4</TableCell>
@@ -491,9 +591,9 @@ const ThongKeDiemTheoSinhVien = () => {
                   {studentDetailGrades.map((item, index) => {
                     const isRetake = item.lan_hoc > 1;
                     return (
-                      <TableRow 
+                      <TableRow
                         key={`${item.ma_mon_hoc}-${item.lan_hoc}-${index}`}
-                        sx={{ 
+                        sx={{
                           backgroundColor: isRetake ? '#fff3e0' : (index % 2 ? '#fafafa' : 'white'),
                           borderLeft: isRetake ? '4px solid #ff9800' : 'none'
                         }}
@@ -509,7 +609,7 @@ const ThongKeDiemTheoSinhVien = () => {
                         <TableCell>{item.ky_hoc}</TableCell>
                         <TableCell>{item.dot_hoc}</TableCell>
                         <TableCell>
-                          <Chip 
+                          <Chip
                             label={`Lần ${item.lan_hoc}`}
                             size="small"
                             color={isRetake ? "warning" : "default"}
@@ -519,12 +619,13 @@ const ThongKeDiemTheoSinhVien = () => {
                         <TableCell>{item.lan_thi || 1}</TableCell>
                         <TableCell>{item.diem_tp1 ?? '-'}</TableCell>
                         <TableCell>{item.diem_tp2 ?? '-'}</TableCell>
-                        <TableCell>{item.diem_gk ?? '-'}</TableCell>
+                        {/* Bỏ cột Đ.GK */}
+                        {/* <TableCell>{item.diem_gk ?? '-'}</TableCell> */}
                         <TableCell>{item.diem_ck ?? '-'}</TableCell>
-                        <TableCell>{item.diem_ck2 ?? '-'}</TableCell>
+                        <TableCell>{item.diem_ck2 != null ? item.diem_ck2 : 'không có'}</TableCell>
                         <TableCell>{item.diem_he_4 ?? '-'}</TableCell>
                         <TableCell>
-                          <Chip 
+                          <Chip
                             label={item.diem_chu || 'N/A'}
                             size="small"
                             color={item.diem_chu && ['A', 'B', 'C', 'D'].includes(item.diem_chu) ? "success" : "error"}
@@ -532,15 +633,15 @@ const ThongKeDiemTheoSinhVien = () => {
                         </TableCell>
                         <TableCell>{item.diem_hp ?? '-'}</TableCell>
                         <TableCell>
-                          <Chip 
-                            label={item.trang_thai=="qua_mon"?'qua môn':"trượt môn" || 'N/A'}
+                          <Chip
+                            label={item.trang_thai == "qua_mon" ? 'qua môn' : "trượt môn" || 'N/A'}
                             size="small"
                             color={item.trang_thai === 'qua_mon' ? "success" : "default"}
                           />
                         </TableCell>
                         <TableCell>
-                          {item.ngay_cap_nhat ? 
-                            new Date(item.ngay_cap_nhat).toLocaleDateString('vi-VN') : 
+                          {item.ngay_cap_nhat ?
+                            new Date(item.ngay_cap_nhat).toLocaleDateString('vi-VN') :
                             '-'
                           }
                         </TableCell>
@@ -578,9 +679,9 @@ const ThongKeDiemTheoSinhVien = () => {
       <Grid item xs={12}>
         <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <Typography variant="h6" gutterBottom>
-            Bộ lọc thống kê điểm theo sinh viên
+            Bộ lọc chi tiết điểm sinh viên
           </Typography>
-          
+
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
@@ -604,7 +705,7 @@ const ThongKeDiemTheoSinhVien = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Khóa đào tạo</InputLabel>
@@ -628,7 +729,7 @@ const ThongKeDiemTheoSinhVien = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Loại lọc</InputLabel>
@@ -646,7 +747,7 @@ const ThongKeDiemTheoSinhVien = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             {filterType === 'lop' && (
               <Grid item xs={12} sm={3}>
                 <Autocomplete
@@ -659,7 +760,7 @@ const ThongKeDiemTheoSinhVien = () => {
                 />
               </Grid>
             )}
-            
+
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Kỳ học</InputLabel>
@@ -677,7 +778,7 @@ const ThongKeDiemTheoSinhVien = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sx={{ display: 'flex', gap: 2 }}>
               <Button
                 variant="contained"

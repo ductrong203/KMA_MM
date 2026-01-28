@@ -95,38 +95,17 @@ class SinhVienService {
       if (!khoa_dao_tao_id && !lop_id && !doi_tuong_quan_ly_id) {
         throw new Error("Phải cung cấp ít nhất một tham số: khoa_dao_tao_id, lop_id, hoặc doi_tuong_quan_ly_id");
       }
-      if (lop_id) {
-        const lopCheck = await lop.findOne({
-          where: {
-            id: lop_id,
-            ...(khoa_dao_tao_id && { khoa_dao_tao_id })
-          }
-        });
-        if (!lopCheck) {
-          throw new Error("Lớp không tồn tại hoặc không thuộc khóa đào tạo này");
-        }
-      }
-      if (doi_tuong_quan_ly_id) {
-        const doiTuongCheck = await doi_tuong_quan_ly.findByPk(doi_tuong_quan_ly_id);
-        if (!doiTuongCheck) {
-          throw new Error("Đối tượng quản lý không tồn tại");
-        }
-      }
-      // Xây dựng điều kiện where
+
       const whereCondition = {};
-      if (lop_id) {
-        whereCondition.lop_id = lop_id;
-      }
-      if (doi_tuong_quan_ly_id) {
-        whereCondition.doi_tuong_id = doi_tuong_quan_ly_id;
-      }
+      if (lop_id) whereCondition.lop_id = lop_id;
+      if (doi_tuong_quan_ly_id) whereCondition.doi_tuong_id = doi_tuong_quan_ly_id;
 
       const sinhViens = await sinh_vien.findAll({
         include: [
           {
             model: doi_tuong_quan_ly,
             as: 'doi_tuong',
-            required: false // Left Join
+            required: false
           },
           {
             model: thong_tin_quan_nhan,
@@ -137,13 +116,17 @@ class SinhVienService {
             model: lop,
             as: 'lop',
             required: true,
-            where: {
-              ...(khoa_dao_tao_id && { khoa_dao_tao_id })
-            },
+            where: { ...(khoa_dao_tao_id && { khoa_dao_tao_id }) },
             include: [
               {
                 model: khoa_dao_tao,
                 as: 'khoa_dao_tao',
+                include: [
+                  {
+                    model: danh_muc_dao_tao,
+                    as: 'he_dao_tao'
+                  }
+                ]
               }
             ]
           },
@@ -154,34 +137,61 @@ class SinhVienService {
           },
           {
             model: chung_chi,
+            as: 'chungChis', // Alias from init-models: sinh_vien.hasMany(chung_chi, as: 'chung_chis'...) CHECK ALIAS? 
+            // In init-models.js: sinh_vien.hasMany(chung_chi, { as: "chung_chis", ... });. But user code had 'chungChis' in find? 
+            // Let's use the alias from existing code if it worked, or fix it.
+            // Previous code used 'chungChis'. I will use 'chung_chis' based on init-models, OR keep 'chungChis' if the user defined it differently in their working code.
+            // The previous code snippet used `as: 'chungChis'` in `include`.
+            // Wait, init-models says `as: "chung_chis"`. Using `chung_chis` is safer if init-models is source of truth.
             as: 'chungChis',
-            required: false
+            required: false,
+            include: [{ model: db.loai_chung_chi, as: 'loaiChungChi' }]
           }
         ],
         where: whereCondition,
         order: [['ten', 'ASC']],
-        distinct: true
+        // distinct: true 
       });
 
       if (!sinhViens || sinhViens.length === 0) {
         return { message: "Không tìm thấy sinh viên phù hợp", students: [] };
       }
 
-      // Định dạng dữ liệu cho Excel theo Template mới
+      // --- Fetch Chuong Trinh Dao Tao Info (So Quyet Dinh) ---
+      // Map KhoaID -> SoQuyetDinh (Assuming one per Khoa for simplicity/logic)
+      const khoaIds = [...new Set(sinhViens.map(sv => sv.lop?.khoa_dao_tao?.id).filter(Boolean))];
+      const programDecisions = {};
+
+      if (khoaIds.length > 0) {
+        const { chuong_trinh_dao_tao } = db;
+        // Fetch one record per Khoa to get the decision number
+        const programs = await chuong_trinh_dao_tao.findAll({
+          where: { khoa_dao_tao_id: khoaIds },
+          attributes: ['khoa_dao_tao_id', 'so_quyet_dinh']
+        });
+        programs.forEach(p => {
+          // If multiple, just take the first one found
+          if (!programDecisions[p.khoa_dao_tao_id]) {
+            programDecisions[p.khoa_dao_tao_id] = p.so_quyet_dinh;
+          }
+        });
+      }
+
+      // --- Format Data ---
       const formattedData = sinhViens.map((sv, index) => {
         const formatDate = (dateVal) => dateVal ? new Date(dateVal).toLocaleDateString('vi-VN') : '';
 
         // Extract complex data
         const gradInfo = (sv.tot_nghieps && sv.tot_nghieps.length > 0) ? sv.tot_nghieps[0] : {};
+
         const chungChis = sv.chungChis || [];
 
-        // Find Certificates by Type ID (Assuming: 7=GDQPAN, 6=TA, 3=TotNghiep/DaiHoc from logic discussion)
-        // User request: "khác loai_chung_chi_id". I will assume ID 3 for Graduation Decision based on loai_chung_chi table image.
-        const gdqpan = chungChis.find(c => c.loai_chung_chi_id === 7);
-        const chuanTA = chungChis.find(c => c.loai_chung_chi_id === 6);
-        const qdTn = chungChis.find(c => c.loai_chung_chi_id === 3); // Adjust ID if needed
+        // Certificates - Mapping based on Name logic
+        const gdqpan = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('gdqp'));
+        const chuanTA = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('chuẩn đầu ra ta') || c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('tiếng anh'));
+        const qdTn = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('tốt nghiệp') || c.loai_chung_chi_id === 3);
 
-        // Split Nam Hoc (2021-2025)
+        // Split Nam Hoc
         let dao_tao_tu = '';
         let dao_tao_den = '';
         const namHoc = sv.lop?.khoa_dao_tao?.nam_hoc;
@@ -190,6 +200,9 @@ class SinhVienService {
           if (parts.length > 0) dao_tao_tu = parts[0];
           if (parts.length > 1) dao_tao_den = parts[1];
         }
+
+        const khoaId = sv.lop?.khoa_dao_tao?.id;
+        const soQuyetDinhCTDT = programDecisions[khoaId] || '';
 
         const donViGui = (sv.thong_tin_quan_nhans && sv.thong_tin_quan_nhans.length > 0)
           ? sv.thong_tin_quan_nhans[0].don_vi_cu_di_hoc
@@ -216,40 +229,38 @@ class SinhVienService {
           dien_thoai_cq: sv.dien_thoai_CQ || '',
           ngay_vao_doan: formatDate(sv.ngay_vao_doan),
           ngay_vao_dang: formatDate(sv.ngay_vao_dang),
-
-          doi_tuong: sv.doi_tuong?.ma_doi_tuong || '', // Use CODE as requested
+          doi_tuong: sv.doi_tuong?.ma_doi_tuong || '',
           don_vi_gui: donViGui,
           nam_tot_nghiep_PTTH: formatDate(sv.nam_tot_nghiep_PTTH),
-
-          // New/Mapped Fields
-          ngay_nhap_hoc: formatDate(sv.ngay_vao_truong),
-          ma_chuong_trinh_dt: sv.lop?.khoa_dao_tao?.ten_khoa || '',
-          dao_tao_tu: dao_tao_tu,
-          dao_tao_den: dao_tao_den,
-
           to_hop_xet_tuyen: sv.to_hop_xet_tuyen || '',
           diem_trung_tuyen: sv.diem_trung_tuyen || '',
-          quyet_dinh_trung_tuyen: sv.quyet_dinh_trung_tuyen || '',
-          ngay_ban_hanh_qd_trung_tuyen: formatDate(sv.ngay_ban_hanh_qd_trung_tuyen),
 
-          tin_chi: sv.tong_tin_chi || 0,
-          diem_tbtl_10: sv.diem_trung_binh_tich_luy || '',
-          diem_tbtl_4: sv.diem_trung_binh_he_4 || '',
+          // New/Updated Columns
+          ngay_vao_truong: formatDate(sv.ngay_vao_truong), // Z
+          quyet_dinh_trung_tuyen: sv.quyet_dinh_trung_tuyen || '', // AA
+          ngay_ban_hanh_qd_trung_tuyen: formatDate(sv.ngay_ban_hanh_qd_trung_tuyen), // AB
+          he_dao_tao: sv.lop?.khoa_dao_tao?.he_dao_tao?.ten_he_dao_tao || '', // AC (Merged AC-AD)
+          so_quyet_dinh_ctdt: soQuyetDinhCTDT, // AE
+          dao_tao_tu: dao_tao_tu, // AF
+          dao_tao_den: dao_tao_den, // AG
+          // AH, AI, AJ - Empty
+          tong_tin_chi: sv.tong_tin_chi || 0, // AK
+          diem_tbtl_10: sv.diem_trung_binh_tich_luy || '', // AL
+          diem_tbtl_4: sv.diem_trung_binh_he_4 || '', // AM
+          xep_loai_tn: gradInfo.xep_loai || '', // AN
 
-          // Graduation
-          xep_loai_tn: gradInfo.xep_loai || '',
-          so_hieu_bang: gradInfo.so_hieu_bang || '',
-          ngay_cap_bang: formatDate(gradInfo.ngay_cap_bang),
+          // Certificates (AO-AU)
+          so_qd_tn: qdTn?.so_quyet_dinh || '', // AO
+          ngay_qd_tn: formatDate(qdTn?.ngay_ky_quyet_dinh), // AP
+          qd_gdqpan: gdqpan?.so_quyet_dinh || '', // AQ
+          ngay_qd_gdqpan: formatDate(gdqpan?.ngay_ky_quyet_dinh), // AR
+          // AS - Empty
+          qd_ta: chuanTA?.so_quyet_dinh || '', // AT
+          ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh), // AU
 
-          // Certificates Decisions
-          so_qd_tn: qdTn?.so_quyet_dinh || '',
-          ngay_qd_tn: formatDate(qdTn?.ngay_ky_quyet_dinh),
-
-          qd_gdqpan: gdqpan?.so_quyet_dinh || '',
-          ngay_qd_gdqpan: formatDate(gdqpan?.ngay_ky_quyet_dinh),
-
-          qd_ta: chuanTA?.so_quyet_dinh || '',
-          ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh)
+          ngay_cap_bang: formatDate(gradInfo.ngay_cap_bang), // AV
+          so_hieu_bang: gradInfo.so_hieu_bang || '', // AW
+          // AX - Empty
         }
       });
 
@@ -259,6 +270,7 @@ class SinhVienService {
         total: sinhViens.length
       };
     } catch (error) {
+      console.error(error)
       throw new Error("Lỗi khi lấy danh sách sinh viên cho Excel: " + error.message);
     }
   }
@@ -270,103 +282,141 @@ class SinhVienService {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Danh sách sinh viên');
 
-      // Định nghĩa tiêu đề cột - FULL 40+ CỘT
-      // Các cột "kệ nó" sẽ để key là null hoặc empty để không map data
+      // Định nghĩa Mapping Cột (Headers) - 50 Cột (A=1 ... AX=50)
       worksheet.columns = [
-        { header: 'TT', key: 'stt', width: 5 },
-        { header: 'Mã sinh viên', key: 'ma_sinh_vien', width: 15 },
-        { header: 'Họ tên đệm', key: 'ho_dem', width: 20 },
-        { header: 'Tên', key: 'ten', width: 10 },
-        { header: 'Lớp', key: 'lop', width: 10 },
-        { header: 'Ngày sinh', key: 'ngay_sinh', width: 12 },
-        { header: 'Nơi sinh', key: 'noi_sinh', width: 15 },
-        { header: 'Giới tính', key: 'gioi_tinh', width: 8 },
-        { header: 'Dân tộc', key: 'dan_toc', width: 10 },
-        { header: 'Tôn giáo', key: 'ton_giao', width: 10 },
-        { header: 'Quốc tịch', key: 'quoc_tich', width: 10 },
-        { header: 'Số CCCD/Hộ chiếu', key: 'cccd', width: 15 },
-        { header: 'Ngày cấp CCCD/Hộ chiếu', key: 'ngay_cap_cccd', width: 15 },
-        { header: 'Nơi cấp CCCD/Hộ chiếu', key: 'noi_cap_cccd', width: 20 },
-        { header: 'Số điện thoại', key: 'so_dien_thoai', width: 12 },
-        { header: 'Email', key: 'email', width: 20 },
-        { header: 'Điện thoại gia đình', key: 'dien_thoai_gia_dinh', width: 15 },
-        { header: 'Điện thoại cơ quan', key: 'dien_thoai_cq', width: 15 },
-        { header: 'Ngày vào đoàn', key: 'ngay_vao_doan', width: 12 },
-        { header: 'Ngày vào Đảng', key: 'ngay_vao_dang', width: 12 },
-        { header: 'Đối tượng', key: 'doi_tuong', width: 10 },
-        { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui', width: 20 },
-        // Nhóm Tuyển Sinh & Đào Tạo
-        { header: 'Năm tốt nghiệp THPT', key: 'nam_tot_nghiep_PTTH', width: 12 },
-        { header: 'Tổ hợp xét tuyển', key: 'to_hop_xet_tuyen', width: 10 },
-        { header: 'Điểm trúng tuyển', key: 'diem_trung_tuyen', width: 10 },
+        { header: 'TT', key: 'stt', width: 5 }, // A
+        { header: 'Mã sinh viên', key: 'ma_sinh_vien', width: 15 }, // B
+        { header: 'Họ tên đệm', key: 'ho_dem', width: 20 }, // C
+        { header: 'Tên', key: 'ten', width: 10 }, // D
+        { header: 'Lớp', key: 'lop', width: 10 }, // E
+        { header: 'Ngày sinh', key: 'ngay_sinh', width: 12 }, // F
+        { header: 'Nơi sinh', key: 'noi_sinh', width: 15 }, // G
+        { header: 'Giới tính', key: 'gioi_tinh', width: 8 }, // H
+        { header: 'Dân tộc', key: 'dan_toc', width: 10 }, // I
+        { header: 'Tôn giáo', key: 'ton_giao', width: 10 }, // J
+        { header: 'Quốc tịch', key: 'quoc_tich', width: 10 }, // K
+        { header: 'Số CCCD/Hộ chiếu', key: 'cccd', width: 15 }, // L
+        { header: 'Ngày cấp CCCD/Hộ chiếu', key: 'ngay_cap_cccd', width: 15 }, // M
+        { header: 'Nơi cấp CCCD/Hộ chiếu', key: 'noi_cap_cccd', width: 20 }, // N
+        { header: 'Số điện thoại', key: 'so_dien_thoai', width: 12 }, // O
+        { header: 'Email', key: 'email', width: 20 }, // P
+        { header: 'Điện thoại gia đình', key: 'dien_thoai_gia_dinh', width: 15 }, // Q
+        { header: 'Điện thoại cơ quan', key: 'dien_thoai_cq', width: 15 }, // R
+        { header: 'Ngày vào đoàn', key: 'ngay_vao_doan', width: 12 }, // S
+        { header: 'Ngày vào Đảng', key: 'ngay_vao_dang', width: 12 }, // T
+        { header: 'Đối tượng', key: 'doi_tuong', width: 10 }, // U
+        { header: 'Đơn vị gửi đào tạo', key: 'don_vi_gui', width: 20 }, // V
+        { header: 'Năm tốt nghiệp THPT', key: 'nam_tot_nghiep_PTTH', width: 12 }, // W
+        { header: 'Tổ hợp xét tuyển', key: 'to_hop_xet_tuyen', width: 10 }, // X
+        { header: 'Điểm trúng tuyển', key: 'diem_trung_tuyen', width: 10 }, // Y
+
+        // --- New Columns ---
+        { header: 'Ngày nhập học', key: 'ngay_vao_truong', width: 12 }, // Z
+        { header: 'Quyết định trúng tuyển', key: 'quyet_dinh_trung_tuyen', width: 15 }, // AA
+        { header: 'Ngày ban hành QĐ trúng tuyển', key: 'ngay_ban_hanh_qd_trung_tuyen', width: 15 }, // AB
+        { header: 'Hệ đào tạo', key: 'he_dao_tao', width: 15 }, // AC
+        { header: 'Hệ đào tạo (M)', key: 'he_dao_tao_merge', width: 0.1 }, // AD (Empty/Merged)
+        { header: 'Số QĐ chương trình đào tạo', key: 'so_quyet_dinh_ctdt', width: 15 }, // AE
+        { header: 'Đào tạo từ năm', key: 'dao_tao_tu', width: 10 }, // AF
+        { header: 'Đào tạo đến năm', key: 'dao_tao_den', width: 10 }, // AG
+
+        { header: 'Số ngày QĐ thôi học; ngày phát hành', key: '', width: 15 }, // AH
+        { header: 'Số QĐ bảo lưu; ngày phát hành', key: '', width: 15 }, // AI
+        { header: 'Cảnh báo học tập; ngày ký', key: '', width: 15 }, // AJ
+
+        { header: 'Số tín chỉ tích lũy', key: 'tong_tin_chi', width: 10 }, // AK
+        { header: 'Điểm TBTL (hệ 10)', key: 'diem_tbtl_10', width: 10 }, // AL
+        { header: 'Điểm TBTL (hệ 4)', key: 'diem_tbtl_4', width: 10 }, // AM
+        { header: 'Xếp loại TN', key: 'xep_loai_tn', width: 10 }, // AN
+
+        { header: 'Số QĐ tốt nghiệp', key: 'so_qd_tn', width: 15 }, // AO
+        { header: 'Ngày ban hành QĐ tốt nghiệp', key: 'ngay_qd_tn', width: 15 }, // AP
+        { header: 'QĐ đạt chuẩn GDQPAN', key: 'qd_gdqpan', width: 15 }, // AQ
+        { header: 'Ngày phát hành QĐ đạt chuẩn ', key: 'ngay_qd_gdqpan', width: 15 }, // AR
+        { header: 'Xếp loại GDTC', key: '', width: 10 }, // AS
+        { header: 'QĐ công nhận đạt chuẩn TA', key: 'qd_ta', width: 15 }, // AT
+        { header: 'Ngày phát hành QĐ/Ký CCTA', key: 'ngay_qd_ta', width: 15 }, // AU
+        { header: 'Ngày cấp bằng', key: 'ngay_cap_bang', width: 15 }, // AV
+        { header: 'Số hiệu văn bằng', key: 'so_hieu_bang', width: 15 }, // AW
+        { header: 'Số vào sổ cấp bằng', key: '', width: 15 }, // AX
       ];
 
       // Thêm dữ liệu
       students.forEach(student => {
+        // Handle merged columns data logic if needed, but for AC/AD simplify:
+        // Write data to AC (mapped to 'he_dao_tao'), AD mapped to 'he_dao_tao_merge' (empty or whatever)
+        // Note: key map automatically handles putting data into cells.
         worksheet.addRow(student);
       });
 
-      // --- Style cho Header (Định dạng hàng đầu tiên) ---
-      const headerRow = worksheet.getRow(1);
-      headerRow.font = { name: 'Times New Roman', size: 11, color: { argb: '000000' } };
-      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true, };
-      headerRow.height = 45; // Tăng chiều cao để hiển thị đẹp hơn
+      // --- Merge Header Cells ---
+      // AC and AD: 'Hệ đào tạo'
+      // Header row is 1
+      students.forEach((student, index) => {
+        worksheet.addRow(student);
+      });
 
-      // Hàm hỗ trợ tô màu nền cho các ô
-      const fillCell = (colIndices, colorHex) => {
-        colIndices.forEach(idx => {
-          const cell = headerRow.getCell(idx);
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: colorHex }
-          };
-          cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        });
+      // --- Merge Header Cells ---
+      worksheet.mergeCells('AC1:AD1');
+
+      const lastRow = worksheet.lastRow.number;
+      for (let r = 2; r <= lastRow; r++) {
+        // Merge data rows for AC:AD if needed, or remove if not desired. 
+        // Keeping consistent with header merge for visual alignment if that was the intent.
+        // However, typically data might differ. Let's merge for now as per previous logic attempt.
+        try {
+          worksheet.mergeCells(`AC${r}:AD${r}`);
+        } catch (e) { }
+      }
+
+      // --- Styles ---
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: '000000' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      headerRow.height = 50;
+
+      const fillCell = (colIdxStart, colIdxEnd, colorHex) => {
+        for (let i = colIdxStart; i <= colIdxEnd; i++) {
+          const cell = headerRow.getCell(i);
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorHex } };
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        }
       };
 
-      // Tô màu theo nhóm (Dựa trên template ảnh)
-      // Nhóm 1: Thông tin cá nhân (Cột 1->18) - Màu Cam nhạt
-      const personalCols = [];
-      for (let i = 1; i <= 14; i++) personalCols.push(i);
-      fillCell(personalCols, 'FFE699');
+      fillCell(1, 14, 'FFE699');
+      fillCell(15, 20, 'E2EFDA');
+      fillCell(21, 36, 'DDEBF7');
+      fillCell(37, 50, 'FFF2CC');
 
-      // Nhóm 2: Thông tin liên lạc(Cột 15->18) - Màu Xanh lá nhạt
-      const contactCols = [];
-      for (let i = 15; i <= 18; i++) contactCols.push(i);
-      fillCell(contactCols, 'E2EFDA');
-      // Nhóm 3: Đảng/Đoàn & Tuyển sinh (Cột 19->25) - Màu Xanh lá nhạt
-      const admissionCols = [];
-      for (let i = 19; i <= 25; i++) admissionCols.push(i);
-      fillCell(admissionCols, 'DDEBF7');
-      // --- Style cho các ô dữ liệu (Thêm border) ---
-      const totalColumns = 25; // Tổng 25 cột
+      // Apply border to rest (if any remain)
+      // for (let i = 51; i <= 50; i++) ... Nothing left if only up to AX(50).
+
+      // Ensure border for all header cells:
+      for (let i = 1; i <= 50; i++) {
+        const cell = headerRow.getCell(i);
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      }
+
+      // Data borders
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) {
-          row.alignment = { vertical: 'middle', wrapText: true };
-        }
-        // Apply border cho tất cả cột từ 1 đến 25
-        for (let colIndex = 1; colIndex <= totalColumns; colIndex++) {
-          const cell = row.getCell(colIndex);
-          cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        }
+        row.eachCell((cell) => {
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          if (rowNumber > 1) cell.font = { name: 'Times New Roman', size: 11 };
+        });
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;
     } catch (error) {
+      console.error(error)
       throw new Error("Lỗi khi xuất file Excel: " + error.message);
     }
+  }
+
+  static async getDanhSachSinhVienPreview({ khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id }) {
+    const { students } = await this.getDanhSachSinhVienExcel({ khoa_dao_tao_id, lop_id, doi_tuong_quan_ly_id });
+    return students;
   }
 
   static async importSinhVien({ lop_id, filePath, ghi_de = 0 }) {

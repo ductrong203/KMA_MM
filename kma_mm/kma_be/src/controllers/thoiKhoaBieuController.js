@@ -231,6 +231,23 @@ class ThoiKhoaBieuController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  static async getApprovalList(req, res) {
+    try {
+      const { khoa_dao_tao_id, ky_hoc, lop_id } = req.query;
+      const data = await ThoiKhoaBieuService.getApprovalList({
+        khoa_dao_tao_id,
+        ky_hoc,
+        lop_id
+      });
+      res.json({
+        success: true,
+        data: data
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = ThoiKhoaBieuController;

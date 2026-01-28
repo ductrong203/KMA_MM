@@ -66,13 +66,14 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
                     sx={{ mb: 3 }}
                     inputProps={{ style: { padding: '12px 14px' } }}
                 >
-                    <MenuItem value="1">Training</MenuItem>
-                    <MenuItem value="2">Examination</MenuItem>
-                    <MenuItem value="3">Student Manage</MenuItem>
-                    <MenuItem value="4">Library</MenuItem>
-                    <MenuItem value="5">Director</MenuItem>
+                    <MenuItem value="1">Đào tạo</MenuItem>
+                    <MenuItem value="2">Khảo thí</MenuItem>
+                    <MenuItem value="3">QLSV</MenuItem>
+                    <MenuItem value="4">Thư viện</MenuItem>
+                    <MenuItem value="5">Giám đốc</MenuItem>
                     <MenuItem value="6">SV</MenuItem>
                     <MenuItem value="7">Admin</MenuItem>
+                    <MenuItem value="8">Lãnh đạo duyệt</MenuItem>
                 </TextField>
                 <TextField
                     label="Created At"

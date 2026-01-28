@@ -85,6 +85,7 @@ const AssignRoles = () => {
         5: "giám đốc",
         6: "sinh viên",
         7: "admin",
+        8: "lãnh đạo duyệt",
     };
 
     // Fetch all users on component mount

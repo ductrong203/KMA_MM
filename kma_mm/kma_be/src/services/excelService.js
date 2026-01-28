@@ -27,18 +27,18 @@ class ExcelService {
 
       // Lấy thông tin kế hoạch môn học để lấy ky_hoc
       const keHoachMonHoc = await ke_hoach_mon_hoc.findOne({
-        where: { 
+        where: {
           khoa_dao_tao_id: lopInfo?.khoa_dao_tao_id,
-          mon_hoc_id: mon_hoc_id 
+          mon_hoc_id: mon_hoc_id
         },
         attributes: ['ky_hoc']
       });
 
       // Lấy thông tin giảng viên từ thời khóa biểu
       const thoiKhoaBieu = await thoi_khoa_bieu.findOne({
-        where: { 
+        where: {
           lop_id: lop_id,
-          mon_hoc_id: mon_hoc_id 
+          mon_hoc_id: mon_hoc_id
         },
         attributes: ['giang_vien']
       });
@@ -48,11 +48,11 @@ class ExcelService {
       if (lopInfo?.khoa_dao_tao?.nam_hoc && keHoachMonHoc?.ky_hoc) {
         const namHoc = lopInfo.khoa_dao_tao.nam_hoc; // Ví dụ: "2024-2028"
         const kyHoc = keHoachMonHoc.ky_hoc; // Ví dụ: 3
-        
+
         const [namBatDau] = namHoc.split('-').map(Number);
         const namHocHienTai = namBatDau + Math.floor((kyHoc - 1) / 2);
         const kyHocHienTai = ((kyHoc - 1) % 2) + 1;
-        
+
         hocKyText = `HỌC KỲ ${kyHocHienTai} NĂM HỌC ${namHocHienTai} - ${namHocHienTai + 1}`;
       }
 
@@ -88,7 +88,7 @@ class ExcelService {
           {
             model: diem,
             as: "diems",
-            attributes: ["diem_tp1","diem_tp2"],
+            attributes: ["diem_tp1", "diem_tp2"],
             required: true,
             include: [
               {
@@ -110,6 +110,7 @@ class ExcelService {
             required: true,
           },
         ],
+        order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
       });
 
       if (!sinhVienData || sinhVienData.length === 0) {
@@ -165,23 +166,23 @@ class ExcelService {
 
     let row = worksheet.addRow([]);
     row.getCell(1).value = "HỌC VIỆN KỸ THUẬT MẬT MÃ".toUpperCase();
-    row.getCell(7).value = "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM".toUpperCase();
-    worksheet.mergeCells(row.number, 1, row.number, 6);
-    worksheet.mergeCells(row.number, 7, row.number, 14);
+    row.getCell(8).value = "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM".toUpperCase();
+    worksheet.mergeCells(row.number, 1, row.number, 7);
+    worksheet.mergeCells(row.number, 8, row.number, 15);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
-    row.getCell(7).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(8).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true };
-    row.getCell(7).font = { bold: true };
+    row.getCell(8).font = { bold: true };
 
     row = worksheet.addRow([]);
     row.getCell(1).value = "Khoa:";
-    row.getCell(7).value = "Độc lập - Tự do - Hạnh phúc";
+    row.getCell(8).value = "Độc lập - Tự do - Hạnh phúc";
     worksheet.mergeCells(row.number, 1, row.number, 3);
-    worksheet.mergeCells(row.number, 7, row.number, 14);
+    worksheet.mergeCells(row.number, 8, row.number, 15);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
-    row.getCell(7).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(8).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true };
-    row.getCell(7).font = { underline: true };
+    row.getCell(8).font = { underline: true };
 
     row = worksheet.addRow([]);
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
@@ -455,8 +456,8 @@ class ExcelService {
         throw new Error("Thiếu mon_hoc_id hoặc khoa_dao_tao_id trong form-data");
       }
       if (lop_id) {
-        const lopCheck = await lop.findOne({ 
-          where: { id: lop_id, khoa_dao_tao_id: khoa_dao_tao_id } 
+        const lopCheck = await lop.findOne({
+          where: { id: lop_id, khoa_dao_tao_id: khoa_dao_tao_id }
         });
         if (!lopCheck) {
           throw new Error("Lớp không tồn tại trong khóa đào tạo này");
@@ -501,16 +502,16 @@ class ExcelService {
             required: false, // Cho phép sinh viên học lại từ khóa khác
           },
         ],
-        order: [["ten", "ASC"]],
+        order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
         // Ngăn trùng lặp sinh viên nếu có nhiều bản ghi diem
         //group: ["sinh_vien.id", "sinh_vien.ma_sinh_vien", "sinh_vien.ho_dem", "sinh_vien.ten", "lop.ma_lop", "diems.diem_ck"],
         subQuery: false, // không tạo truy vấn con
       });
-  
+
       if (!sinhVienData || sinhVienData.length === 0) {
         throw new Error("Không tìm thấy sinh viên nào phù hợp");
       }
-  
+
       return sinhVienData;
     } catch (error) {
       throw new Error("Lỗi khi lấy dữ liệu sinh viên: " + error.message);
@@ -534,9 +535,9 @@ class ExcelService {
 
       // Lấy thông tin kế hoạch môn học để lấy ky_hoc
       const keHoachMonHoc = await ke_hoach_mon_hoc.findOne({
-        where: { 
+        where: {
           khoa_dao_tao_id: khoa_dao_tao_id,
-          mon_hoc_id: mon_hoc_id 
+          mon_hoc_id: mon_hoc_id
         },
         attributes: ['ky_hoc']
       });
@@ -546,11 +547,11 @@ class ExcelService {
       if (khoaDaoTaoInfo?.nam_hoc && keHoachMonHoc?.ky_hoc) {
         const namHoc = khoaDaoTaoInfo.nam_hoc; // Ví dụ: "2024-2028"
         const kyHoc = keHoachMonHoc.ky_hoc; // Ví dụ: 3
-        
+
         const [namBatDau] = namHoc.split('-').map(Number);
         const namHocHienTai = namBatDau + Math.floor((kyHoc - 1) / 2);
         const kyHocHienTai = ((kyHoc - 1) % 2) + 1;
-        
+
         hocKyText = `Năm học ${namHocHienTai} - ${namHocHienTai + 1} . Học kỳ ${kyHocHienTai}`;
       }
 
@@ -591,9 +592,9 @@ class ExcelService {
       "Ký tên",
       "Ghi chú",
     ];
-  
+
     const totalColumns = 10; // 10 cột từ A đến J
-  
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("SinhVien", {
       pageSetup: {
@@ -614,7 +615,7 @@ class ExcelService {
         printTitlesRow: "13:14",
       },
     });
-  
+
     // Dòng 1: Tiêu đề chính
     let row = worksheet.addRow([]);
     row.getCell(1).value = "HỌC VIỆN KỸ THUẬT MẬT MÃ".toUpperCase();
@@ -623,9 +624,9 @@ class ExcelService {
     worksheet.mergeCells(row.number, 5, row.number, 10);
     row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(5).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    row.getCell(1).font = { bold: false, size: 12 };
+    row.getCell(1).font = { bold: true, size: 12 };
     row.getCell(5).font = { bold: true, size: 12 };
-  
+
     // Dòng 2: Phòng và câu slogan
     row = worksheet.addRow([]);
     row.getCell(1).value = "PHÒNG KT&ĐBCLĐT";
@@ -636,31 +637,31 @@ class ExcelService {
     row.getCell(5).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true, underline: true, size: 12 };
     row.getCell(5).font = { bold: true, underline: true, size: 12 };
-  
+
     // Dòng 3: Khoảng trống
     row = worksheet.addRow([]);
-  
+
     // Dòng 4: Tiêu đề danh sách
     row = worksheet.addRow([]);
     row.getCell(1).value = "DANH SÁCH THI SINH DỰ THI".toUpperCase();
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
     row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { size: 12, bold: true };
-  
+
     // Dòng 5: Năm học
     row = worksheet.addRow([]);
     row.getCell(1).value = exportInfo.hoc_ky_text;
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
     row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true, size: 12 };
-  
+
     // Dòng 6: Môn thi
     row = worksheet.addRow([]);
     row.getCell(1).value = `Môn thi: ${exportInfo.ten_mon_hoc}`;
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
     row.getCell(1).font = { size: 11 };
-  
+
     // Dòng 7: Lần thi và hình thức thi
     row = worksheet.addRow([]);
     row.getCell(1).value = "Lần thi: ";
@@ -675,33 +676,33 @@ class ExcelService {
     row.getCell(1).font = { size: 12 };
     row.getCell(4).font = { size: 12 };
     row.getCell(7).font = { size: 12 };
-  
+
     // Dòng 8: Ngày thi, giờ thi, phòng thi, mã phòng thi
     row = worksheet.addRow([]);
     row.getCell(1).value = "Ngày thi: ...               Giờ thi: ...               Phòng thi: ...             Mã phòng thi: ...";
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
     row.getCell(1).font = { size: 12 };
-  
+
     // Dòng 9: Tổng số thí sinh
     row = worksheet.addRow([]);
     row.getCell(1).value = `Tổng số thí sinh: ${sinhVienData.length}    Có mặt:......   Vắng: ......    Có lý do: ......    Không lý do: .......`;
     worksheet.mergeCells(row.number, 1, row.number, totalColumns);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
     row.getCell(1).font = { size: 12 };
-  
+
     // Dòng trống
     worksheet.addRow([]);
-  
+
     // Phần header bảng (dòng 11)
     const headerRow = worksheet.addRow(headersRow);
     headerRow.eachCell((cell) => {
       cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
       cell.font = { bold: true, size: 12 };
     });
-  
+
     const tableStart = headerRow.number;
-  
+
     // Xử lý dữ liệu
     const dataRows = sinhVienData.map((sv, index) => {
       const diem = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
@@ -718,7 +719,7 @@ class ExcelService {
         "",
       ];
     });
-  
+
     dataRows.forEach((rData) => {
       const dataRow = worksheet.addRow(rData);
       dataRow.eachCell((cell) => {
@@ -726,23 +727,23 @@ class ExcelService {
         cell.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
         cell.font = { name: "Times New Roman", size: 12 };
       });
-  
+
       // Căn trái và wrapText: true cho cột 4 (Họ đệm) và cột 5 (Tên)
       dataRow.getCell(4).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
       dataRow.getCell(5).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
     });
-  
+
     const tableEnd = worksheet.lastRow.number;
-  
+
     // Phần footer
     worksheet.addRow([]); // Dòng trống
-  
+
     row = worksheet.addRow([]);
     row.getCell(7).value = "Hà Nội, ngày ___ tháng ___ năm 20___";
     worksheet.mergeCells(row.number, 7, row.number, 10);
     row.getCell(7).alignment = { horizontal: "right", vertical: "top", wrapText: true };
     row.getCell(7).font = { name: "Times New Roman", size: 11, italic: true, bold: false };
-  
+
     row = worksheet.addRow([]);
     row.getCell(1).value = "CBCTChT thứ nhất";
     row.getCell(4).value = "CBCTChT thứ hai";
@@ -756,7 +757,7 @@ class ExcelService {
     row.getCell(1).font = { name: "Times New Roman", size: 11, bold: true };
     row.getCell(4).font = { name: "Times New Roman", size: 11, bold: true };
     row.getCell(7).font = { name: "Times New Roman", size: 11, bold: true };
-  
+
     // Định dạng chung
     worksheet.eachRow((row, rowNumber) => {
       row.eachCell({ includeEmpty: true }, (cell) => {
@@ -812,7 +813,7 @@ class ExcelService {
         };
       });
     });
-  
+
     // Độ rộng cột (điều chỉnh cho 10 cột A-J)
     worksheet.getColumn(1).width = 4.29 * 1.2;  // A: STT
     worksheet.getColumn(2).width = 4.4 * 1.2;     // B: SBD 
@@ -824,7 +825,7 @@ class ExcelService {
     worksheet.getColumn(8).width = 7.71 * 1.2;  // H: Điểm
     worksheet.getColumn(9).width = 8 * 1.2;     // I: Ký tên
     worksheet.getColumn(10).width = 12.57 * 1.2;// J: Ghi chú
-  
+
     return workbook;
   }
 }

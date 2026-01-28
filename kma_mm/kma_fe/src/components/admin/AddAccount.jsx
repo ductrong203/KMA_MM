@@ -20,6 +20,7 @@ const AddAccount = () => {
         5: "giám đốc",
         6: "sinh viên",
         7: "admin",
+        8: "lãnh đạo duyệt",
     };
 
     const handleSubmit = async () => {

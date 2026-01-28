@@ -9,7 +9,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 
 class DiemController {
@@ -278,10 +279,10 @@ class DiemController {
   static async getAllDiem(req, res) {
     try {
       const { sinh_vien_id } = req.params;
-      
+
       if (!sinh_vien_id) {
-        return res.status(400).json({ 
-          error: 'Thiếu sinh_vien_id trong params' 
+        return res.status(400).json({
+          error: 'Thiếu sinh_vien_id trong params'
         });
       }
 
@@ -289,9 +290,51 @@ class DiemController {
       return res.status(200).json(data);
     } catch (error) {
       console.error('Lỗi trong getAllDiem:', error);
-      return res.status(500).json({ 
-        error: error.message || 'Không thể lấy bảng điểm sinh viên' 
+      return res.status(500).json({
+        error: error.message || 'Không thể lấy bảng điểm sinh viên'
       });
+    }
+  }
+  static async lockGrade(req, res) {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) return res.status(401).json({ message: "Chưa đăng nhập!" });
+
+      const user = verifyAccessToken(token);
+      let userR = await getFieldById("users", user.id, "role");
+
+      // Check permissions: Only Admin (7), Giam Doc (5), or Duyet Diem (8)
+      if (userR != 7 && userR != 5 && userR != 8) {
+        return res.status(403).json({ message: "Bạn không có quyền duyệt điểm!" });
+      }
+
+      const { thoi_khoa_bieu_id, is_locked } = req.body;
+      if (!thoi_khoa_bieu_id) return res.status(400).json({ message: "Thiếu thoi_khoa_bieu_id" });
+
+      const result = await DiemService.lockGrade(thoi_khoa_bieu_id, is_locked);
+
+      // Log Activity
+      try {
+        let userN = await getFieldById("users", user.id, "username");
+        let actionText = is_locked ? "duyệt điểm (khóa)" : "bỏ duyệt điểm (mở khóa)";
+        let inforActivity = {
+          username: userN,
+          role: mapRole[userR],
+          action: req.method,
+          endpoint: req.originalUrl,
+          reqData: `Người dùng ${userN} đã ${actionText} cho lớp học phần ID ${thoi_khoa_bieu_id}`,
+          response_status: 200,
+          resData: result.message,
+          ip: req._remoteAddress,
+        }
+        await logActivity(inforActivity);
+      } catch (logErr) {
+        console.error("Log error:", logErr);
+      }
+
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
   }
 }

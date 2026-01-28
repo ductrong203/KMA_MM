@@ -16,6 +16,7 @@ export const login = async (username, password) => {
         5: "director",
         6: "sv",
         7: "admin",
+        8: "lanhDaoDuyet",
     };
     // Lấy tên role từ roleMapping
     const roleName = roleMapping[data.role];
