@@ -238,6 +238,18 @@ class DiemService {
           where: Object.keys(sinhVienWhere).length > 0 ? sinhVienWhere : undefined
         },
         {
+          model: thoi_khoa_bieu,
+          as: 'thoi_khoa_bieu',
+          attributes: ['id', 'is_locked'], // Include is_locked
+          include: [
+            {
+              model: mon_hoc,
+              as: 'mon_hoc',
+              attributes: ['ma_mon_hoc', 'ten_mon_hoc', 'so_tin_chi']
+            }
+          ]
+        },
+        {
           model: QuyDinhDiem,
           as: 'quy_dinh_ck1',
           attributes: ['id', 'diemThiToiThieu', 'diemTrungBinhDat', 'diemGiuaKyToiThieu', 'diemChuyenCanToiThieu']
@@ -300,6 +312,11 @@ class DiemService {
             model: sinh_vien,
             as: 'sinh_vien',
             attributes: ['ma_sinh_vien', 'ho_dem', 'ten', 'lop_id', 'bao_ve_do_an']
+          },
+          {
+            model: thoi_khoa_bieu,
+            as: 'thoi_khoa_bieu',
+            attributes: ['id', 'is_locked']
           }
         ]
       });
@@ -457,6 +474,13 @@ class DiemService {
     }
   }
 
+  static async lockGrade(thoi_khoa_bieu_id, is_locked) {
+    const tkb = await thoi_khoa_bieu.findByPk(thoi_khoa_bieu_id);
+    if (!tkb) throw new Error('Thời khóa biểu không tồn tại!');
+    await tkb.update({ is_locked });
+    return { message: is_locked ? 'Đã duyệt điểm (Khóa bảng điểm).' : 'Đã bỏ duyệt (Mở khóa bảng điểm).' };
+  }
+
   static async update(diemList) {
     try {
       if (!Array.isArray(diemList) || diemList.length === 0) {
@@ -488,6 +512,12 @@ class DiemService {
         if (!targetTKB) {
           throw new Error(`Thời khóa biểu với ID ${thoi_khoa_bieu_id || record.thoi_khoa_bieu_id} không tồn tại.`);
         }
+
+        // --- CHECK LOCK STATUS ---
+        if (targetTKB.is_locked) {
+          throw new Error(`Học phần này đã được duyệt điểm. Vui lòng bỏ duyệt trước khi chỉnh sửa!`);
+        }
+
         const targetLop = await lop.findByPk(targetTKB.lop_id, { attributes: ["khoa_dao_tao_id"] });
         const targetSinhVienId = sinh_vien_id || record.sinh_vien_id;
 
@@ -1509,7 +1539,7 @@ class DiemService {
     }
   }
 
-  static async getAllDiem(sinh_vien_id){
+  static async getAllDiem(sinh_vien_id) {
     try {
       // Tìm thông tin sinh viên và lớp
       const sinhVien = await sinh_vien.findByPk(sinh_vien_id, {
@@ -1558,7 +1588,7 @@ class DiemService {
       allDiem.forEach(diemRecord => {
         const tkb = diemRecord.thoi_khoa_bieu;
         const lanHoc = diemRecord.lan_hoc || 1;
-        
+
         // Nếu lần học = 1 và thuộc lớp của sinh viên
         if (lanHoc === 1 && tkb.lop_id === sinhVien.lop_id) {
           diemLan1.push(diemRecord);
@@ -1588,23 +1618,23 @@ class DiemService {
       // Thêm các điểm lần 1 trước
       diemLan1.forEach(diemLan1Record => {
         result.push(diemLan1Record);
-        
+
         // Tìm các lần học tiếp theo của cùng môn học
         const monHocId = diemLan1Record.thoi_khoa_bieu.mon_hoc_id;
-        
+
         // Lấy tất cả bản ghi học lại của môn này và sắp xếp theo lần học
-        const diemHocLaiMonNay = diemHocLai.filter(d => 
+        const diemHocLaiMonNay = diemHocLai.filter(d =>
           d.thoi_khoa_bieu.mon_hoc_id === monHocId
         ).sort((a, b) => {
           const lanHocA = a.lan_hoc || 1;
           const lanHocB = b.lan_hoc || 1;
           return lanHocA - lanHocB;
         });
-        
+
         // Thêm các lần học lại ngay sau lần 1
         diemHocLaiMonNay.forEach(diemHocLaiRecord => {
           result.push(diemHocLaiRecord);
-          
+
           // Xóa khỏi danh sách học lại để không bị trùng lặp
           const index = diemHocLai.indexOf(diemHocLaiRecord);
           if (index > -1) {

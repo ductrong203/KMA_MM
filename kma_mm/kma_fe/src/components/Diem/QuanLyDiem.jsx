@@ -29,10 +29,14 @@ import {
     Tabs,
     TextField,
     Tooltip,
-    Typography
+    Typography,
+    Chip,
+    Switch
 } from '@mui/material';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import React, { useEffect, useRef, useState } from 'react';
-import { layDanhSachSinhVienTheoTKB, layDSSVTheoKhoaVaMonHoc, nhapDiem } from '../../Api_controller/Service/diemService';
+import { layDanhSachSinhVienTheoTKB, layDSSVTheoKhoaVaMonHoc, nhapDiem, lockGrade } from '../../Api_controller/Service/diemService';
 import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/khoaService';
 import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controller/Service/lopService';
 import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
@@ -43,6 +47,7 @@ import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, impor
 import { toast } from 'react-toastify';
 import { getGradeSettings } from '../../Api_controller/Service/gradeSettingsService';
 import { getConversionRules } from '../../Api_controller/gradeSettingsApi';
+import { fetchApprovalList } from '../../Api_controller/Service/thoiKhoaBieuService';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
     const fileInputRef = useRef(null);
@@ -85,6 +90,86 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         diemGiuaKyToiThieu: 4.0,
         diemChuyenCanToiThieu: 4.0
     });
+    const [isLocked, setIsLocked] = useState(false);
+    const role = localStorage.getItem('role')?.toLowerCase();
+    const canApprove = role === 'admin' || role === 'director' || role === 'duyetdiem';
+
+    // State for approval list (Role duyetDiem)
+    const [approvalList, setApprovalList] = useState([]);
+    const [selectedApprovals, setSelectedApprovals] = useState([]);
+
+    const handleApprovalSearch = async () => {
+        if (!batch || !semester) {
+            toast.error('Vui lòng chọn Khóa và Kỳ học');
+            return;
+        }
+        setLoading(true);
+        try {
+            // lopId is optional: if classGroup is empty, fetch all for the batch
+            const result = await fetchApprovalList(batch, semester, classGroup);
+            if (result && result.data) {
+                setApprovalList(result.data);
+                if (result.data.length === 0) {
+                    toast.info("Không tìm thấy lớp học phần nào.");
+                }
+            } else {
+                setApprovalList([]);
+                toast.info("Không tìm thấy dữ liệu.");
+            }
+        } catch (error) {
+            console.error("Error fetching approval list:", error);
+            toast.error("Lỗi khi tải danh sách duyệt.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBulkApprove = async (lockStatus) => {
+        if (selectedApprovals.length === 0) {
+            toast.warning("Vui lòng chọn ít nhất một mục.");
+            return;
+        }
+
+        if (!window.confirm(`Bạn có chắc chắn muốn ${lockStatus ? 'DUYỆT (KHÓA)' : 'BỎ DUYỆT (MỞ)'} ${selectedApprovals.length} mục đã chọn?`)) return;
+
+        setLoading(true);
+        let successCount = 0;
+        try {
+            // Process sequentially to avoid overwhelming server or race conditions
+            for (const id of selectedApprovals) {
+                try {
+                    await lockGrade(id, lockStatus);
+                    successCount++;
+                } catch (e) {
+                    console.error(`Failed to lock/unlock ID ${id}`, e);
+                }
+            }
+            toast.success(`Đã cập nhật trạng thái cho ${successCount}/${selectedApprovals.length} mục.`);
+            handleApprovalSearch(); // Refresh list
+            setSelectedApprovals([]); // Clear selection
+        } catch (error) {
+            console.error("Bulk approve error:", error);
+            toast.error("Có lỗi xảy ra trong quá trình duyệt.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSelectAllApproval = (e) => {
+        if (e.target.checked) {
+            setSelectedApprovals(approvalList.map(item => item.id));
+        } else {
+            setSelectedApprovals([]);
+        }
+    };
+
+    const handleSelectApproval = (id) => {
+        if (selectedApprovals.includes(id)) {
+            setSelectedApprovals(selectedApprovals.filter(item => item !== id));
+        } else {
+            setSelectedApprovals([...selectedApprovals, id]);
+        }
+    };
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -351,6 +436,20 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             const filteredStudents = response.data;
             console.log(filteredStudents)
 
+            // Check lock status
+            if (filteredStudents && filteredStudents.length > 0 && filteredStudents[0].thoi_khoa_bieu) {
+                setIsLocked(!!filteredStudents[0].thoi_khoa_bieu.is_locked);
+            } else {
+                setIsLocked(false);
+            }
+
+            // Check lock status
+            if (filteredStudents && filteredStudents.length > 0 && filteredStudents[0].thoi_khoa_bieu) {
+                setIsLocked(!!filteredStudents[0].thoi_khoa_bieu.is_locked);
+            } else {
+                setIsLocked(false);
+            }
+
             const formattedStudents = await Promise.all(
                 filteredStudents.map(async (student) => {
                     const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
@@ -412,10 +511,28 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         } catch (error) {
             console.error('Error searching students:', error);
             toast.error('Có lỗi xảy ra khi tìm kiếm học viên. Vui lòng thử lại.');
+            setIsLocked(false);
         } finally {
             setLoadingStudents(false);
         }
     };
+
+    // Check lock status when students loaded
+    useEffect(() => {
+        if (students.length > 0) {
+            // Check finding is_locked from the first student's thoi_khoa_bieu data
+            // Note: In handleSearch map, we constructed studentData. 
+            // We need to ensure is_locked was passed through or check raw response if possible.
+            // Currently formattedStudents doesn't carry thoi_khoa_bieu fully.
+            // But we can check raw response? Or include is_locked in formattedStudents.
+            // Let's rely on handleSearch response handling or check students prop if available.
+            // Wait, we need to extract is_locked from raw response in handleSearch.
+        }
+    }, [students]);
+
+    // Better: Update handleSearch to set isLocked.
+    // See handleSearch change below (re-targeting handleSearch).
+
 
     const eligibleForRetake = (student) => {
         // Simple check: allow retake if status is fail or already has CK2
@@ -721,6 +838,18 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         );
     };
 
+    const handleToggleLock = async () => {
+        if (!scheduleId) return;
+        try {
+            await lockGrade(scheduleId, !isLocked);
+            setIsLocked(!isLocked);
+            toast.success(isLocked ? 'Đã mở khóa bảng điểm thành công!' : 'Đã duyệt bảng điểm thành công!');
+        } catch (error) {
+            console.error('Error toggling lock:', error);
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi thay đổi trạng thái duyệt điểm.');
+        }
+    };
+
     const handleSave = async () => {
         setLoading(true);
         try {
@@ -793,48 +922,48 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             const response = await nhapDiem(dataToSave);
             if (response.data) {
                 toast.success('Đã lưu điểm và trạng thái thành công!');
-                // Cập nhật state students với dữ liệu mới từ calculateAverageScore
-                setStudents(prevStudents =>
-                    prevStudents.map(student => {
-                        const { score: diem_hp, passed, he4: diem_he_4, chu: diem_chu, trang_thai } = calculateAverageScore(student);
-                        let finalTrangThai = trang_thai;
+                // Refetch to sync state properly? Or just keep going.
+            }
+            // Cập nhật state students với dữ liệu mới từ calculateAverageScore
+            setStudents(prevStudents =>
+                prevStudents.map(student => {
+                    const { score: diem_hp, passed, he4: diem_he_4, chu: diem_chu, trang_thai } = calculateAverageScore(student);
+                    let finalTrangThai = trang_thai;
 
-                        // Xử lý môn bảo vệ
-                        if (currentSubjectInfo?.bao_ve) {
-                            const finalScore = student.diem.CK2 || student.diem.CK1;
-                            return {
-                                ...student,
-                                diem: {
-                                    ...student.diem,
-                                    diem_hp,
-                                    diem_he_4,
-                                    diem_chu,
-                                    TP1: finalScore !== null && finalScore !== undefined ? finalScore : student.diem.TP1,
-                                    TP2: finalScore !== null && finalScore !== undefined ? finalScore : student.diem.TP2
-                                },
-                                trang_thai: finalTrangThai
-                            };
-                        }
-
-                        // Logic cũ cho môn học thông thường
-                        if (
-                            (student.diem.TP1 !== null && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ||
-                            (student.diem.TP2 !== null && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu)
-                        ) {
-                            finalTrangThai = 'hoc_lai';
-                        } else if (student.retakeRegistered && student.diem.CK2 === null && eligibleForRetake(student)) {
-                            finalTrangThai = 'thi_lai';
-                        }
+                    // Xử lý môn bảo vệ
+                    if (currentSubjectInfo?.bao_ve) {
+                        const finalScore = student.diem.CK2 || student.diem.CK1;
                         return {
                             ...student,
-                            diem: { ...student.diem, diem_hp, diem_he_4, diem_chu },
+                            diem: {
+                                ...student.diem,
+                                diem_hp,
+                                diem_he_4,
+                                diem_chu,
+                                TP1: finalScore !== null && finalScore !== undefined ? finalScore : student.diem.TP1,
+                                TP2: finalScore !== null && finalScore !== undefined ? finalScore : student.diem.TP2
+                            },
                             trang_thai: finalTrangThai
                         };
-                    })
-                );
-            } else {
-                toast.error('Lưu thất bại: ' + response.data.message);
-            }
+                    }
+
+                    // Logic cũ cho môn học thông thường
+                    if (
+                        (student.diem.TP1 !== null && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ||
+                        (student.diem.TP2 !== null && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu)
+                    ) {
+                        finalTrangThai = 'hoc_lai';
+                    } else if (student.retakeRegistered && student.diem.CK2 === null && eligibleForRetake(student)) {
+                        finalTrangThai = 'thi_lai';
+                    }
+                    return {
+                        ...student,
+                        diem: { ...student.diem, diem_hp, diem_he_4, diem_chu },
+                        trang_thai: finalTrangThai
+                    };
+                })
+            );
+
         } catch (error) {
             console.error('Lỗi khi lưu điểm:', error);
             toast.error('Có lỗi xảy ra khi lưu điểm. Vui lòng thử lại.');
@@ -1117,8 +1246,11 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                 onChange={(e) => setClassGroup(e.target.value)}
                                 disabled={!batch || loadingClasses}
                             >
+                                <MenuItem value="">
+                                    <em>Tất cả</em>
+                                </MenuItem>
                                 {loadingClasses ? (
-                                    <MenuItem value="">
+                                    <MenuItem value="" disabled>
                                         <CircularProgress size={20} />
                                     </MenuItem>
                                 ) : (
@@ -1132,37 +1264,39 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         </FormControl>
                     </Grid>
                 )}
-                <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth>
-                        <InputLabel>Học phần</InputLabel>
-                        <Select
-                            value={course}
-                            label="Học phần"
-                            onChange={(e) => setCourse(e.target.value)}
-                            disabled={(!classGroup && searchType === 'class') || !semester || loadingCourses}
-                        >
-                            {loadingCourses ? (
-                                <MenuItem value="">
-                                    <CircularProgress size={20} />
-                                </MenuItem>
-                            ) : (
-                                courseOptions.map((option) => (
-                                    <MenuItem key={option.id} value={option.id}>
-                                        {option.ten_mon_hoc || option.name || option.mon_hoc_id}
+                {role !== 'duyetdiem' && (
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FormControl fullWidth>
+                            <InputLabel>Học phần</InputLabel>
+                            <Select
+                                value={course}
+                                label="Học phần"
+                                onChange={(e) => setCourse(e.target.value)}
+                                disabled={(!classGroup && searchType === 'class') || !semester || loadingCourses}
+                            >
+                                {loadingCourses ? (
+                                    <MenuItem value="">
+                                        <CircularProgress size={20} />
                                     </MenuItem>
-                                ))
-                            )}
-                        </Select>
-                    </FormControl>
-                </Grid>
+                                ) : (
+                                    courseOptions.map((option) => (
+                                        <MenuItem key={option.id} value={option.id}>
+                                            {option.ten_mon_hoc || option.name || option.mon_hoc_id}
+                                        </MenuItem>
+                                    ))
+                                )}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                )}
                 <Grid item xs={12} sm={6} md={3}>
                     <Button
                         variant="contained"
                         color="primary"
                         startIcon={<SearchIcon />}
-                        onClick={handleSearch}
+                        onClick={role === 'duyetdiem' ? handleApprovalSearch : handleSearch}
                         sx={{ height: '56px' }}
-                        disabled={(!classGroup && searchType === 'class') || !course || !batch || !semester}
+                        disabled={role !== 'duyetdiem' && ((!classGroup && searchType === 'class') || !course || !batch || !semester)}
                     >
                         Tìm kiếm
                     </Button>
@@ -1171,14 +1305,87 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
             <Divider sx={{ my: 2 }} />
 
-            <Tabs value={activeTab} onChange={handleTabChange} aria-label="grade management tabs">
-                <Tab label={<Badge badgeContent={students.length} color="primary" icon={<PersonIcon />}>Danh sách học viên</Badge>} />
-                <Tab label={<Badge badgeContent={eligibleStudentCount} color="success" icon={<AssignmentIcon />}>Học viên đủ điều kiện thi</Badge>} />
-                <Tab label={<Badge badgeContent={studentsAwaitingMidtermScores.length} color="warning" icon={<AssessmentIcon />}>Học viên chưa đủ điều kiện</Badge>} />
-                <Tab label={<Badge badgeContent={studentsEligibleForRetake.length} color="error" icon={<AssessmentIcon />}>Học viên thi lại</Badge>} />
-            </Tabs>
+            {role === 'duyetdiem' ? (
+                // Approval Table View
+                <TableContainer component={Paper}>
+                    <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            onClick={() => handleBulkApprove(true)}
+                            startIcon={<LockIcon />}
+                        >
+                            Duyệt điểm (Khóa)
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            onClick={() => handleBulkApprove(false)}
+                            startIcon={<LockOpenIcon />}
+                        >
+                            Bỏ duyệt (Mở)
+                        </Button>
+                    </Box>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell padding="checkbox">
+                                    <Checkbox
+                                        indeterminate={selectedApprovals.length > 0 && selectedApprovals.length < approvalList.length}
+                                        checked={approvalList.length > 0 && selectedApprovals.length === approvalList.length}
+                                        onChange={handleSelectAllApproval}
+                                    />
+                                </TableCell>
+                                <TableCell>STT</TableCell>
+                                <TableCell>Lớp</TableCell>
+                                <TableCell>Môn học</TableCell>
+                                <TableCell>Kỳ học</TableCell>
+                                <TableCell>Giảng viên</TableCell>
+                                <TableCell>Trạng thái</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {approvalList.length > 0 ? (
+                                approvalList.map((row, index) => (
+                                    <TableRow key={row.id} hover onClick={() => handleSelectApproval(row.id)} role="checkbox" selected={selectedApprovals.includes(row.id)}>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox checked={selectedApprovals.includes(row.id)} />
+                                        </TableCell>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>{row.lop?.ma_lop || row.lop_id}</TableCell>
+                                        <TableCell>{row.mon_hoc?.ten_mon_hoc || row.mon_hoc_id}</TableCell>
+                                        <TableCell>{row.ky_hoc}</TableCell>
+                                        <TableCell>{row.giang_vien}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={row.is_locked ? "Đã duyệt (Khóa)" : "Chưa duyệt"}
+                                                color={row.is_locked ? "success" : "warning"}
+                                                size="small"
+                                                icon={row.is_locked ? <LockIcon /> : <LockOpenIcon />}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center">
+                                        Không có dữ liệu
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            ) : (
+                <Tabs value={activeTab} onChange={handleTabChange} aria-label="grade management tabs">
+                    <Tab label={<Badge badgeContent={students.length} color="primary" icon={<PersonIcon />}>Danh sách học viên</Badge>} />
+                    <Tab label={<Badge badgeContent={eligibleStudentCount} color="success" icon={<AssignmentIcon />}>Học viên đủ điều kiện thi</Badge>} />
+                    <Tab label={<Badge badgeContent={studentsAwaitingMidtermScores.length} color="warning" icon={<AssessmentIcon />}>Học viên chưa đủ điều kiện</Badge>} />
+                    <Tab label={<Badge badgeContent={studentsEligibleForRetake.length} color="error" icon={<AssessmentIcon />}>Học viên thi lại</Badge>} />
+                </Tabs>
+            )}
 
-            {activeTab === 0 && (
+            {role !== 'duyetdiem' && activeTab === 0 && (
                 <>
                     {!currentSubjectInfo?.bao_ve && (
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
@@ -1208,6 +1415,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     color="primary"
                                     sx={{ boxShadow: 2 }}
                                     onClick={handleButtonClick}
+                                    disabled={isLocked}
                                 >
                                     Import điểm giữa kỳ
                                 </Button>
@@ -1300,6 +1508,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                                     fontWeight: (student.diem.TP1 !== null && student.diem.TP1 !== undefined && student.diem.TP1 < gradeSettings.diemGiuaKyToiThieu) ? 'bold' : 'normal'
                                                                 }
                                                             }}
+                                                            disabled={isLocked}
                                                         />
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -1320,6 +1529,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                                     fontWeight: (student.diem.TP2 !== null && student.diem.TP2 !== undefined && student.diem.TP2 < gradeSettings.diemChuyenCanToiThieu) ? 'bold' : 'normal'
                                                                 }
                                                             }}
+                                                            disabled={isLocked}
                                                         />
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -1358,6 +1568,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     color="primary"
                                     sx={{ boxShadow: 2 }}
                                     onClick={handleButtonClick}
+                                    disabled={isLocked}
                                 >
                                     Import điểm cuối kỳ/thi lại
                                 </Button>
@@ -1467,7 +1678,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                                     onChange={(e) => handleFinalScoreChange(student.ma_sinh_vien, 'CK1', e.target.value)}
                                                                     inputProps={{ min: 0, max: 10, step: 0.1 }}
                                                                     sx={{ width: '80px' }}
-                                                                    disabled={!canTakeFinalExam(student) || examNumber === "2"}
+                                                                    disabled={!canTakeFinalExam(student) || examNumber === "2" || isLocked}
                                                                 />
                                                             </span>
                                                         </Tooltip>
@@ -1481,7 +1692,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                                     onChange={(e) => handleFinalScoreChange(student.ma_sinh_vien, 'CK2', e.target.value)}
                                                                     inputProps={{ min: 0, max: 10, step: 0.1 }}
                                                                     sx={{ width: '80px' }}
-                                                                    disabled={!canTakeFinalExam(student) || !eligibleForRetake(student) || examNumber === "1"}
+                                                                    disabled={!canTakeFinalExam(student) || !eligibleForRetake(student) || examNumber === "1" || isLocked}
                                                                 />
                                                             </span>
                                                         </Tooltip>
@@ -1527,7 +1738,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                                         <Checkbox
                                                                             checked={!!student.retakeRegistered}
                                                                             onChange={(e) => handleRetakeRegistration(student.ma_sinh_vien, e.target.checked)}
-                                                                            disabled={!eligibleForRetake(student) || student.diem.CK2 !== null}
+                                                                            disabled={!eligibleForRetake(student) || student.diem.CK2 !== null || isLocked}
                                                                         />
                                                                     }
                                                                     label=""
@@ -1546,7 +1757,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {activeTab === 1 && (
+            {role !== 'duyetdiem' && activeTab === 1 && (
                 <>
                     <Alert severity="success" sx={{ my: 2 }}>
                         {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
@@ -1638,7 +1849,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {activeTab === 2 && (
+            {role !== 'duyetdiem' && activeTab === 2 && (
                 <>
                     <Alert severity="warning" sx={{ my: 2 }}>
                         {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
@@ -1737,6 +1948,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                     sx={{ width: '100%' }}
                                                     multiline
                                                     maxRows={2}
+                                                    disabled={isLocked}
                                                 />
                                             </TableCell>
                                         </TableRow>
@@ -1748,7 +1960,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {activeTab === 3 && (
+            {role !== 'duyetdiem' && activeTab === 3 && (
                 <>
                     <Alert severity="error" sx={{ my: 2 }}>
                         {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < ${gradeSettings.diemThiToiThieu} hoặc Điểm TB < ${gradeSettings.diemTrungBinhDat}). Học viên sẽ trượt môn nếu không đạt cả hai điều kiện: điểm thi ≥ ${gradeSettings.diemThiToiThieu} VÀ điểm trung bình ≥ ${gradeSettings.diemTrungBinhDat}.`}
@@ -1874,17 +2086,29 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                    onClick={handleSave}
-                    disabled={loading}
-                >
-                    {loading ? <CircularProgress size={20} /> : 'Lưu điểm'}
-                </Button>
-            </Box>
+            {role !== 'duyetdiem' && (
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveIcon />}
+                        onClick={handleSave}
+                        disabled={loading}
+                    >
+                        {loading ? <CircularProgress size={20} /> : 'Lưu điểm'}
+                    </Button>
+                    {canApprove && (
+                        <Button
+                            variant="contained"
+                            color={isLocked ? "warning" : "success"}
+                            onClick={handleToggleLock}
+                            sx={{ ml: 2 }}
+                        >
+                            {isLocked ? 'Bỏ duyệt (Mở khóa)' : 'Duyệt điểm (Khóa)'}
+                        </Button>
+                    )}
+                </Box>
+            )}
         </Paper>
     );
 }

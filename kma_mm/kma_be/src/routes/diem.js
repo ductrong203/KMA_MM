@@ -15,6 +15,7 @@ router.get('/:id', DiemController.getById);
 router.get('/khoadaotaovamonhoc/:khoa_dao_tao_id/:mon_hoc_id', DiemController.getByKhoaDaoTaoIdVaMonHocId);
 router.post('/', DiemController.create);
 router.put('/', DiemController.update);
+router.put('/lock-grade', DiemController.lockGrade);
 router.delete('/:id', DiemController.delete);
 
 module.exports = router;

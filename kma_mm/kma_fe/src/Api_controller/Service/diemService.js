@@ -21,24 +21,24 @@ export const nhapDiem = async (data) => {
 // Tìm sinh viên theo mã hoặc các bộ lọc
 export const timSinhVienTheoMaHoacFilter = async (filters) => {
   try {
-      const response = await api.get('/student/tim-kiem', {
-          params: filters // Truyền các tham số lọc: ma_sinh_vien, he_dao_tao_id, khoa_id, lop_id
-      });
-      return response.data; // Trả về dữ liệu từ server
+    const response = await api.get('/student/tim-kiem', {
+      params: filters // Truyền các tham số lọc: ma_sinh_vien, he_dao_tao_id, khoa_id, lop_id
+    });
+    return response.data; // Trả về dữ liệu từ server
   } catch (error) {
-      console.error('Error in timSinhVienTheoMaHoacFilter:', error);
-      throw error; // Ném lỗi để xử lý ở nơi gọi
+    console.error('Error in timSinhVienTheoMaHoacFilter:', error);
+    throw error; // Ném lỗi để xử lý ở nơi gọi
   }
 };
 
 // Hàm đã có sẵn trong yêu cầu trước
 export const themSinhVienHocLai = async (data) => {
   try {
-      const response = await api.post('/diem/them-sinh-vien-hoc-lai', data);
-      return response.data;
+    const response = await api.post('/diem/them-sinh-vien-hoc-lai', data);
+    return response.data;
   } catch (error) {
-      console.error('Error in themSinhVienHocLai:', error);
-      throw error;
+    console.error('Error in themSinhVienHocLai:', error);
+    throw error;
   }
 };
 
@@ -86,6 +86,15 @@ export const exportKetQuaNamHoc = async (sinhVienId, namHoc) => {
       responseType: 'blob' // Để nhận file Excel
     });
     return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const lockGrade = async (thoi_khoa_bieu_id, is_locked) => {
+  try {
+    const response = await api.put('/diem/lock-grade', { thoi_khoa_bieu_id, is_locked });
+    return response.data;
   } catch (error) {
     throw error;
   }

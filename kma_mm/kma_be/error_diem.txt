@@ -1,0 +1,5 @@
+Không có sinh viên nào trong lớp này!
+Error: Không có sinh viên nào trong lớp này!
+    at DiemService.createDiemForClass (E:\KMA_MM\kma_mm\kma_be\src\services\diemService.js:406:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async createDiemForClass (E:\KMA_MM\kma_mm\kma_be\src\controllers\diemController.js:88:22)

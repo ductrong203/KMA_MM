@@ -238,10 +238,21 @@ const App = () => {
         />
 
         <Route
+          path="/duyetDiem/dashboard"
+          element={
+            <PrivateRoute role={role} allowedRoles={["duyetDiem"]}>
+              <Layout Info={info} title="HỆ QUẢN LÝ LÃNH ĐẠO DUYỆT">
+                <ExamDashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
           path="/director/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["director"]}>
-              <Layout Info={info} title="Director dashboard">
+              <Layout Info={info} title="HỆ QUẢN LÝ BAN GIÁM ĐỐC">
                 <DirectorDashboard />
               </Layout>
             </PrivateRoute>
@@ -262,7 +273,7 @@ const App = () => {
           path="/library/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["library"]}>
-              <Layout Info={info} title="Library dashboard">
+              <Layout Info={info} title="HỆ QUẢN LÝ THƯ VIỆN">
                 <LibraryDashBoard />
               </Layout>
             </PrivateRoute>
@@ -273,7 +284,7 @@ const App = () => {
           path="/student_manage/dashboard"
           element={
             <PrivateRoute role={role} allowedRoles={["student_manage"]}>
-              <Layout Info={info} title="Quản lý học viên">
+              <Layout Info={info} title="HỆ QUẢN LÝ HỌC VIÊN">
                 <StudentManagementDashboard />
               </Layout>
             </PrivateRoute>

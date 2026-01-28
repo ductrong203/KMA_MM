@@ -310,6 +310,54 @@ class ThoiKhoaBieuService {
       throw new Error(`Lỗi khi kiểm tra môn học thiếu: ${error.message}`);
     }
   }
+
+  static async getApprovalList({ khoa_dao_tao_id, ky_hoc, lop_id }) {
+    try {
+      const whereClause = {};
+
+      if (ky_hoc) {
+        whereClause.ky_hoc = ky_hoc;
+      }
+
+      if (lop_id) {
+        whereClause.lop_id = lop_id;
+      } else if (khoa_dao_tao_id) {
+        // If no specific class is selected, get all classes for the batch
+        const lopList = await lop.findAll({
+          where: { khoa_dao_tao_id },
+          attributes: ['id']
+        });
+        const lopIds = lopList.map(l => l.id);
+        if (lopIds.length > 0) {
+          whereClause.lop_id = lopIds;
+        } else {
+          return []; // No classes found for this batch
+        }
+      }
+
+      const results = await thoi_khoa_bieu.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: lop,
+            as: 'lop',
+            attributes: ['id', 'ma_lop']
+          },
+          {
+            model: mon_hoc,
+            as: 'mon_hoc',
+            attributes: ['id', 'ten_mon_hoc', 'ma_mon_hoc', 'so_tin_chi']
+          }
+        ],
+        attributes: ['id', 'ky_hoc', 'is_locked', 'trang_thai', 'giang_vien']
+      });
+
+      return results;
+    } catch (error) {
+      console.error("Error in getApprovalList:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = ThoiKhoaBieuService;

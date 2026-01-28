@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function (sequelize, DataTypes) {
-  return sequelize.define('thoi_khoa_bieu', {
+  const ThoiKhoaBieu = sequelize.define('thoi_khoa_bieu', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -55,6 +55,11 @@ module.exports = function (sequelize, DataTypes) {
     ghi_chu: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    is_locked: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
     }
   }, {
     sequelize,
@@ -85,4 +90,11 @@ module.exports = function (sequelize, DataTypes) {
       },
     ]
   });
+
+  ThoiKhoaBieu.associate = function (models) {
+    ThoiKhoaBieu.belongsTo(models.lop, { foreignKey: 'lop_id', as: 'lop' });
+    ThoiKhoaBieu.belongsTo(models.mon_hoc, { foreignKey: 'mon_hoc_id', as: 'mon_hoc' });
+  };
+
+  return ThoiKhoaBieu;
 };

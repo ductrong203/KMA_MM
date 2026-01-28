@@ -80,15 +80,6 @@ const menuItems = [
     href: "/admin/activity-logs",
     color: "warning.main",
   },
-
-
-  {
-    title: "Quản lý loại hình đào tạo",
-    description: "Thêm, sửa, xóa loại hình đào tạo (ĐHCQ, VLVH, LTĐH).",
-    icon: <SchoolIcon sx={{ fontSize: 40 }} />,
-    href: "/admin/training-types",
-    color: "primary.main",
-  },
 ];
 
 const AdminDashboard = () => {

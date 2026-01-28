@@ -65,6 +65,7 @@ import XemDanhSachDiem from "../Diem/XemDanhSachDiem";
 import ThongKeDiem from "../Dao Tao/ThongKeDiem";
 
 import ThongKeDiemTheoSinhVien from '../Dao Tao/ThongKeDiemTheoSinhVien';
+import XuatThongTinSinhVien from '../Dao Tao/XuatThongTinSinhVien';
 
 
 // Mock data
@@ -233,13 +234,15 @@ function TrainingDashboard() {
                 <Tab label="Phụ lục văn bằng" />
                 <Tab label="Thống kê" />
                 <Tab label="Thống kê điểm" />
-                <Tab label="Thống kê điểm theo sinh viên" />
+                <Tab label="Chi tiết điểm sinh viên" />
+                <Tab label="Xuất thông tin sinh viên" />
               </Tabs>
               <Grid container spacing={3} sx={{ mt: 2 }}>
                 {subTab === 0 && <PhuLucBangDiem />}
                 {subTab === 1 && <ThongKe />}
                 {subTab === 2 && <ThongKeDiem />}
                 {subTab === 3 && <ThongKeDiemTheoSinhVien />}
+                {subTab === 4 && <XuatThongTinSinhVien />}
               </Grid>
             </Box>
           )}

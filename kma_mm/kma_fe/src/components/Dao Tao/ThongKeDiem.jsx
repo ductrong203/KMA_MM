@@ -292,24 +292,50 @@ const ThongKeDiem = () => {
     }
   };
 
-  const chartData = {
-    labels: thongKeTongQuan.map(sv => sv.ho_ten),
-    datasets: filterKyHoc === 'all'
-      ? semesterOptions.filter(ky => ky.id !== 'all').map((ky, index) => ({
-          label: ky.name,
-          data: thongKeTongQuan.map(sv => sv.diem_tb_ky[ky.id] || 0),
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'][index % 3],
-          borderColor: ['#FF6384', '#36A2EB', '#FFCE56'][index % 3],
-          borderWidth: 1
-        }))
-      : [{
-          label: 'ĐTB Kỳ',
-          data: thongKeTongQuan.map(sv => sv.diem_tb_ky[filterKyHoc] || 0),
-          backgroundColor: '#36A2EB',
-          borderColor: '#36A2EB',
-          borderWidth: 1
-        }]
-  };
+// 1. Khai báo bảng màu (20 màu khác nhau)
+const palette = [
+  '#FF6384', // Đỏ nhạt
+  '#36A2EB', // Xanh dương
+  '#FFCE56', // Vàng
+  '#4BC0C0', // Xanh ngọc
+  '#9966FF', // Tím
+  '#FF9F40', // Cam
+  '#C9CBCF', // Xám
+  '#FF0000', // Đỏ đậm
+  '#00FF00', // Xanh lá
+  '#0000FF', // Xanh đậm
+  '#800000', // Nâu đỏ
+  '#808000', // Olive
+  '#008000', // Xanh lá đậm
+  '#800080', // Tím đậm
+  '#008080', // Teal
+  '#000080', // Navy
+  '#E91E63', // Hồng đậm
+  '#9C27B0', // Tím than
+  '#673AB7', // Tím xanh
+  '#3F51B5' // Indigo
+];
+
+const chartData = {
+  labels: thongKeTongQuan.map(sv => sv.ho_ten),
+  datasets: filterKyHoc === 'all'
+    ? semesterOptions.filter(ky => ky.id !== 'all').map((ky, index) => ({
+        label: ky.name,
+        data: thongKeTongQuan.map(sv => sv.diem_tb_ky[ky.id] || 0),
+        // Mỗi KỲ HỌC sẽ có một màu riêng biệt dựa trên index của kỳ đó
+        backgroundColor: palette[index % palette.length],
+        borderColor: palette[index % palette.length],
+        borderWidth: 1
+      }))
+    : [{
+        label: 'ĐTB Kỳ',
+        data: thongKeTongQuan.map(sv => sv.diem_tb_ky[filterKyHoc] || 0),
+        // Khi chọn 1 kỳ: Mỗi SINH VIÊN (mỗi cột) sẽ có một màu riêng biệt
+        backgroundColor: thongKeTongQuan.map((_, index) => palette[index % palette.length]),
+        borderColor: thongKeTongQuan.map((_, index) => palette[index % palette.length]),
+        borderWidth: 1
+      }]
+};
 
   const chartOptions = {
     responsive: true,

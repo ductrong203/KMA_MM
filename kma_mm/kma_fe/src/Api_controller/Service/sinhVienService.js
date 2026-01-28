@@ -1,8 +1,8 @@
 import api from "../Api_setup/axiosConfig";
 
 export const getDanhSachSinhVienTheoLop = async (maLop) => {
-    const response = await api.get(`student/getbylopid/${maLop}`)
-    return response.data
+  const response = await api.get(`student/getbylopid/${maLop}`)
+  return response.data
 }
 
 export const checkExistingStudents = async (formData) => {
@@ -23,12 +23,12 @@ export const checkExistingStudents = async (formData) => {
 export const kiemTraTotNghiep = async (sinhVienId, requiredCredits) => {
   try {
     let url = `student/kiem-tra-tot-nghiep/${sinhVienId}`;
-    
+
     // Add requiredCredits as a query parameter if provided
     if (requiredCredits) {
       url += `?requiredCredits=${requiredCredits}`;
     }
-    
+
     const response = await api.get(url);
     return response.data;
   } catch (error) {
@@ -38,16 +38,29 @@ export const kiemTraTotNghiep = async (sinhVienId, requiredCredits) => {
 };
 
 export const getDanhSachSinhVienTheoKhoa = async (maKhoa) => {
-    const response = await api.get(`student/khoa/${maKhoa}`)
-    return response.data
+  const response = await api.get(`student/khoa/${maKhoa}`)
+  return response.data
 }
 
 export const capNhatSinhVien = async (id, formData) => {
-    const response = await api.put(`student/${id}`, formData)
-    return response.data
+  const response = await api.put(`student/${id}`, formData)
+  return response.data
 }
 
 export const capNhatDanhSachSinhVien = async (khoa_dao_tao_id, sinh_vien_list) => {
-    const response = await api.put(`student/khoa/${khoa_dao_tao_id}`, { sinh_vien_list });
-    return response.data;
+  const response = await api.put(`student/khoa/${khoa_dao_tao_id}`, { sinh_vien_list });
+  return response.data;
 }
+
+export const exportSinhVienToExcel = async (filters) => {
+  const response = await api.post('student/export-excel', filters, {
+    responseType: 'blob'
+  });
+  return response.data;
+}
+
+export const exportSinhVienPreview = async (filters) => {
+  const response = await api.post('student/export-preview', filters);
+  return response.data;
+}
+
