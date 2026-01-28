@@ -92,9 +92,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     });
     const [isLocked, setIsLocked] = useState(false);
     const role = localStorage.getItem('role')?.toLowerCase();
-    const canApprove = role === 'admin' || role === 'director' || role === 'duyetdiem';
+    const canApprove = role === 'admin' || role === 'director' || role === 'lanhDaoDuyet';
 
-    // State for approval list (Role duyetDiem)
+    // State for approval list (Role lanhDaoDuyet)
     const [approvalList, setApprovalList] = useState([]);
     const [selectedApprovals, setSelectedApprovals] = useState([]);
 
@@ -1264,7 +1264,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         </FormControl>
                     </Grid>
                 )}
-                {role !== 'duyetdiem' && (
+                {role !== 'lanhDaoDuyet' && (
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth>
                             <InputLabel>Học phần</InputLabel>
@@ -1294,9 +1294,9 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         variant="contained"
                         color="primary"
                         startIcon={<SearchIcon />}
-                        onClick={role === 'duyetdiem' ? handleApprovalSearch : handleSearch}
+                        onClick={role === 'lanhDaoDuyet' ? handleApprovalSearch : handleSearch}
                         sx={{ height: '56px' }}
-                        disabled={role !== 'duyetdiem' && ((!classGroup && searchType === 'class') || !course || !batch || !semester)}
+                        disabled={role !== 'lanhDaoDuyet' && ((!classGroup && searchType === 'class') || !course || !batch || !semester)}
                     >
                         Tìm kiếm
                     </Button>
@@ -1305,7 +1305,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
             <Divider sx={{ my: 2 }} />
 
-            {role === 'duyetdiem' ? (
+            {role === 'lanhDaoDuyet' ? (
                 // Approval Table View
                 <TableContainer component={Paper}>
                     <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
@@ -1385,7 +1385,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </Tabs>
             )}
 
-            {role !== 'duyetdiem' && activeTab === 0 && (
+            {role !== 'lanhDaoDuyet' && activeTab === 0 && (
                 <>
                     {!currentSubjectInfo?.bao_ve && (
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
@@ -1757,7 +1757,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {role !== 'duyetdiem' && activeTab === 1 && (
+            {role !== 'lanhDaoDuyet' && activeTab === 1 && (
                 <>
                     <Alert severity="success" sx={{ my: 2 }}>
                         {eligibleStudentCount} học viên đủ điều kiện thi cuối kỳ (TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
@@ -1849,7 +1849,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {role !== 'duyetdiem' && activeTab === 2 && (
+            {role !== 'lanhDaoDuyet' && activeTab === 2 && (
                 <>
                     <Alert severity="warning" sx={{ my: 2 }}>
                         {studentsAwaitingMidtermScores.length} học viên chưa đủ điều kiện thi cuối kỳ (Cần có TP1 ≥ {gradeSettings.diemGiuaKyToiThieu} và TP2 ≥ {gradeSettings.diemChuyenCanToiThieu})
@@ -1960,7 +1960,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {role !== 'duyetdiem' && activeTab === 3 && (
+            {role !== 'lanhDaoDuyet' && activeTab === 3 && (
                 <>
                     <Alert severity="error" sx={{ my: 2 }}>
                         {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < ${gradeSettings.diemThiToiThieu} hoặc Điểm TB < ${gradeSettings.diemTrungBinhDat}). Học viên sẽ trượt môn nếu không đạt cả hai điều kiện: điểm thi ≥ ${gradeSettings.diemThiToiThieu} VÀ điểm trung bình ≥ ${gradeSettings.diemTrungBinhDat}.`}
@@ -2086,7 +2086,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 </>
             )}
 
-            {role !== 'duyetdiem' && (
+            {role !== 'lanhDaoDuyet' && (
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button
                         variant="contained"

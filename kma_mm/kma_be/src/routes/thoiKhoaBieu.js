@@ -11,7 +11,7 @@ router.post('/createall', ThoiKhoaBieuController.createAll);
 router.get('/', ThoiKhoaBieuController.getAll);
 router.get('/:id', ThoiKhoaBieuController.getById);
 
-// Route lấy danh sách cần duyệt (cho role duyetDiem)
+// Route lấy danh sách cần duyệt (cho role lanhDaoDuyet)
 router.get('/get-approval-list', ThoiKhoaBieuController.getApprovalList);
 
 router.post('/', ThoiKhoaBieuController.create);

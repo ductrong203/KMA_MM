@@ -238,9 +238,9 @@ const App = () => {
         />
 
         <Route
-          path="/duyetDiem/dashboard"
+          path="/lanhDaoDuyet/dashboard"
           element={
-            <PrivateRoute role={role} allowedRoles={["duyetDiem"]}>
+            <PrivateRoute role={role} allowedRoles={["lanhDaoDuyet"]}>
               <Layout Info={info} title="HỆ QUẢN LÝ LÃNH ĐẠO DUYỆT">
                 <ExamDashboard />
               </Layout>

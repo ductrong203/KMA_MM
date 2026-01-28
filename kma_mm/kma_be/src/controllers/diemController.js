@@ -10,7 +10,7 @@ const mapRole = {
   5: "giamDoc",
   6: "sinhVien",
   7: "admin",
-  8: "duyetDiem"
+  8: "lanhDaoDuyet"
 }
 
 class DiemController {
