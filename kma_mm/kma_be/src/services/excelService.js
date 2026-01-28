@@ -1,6 +1,7 @@
 const ExcelJS = require("exceljs");
 const { initModels } = require("../models/init-models");
 const { sequelize } = require("../models");
+const { Op } = require("sequelize");
 const models = initModels(sequelize);
 const { sinh_vien, thoi_khoa_bieu, diem, lop, mon_hoc, khoa_dao_tao, ke_hoach_mon_hoc } = models;
 
@@ -449,7 +450,7 @@ class ExcelService {
     return workbook;
   }
 
-  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id, lop_id }) {
+  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_tp1, min_tp2, is_defense }) {
     try {
       // Kiểm tra tham số đầu vào
       if (!mon_hoc_id || !khoa_dao_tao_id) {
@@ -463,6 +464,16 @@ class ExcelService {
           throw new Error("Lớp không tồn tại trong khóa đào tạo này");
         }
       }
+
+      // Create filter condition for scores
+      const scoreFilter = {};
+      if (is_defense !== 'true' && is_defense !== true && min_tp1 !== undefined && min_tp2 !== undefined) {
+        scoreFilter[Op.and] = [
+          { diem_tp1: { [Op.gte]: parseFloat(min_tp1) } },
+          { diem_tp2: { [Op.gte]: parseFloat(min_tp2) } }
+        ];
+      }
+
       const sinhVienData = await sinh_vien.findAll({
         attributes: ["id", "ma_sinh_vien", "ho_dem", "ten"],
         include: [
@@ -471,6 +482,7 @@ class ExcelService {
             as: "diems",
             attributes: ["diem_ck"],
             required: true,
+            where: scoreFilter,
             include: [
               {
                 model: thoi_khoa_bieu,

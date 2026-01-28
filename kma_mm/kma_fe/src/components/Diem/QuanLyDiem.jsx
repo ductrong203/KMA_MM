@@ -1009,7 +1009,14 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
         const data = activeGradeTab === 0
             ? { lop_id, mon_hoc_id }
-            : { mon_hoc_id, khoa_dao_tao_id, ...(searchType === 'class' && lop_id && { lop_id }) };
+            : {
+                mon_hoc_id,
+                khoa_dao_tao_id,
+                ...(searchType === 'class' && lop_id && { lop_id }),
+                min_tp1: gradeSettings.diemGiuaKyToiThieu,
+                min_tp2: gradeSettings.diemChuyenCanToiThieu,
+                is_defense: currentSubjectInfo?.bao_ve || false
+            };
         exportApi(data)
             .then((response) => {
                 const blob = new Blob([response.data], {
