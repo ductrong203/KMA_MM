@@ -434,8 +434,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             }
 
             const filteredStudents = response.data.sort((a, b) => {
-                const codeA = a.ma_sinh_vien || '';
-                const codeB = b.ma_sinh_vien || '';
+                const svA = a.sinh_vien || a;
+                const svB = b.sinh_vien || b;
+                const codeA = svA.ma_sinh_vien || '';
+                const codeB = svB.ma_sinh_vien || '';
                 return codeA.localeCompare(codeB);
             });
             console.log(filteredStudents)
