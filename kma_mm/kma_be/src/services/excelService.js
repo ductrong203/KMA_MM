@@ -443,8 +443,8 @@ class ExcelService {
     worksheet.getColumn(2).width = 11;
     worksheet.getColumn(3).width = 6.5;
     worksheet.getColumn(4).width = 4.5;
-    worksheet.getColumn(5).width = 3;
-    worksheet.getColumn(6).width = 6;
+    worksheet.getColumn(5).width = 10;
+    worksheet.getColumn(6).width = 10;
     worksheet.getColumn(7).width = 3;
     worksheet.getColumn(8).width = 7.29;
     worksheet.getColumn(9).width = 8;
