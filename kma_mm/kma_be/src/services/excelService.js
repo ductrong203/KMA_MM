@@ -162,7 +162,7 @@ class ExcelService {
         margins: {
           left: 0.4,
           right: 0.4,
-          top: 0.2,
+          top: 0.5,
           bottom: 0.2,
           header: 0.3,
           footer: 0.3,
@@ -176,7 +176,7 @@ class ExcelService {
     row.getCell(1).value = "HỌC VIỆN KỸ THUẬT MẬT MÃ".toUpperCase();
     row.getCell(8).value = "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM".toUpperCase();
     worksheet.mergeCells(row.number, 1, row.number, 7);
-    worksheet.mergeCells(row.number, 8, row.number, 15);
+    worksheet.mergeCells(row.number, 8, row.number, 14);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
     row.getCell(8).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true };
@@ -186,7 +186,7 @@ class ExcelService {
     row.getCell(1).value = "Khoa:";
     row.getCell(8).value = "Độc lập - Tự do - Hạnh phúc";
     worksheet.mergeCells(row.number, 1, row.number, 3);
-    worksheet.mergeCells(row.number, 8, row.number, 15);
+    worksheet.mergeCells(row.number, 8, row.number, 14);
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
     row.getCell(8).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     row.getCell(1).font = { bold: true };
@@ -633,7 +633,7 @@ class ExcelService {
         margins: {
           left: 0.4,
           right: 0.4,
-          top: 0.2,
+          top: 0.5,
           bottom: 0.2,
           header: 0.3,
           footer: 0.3,
@@ -846,7 +846,7 @@ class ExcelService {
     worksheet.getColumn(2).width = 4.4 * 1.2;     // B: SBD 
     worksheet.getColumn(3).width = 11.5 * 1.2; // C: Mã HVSV
     worksheet.getColumn(4).width = 18.79 * 1.2; // D: Họ đệm
-    worksheet.getColumn(5).width = 7.58 * 1.2;  // E: Tên
+    worksheet.getColumn(5).width = 13.58 * 1.2;  // E: Tên
     worksheet.getColumn(6).width = 7.71 * 1.2;  // F: Lớp
     worksheet.getColumn(7).width = 6.29 * 1.2;  // G: Mã đề
     worksheet.getColumn(8).width = 7.71 * 1.2;  // H: Điểm
