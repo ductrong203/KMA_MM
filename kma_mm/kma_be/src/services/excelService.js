@@ -111,12 +111,19 @@ class ExcelService {
             required: true,
           },
         ],
-        order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
+        // order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
       });
 
       if (!sinhVienData || sinhVienData.length === 0) {
         throw new Error("Không tìm thấy sinh viên nào phù hợp");
       }
+
+      // Sort by ma_sinh_vien
+      sinhVienData.sort((a, b) => {
+        const codeA = a.ma_sinh_vien || '';
+        const codeB = b.ma_sinh_vien || '';
+        return codeA.localeCompare(codeB);
+      });
 
       return sinhVienData;
     } catch (error) {
@@ -514,7 +521,8 @@ class ExcelService {
             required: false, // Cho phép sinh viên học lại từ khóa khác
           },
         ],
-        order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
+
+        // order: [['ten', 'ASC'], ['ho_dem', 'ASC']],
         // Ngăn trùng lặp sinh viên nếu có nhiều bản ghi diem
         //group: ["sinh_vien.id", "sinh_vien.ma_sinh_vien", "sinh_vien.ho_dem", "sinh_vien.ten", "lop.ma_lop", "diems.diem_ck"],
         subQuery: false, // không tạo truy vấn con
@@ -523,6 +531,13 @@ class ExcelService {
       if (!sinhVienData || sinhVienData.length === 0) {
         throw new Error("Không tìm thấy sinh viên nào phù hợp");
       }
+
+      // Sort by ma_sinh_vien
+      sinhVienData.sort((a, b) => {
+        const codeA = a.ma_sinh_vien || '';
+        const codeB = b.ma_sinh_vien || '';
+        return codeA.localeCompare(codeB);
+      });
 
       return sinhVienData;
     } catch (error) {

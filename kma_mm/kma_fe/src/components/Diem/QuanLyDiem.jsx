@@ -433,7 +433,11 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 response = await layDSSVTheoKhoaVaMonHoc(batch, course);
             }
 
-            const filteredStudents = response.data;
+            const filteredStudents = response.data.sort((a, b) => {
+                const codeA = a.ma_sinh_vien || '';
+                const codeB = b.ma_sinh_vien || '';
+                return codeA.localeCompare(codeB);
+            });
             console.log(filteredStudents)
 
             // Check lock status
@@ -1005,7 +1009,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
             maLop = batchInfo?.ma_khoa || 'Unknown';
         }
-        const fileName = `${tenMonHoc} - ${maLop}.xlsx`;
+        const suffix = activeGradeTab === 0 ? ' - điểm quá trình' : ' - cuối kỳ';
+        const fileName = `${tenMonHoc} - ${maLop}${suffix}.xlsx`;
         const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
         const data = activeGradeTab === 0
             ? { lop_id, mon_hoc_id }
