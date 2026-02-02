@@ -1,6 +1,8 @@
+const { initModels } = require("../models/init-models");
+const { sequelize } = require("../models");
 const db = require("../models");
-const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi: LoaiChungChiModel, chung_chi, tot_nghiep } = db;
-const { sequelize } = db;
+const models = initModels(sequelize);
+const { doi_tuong_quan_ly, sinh_vien, lop, thong_tin_quan_nhan, khoa_dao_tao, danh_muc_dao_tao, loai_chung_chi, chung_chi, tot_nghiep, diem, thoi_khoa_bieu, mon_hoc } = models;
 const ExcelJS = require('exceljs');
 const fs = require("fs");
 
@@ -736,7 +738,46 @@ class SinhVienService {
           throw new Error('Không tìm thấy sinh viên phù hợp');
         }
 
+        // Handle grade history for simple case as well
+        let gradeHistoryMap = {};
+        const mon_hoc_ids = filters.mon_hoc_ids ? filters.mon_hoc_ids.split(',').map(Number) : [];
+
+        if (mon_hoc_ids.length > 0) {
+          const studentIds = sinhVienList.map(sv => sv.id);
+
+          const grades = await diem.findAll({
+            where: { sinh_vien_id: studentIds },
+            include: [
+              {
+                model: thoi_khoa_bieu,
+                as: 'thoi_khoa_bieu',
+                required: true,
+                where: { mon_hoc_id: mon_hoc_ids },
+                include: [
+                  { model: mon_hoc, as: 'mon_hoc', attributes: ['ten_mon_hoc', 'id'] }
+                ]
+              }
+            ],
+            attributes: ['sinh_vien_id', 'diem_hp', 'diem_hp_2', 'diem_chu', 'trang_thai', 'lan_hoc']
+          });
+
+          grades.forEach(g => {
+            if (!gradeHistoryMap[g.sinh_vien_id]) gradeHistoryMap[g.sinh_vien_id] = [];
+            gradeHistoryMap[g.sinh_vien_id].push({
+              ten_mon_hoc: g.thoi_khoa_bieu?.mon_hoc?.ten_mon_hoc,
+              mon_hoc_id: g.thoi_khoa_bieu?.mon_hoc?.id,
+              diem_hp: g.diem_hp,
+              diem_hp2: g.diem_hp_2,
+              diem_chu: g.diem_chu,
+              diem_chu2: g.diem_chu_2,
+              trang_thai: g.trang_thai,
+              lan_hoc: g.lan_hoc
+            });
+          });
+        }
+
         return sinhVienList.map(sv => ({
+          id: sv.id,
           ma_sinh_vien: sv.ma_sinh_vien,
           ho_dem: sv.ho_dem,
           ten: sv.ten,
@@ -744,6 +785,7 @@ class SinhVienService {
           khoa: null,
           he_dao_tao_id: null,
           ten_he_dao_tao: null,
+          grade_history: gradeHistoryMap[sv.id] || []
         }));
       }
 
@@ -813,6 +855,56 @@ class SinhVienService {
         throw new Error('Không tìm thấy sinh viên phù hợp');
       }
 
+      // Check for mon_hoc_ids to fetch grade history
+      let gradeHistoryMap = {};
+      const mon_hoc_ids = filters.mon_hoc_ids ? filters.mon_hoc_ids.split(',').map(Number) : [];
+
+      if (mon_hoc_ids.length > 0) {
+        // Find grades for these students and subjects
+        const studentIds = sinhVienList.map(sv => sv.id);
+
+        const grades = await diem.findAll({
+          where: {
+            sinh_vien_id: studentIds,
+          },
+          include: [
+            {
+              model: thoi_khoa_bieu,
+              as: 'thoi_khoa_bieu',
+              required: true,
+              where: {
+                mon_hoc_id: mon_hoc_ids
+              },
+              include: [
+                {
+                  model: mon_hoc,
+                  as: 'mon_hoc',
+                  attributes: ['ten_mon_hoc', 'id']
+                }
+              ]
+            }
+          ],
+          attributes: ['sinh_vien_id', 'diem_hp', 'diem_hp_2', 'diem_chu', 'diem_chu_2', 'trang_thai', 'lan_hoc']
+        });
+
+        // Group grades by studentId
+        grades.forEach(g => {
+          if (!gradeHistoryMap[g.sinh_vien_id]) {
+            gradeHistoryMap[g.sinh_vien_id] = [];
+          }
+          gradeHistoryMap[g.sinh_vien_id].push({
+            ten_mon_hoc: g.thoi_khoa_bieu?.mon_hoc?.ten_mon_hoc,
+            mon_hoc_id: g.thoi_khoa_bieu?.mon_hoc?.id,
+            diem_hp: g.diem_hp,
+            diem_hp2: g.diem_hp_2, // Note: Model field is diem_hp_2
+            diem_chu: g.diem_chu,
+            diem_chu2: g.diem_chu_2,
+            trang_thai: g.trang_thai,
+            lan_hoc: g.lan_hoc
+          });
+        });
+      }
+
       // Step 3: Get additional info for khoa and he_dao_tao
       const result = [];
       for (const sv of sinhVienList) {
@@ -832,6 +924,7 @@ class SinhVienService {
         }
 
         result.push({
+          id: sv.id,
           ma_sinh_vien: sv.ma_sinh_vien,
           ho_dem: sv.ho_dem,
           ten: sv.ten,
@@ -839,6 +932,7 @@ class SinhVienService {
           khoa: khoaInfo?.ma_khoa || null,
           he_dao_tao_id: heDaoTaoInfo?.id || null,
           ten_he_dao_tao: heDaoTaoInfo?.ten_he_dao_tao || null,
+          grade_history: gradeHistoryMap[sv.id] || []
         });
       }
 

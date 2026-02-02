@@ -14,8 +14,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");

@@ -191,31 +191,31 @@ function XemDanhSachDiem() {
       toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên.');
       return;
     }
-    
+
     if (!scheduleId) {
       toast.error('Không tìm thấy thời khóa biểu. Vui lòng kiểm tra lại thông tin.');
       return;
     }
-    
+
     setLoadingStudents(true);
     try {
       const response = await layDanhSachSinhVienTheoTKB(scheduleId);
       console.log('API Response:', response);
-      
+
       if (!response.data || response.data.length === 0) {
         toast.warning('Không tìm thấy dữ liệu sinh viên cho thời khóa biểu này.');
         setStudents([]);
         setLoadingStudents(false);
         return;
       }
-      
+
       const formattedStudents = await Promise.all(
         response.data.map(async (student) => {
           // Handle potential missing data
           const sinhVien = student.sinh_vien || {};
           const lopInfo = sinhVien.lop_id ? await getLopHocById(sinhVien.lop_id) : null;
           const maLop = lopInfo?.ma_lop || student.lop_id || 'N/A';
-          
+
           // Debug status fields
           console.log('Student status fields:', {
             id: student.id,
@@ -224,7 +224,7 @@ function XemDanhSachDiem() {
             type_qua_mon: typeof student.qua_mon,
             type_rot_mon: typeof student.rot_mon
           });
-          
+
           // Determine status based on various possible data formats
           let trangThai = '';
           if (student.qua_mon === true || student.qua_mon === 1 || student.qua_mon === '1' || student.qua_mon === 'true') {
@@ -232,7 +232,7 @@ function XemDanhSachDiem() {
           } else if (student.rot_mon === true || student.rot_mon === 1 || student.rot_mon === '1' || student.rot_mon === 'true') {
             trangThai = 'Trượt môn';
           }
-          
+
           return {
             id: student.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
             sinh_vien_id: student.sinh_vien_id || '',
@@ -504,79 +504,79 @@ function XemDanhSachDiem() {
         </Box>
       ) : (
         <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="view grades table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Mã SV</TableCell>
-              <TableCell>Họ đệm</TableCell>
-              <TableCell>Tên</TableCell>
-              <TableCell>Lớp</TableCell>
-              <TableCell>Lần học</TableCell>
-              <TableCell>TP1</TableCell>
-              <TableCell>TP2</TableCell>
-              <TableCell>CK lần 1</TableCell>
-              <TableCell>CK lần 2</TableCell>
-              <TableCell>Điểm TK</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell>Ghi chú</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {students.length > 0 ? (
-              students.map((student) => {
-                // Safe handling of null/undefined values for calculation
-                const tp1 = student.diem.TP1 !== null && student.diem.TP1 !== undefined ? parseFloat(student.diem.TP1) : 0;
-                const tp2 = student.diem.TP2 !== null && student.diem.TP2 !== undefined ? parseFloat(student.diem.TP2) : 0;
-                const ck1 = student.diem.CK1 !== null && student.diem.CK1 !== undefined ? parseFloat(student.diem.CK1) : 0;
-                const ck2 = student.diem.CK2 !== null && student.diem.CK2 !== undefined ? parseFloat(student.diem.CK2) : null;
-                
-                const finalExamScore = ck2 !== null ? ck2 : ck1;
-                let totalScore = 0;
-                
-                // Only calculate if we have valid scores
-                if (tp1 >= 0 && tp2 >= 0 && finalExamScore >= 0) {
-                  totalScore = tp1 * 0.2 + tp2 * 0.2 + finalExamScore * 0.6;
-                }
-                
-                // If no status from database, calculate based on score
-                let displayStatus = student.trang_thai;
-                if (!displayStatus && totalScore > 0) {
-                  displayStatus = totalScore >= 5.0 ? 'Qua môn' : 'Trượt môn';
-                }
-                
-                return (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.ma_sinh_vien}</TableCell>
-                    <TableCell>{student.ho_dem}</TableCell>
-                    <TableCell>{student.ten}</TableCell>
-                    <TableCell>{student.lop}</TableCell>
-                    <TableCell>{student.lan_hoc}</TableCell>
-                    <TableCell>{student.diem.TP1 !== null ? student.diem.TP1 : '-'}</TableCell>
-                    <TableCell>{student.diem.TP2 !== null ? student.diem.TP2 : '-'}</TableCell>
-                    <TableCell>{student.diem.CK1 !== null ? student.diem.CK1 : '-'}</TableCell>
-                    <TableCell>{student.diem.CK2 !== null ? student.diem.CK2 : '-'}</TableCell>
-                    <TableCell>{totalScore > 0 ? totalScore.toFixed(1) : '-'}</TableCell>
-                  <TableCell>
-                    {displayStatus === 'Qua môn' ? (
-                      <span style={{ color: 'green', fontWeight: 'bold' }}>{displayStatus}</span>
-                    ) : displayStatus === 'Trượt môn' ? (
-                      <span style={{ color: 'red', fontWeight: 'bold' }}>{displayStatus}</span>
-                    ) : (
-                      displayStatus
-                    )}
-                  </TableCell>
-                  <TableCell>{student.ghi_chu}</TableCell>
+          <Table sx={{ minWidth: 650 }} aria-label="view grades table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Mã SV</TableCell>
+                <TableCell>Họ đệm</TableCell>
+                <TableCell>Tên</TableCell>
+                <TableCell>Lớp</TableCell>
+                <TableCell>Lần học</TableCell>
+                <TableCell>TP1</TableCell>
+                <TableCell>TP2</TableCell>
+                <TableCell>CK lần 1</TableCell>
+                <TableCell>CK lần 2</TableCell>
+                <TableCell>Điểm TK</TableCell>
+                <TableCell>Trạng thái</TableCell>
+                <TableCell>Ghi chú</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {students.length > 0 ? (
+                students.map((student) => {
+                  // Safe handling of null/undefined values for calculation
+                  const tp1 = student.diem.TP1 !== null && student.diem.TP1 !== undefined ? parseFloat(student.diem.TP1) : 0;
+                  const tp2 = student.diem.TP2 !== null && student.diem.TP2 !== undefined ? parseFloat(student.diem.TP2) : 0;
+                  const ck1 = student.diem.CK1 !== null && student.diem.CK1 !== undefined ? parseFloat(student.diem.CK1) : 0;
+                  const ck2 = student.diem.CK2 !== null && student.diem.CK2 !== undefined ? parseFloat(student.diem.CK2) : null;
+
+                  const finalExamScore = ck2 !== null ? ck2 : ck1;
+                  let totalScore = 0;
+
+                  // Only calculate if we have valid scores
+                  if (tp1 >= 0 && tp2 >= 0 && finalExamScore >= 0) {
+                    totalScore = (tp1 * 0.7 + tp2 * 0.3) * 0.3 + finalExamScore * 0.7;
+                  }
+
+                  // If no status from database, calculate based on score
+                  let displayStatus = student.trang_thai;
+                  if (!displayStatus && totalScore > 0) {
+                    displayStatus = totalScore >= 5.0 ? 'Qua môn' : 'Trượt môn';
+                  }
+
+                  return (
+                    <TableRow key={student.id}>
+                      <TableCell>{student.ma_sinh_vien}</TableCell>
+                      <TableCell>{student.ho_dem}</TableCell>
+                      <TableCell>{student.ten}</TableCell>
+                      <TableCell>{student.lop}</TableCell>
+                      <TableCell>{student.lan_hoc}</TableCell>
+                      <TableCell>{student.diem.TP1 !== null ? student.diem.TP1 : '-'}</TableCell>
+                      <TableCell>{student.diem.TP2 !== null ? student.diem.TP2 : '-'}</TableCell>
+                      <TableCell>{student.diem.CK1 !== null ? student.diem.CK1 : '-'}</TableCell>
+                      <TableCell>{student.diem.CK2 !== null ? student.diem.CK2 : '-'}</TableCell>
+                      <TableCell>{totalScore > 0 ? totalScore.toFixed(1) : '-'}</TableCell>
+                      <TableCell>
+                        {displayStatus === 'Qua môn' ? (
+                          <span style={{ color: 'green', fontWeight: 'bold' }}>{displayStatus}</span>
+                        ) : displayStatus === 'Trượt môn' ? (
+                          <span style={{ color: 'red', fontWeight: 'bold' }}>{displayStatus}</span>
+                        ) : (
+                          displayStatus
+                        )}
+                      </TableCell>
+                      <TableCell>{student.ghi_chu}</TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={12} align="center">Không có dữ liệu sinh viên</TableCell>
                 </TableRow>
-              );
-            })
-          ) : (
-            <TableRow>
-              <TableCell colSpan={12} align="center">Không có dữ liệu sinh viên</TableCell>
-            </TableRow>
-          )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Paper>
   );

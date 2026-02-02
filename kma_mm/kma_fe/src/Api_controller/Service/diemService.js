@@ -99,3 +99,21 @@ export const lockGrade = async (thoi_khoa_bieu_id, is_locked) => {
     throw error;
   }
 };
+
+// Export grade report to Excel (Xuất Excel điểm học phần)
+export const exportGradeHocPhan = async (heDaoTaoId, khoaDaoTaoId, lopId, kyHoc) => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (heDaoTaoId) queryParams.append('he_dao_tao_id', heDaoTaoId);
+    if (khoaDaoTaoId) queryParams.append('khoa_dao_tao_id', khoaDaoTaoId);
+    if (lopId) queryParams.append('lop_id', lopId);
+    if (kyHoc) queryParams.append('ky_hoc', kyHoc);
+
+    const response = await api.get(`/diem/export-grade-hoc-phan?${queryParams.toString()}`, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

@@ -12,8 +12,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 
 class LoaiChungChiController {
@@ -145,7 +145,7 @@ class LoaiChungChiController {
       const oldDataRaw = await loai_chung_chi.findByPk(id);
       const oldData = {
         "Loại chứng chỉ": oldDataRaw.ten_loai_chung_chi,
-        "Mô tả": oldDataRaw.mo_ta === null ? "chưa có mô tả": oldDataRaw.mo_ta  ,
+        "Mô tả": oldDataRaw.mo_ta === null ? "chưa có mô tả" : oldDataRaw.mo_ta,
         "Xét tốt nghiệp": oldDataRaw.xet_tot_nghiep === false ? "có" : "không",
         "Tình trạng": oldDataRaw.tinh_trang,
       }
@@ -161,7 +161,7 @@ class LoaiChungChiController {
           const newDataRaw = await loai_chung_chi.findByPk(id);
           const newData = {
             "Loại chứng chỉ": newDataRaw.ten_loai_chung_chi,
-            "Mô tả": newDataRaw.mo_ta === null ? "chưa có mô tả": newDataRaw.mo_ta  ,
+            "Mô tả": newDataRaw.mo_ta === null ? "chưa có mô tả" : newDataRaw.mo_ta,
             "Xét tốt nghiệp": newDataRaw.xet_tot_nghiep === false ? "có" : "không",
             "Tình trạng": newDataRaw.tinh_trang,
           }

@@ -42,6 +42,7 @@ const UserInfo = () => {
         5: "Director",
         6: "Student",
         7: "Admin",
+        8: "lanhDaoDuyet",
     };
 
     // Lấy thông tin cá nhân từ API

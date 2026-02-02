@@ -5,10 +5,9 @@ const PrivateRoute = ({ role, allowedRoles, children }) => {
     const accessToken = localStorage.getItem("access_token");
 
     if (!accessToken || !allowedRoles.includes(role)) {
+        // Remove stored role and navigate via react-router to avoid full-page reloads
         localStorage.removeItem("role");
-        // Redirect về trang login
-        window.location.href = "/login";
-        return null;
+        return <Navigate to="/login" replace />;
     }
 
     return children;

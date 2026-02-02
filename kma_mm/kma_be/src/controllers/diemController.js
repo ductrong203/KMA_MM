@@ -1,4 +1,5 @@
 const DiemService = require('../services/diemService');
+const ExportGradeHocPhanService = require('../services/exportGradeHocPhanService');
 const { logDiem } = require("../utils/extraList");
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
@@ -335,6 +336,29 @@ class DiemController {
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Export grade report to Excel (Xuất Excel điểm học phần)
+   */
+  static async exportGradeHocPhan(req, res) {
+    try {
+      const { he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc } = req.query;
+
+      const buffer = await ExportGradeHocPhanService.exportToExcel({
+        he_dao_tao_id: he_dao_tao_id ? parseInt(he_dao_tao_id) : null,
+        khoa_dao_tao_id: khoa_dao_tao_id ? parseInt(khoa_dao_tao_id) : null,
+        lop_id: lop_id ? parseInt(lop_id) : null,
+        ky_hoc: ky_hoc || 'all'
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=Diem_hoc_phan.xlsx');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error exporting grade report:', error);
+      res.status(500).json({ error: error.message });
     }
   }
 }

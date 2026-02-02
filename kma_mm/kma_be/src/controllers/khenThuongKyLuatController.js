@@ -1,12 +1,12 @@
 const { Model } = require("sequelize");
 const KhenThuongKyLuatService = require("../services/khenThuongKyLuatService");
-const {khen_thuong_ky_luat} = require("../models");
+const { khen_thuong_ky_luat } = require("../models");
 
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
-const {formatDate } = require("../utils/formatDate");
+const { formatDate } = require("../utils/formatDate");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const mapRole = {
   1: "daoTao",
@@ -14,7 +14,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
+  7: "admin",
+  8: "lanhDaoDuyet"
 
 }
 
@@ -115,17 +116,17 @@ class KhenThuongKyLuatController {
         if (KhenThuongKyLuat) {
           const newDataRaw = await khen_thuong_ky_luat.findByPk(req.params.id);
           const newData = {
-        "tên sinh viên": await getFieldById("sinh_vien", newDataRaw.sinh_vien_id, "ho_dem") + await getFieldById("sinh_vien", newDataRaw.sinh_vien_id, "ten"),
-        "danh mục": await getFieldById("danh_muc_khen_ky_luat", newDataRaw.danh_muc_id, "ten_danh_muc"),
-        "ngày quyết định": newDataRaw.ngay_quyet_dinh,
-        "số quyết định": newDataRaw.so_quyet_dinh,
-        "người ký": newDataRaw.nguoi_ky,
-        "lý do": newDataRaw.ly_do,
-        "hình thức": newDataRaw.hinh_thuc,
-        "mức thưởng phạt": newDataRaw.muc_thuong_phat,
-        "ghi chú": newDataRaw.ghi_chu,
-        "ngày tạo": formatDate(newDataRaw.ngay_tao),
-      }
+            "tên sinh viên": await getFieldById("sinh_vien", newDataRaw.sinh_vien_id, "ho_dem") + await getFieldById("sinh_vien", newDataRaw.sinh_vien_id, "ten"),
+            "danh mục": await getFieldById("danh_muc_khen_ky_luat", newDataRaw.danh_muc_id, "ten_danh_muc"),
+            "ngày quyết định": newDataRaw.ngay_quyet_dinh,
+            "số quyết định": newDataRaw.so_quyet_dinh,
+            "người ký": newDataRaw.nguoi_ky,
+            "lý do": newDataRaw.ly_do,
+            "hình thức": newDataRaw.hinh_thuc,
+            "mức thưởng phạt": newDataRaw.muc_thuong_phat,
+            "ghi chú": newDataRaw.ghi_chu,
+            "ngày tạo": formatDate(newDataRaw.ngay_tao),
+          }
           let inforActivity = {
             username: userN,
             role: mapRole[userR],

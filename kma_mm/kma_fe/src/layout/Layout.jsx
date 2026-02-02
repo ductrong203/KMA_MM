@@ -31,6 +31,7 @@ const Layout = ({ children, Info, title }) => {
         5: "director",
         6: "sv",
         7: "admin",
+        8: "lanhDaoDuyet",
     };
     // Fix the useEffect hook usage and conditional rendering
     useEffect(() => {

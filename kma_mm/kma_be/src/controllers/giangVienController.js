@@ -4,7 +4,7 @@ const { giang_vien } = require("../models");
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById, getChucVuDiaDiem } = require("../utils/detailData");
 const { users } = require("../models");
-const { getDiffData, getDiffDataDetailed} = require("../utils/getDiffData");
+const { getDiffData, getDiffDataDetailed } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const mapRole = {
   1: "daoTao",
@@ -12,8 +12,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 const createGiangVien = async (req, res) => {
   try {
@@ -122,7 +122,7 @@ const updateGiangVien = async (req, res) => {
           "ngày cấp": oldData.ngay_cap,
           "nơi cấp": oldData.noi_cap,
           "nơi ở hiện nay": oldData.noi_o_hien_nay,
-          "Chức vụ": oldChucVu, 
+          "Chức vụ": oldChucVu,
           "Vị trí": oldDiaDiem,
         };
 
@@ -143,8 +143,8 @@ const updateGiangVien = async (req, res) => {
           "ngày cấp": newData.ngay_cap,
           "nơi cấp": newData.noi_cap,
           "nơi ở hiện nay": newData.noi_o_hien_nay,
-          "Chức vụ": newChucVu, 
-          "Vị trí": newDiaDiem 
+          "Chức vụ": newChucVu,
+          "Vị trí": newDiaDiem
         }
         console.log("#################################", getDiffDataDetailed(oldD, newD));
         let inforActivity = {

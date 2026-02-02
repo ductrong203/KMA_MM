@@ -12,8 +12,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 class ChuongTrinhDaoTaoController {
   static async createChuongTrinhDaoTao(req, res) {
@@ -101,79 +101,79 @@ class ChuongTrinhDaoTaoController {
 
       const chuongTrinhs = await ChuongTrinhDaoTaoService.updateChuongTrinhDaoTao(data);
 
-      try{
-    
-      arrMonHoc = await chuong_trinh_dao_tao.findAll({
-        where: {
-          he_dao_tao_id,
-          khoa_dao_tao_id,
-        },
-        attributes: ['mon_hoc_id'],
-      });
-      console.log("########2", arrMonHoc.length);
+      try {
 
-      const newArrMonHocId = (arrMonHoc || []).map((monHoc) => {
-        return monHoc.mon_hoc_id;
-      }).filter(Boolean);
-
-      console.log("#####$$$checkkk", oldData[0] );
-
-      const oldResult = oldArrMonHocId?.filter(x => !newArrMonHocId.includes(x));
-      const newResult = newArrMonHocId?.filter(x => !oldArrMonHocId.includes(x));
-
-      const oldPromises = oldResult?.map(async (id) => {
-        return await getFieldById("mon_hoc", id, "ten_mon_hoc");
-      })
-      const oldNames = await Promise.all(oldPromises);
-
-      const newPromises = newResult?.map(async (id) => {
-        return await getFieldById("mon_hoc", id, "ten_mon_hoc");
-      })
-      const newNames = await Promise.all(newPromises);
-
-      // const temp1 =   
-
-      const xoa_mon_str = oldNames?.length === 0 ? "" : `đã bỏ các môn: ${oldNames?.join(" , ")} `;
-      const them_mon_str = newNames?.length === 0 ? "" : `đã thêm các môn: ${newNames?.join(" , ")}`;
-
-
-      const token = req.headers.authorization?.split(" ")[1];
-      // console.log(token);
-      let user = verifyAccessToken(token);
-      let userN = await getFieldById("users", user.id, "username");
-      let userR = await getFieldById("users", user.id, "role");
-      if (chuongTrinhs) {
-        const newData = await chuong_trinh_dao_tao.findAll({
+        arrMonHoc = await chuong_trinh_dao_tao.findAll({
           where: {
             he_dao_tao_id,
             khoa_dao_tao_id,
           },
-          attributes: ['so_quyet_dinh', 'ngay_ra_quyet_dinh'],
+          attributes: ['mon_hoc_id'],
         });
-        if(!oldData[0] || !newData[0]){
-                var strRes = !oldData[0] && newData[0] ? `đã tạo chương trình đào tạo này`: "đã xóa chương trình đào tạo này";
-                  
-        }
-        else {
-                    strRes = `${getDiffData(oldData[0].dataValues, newData[0].dataValues)}`; 
-        }
-        let inforActivity = {
-          username: userN,
-          role: mapRole[userR],
-          action: req.method,
-          endpoint: req.originalUrl,
-          reqData: `${strRes}  ${xoa_mon_str} ${them_mon_str}`,
-          response_status: 200,
-          resData: `Người dùng ${userN} đã chỉnh sửa chương trình đào tạo của khoa đào tạo ${khoaDaoTao} thuộc hệ đào tạo ${heDaoTao} thành công`,
-          ip: req._remoteAddress,
+        console.log("########2", arrMonHoc.length);
 
+        const newArrMonHocId = (arrMonHoc || []).map((monHoc) => {
+          return monHoc.mon_hoc_id;
+        }).filter(Boolean);
+
+        console.log("#####$$$checkkk", oldData[0]);
+
+        const oldResult = oldArrMonHocId?.filter(x => !newArrMonHocId.includes(x));
+        const newResult = newArrMonHocId?.filter(x => !oldArrMonHocId.includes(x));
+
+        const oldPromises = oldResult?.map(async (id) => {
+          return await getFieldById("mon_hoc", id, "ten_mon_hoc");
+        })
+        const oldNames = await Promise.all(oldPromises);
+
+        const newPromises = newResult?.map(async (id) => {
+          return await getFieldById("mon_hoc", id, "ten_mon_hoc");
+        })
+        const newNames = await Promise.all(newPromises);
+
+        // const temp1 =   
+
+        const xoa_mon_str = oldNames?.length === 0 ? "" : `đã bỏ các môn: ${oldNames?.join(" , ")} `;
+        const them_mon_str = newNames?.length === 0 ? "" : `đã thêm các môn: ${newNames?.join(" , ")}`;
+
+
+        const token = req.headers.authorization?.split(" ")[1];
+        // console.log(token);
+        let user = verifyAccessToken(token);
+        let userN = await getFieldById("users", user.id, "username");
+        let userR = await getFieldById("users", user.id, "role");
+        if (chuongTrinhs) {
+          const newData = await chuong_trinh_dao_tao.findAll({
+            where: {
+              he_dao_tao_id,
+              khoa_dao_tao_id,
+            },
+            attributes: ['so_quyet_dinh', 'ngay_ra_quyet_dinh'],
+          });
+          if (!oldData[0] || !newData[0]) {
+            var strRes = !oldData[0] && newData[0] ? `đã tạo chương trình đào tạo này` : "đã xóa chương trình đào tạo này";
+
+          }
+          else {
+            strRes = `${getDiffData(oldData[0].dataValues, newData[0].dataValues)}`;
+          }
+          let inforActivity = {
+            username: userN,
+            role: mapRole[userR],
+            action: req.method,
+            endpoint: req.originalUrl,
+            reqData: `${strRes}  ${xoa_mon_str} ${them_mon_str}`,
+            response_status: 200,
+            resData: `Người dùng ${userN} đã chỉnh sửa chương trình đào tạo của khoa đào tạo ${khoaDaoTao} thuộc hệ đào tạo ${heDaoTao} thành công`,
+            ip: req._remoteAddress,
+
+          }
+          await logActivity(inforActivity);
         }
-        await logActivity(inforActivity);
       }
-    }
-    catch (error){
-          console.error("Lỗi ghi log activity:", error.message); 
-    }
+      catch (error) {
+        console.error("Lỗi ghi log activity:", error.message);
+      }
 
       return res.status(200).json({
         message: 'Cập nhật chương trình đào tạo thành công',

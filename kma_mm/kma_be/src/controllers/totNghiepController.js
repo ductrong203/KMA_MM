@@ -10,8 +10,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 };
 class TotNghiepController {
   // Xét duyệt tốt nghiệp
