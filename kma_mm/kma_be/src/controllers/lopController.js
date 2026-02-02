@@ -12,8 +12,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 
 class LopController {
@@ -93,11 +93,11 @@ class LopController {
     try {
       const oldKhoaDaoTaoId = await getFieldById("lop", req.params.id, "khoa_dao_tao_id");
       const oldTenKhoa = await getFieldById("khoa_dao_tao", oldKhoaDaoTaoId, "ten_khoa");
-      
+
       const updatedLop = await LopService.updateLop(req.params.id, req.body);
       const newKhoaDaoTaoId = await getFieldById("lop", req.params.id, "khoa_dao_tao_id");
       const newTenKhoa = await getFieldById("khoa_dao_tao", newKhoaDaoTaoId, "ten_khoa");
-            const token = req.headers.authorization?.split(" ")[1];
+      const token = req.headers.authorization?.split(" ")[1];
       // console.log(token);
       let user = verifyAccessToken(token);
       let userN = await getFieldById("users", user.id, "username");

@@ -825,7 +825,7 @@ class DiemService {
           ghi_chu = invalidScore;
         } else if (diem_tp1 !== null && diem_tp2 !== null) {
           // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
-          diem_gk = parseFloat((0.3 * diem_tp1 + 0.7 * diem_tp2).toFixed(2));
+          diem_gk = parseFloat((0.7 * diem_tp1 + 0.3 * diem_tp2).toFixed(2));
         }
 
         // Tìm id của bảng diem từ sinh_vien_id và thoi_khoa_bieu_id
@@ -1254,8 +1254,9 @@ class DiemService {
         return { thongKeTongQuan: [], chiTietMonHoc: [], monHocList: [], thongKeTheoLop: [], thongKeTheoKhoa: [] };
       }
 
-      // Điều kiện thời khóa biểu
-      const whereTKB = { lop_id: lopIds };
+      // Điều kiện thời khóa biểu - DON'T filter by lop_id to include retake courses from other classes
+      // The actual filtering by lop is done on sinh_vien, not thoi_khoa_bieu
+      const whereTKB = {};
       if (ky_hoc_id && ky_hoc_id !== 'all') {
         whereTKB.ky_hoc = ky_hoc_id;
       }
@@ -1299,19 +1300,36 @@ class DiemService {
       });
       const thoiKhoaBieuIds = thoiKhoaBieus.map(tkb => tkb.id);
 
-      // Lấy danh sách điểm - bao gồm cả sinh viên học lại
+      // Build where clause for sinh_vien (lop_id filter)
+      // Filter by sinh_vien.lop_id (student's actual class), not thoi_khoa_bieu.lop_id
+      const whereSinhVien = {};
+      if (lopIds.length > 0) {
+        whereSinhVien.lop_id = lopIds;
+      }
+
+      // Build where clause for thoi_khoa_bieu within the query
+      const whereTKBInQuery = {};
+      if (ky_hoc_id && ky_hoc_id !== 'all') {
+        whereTKBInQuery.ky_hoc = ky_hoc_id;
+      }
+
+      // Lấy danh sách điểm - lọc theo lớp gốc của sinh viên (bao gồm lan_hoc)
+      // DON'T filter by thoi_khoa_bieu_id to include retake courses from other classes
       const diemRecords = await diem.findAll({
-        where: { thoi_khoa_bieu_id: thoiKhoaBieuIds },
+        attributes: ['id', 'diem_tp1', 'diem_tp2', 'diem_gk', 'diem_ck', 'diem_hp', 'diem_ck2', 'diem_hp_2', 'lan_hoc', 'sinh_vien_id', 'thoi_khoa_bieu_id'],
         include: [
           {
             model: sinh_vien,
             as: 'sinh_vien',
+            where: whereSinhVien,
+            required: true,
             attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'gioi_tinh', 'diem_trung_binh_tich_luy', 'diem_trung_binh_he_4', 'bao_ve_do_an', 'lop_id'],
-            required: true
           },
           {
             model: thoi_khoa_bieu,
             as: 'thoi_khoa_bieu',
+            where: Object.keys(whereTKBInQuery).length > 0 ? whereTKBInQuery : undefined,
+            required: true,
             attributes: ['ky_hoc', 'lop_id'],
             include: [
               {
@@ -1340,8 +1358,11 @@ class DiemService {
         const svId = sv.id;
         const kyHoc = record.thoi_khoa_bieu.ky_hoc;
         const lopId = record.thoi_khoa_bieu.lop_id;
-        const monHoc = record.thoi_khoa_bieu.mon_hoc?.ten_mon_hoc || 'Unknown';
+        const monHocName = record.thoi_khoa_bieu.mon_hoc?.ten_mon_hoc || 'Unknown';
         const soTinChi = record.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
+        const lanHoc = record.lan_hoc || 1;
+        // Create unique key for each learning attempt
+        const monHocKey = lanHoc > 1 ? `${monHocName} (học lại lần ${lanHoc})` : monHocName;
 
         // Lấy thông tin lớp và khóa
         const lopInfo = lops.find(l => l.id === lopId);
@@ -1413,10 +1434,10 @@ class DiemService {
           });
 
           const diem_tb_ky_he10 = tongTinChi > 0
-            ? parseFloat((tongDiemTinChiHe10 / tongTinChi).toFixed(2))
+            ? parseFloat((tongDiemTinChiHe10 / tongTinChi).toFixed(1))
             : 0;
           const diem_tb_ky_he4 = tongTinChi > 0
-            ? parseFloat((tongDiemTinChiHe4 / tongTinChi).toFixed(2))
+            ? parseFloat((tongDiemTinChiHe4 / tongTinChi).toFixed(1))
             : 0;
 
           svData.diem_tb_ky[kyHoc] = diem_tb_ky_he10;
@@ -1430,13 +1451,16 @@ class DiemService {
           });
         }
 
-        // Thêm chi tiết môn học
+        // Thêm chi tiết môn học (sử dụng key bao gồm lần học)
         const chiTietKy = svData.chi_tiet.find(ct => ct.ky_hoc === kyHoc);
-        chiTietKy.mon_hoc[monHoc] = {
+        chiTietKy.mon_hoc[monHocKey] = {
           tp1: record.diem_tp1 || null,
           tp2: record.diem_tp2 || null,
           diem_thi_ktph: record.diem_ck || null,
           diem_hp: record.diem_hp || null,
+          diem_thi_lai: record.diem_ck2 || null, // Thêm điểm thi lại
+          diem_hp2: record.diem_hp_2 || null, // Thêm điểm học phần 2
+          lan_hoc: lanHoc, // Thêm lần học
         };
 
         // Tính thống kê theo lớp
@@ -1511,8 +1535,8 @@ class DiemService {
         lop_id: lopId,
         ma_lop: data.ma_lop,
         ky_hoc: data.ky_hoc,
-        diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(2)) : 0,
-        diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(2)) : 0,
+        diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(1)) : 0,
+        diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(1)) : 0,
         so_sinh_vien: data.so_sinh_vien.size,
       }));
 
@@ -1521,8 +1545,8 @@ class DiemService {
         khoa_dao_tao_id: khoaId,
         ten_khoa: data.ten_khoa,
         ky_hoc: data.ky_hoc,
-        diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(2)) : 0,
-        diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(2)) : 0,
+        diem_tb_he10: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he10 / data.tong_tin_chi).toFixed(1)) : 0,
+        diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(1)) : 0,
         so_sinh_vien: data.so_sinh_vien.size,
       }));
 

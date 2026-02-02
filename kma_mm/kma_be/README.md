@@ -39,3 +39,4 @@ A Node.js-based backend for managing data using Express, MySQL, and Sequelize.
 5. Ban giám đốc
 6. Sinh viên
 7. Admin
+8. Lãnh Đạo Duyệt(duyệt điểm môn học)

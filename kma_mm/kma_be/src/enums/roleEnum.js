@@ -5,7 +5,8 @@ const ROLES = Object.freeze({
   QUAN_LI_THU_VIEN: 4,
   GIAM_DOC: 5,
   SINH_VIEN: 6,
-  ADMIN: 7
+  ADMIN: 7,
+  LanhDaoDuyet: 8
 });
 
 const ROLE_NAMES = Object.freeze({
@@ -15,7 +16,8 @@ const ROLE_NAMES = Object.freeze({
   [ROLES.QUAN_LI_THU_VIEN]: "quanLiThuVien",
   [ROLES.GIAM_DOC]: "giamDoc",
   [ROLES.SINH_VIEN]: "sinhVien",
-  [ROLES.ADMIN]: "admin"
+  [ROLES.ADMIN]: "admin",
+  [ROLES.LanhDaoDuyet]: "lanhDaoDuyet"
 });
 
 const ROLE_LABELS = Object.freeze({
@@ -25,7 +27,8 @@ const ROLE_LABELS = Object.freeze({
   [ROLES.QUAN_LI_THU_VIEN]: "Quản Lý Thư Viện",
   [ROLES.GIAM_DOC]: "Giám Đốc",
   [ROLES.SINH_VIEN]: "Sinh Viên",
-  [ROLES.ADMIN]: "Quản Trị Viên"
+  [ROLES.ADMIN]: "Quản Trị Viên",
+  [ROLES.LanhDaoDuyet]: "Lãnh Đạo Duyệt"
 });
 
 /**
@@ -218,28 +221,28 @@ const getStudyingStatusLabel = (statusId) => {
 // Format value theo field name - hàm tiện ích cho getDiffData
 const formatValueByField = (fieldName, value) => {
   if (value === null || value === undefined) return "";
-  
+
   // Xử lý các trường đặc biệt
   if (fieldName === "role" || fieldName === "Role") {
     return getRoleName(value) || value;
   }
-  
+
   if (fieldName === "trang_thai") {
     return getActiveStatusLabel(value);
   }
-  
+
   if (fieldName === "gioi_tinh") {
     return getGenderLabel(value);
   }
-  
+
   if (fieldName === "dang_hoc") {
     return getStudyingStatusLabel(value);
   }
-  
+
   if (fieldName === "thuoc_khoa") {
     return getDepartmentTypeLabel(value);
   }
-  
+
   return value;
 };
 
@@ -251,36 +254,36 @@ module.exports = {
   ROLES,
   ROLE_NAMES,
   ROLE_LABELS,
-  
+
   // Status enums
   STATUS,
   STATUS_LABELS,
-  
+
   // Student status enums
   STUDENT_STATUS,
   STUDENT_STATUS_LABELS,
-  
+
   // Grade type enums
   GRADE_TYPE,
   GRADE_TYPE_LABELS,
-  
+
   // Semester enums
   SEMESTER,
   SEMESTER_LABELS,
-  
+
   // Gender enums
   GENDER,
   GENDER_LABELS,
-  
+
   // Department type enums
   DEPARTMENT_TYPE,
   DEPARTMENT_TYPE_LABELS,
-  
+
   // Active status enums
   ACTIVE_STATUS,
   ACTIVE_STATUS_LABELS,
   STUDYING_STATUS_LABELS,
-  
+
   // Utility functions
   getRoleName,
   getRoleLabel,

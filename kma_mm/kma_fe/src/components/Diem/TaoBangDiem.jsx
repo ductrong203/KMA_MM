@@ -3,6 +3,7 @@ import {
     Box,
     Button,
     Checkbox,
+    Chip,
     Dialog,
     DialogActions,
     DialogContent,
@@ -93,7 +94,7 @@ function TaoBangDiem({ sampleStudents }) {
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(40);
-    
+
     // State cho hình thức bảo vệ
     const [defenseType, setDefenseType] = useState('');
 
@@ -103,12 +104,12 @@ function TaoBangDiem({ sampleStudents }) {
             toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên');
             return;
         }
-        
+
         if (!scheduleId || scheduleId.length === 0) {
             toast.error('Không tìm thấy thời khóa biểu cho các môn học đã chọn');
             return;
         }
-        
+
         setSearchMode(true);
         setLoadingStudents(true);
         try {
@@ -119,14 +120,14 @@ function TaoBangDiem({ sampleStudents }) {
                 try {
                     // Chuẩn bị tham số cho API tìm kiếm
                     let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
-                    
+
                     // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
                     if (defenseType === 'bao_ve_do_an') {
                         searchUrl += '&bao_ve_do_an=true';
                     } else if (defenseType === 'thi_tot_nghiep') {
                         searchUrl += '&bao_ve_do_an=false';
                     }
-                    
+
                     const response = await layDanhSachSinhVienTheoTKB(searchUrl);
 
                     // Backend đã lọc theo hình thức bảo vệ, không cần lọc lại ở frontend
@@ -136,7 +137,7 @@ function TaoBangDiem({ sampleStudents }) {
                         filteredByDefenseType.map(async (student) => {
                             const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                             const maLop = lopInfo?.ma_lop || student.lop_id;
-                            
+
                             // Get course name from courseOptions
                             const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
                             const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
@@ -170,11 +171,11 @@ function TaoBangDiem({ sampleStudents }) {
 
             if (allStudents.length > 0) {
                 const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
-                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'tất cả';
+                    defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'tất cả';
                 toast.success(`Đã tìm thấy ${allStudents.length} học viên đủ điều kiện ${defenseTypeText}.`);
             } else {
                 const defenseTypeText = defenseType === 'bao_ve_do_an' ? 'bảo vệ đồ án' :
-                                      defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'phù hợp';
+                    defenseType === 'thi_tot_nghiep' ? 'thi tốt nghiệp' : 'phù hợp';
                 toast.warn(`Không tìm thấy học viên nào đủ điều kiện ${defenseTypeText}.`);
             }
         } catch {
@@ -374,28 +375,28 @@ function TaoBangDiem({ sampleStudents }) {
             for (const schedule of scheduleId) {
                 try {
                     const existingGradeSheet = await kiemTraBangDiemTonTai(schedule.scheduleId);
-                    
+
                     if (existingGradeSheet && existingGradeSheet.data && existingGradeSheet.data.length > 0) {
                         existingGradeSheetsCount++;
-                        
+
                         // Chuẩn bị tham số cho API tìm kiếm khi bảng điểm đã tồn tại
                         let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
-                        
+
                         // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
                         if (defenseType === 'bao_ve_do_an') {
                             searchUrl += '&bao_ve_do_an=true';
                         } else if (defenseType === 'thi_tot_nghiep') {
                             searchUrl += '&bao_ve_do_an=false';
                         }
-                        
+
                         const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
                         const filteredByDefenseType = studentsResponse.data;
-                        
+
                         const formattedStudents = await Promise.all(
                             filteredByDefenseType.map(async (student) => {
                                 const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                                 const maLop = lopInfo?.ma_lop || student.lop_id;
-                                
+
                                 // Get course name from courseOptions
                                 const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
                                 const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
@@ -423,27 +424,27 @@ function TaoBangDiem({ sampleStudents }) {
                     } else {
                         // Tạo bảng điểm mới cho môn học này
                         const gradeSheetParams = { thoi_khoa_bieu_id: schedule.scheduleId };
-                        
+
                         // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
                         if (defenseType === 'bao_ve_do_an') {
                             gradeSheetParams.bao_ve_do_an = true;
                         } else if (defenseType === 'thi_tot_nghiep') {
                             gradeSheetParams.bao_ve_do_an = false;
                         }
-                        
+
                         await taoBangDiemChoSinhVien(gradeSheetParams);
                         newGradeSheetsCount++;
 
                         // Chuẩn bị tham số cho API tìm kiếm sau khi tạo bảng điểm mới
                         let searchUrl = `thoi_khoa_bieu_id=${schedule.scheduleId}`;
-                        
+
                         // Thêm tham số bao_ve_do_an nếu có chọn hình thức bảo vệ
                         if (defenseType === 'bao_ve_do_an') {
                             searchUrl += '&bao_ve_do_an=true';
                         } else if (defenseType === 'thi_tot_nghiep') {
                             searchUrl += '&bao_ve_do_an=false';
                         }
-                        
+
                         const studentsResponse = await layDanhSachSinhVienTheoTKB(searchUrl);
                         const filteredByDefenseType = studentsResponse.data;
 
@@ -451,7 +452,7 @@ function TaoBangDiem({ sampleStudents }) {
                             filteredByDefenseType.map(async (student) => {
                                 const lopInfo = await getLopHocById(student.sinh_vien.lop_id);
                                 const maLop = lopInfo?.ma_lop || student.lop_id;
-                                
+
                                 // Get course name from courseOptions
                                 const courseInfo = courseOptions.find(c => c.id === schedule.courseId);
                                 const courseName = courseInfo?.ten_mon_hoc || courseInfo?.name || schedule.courseId;
@@ -816,6 +817,12 @@ function TaoBangDiem({ sampleStudents }) {
             if (dialogEducationType) filters.he_dao_tao_id = dialogEducationType;
             if (dialogBatch) filters.khoa_id = dialogBatch;
             if (dialogClass) filters.lop_id = dialogClass;
+
+            // Pass selected course IDs to fetch grade history
+            if (course && course.length > 0) {
+                filters.mon_hoc_ids = course.join(',');
+            }
+
             const response = await timSinhVienTheoMaHoacFilter(filters);
             setFilteredStudents(response.data);
             toast.success(`Đã tìm thấy ${response.data.length} học viên phù hợp.`);
@@ -1332,6 +1339,7 @@ function TaoBangDiem({ sampleStudents }) {
                                     <TableCell>Lớp</TableCell>
                                     <TableCell>Khóa đào tạo</TableCell>
                                     <TableCell>Hệ đào tạo</TableCell>
+                                    <TableCell>Lịch sử học tập</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -1351,11 +1359,59 @@ function TaoBangDiem({ sampleStudents }) {
                                             <TableCell>
                                                 {dialogEducationTypeOptions.find(et => et.id === student.he_dao_tao_id)?.ten_he_dao_tao || student.he_dao_tao_id}
                                             </TableCell>
+                                            <TableCell>
+                                                {student.grade_history && student.grade_history.length > 0 ? (
+                                                    <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, flexWrap: 'wrap' }}>
+                                                        {student.grade_history.map((history, index) => {
+                                                            // Translate status
+                                                            const getStatusLabel = (status) => {
+                                                                if (status === 'qua_mon' || status === 'dat') return 'Qua môn';
+                                                                if (status === 'rot_mon' || status === 'hoc_lai') return 'Trượt môn';
+                                                                return status || 'Chưa XĐ';
+                                                            };
+                                                            const statusLabel = getStatusLabel(history.trang_thai);
+                                                            const isPass = statusLabel === 'Qua môn';
+
+                                                            return (
+                                                                <Box key={index} sx={{
+                                                                    fontSize: '0.75rem',
+                                                                    border: '1px solid #e0e0e0',
+                                                                    borderRadius: 1,
+                                                                    p: 0.5,
+                                                                    minWidth: '120px'
+                                                                }}>
+                                                                    <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>
+                                                                        {history.ten_mon_hoc}
+                                                                    </Typography>
+                                                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                                                        <span>HP: {history.diem_hp !== null ? parseFloat(history.diem_hp).toFixed(1) : '-'}</span>
+                                                                        <span>Điểm chữ: {history.diem_chu !== null ? history.diem_chu : '-'}</span>
+                                                                        {history.diem_hp2 !== null && (
+                                                                            <span>HP2: {parseFloat(history.diem_hp2).toFixed(1)}</span>
+                                                                        )}
+                                                                        {history.diem_chu2 !== null && (
+                                                                            <span>Điểm chữ 2: {history.diem_chu2}</span>
+                                                                        )}
+                                                                    </Box>
+                                                                    <Chip
+                                                                        label={statusLabel}
+                                                                        color={isPass ? 'success' : 'error'}
+                                                                        size="small"
+                                                                        sx={{ mt: 0.5, height: '18px', fontSize: '0.65rem' }}
+                                                                    />
+                                                                </Box>
+                                                            );
+                                                        })}
+                                                    </Box>
+                                                ) : (
+                                                    <Typography variant="caption" color="textSecondary">Chưa có dữ liệu</Typography>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} align="center">
+                                        <TableCell colSpan={7} align="center">
                                             Không tìm thấy học viên phù hợp
                                         </TableCell>
                                     </TableRow>

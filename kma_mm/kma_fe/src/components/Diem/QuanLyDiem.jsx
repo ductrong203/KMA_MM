@@ -48,6 +48,7 @@ import { toast } from 'react-toastify';
 import { getGradeSettings } from '../../Api_controller/Service/gradeSettingsService';
 import { getConversionRules } from '../../Api_controller/gradeSettingsApi';
 import { fetchApprovalList } from '../../Api_controller/Service/thoiKhoaBieuService';
+import config from '../../config/config';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
     const fileInputRef = useRef(null);
@@ -91,8 +92,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         diemChuyenCanToiThieu: 4.0
     });
     const [isLocked, setIsLocked] = useState(false);
-    const role = localStorage.getItem('role')?.toLowerCase();
-    const canApprove = role === 'admin' || role === 'director' || role === 'lanhDaoDuyet';
+    const role = localStorage.getItem('role');
+    const canApprove = role === 'admin' || role === 'giamDoc' || role === 'lanhDaoDuyet';
 
     // State for approval list (Role lanhDaoDuyet)
     const [approvalList, setApprovalList] = useState([]);
@@ -188,12 +189,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 const response = await getGradeSettings(params);
 
                 // DEBUGGING & FALLBACK LOGIC
-                // Attempt 1: Standard Axios Response Structure
+                // getGradeSettings already extracts data, so response IS the data
                 let settings = {};
-                if (response.data && response.data.data) {
-                    settings = response.data.data;
-                } else if (response.data && Object.keys(response.data).length > 0) {
-                    settings = response.data;
+                if (response && typeof response === 'object') {
+                    settings = response;
                 }
 
                 // Keep references for debug
@@ -205,7 +204,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                 if (!settings.diemThiToiThieu && !settings.diem_thi_toi_thieu) {
                     try {
                         debugSource = "FETCH_FALLBACK_ATTEMPT";
-                        const fetchUrl = `http://localhost:8000/grade-settings${educationType ? `?he_dao_tao_id=${educationType}` : ''}`;
+                        const fetchUrl = `${config.baseUrl}/grade-settings${educationType ? `?he_dao_tao_id=${educationType}` : ''}`;
                         console.log("Attempting fetch fallback:", fetchUrl);
 
                         const rawReq = await fetch(fetchUrl);
@@ -693,7 +692,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         }
 
         const componentScore = 0.7 * student.diem.TP1 + 0.3 * student.diem.TP2;
-        const averageScore = Number(((componentScore * 0.3 + finalScore * 0.7)).toFixed(1));
+        const averageScore = Math.round((componentScore * 0.3 + finalScore * 0.7) * 10) / 10;
 
         // Kiểm tra các điều kiện để qua môn:
         // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
@@ -986,7 +985,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const calculateComponentScore = (student) => {
         if (student.diem.TP1 !== null && student.diem.TP1 !== undefined &&
             student.diem.TP2 !== null && student.diem.TP2 !== undefined) {
-            const score = (0.7 * student.diem.TP1 + 0.3 * student.diem.TP2).toFixed(1);
+            // Rounding: < .05 down, >= .05 up
+            const score = (Math.round((0.7 * student.diem.TP1 + 0.3 * student.diem.TP2) * 10) / 10).toFixed(1);
             return score;
         }
         return null;

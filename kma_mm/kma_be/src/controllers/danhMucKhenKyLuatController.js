@@ -13,8 +13,8 @@ const mapRole = {
   3: "quanLiSinhVien",
   5: "giamDoc",
   6: "sinhVien",
-  7: "admin"
-
+  7: "admin",
+  8: "lanhDaoDuyet"
 }
 
 class DanhMucKhenKyLuatController {
@@ -85,7 +85,7 @@ class DanhMucKhenKyLuatController {
       const oldData = {
         "mã danh mục": oldDataRaw.ma_danh_muc,
         "tên danh mục": oldDataRaw.ten_danh_muc,
-        "loại": oldDataRaw.loai==="khen_thuong"? "khen thưởng" : "kỷ luật",
+        "loại": oldDataRaw.loai === "khen_thuong" ? "khen thưởng" : "kỷ luật",
         "mô tả": oldDataRaw.mo_ta,
         "trạng thái": oldDataRaw.trang_thai === 1 ? "mở" : "đóng",
       }
@@ -103,12 +103,12 @@ class DanhMucKhenKyLuatController {
         if (DanhMucKhenKyLuat) {
           const newDataRaw = await danh_muc_khen_ky_luat.findByPk(req.params.id);
           const newData = {
-        "mã danh mục": newDataRaw.ma_danh_muc,
-        "tên danh mục": newDataRaw.ten_danh_muc,
-        "loại": newDataRaw.loai==="khen_thuong"? "khen thưởng" : "kỷ luật",
-        "mô tả": newDataRaw.mo_ta,
-        "trạng thái": newDataRaw.trang_thai === 1 ? "mở" : "đóng",
-      }
+            "mã danh mục": newDataRaw.ma_danh_muc,
+            "tên danh mục": newDataRaw.ten_danh_muc,
+            "loại": newDataRaw.loai === "khen_thuong" ? "khen thưởng" : "kỷ luật",
+            "mô tả": newDataRaw.mo_ta,
+            "trạng thái": newDataRaw.trang_thai === 1 ? "mở" : "đóng",
+          }
           let inforActivity = {
             username: userN,
             role: mapRole[userR],
@@ -116,7 +116,7 @@ class DanhMucKhenKyLuatController {
             endpoint: req.originalUrl,
             reqData: getDiffData(oldData, newData),
             response_status: 200,
-            resData: `Người dùng ${userN}  đã chỉnh sửa danh mục ${req.body.loai==="khen_thuong"? "khen thưởng" : "kỷ luật"} ${req.body.ten_danh_muc}`,
+            resData: `Người dùng ${userN}  đã chỉnh sửa danh mục ${req.body.loai === "khen_thuong" ? "khen thưởng" : "kỷ luật"} ${req.body.ten_danh_muc}`,
             ip: req._remoteAddress,
 
           }

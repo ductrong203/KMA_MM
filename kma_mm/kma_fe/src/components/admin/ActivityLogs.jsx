@@ -20,7 +20,7 @@ import {
     DialogActions,
     Badge,
 } from "@mui/material";
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; 
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -30,7 +30,7 @@ import { getLogActivity } from "../../Api_controller/Service/adminService";
 // Component hiển thị bảng động cho is_list = 1
 const DynamicTableView = ({ data }) => {
     // console.log("###########################################", data)
-    
+
     if (data.is_list == 1) {
         return (
             <Typography variant="body2" color="text.secondary">
@@ -80,7 +80,7 @@ const DynamicTableView = ({ data }) => {
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
                 Bảng thay đổi dữ liệu
             </Typography>
-            
+
             {/* Thông tin tổng quan */}
             {(course || semester || className || total_students) && (
                 <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
@@ -121,8 +121,8 @@ const DynamicTableView = ({ data }) => {
                                 Tên sinh viên
                             </TableCell>
                             {changeTypes.map(changeType => (
-                                <TableCell 
-                                    key={changeType} 
+                                <TableCell
+                                    key={changeType}
                                     sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}
                                 >
                                     {formatColumnName(changeType)}
@@ -132,9 +132,9 @@ const DynamicTableView = ({ data }) => {
                     </TableHead>
                     <TableBody>
                         {changed_students.map((student, index) => (
-                            <TableRow 
+                            <TableRow
                                 key={student.ma_sinh_vien || index}
-                                sx={{ 
+                                sx={{
                                     '&:nth-of-type(odd)': { backgroundColor: 'grey.50' },
                                     '&:hover': { backgroundColor: 'action.hover' }
                                 }}
@@ -143,7 +143,7 @@ const DynamicTableView = ({ data }) => {
                                     {student.ma_sinh_vien || '-'}
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 'medium' }}>
-                                    {student.ho_dem && student.ten 
+                                    {student.ho_dem && student.ten
                                         ? `${student.ho_dem} ${student.ten}`
                                         : student.name || '-'
                                     }
@@ -154,9 +154,9 @@ const DynamicTableView = ({ data }) => {
                                         <TableCell key={changeType} sx={{ textAlign: 'center' }}>
                                             {change ? (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                    <Typography 
-                                                        component="span" 
-                                                        sx={{ 
+                                                    <Typography
+                                                        component="span"
+                                                        sx={{
                                                             color: 'error.main',
                                                             textDecoration: 'line-through',
                                                             fontWeight: 'medium'
@@ -167,9 +167,9 @@ const DynamicTableView = ({ data }) => {
                                                     <Typography component="span" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
                                                         ||
                                                     </Typography>
-                                                    <Typography 
-                                                        component="span" 
-                                                        sx={{ 
+                                                    <Typography
+                                                        component="span"
+                                                        sx={{
                                                             color: 'success.main',
                                                             fontWeight: 'bold'
                                                         }}
@@ -192,7 +192,7 @@ const DynamicTableView = ({ data }) => {
             </TableContainer>
 
             {/* Chú thích */}
-          
+
         </Box>
     );
 };
@@ -248,7 +248,7 @@ const ActivityLogs = () => {
         try {
             //Gọi APIII
             // await deleteLogsOlderThan30Days();
-            
+
             // Sau khi xóa thành công, fetch lại dữ liệu
             const response = await getLogActivity();
             if (response.status === 200) {
@@ -256,7 +256,7 @@ const ActivityLogs = () => {
                 setFilteredLogs(response.data.data);
                 countOldLogs(response.data.data);
             }
-            
+
             closeDeleteDialog();
             console.log('Đã xóa dữ liệu log cũ hơn 30 ngày');
         } catch (error) {
@@ -267,7 +267,7 @@ const ActivityLogs = () => {
     // Hàm render dữ liệu dựa trên is_list
     const renderJsonData = (data, isList, indent = 0) => {
         // Parse nếu là string
-    // console.log("##############################",isList)
+        // console.log("##############################",isList)
         if (typeof data === 'string') {
             try {
                 const parsedData = JSON.parse(data);
@@ -291,7 +291,7 @@ const ActivityLogs = () => {
         }
 
         // Kiểm tra is_list = 1 để hiển thị bảng
-        if (isList===1) {
+        if (isList === 1) {
             return <DynamicTableView data={data} />;
         }
 
@@ -307,7 +307,7 @@ const ActivityLogs = () => {
                 {Object.entries(data).map(([key, value]) => {
                     // Bỏ qua trường is_list khi hiển thị
                     if (key === 'is_list') return null;
-                    
+
                     return (
                         <Box
                             key={key}
@@ -347,6 +347,7 @@ const ActivityLogs = () => {
         giamDoc: "Giám đốc",
         sinhVien: "Sinh viên",
         admin: "Admin",
+        lanhDaoDuyet: "Lãnh đạo duyệt",
     };
 
     const actionMap = {
@@ -392,7 +393,7 @@ const ActivityLogs = () => {
 
             const start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
-            
+
             const createdAt = new Date(log?.created_at);
 
             if (!endDate) {
@@ -407,7 +408,7 @@ const ActivityLogs = () => {
 
             return matchesDate && matchesRole;
         });
-        
+
         setFilteredLogs(filtered);
         setCurrentPage(1);
     }, [startDate, endDate, selectedRole, logs]);
@@ -459,9 +460,9 @@ const ActivityLogs = () => {
                     </IconButton>
                     <Typography variant="h5">Lịch sử hoạt động</Typography>
                 </Box>
-                
-                <Badge 
-                    badgeContent={oldLogsCount} 
+
+                <Badge
+                    badgeContent={oldLogsCount}
                     color="error"
                     max={999}
                     sx={{
@@ -548,7 +549,7 @@ const ActivityLogs = () => {
             {startDate && (
                 <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                        {endDate 
+                        {endDate
                             ? `Đang lọc từ: ${new Date(startDate).toLocaleDateString('vi-VN')} đến ${new Date(endDate).toLocaleDateString('vi-VN')}`
                             : `Đang lọc theo ngày: ${new Date(startDate).toLocaleDateString('vi-VN')}`
                         }
@@ -577,17 +578,17 @@ const ActivityLogs = () => {
                                     <TableCell>{roleMapping[log.Role]}</TableCell>
                                     <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
                                     <TableCell>
-                                        <Box 
-                                            display="flex" 
-                                            alignItems="center" 
+                                        <Box
+                                            display="flex"
+                                            alignItems="center"
                                             gap={1}
                                             sx={{ minHeight: '48px' }}
                                         >
-                                            <Typography 
-                                                variant="body2" 
-                                                sx={{ 
-                                                    maxWidth: '200px', 
-                                                    overflow: 'hidden', 
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    maxWidth: '200px',
+                                                    overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
                                                     whiteSpace: 'nowrap',
                                                     lineHeight: 1.2,
@@ -609,7 +610,7 @@ const ActivityLogs = () => {
                                             >
                                                 <VisibilityIcon fontSize="small" />
                                             </IconButton>
-                                        </Box> 
+                                        </Box>
                                     </TableCell>
                                     <TableCell>{convertUTCToVietnamTime(log.created_at)}</TableCell>
                                 </TableRow>
@@ -671,16 +672,16 @@ const ActivityLogs = () => {
                                     </Typography>
                                 </Box>
                             </Box>
-                            
+
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
                                     Mô tả hành động
                                 </Typography>
-                                <Paper 
-                                    sx={{ 
-                                        p: 2, 
-                                        backgroundColor: 'grey.50', 
-                                        maxHeight: '200px', 
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        backgroundColor: 'grey.50',
+                                        maxHeight: '200px',
                                         overflow: 'auto',
                                         whiteSpace: 'pre-wrap'
                                     }}
@@ -696,11 +697,11 @@ const ActivityLogs = () => {
                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
                                         Chi tiết thực hiện:
                                     </Typography>
-                                    <Paper 
-                                        sx={{ 
-                                            p: 2, 
-                                            backgroundColor: 'grey.50', 
-                                            maxHeight: '400px', 
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            backgroundColor: 'grey.50',
+                                            maxHeight: '400px',
                                             overflow: 'auto',
                                             whiteSpace: 'pre-wrap'
                                         }}
@@ -744,16 +745,16 @@ const ActivityLogs = () => {
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2, gap: 1 }}>
-                    <Button 
-                        onClick={closeDeleteDialog} 
+                    <Button
+                        onClick={closeDeleteDialog}
                         variant="outlined"
                         color="inherit"
                     >
                         Hủy
                     </Button>
-                    <Button 
-                        onClick={handleDeleteLogs} 
-                        variant="contained" 
+                    <Button
+                        onClick={handleDeleteLogs}
+                        variant="contained"
                         color="error"
                         startIcon={<DeleteIcon />}
                     >

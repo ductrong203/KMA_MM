@@ -16,7 +16,7 @@ import {
   getDanhSachKhoaDaoTao
 } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLop } from '../../Api_controller/Service/lopService';
-import { fetchThongKeDiem, exportKetQuaKyHoc, exportKetQuaNamHoc } from '../../Api_controller/Service/diemService';
+import { fetchThongKeDiem, exportKetQuaKyHoc, exportKetQuaNamHoc, exportGradeHocPhan } from '../../Api_controller/Service/diemService';
 import React from 'react';
 
 // Đăng ký Chart.js
@@ -38,7 +38,7 @@ const ThongKeDiem = () => {
   const [monHocList, setMonHocList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingSemester, setLoadingSemester] = useState(false);
-  
+
   // States cho export dialog
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportType, setExportType] = useState(''); // 'kyHoc' hoặc 'namHoc'
@@ -180,7 +180,14 @@ const ThongKeDiem = () => {
         row[`${mon}_TP1`] = diem.tp1 ?? '-';
         row[`${mon}_TP2`] = diem.tp2 ?? '-';
         row[`${mon}_Điểm thi KTPH`] = diem.diem_thi_ktph ?? '-';
-        row[`${mon}_Điểm HP`] = diem.diem_hp ?? '-';
+        const diem_hp = (diem.diem_hp !== null && diem.diem_hp !== undefined) ? parseFloat(diem.diem_hp).toFixed(1) : '-';
+        row[`${mon}_Điểm HP`] = diem_hp;
+        if (diem.diem_thi_lai !== null && diem.diem_thi_lai !== undefined) {
+          row[`${mon}_Thi lại`] = diem.diem_thi_lai;
+        }
+        if (diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) {
+          row[`${mon}_Điểm HP2`] = parseFloat(diem.diem_hp2).toFixed(1);
+        }
       });
       row['ĐTB kỳ (hệ 10)'] = item.diem_tb_ky_he10;
       row['ĐTB kỳ (hệ 4)'] = item.diem_tb_ky_he4;
@@ -191,9 +198,9 @@ const ThongKeDiem = () => {
       thongKeTongQuan.map(sv => {
         const diemTbKy = filterKyHoc === 'all'
           ? Object.keys(sv.diem_tb_ky).reduce((acc, ky) => ({
-              ...acc,
-              [`ĐTB Kỳ ${ky}`]: sv.diem_tb_ky[ky]
-            }), {})
+            ...acc,
+            [`ĐTB Kỳ ${ky}`]: sv.diem_tb_ky[ky]
+          }), {})
           : { 'ĐTB Kỳ': sv.diem_tb_ky[filterKyHoc] };
         return {
           'Mã SV': sv.ma_sinh_vien,
@@ -210,6 +217,33 @@ const ThongKeDiem = () => {
     XLSX.utils.book_append_sheet(workbook, worksheetTongQuan, 'Thống kê tổng quát');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(worksheetData), 'Chi tiết môn học');
     XLSX.writeFile(workbook, 'Thong_ke_diem.xlsx');
+  };
+
+  // Hàm xuất Excel điểm học phần
+  const handleExportGradeHocPhan = async () => {
+    try {
+      const response = await exportGradeHocPhan(
+        filterHeDaoTao,
+        filterKhoa,
+        filterLop?.id || null,
+        filterKyHoc || 'all'
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Diem_hoc_phan.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Xuất Excel điểm học phần thành công!');
+    } catch (error) {
+      console.error('Error exporting grade report:', error);
+      toast.error('Có lỗi khi xuất Excel điểm học phần!');
+    }
   };
 
   // Hàm mở dialog export cho sinh viên cụ thể
@@ -240,7 +274,7 @@ const ThongKeDiem = () => {
     try {
       // Sử dụng ID sinh viên (số) thay vì mã sinh viên
       const response = await exportKetQuaKyHoc(selectedStudent.id, exportKyHoc);
-      
+
       // Tạo URL blob và download file
       const blob = new Blob([response.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -253,7 +287,7 @@ const ThongKeDiem = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Export kết quả kỳ học thành công!');
       handleCloseExportDialog();
     } catch {
@@ -271,7 +305,7 @@ const ThongKeDiem = () => {
     try {
       // Sử dụng ID sinh viên (số) thay vì mã sinh viên
       const response = await exportKetQuaNamHoc(selectedStudent.id, exportNamHoc);
-      
+
       // Tạo URL blob và download file
       const blob = new Blob([response.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -284,7 +318,7 @@ const ThongKeDiem = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Export kết quả năm học thành công!');
       handleCloseExportDialog();
     } catch {
@@ -292,34 +326,34 @@ const ThongKeDiem = () => {
     }
   };
 
-// 1. Khai báo bảng màu (20 màu khác nhau)
-const palette = [
-  '#FF6384', // Đỏ nhạt
-  '#36A2EB', // Xanh dương
-  '#FFCE56', // Vàng
-  '#4BC0C0', // Xanh ngọc
-  '#9966FF', // Tím
-  '#FF9F40', // Cam
-  '#C9CBCF', // Xám
-  '#FF0000', // Đỏ đậm
-  '#00FF00', // Xanh lá
-  '#0000FF', // Xanh đậm
-  '#800000', // Nâu đỏ
-  '#808000', // Olive
-  '#008000', // Xanh lá đậm
-  '#800080', // Tím đậm
-  '#008080', // Teal
-  '#000080', // Navy
-  '#E91E63', // Hồng đậm
-  '#9C27B0', // Tím than
-  '#673AB7', // Tím xanh
-  '#3F51B5' // Indigo
-];
+  // 1. Khai báo bảng màu (20 màu khác nhau)
+  const palette = [
+    '#FF6384', // Đỏ nhạt
+    '#36A2EB', // Xanh dương
+    '#FFCE56', // Vàng
+    '#4BC0C0', // Xanh ngọc
+    '#9966FF', // Tím
+    '#FF9F40', // Cam
+    '#C9CBCF', // Xám
+    '#FF0000', // Đỏ đậm
+    '#00FF00', // Xanh lá
+    '#0000FF', // Xanh đậm
+    '#800000', // Nâu đỏ
+    '#808000', // Olive
+    '#008000', // Xanh lá đậm
+    '#800080', // Tím đậm
+    '#008080', // Teal
+    '#000080', // Navy
+    '#E91E63', // Hồng đậm
+    '#9C27B0', // Tím than
+    '#673AB7', // Tím xanh
+    '#3F51B5' // Indigo
+  ];
 
-const chartData = {
-  labels: thongKeTongQuan.map(sv => sv.ho_ten),
-  datasets: filterKyHoc === 'all'
-    ? semesterOptions.filter(ky => ky.id !== 'all').map((ky, index) => ({
+  const chartData = {
+    labels: thongKeTongQuan.map(sv => sv.ho_ten),
+    datasets: filterKyHoc === 'all'
+      ? semesterOptions.filter(ky => ky.id !== 'all').map((ky, index) => ({
         label: ky.name,
         data: thongKeTongQuan.map(sv => sv.diem_tb_ky[ky.id] || 0),
         // Mỗi KỲ HỌC sẽ có một màu riêng biệt dựa trên index của kỳ đó
@@ -327,7 +361,7 @@ const chartData = {
         borderColor: palette[index % palette.length],
         borderWidth: 1
       }))
-    : [{
+      : [{
         label: 'ĐTB Kỳ',
         data: thongKeTongQuan.map(sv => sv.diem_tb_ky[filterKyHoc] || 0),
         // Khi chọn 1 kỳ: Mỗi SINH VIÊN (mỗi cột) sẽ có một màu riêng biệt
@@ -335,7 +369,7 @@ const chartData = {
         borderColor: thongKeTongQuan.map((_, index) => palette[index % palette.length]),
         borderWidth: 1
       }]
-};
+  };
 
   const chartOptions = {
     responsive: true,
@@ -344,7 +378,7 @@ const chartData = {
       title: { display: true, text: 'Điểm trung bình học kỳ của sinh viên' },
       tooltip: {
         callbacks: {
-          label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}`
+          label: (context) => `${context.dataset.label}: ${context.raw.toFixed(1)}`
         }
       }
     },
@@ -383,10 +417,10 @@ const chartData = {
                 <TableCell>{sv.ho_ten}</TableCell>
                 <TableCell>{sv.gioi_tinh}</TableCell>
                 {isAllKy ? kyHocList.map(ky => (
-                  <TableCell key={ky}>{sv.diem_tb_ky[ky]?.toFixed(2) || '-'}</TableCell>
-                )) : <TableCell>{sv.diem_tb_ky[filterKyHoc]?.toFixed(2) || '-'}</TableCell>}
-                <TableCell>{sv.diem_tb_tich_luy_he10.toFixed(2)}</TableCell>
-                <TableCell>{sv.diem_tb_tich_luy_he4.toFixed(2)}</TableCell>
+                  <TableCell key={ky}>{sv.diem_tb_ky[ky]?.toFixed(1) || '-'}</TableCell>
+                )) : <TableCell>{sv.diem_tb_ky[filterKyHoc]?.toFixed(1) || '-'}</TableCell>}
+                <TableCell>{sv.diem_tb_tich_luy_he10.toFixed(1)}</TableCell>
+                <TableCell>{sv.diem_tb_tich_luy_he4.toFixed(1)}</TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
@@ -418,6 +452,17 @@ const chartData = {
   };
 
   const renderChiTietTable = () => {
+    // Determine which subjects have at least one student with retake scores
+    const subjectsWithRetake = monHocList.reduce((acc, mon) => {
+      const hasRetake = chiTietMonHoc.some(item => {
+        const diem = item.mon_hoc[mon] || {};
+        return (diem.diem_thi_lai !== null && diem.diem_thi_lai !== undefined) ||
+          (diem.diem_hp2 !== null && diem.diem_hp2 !== undefined);
+      });
+      if (hasRetake) acc.add(mon);
+      return acc;
+    }, new Set());
+
     return (
       <TableContainer component={Paper} sx={{ maxHeight: 600, overflowX: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <Table stickyHeader size="small">
@@ -427,7 +472,12 @@ const chartData = {
               <TableCell rowSpan={2} sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>Họ tên</TableCell>
               <TableCell rowSpan={2} sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>Kỳ học</TableCell>
               {monHocList.map(mon => (
-                <TableCell key={mon} colSpan={4} align="center" sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', backgroundColor: '#e3f2fd' }}>
+                <TableCell
+                  key={mon}
+                  colSpan={subjectsWithRetake.has(mon) ? 6 : 4}
+                  align="center"
+                  sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', backgroundColor: '#e3f2fd' }}
+                >
                   {mon}
                 </TableCell>
               ))}
@@ -440,7 +490,13 @@ const chartData = {
                   <TableCell sx={{ fontWeight: 'medium' }}>TP1</TableCell>
                   <TableCell sx={{ fontWeight: 'medium' }}>TP2</TableCell>
                   <TableCell sx={{ fontWeight: 'medium' }}>Thi KTPH</TableCell>
-                  <TableCell sx={{ fontWeight: 'medium', borderRight: '1px solid #e0e0e0' }}>Điểm HP</TableCell>
+                  <TableCell sx={{ fontWeight: 'medium', borderRight: subjectsWithRetake.has(mon) ? 'none' : '1px solid #e0e0e0' }}>Điểm HP</TableCell>
+                  {subjectsWithRetake.has(mon) && (
+                    <>
+                      <TableCell sx={{ fontWeight: 'medium' }}>Thi lại</TableCell>
+                      <TableCell sx={{ fontWeight: 'medium', borderRight: '1px solid #e0e0e0' }}>Điểm HP2</TableCell>
+                    </>
+                  )}
                 </React.Fragment>
               ))}
             </TableRow>
@@ -458,12 +514,22 @@ const chartData = {
                       <TableCell>{diem.tp1 ?? '-'}</TableCell>
                       <TableCell>{diem.tp2 ?? '-'}</TableCell>
                       <TableCell>{diem.diem_thi_ktph ?? '-'}</TableCell>
-                      <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{diem.diem_hp ?? '-'}</TableCell>
+                      <TableCell sx={{ borderRight: subjectsWithRetake.has(mon) ? 'none' : '1px solid #e0e0e0' }}>
+                        {(diem.diem_hp !== null && diem.diem_hp !== undefined) ? parseFloat(diem.diem_hp).toFixed(1) : '-'}
+                      </TableCell>
+                      {subjectsWithRetake.has(mon) && (
+                        <>
+                          <TableCell>{diem.diem_thi_lai ?? '-'}</TableCell>
+                          <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                            {(diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) ? parseFloat(diem.diem_hp2).toFixed(1) : '-'}
+                          </TableCell>
+                        </>
+                      )}
                     </React.Fragment>
                   );
                 })}
-                <TableCell>{item.diem_tb_ky_he10.toFixed(2)}</TableCell>
-                <TableCell>{item.diem_tb_ky_he4.toFixed(2)}</TableCell>
+                <TableCell>{item.diem_tb_ky_he10.toFixed(1)}</TableCell>
+                <TableCell>{item.diem_tb_ky_he4.toFixed(1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -479,7 +545,7 @@ const chartData = {
         <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <Typography variant="h6" gutterBottom>Bộ lọc thống kê điểm</Typography>
           <Grid container spacing={2}>
-            
+
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel>Hệ đào tạo</InputLabel>
@@ -586,6 +652,15 @@ const chartData = {
               >
                 Xóa bộ lọc
               </Button>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportGradeHocPhan}
+                disabled={!filterKhoa}
+              >
+                Xuất Excel điểm học phần
+              </Button>
             </Grid>
           </Grid>
         </Paper>
@@ -618,7 +693,7 @@ const chartData = {
           ) : thongKeTongQuan.length > 0 ? (
             <>
               {renderTongQuanTable()}
-             
+
             </>
           ) : (
             <Typography>Không có dữ liệu để hiển thị</Typography>

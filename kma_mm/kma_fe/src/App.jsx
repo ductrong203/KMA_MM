@@ -69,7 +69,9 @@ const App = () => {
         <Route
           path="/login"
           element={
-            !role ? (
+            !role ||
+              !localStorage.getItem("access_token") ||
+              localStorage.getItem("role") !== role ? (
               <Login onLogin={handleLogin} />
             ) : (
               <Navigate to={`/${role}/dashboard`} />
@@ -262,7 +264,7 @@ const App = () => {
           path={`/${role}/info`}
           element={
             <PrivateRoute role={role} allowedRoles={[`${role}`]}>
-              <Layout Info={info} title="Library dashboard">
+              <Layout Info={info} title={`${role} dashboard`}>
                 <UserInfo />
               </Layout>
             </PrivateRoute>

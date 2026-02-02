@@ -1,10 +1,10 @@
 import api from "../Api_setup/axiosConfig";
 
 // Lấy thiết lập điểm hiện tại
-export const getGradeSettings = async () => {
+export const getGradeSettings = async (params = {}) => {
   try {
-    const response = await api.get('/grade-settings');
-    
+    const response = await api.get('/grade-settings', { params });
+
     if (response && response.data) {
       // Tùy thuộc vào cấu trúc dữ liệu trả về từ backend
       if (response.data.data) {
