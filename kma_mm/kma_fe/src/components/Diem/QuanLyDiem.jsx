@@ -43,7 +43,7 @@ import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controll
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import axios from 'axios';
-import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, importDanhSachDiemGK } from '../../Api_controller/Service/excelService';
+import { exportDanhSachDiemCK, exportDanhSachDiemGK, importDanhSachDiemCK, importDanhSachDiemGK, exportDanhSachThiLai, importDanhSachDiemThiLai } from '../../Api_controller/Service/excelService';
 import { toast } from 'react-toastify';
 import { getGradeSettings } from '../../Api_controller/Service/gradeSettingsService';
 import { getConversionRules } from '../../Api_controller/gradeSettingsApi';
@@ -182,50 +182,24 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Fetch grade settings when educationType changes
     useEffect(() => {
+        // Skip if educationType is not set yet (initial page load)
+        if (!educationType) {
+            return;
+        }
+
         const fetchGradeSettings = async () => {
             try {
                 // Pass he_dao_tao_id to get specific settings
-                const params = educationType ? { he_dao_tao_id: educationType } : {};
+                const params = { he_dao_tao_id: educationType };
                 const response = await getGradeSettings(params);
 
-                // DEBUGGING & FALLBACK LOGIC
                 // getGradeSettings already extracts data, so response IS the data
                 let settings = {};
                 if (response && typeof response === 'object') {
                     settings = response;
                 }
 
-                // Keep references for debug
-                const axiosSettings = { ...settings };
-                let debugSource = "AXIOS";
-
-                // Attempt 2: Fetch Fallback if Axios failed to get data
-                // Check if relevant keys are missing, effectively treating it as empty
-                if (!settings.diemThiToiThieu && !settings.diem_thi_toi_thieu) {
-                    try {
-                        debugSource = "FETCH_FALLBACK_ATTEMPT";
-                        const fetchUrl = `${config.baseUrl}/grade-settings${educationType ? `?he_dao_tao_id=${educationType}` : ''}`;
-                        console.log("Attempting fetch fallback:", fetchUrl);
-
-                        const rawReq = await fetch(fetchUrl);
-                        const rawJson = await rawReq.json();
-
-                        console.log("Fetch result:", rawJson);
-
-                        if (rawJson && rawJson.data) {
-                            settings = rawJson.data;
-                            debugSource = "FETCH_SUCCESS_NESTED";
-                        } else if (rawJson) {
-                            settings = rawJson;
-                            debugSource = "FETCH_SUCCESS_DIRECT";
-                        }
-                    } catch (e) {
-                        console.error("Fetch fallback failed", e);
-                        debugSource = "FETCH_FAILED";
-                    }
-                }
-
-                // Normalization
+                // Normalization with fallback defaults
                 const normalizedSettings = {
                     diemThiToiThieu: settings.diemThiToiThieu ?? settings.diem_thi_toi_thieu ?? 2.0,
                     diemTrungBinhDat: settings.diemTrungBinhDat ?? settings.diem_trung_binh_dat ?? 4.0,
@@ -234,32 +208,22 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     chinhSachHienTai: settings.chinhSachHienTai ?? settings.chinh_sach_hien_tai ?? 'moi',
                     chinhSachTuychinh: settings.chinhSachTuychinh ?? settings.chinh_sach_tuy_chinh ?? false,
                     heDaoTaoId: settings.heDaoTaoId ?? settings.he_dao_tao_id ?? educationType,
-
-                    // DEBUG EXTRA FIELDS
-                    _SOURCE: debugSource,
-                    _RAW_KEYS_AXIOS: Object.keys(axiosSettings).join(','),
-                    _RAW_KEYS_FINAL: Object.keys(settings).join(',')
                 };
 
                 console.log("Normalized settings:", normalizedSettings);
 
-
                 // Fetch conversion rules
-                if (educationType) {
-                    try {
-                        const ruleResponse = await getConversionRules({ he_dao_tao_id: educationType });
-                        if (ruleResponse && ruleResponse.data && ruleResponse.data.data) {
-                            const r = ruleResponse.data.data;
-                            r.sort((a, b) => b.diemMin - a.diemMin);
-                            setConversionRules(r);
-                        } else {
-                            setConversionRules([]);
-                        }
-                    } catch (err) {
-                        console.error("Error fetching conversion rules:", err);
+                try {
+                    const ruleResponse = await getConversionRules({ he_dao_tao_id: educationType });
+                    if (ruleResponse && ruleResponse.data && ruleResponse.data.data) {
+                        const r = ruleResponse.data.data;
+                        r.sort((a, b) => b.diemMin - a.diemMin);
+                        setConversionRules(r);
+                    } else {
                         setConversionRules([]);
                     }
-                } else {
+                } catch (err) {
+                    console.error('Error fetching conversion rules:', err);
                     setConversionRules([]);
                 }
 
@@ -605,7 +569,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         }
 
         const componentScore = 0.7 * student.diem.TP1 + 0.3 * student.diem.TP2;
-        const averageScore = Number(((componentScore * 0.3 + finalScore * 0.7)).toFixed(1));
+        const rawAverage = componentScore * 0.3 + finalScore * 0.7;
+        const averageScore = Math.round((rawAverage + 1e-9) * 10) / 10;
 
         // Kiểm tra các điều kiện để qua môn: 
         // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
@@ -692,7 +657,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         }
 
         const componentScore = 0.7 * student.diem.TP1 + 0.3 * student.diem.TP2;
-        const averageScore = Math.round((componentScore * 0.3 + finalScore * 0.7) * 10) / 10;
+        // Add epsilon (1e-9) to fix floating point precision issues
+        const averageScore = Math.round((componentScore * 0.3 + finalScore * 0.7 + 1e-9) * 10) / 10;
 
         // Kiểm tra các điều kiện để qua môn:
         // 1. Điểm thi (CK1 hoặc CK2) phải >= diemThiToiThieu
@@ -985,8 +951,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const calculateComponentScore = (student) => {
         if (student.diem.TP1 !== null && student.diem.TP1 !== undefined &&
             student.diem.TP2 !== null && student.diem.TP2 !== undefined) {
-            // Rounding: < .05 down, >= .05 up
-            const score = (Math.round((0.7 * student.diem.TP1 + 0.3 * student.diem.TP2) * 10) / 10).toFixed(1);
+            // Rounding: < .05 down, >= .05 up (add epsilon for floating point precision)
+            const score = (Math.round((0.7 * student.diem.TP1 + 0.3 * student.diem.TP2 + 1e-9) * 10) / 10).toFixed(1);
             return score;
         }
         return null;
@@ -1165,6 +1131,97 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             .catch(() => {
                 clearInterval(interval);
                 toast.error('Không thể import dữ liệu. Vui lòng thử lại.');
+                setUploading(false);
+            });
+    };
+
+    // Export danh sách thi lại - chỉ export sinh viên cần thi lại với tên file "tên môn - lớp - thi lại"
+    const exportExcelThiLai = (lop_id, khoa_dao_tao_id, mon_hoc_id, courseOptions, classOptions, searchType = 'class') => {
+        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+            toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
+            return;
+        }
+        const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
+        const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
+        let maLop = 'Unknown';
+        if (searchType === 'class' && lop_id) {
+            const classInfo = classOptions.find((option) => option.id === lop_id);
+            maLop = classInfo?.ma_lop || 'Unknown';
+        } else {
+            const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
+            maLop = batchInfo?.ma_khoa || 'Unknown';
+        }
+        const fileName = `${tenMonHoc} - ${maLop} - thi lại.xlsx`;
+
+        const data = {
+            mon_hoc_id,
+            khoa_dao_tao_id,
+            ...(searchType === 'class' && lop_id && { lop_id }),
+            min_exam_score: gradeSettings.diemThiToiThieu,
+            min_avg_score: gradeSettings.diemTrungBinhDat
+        };
+
+        exportDanhSachThiLai(data)
+            .then((response) => {
+                const blob = new Blob([response.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast.success('Xuất danh sách thi lại thành công!');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                toast.error('Không thể tải xuống file Excel. Vui lòng thử lại.');
+            });
+    };
+
+    // Import điểm thi lại - lưu vào diem_ck2
+    const importExcelThiLai = (lop_id, mon_hoc_id, khoa_dao_tao_id, selectedFile) => {
+        if (!selectedFile) {
+            toast.error('Vui lòng chọn file trước khi import.');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('mon_hoc_id', mon_hoc_id);
+        formData.append('khoa_dao_tao_id', khoa_dao_tao_id);
+        if (lop_id) {
+            formData.append('lop_id', lop_id);
+        }
+        setUploading(true);
+        setProgress(0);
+        const interval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                return prev + 10;
+            });
+        }, 1000);
+        importDanhSachDiemThiLai(formData)
+            .then((response) => {
+                clearInterval(interval);
+                setProgress(100);
+                toast.success('Import điểm thi lại thành công!');
+                setUploading(false);
+                setFile(null);
+                setFileName('');
+                // Tìm kiếm lại để cập nhật UI
+                handleSearch();
+            })
+            .catch((error) => {
+                clearInterval(interval);
+                console.error('Error:', error);
+                toast.error('Không thể import điểm thi lại. Vui lòng thử lại.');
                 setUploading(false);
             });
     };
@@ -1584,7 +1641,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                     onClick={handleButtonClick}
                                     disabled={isLocked}
                                 >
-                                    Import điểm cuối kỳ/thi lại
+                                    Import điểm cuối kỳ
                                 </Button>
                                 <input
                                     ref={fileInputRef}
@@ -1656,6 +1713,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                             passed = calculationResult.passed;
                                             diem_he_4 = calculationResult.he4;
                                             diem_chu = calculationResult.chu;
+                                            const calculated_trang_thai = calculationResult.trang_thai;
 
                                             const canRetake = eligibleForRetake(student);
                                             const componentScore = calculateComponentScore(student);
@@ -1730,14 +1788,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                         {diem_chu !== null ? diem_chu : '-'}
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        {student.trang_thai ? (
+                                                        {calculated_trang_thai ? (
                                                             <Typography
                                                                 sx={{
                                                                     fontWeight: 'bold',
-                                                                    color: student.trang_thai === 'qua_mon' ? 'green' : 'red'
+                                                                    color: calculated_trang_thai === 'qua_mon' ? 'green' :
+                                                                        calculated_trang_thai === 'hoc_lai' ? 'orange' : 'red'
                                                                 }}
                                                             >
-                                                                {student.trang_thai === 'qua_mon' ? 'Qua môn' : 'Trượt môn'}
+                                                                {calculated_trang_thai === 'qua_mon' ? 'Qua môn' :
+                                                                    calculated_trang_thai === 'hoc_lai' ? 'Học lại' : 'Trượt môn'}
                                                             </Typography>
                                                         ) : '-'}
                                                     </TableCell>
@@ -1979,11 +2039,34 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     <Alert severity="error" sx={{ my: 2 }}>
                         {`${studentsEligibleForRetake.length} học viên cần thi lại (Điểm CK1 < ${gradeSettings.diemThiToiThieu} hoặc Điểm TB < ${gradeSettings.diemTrungBinhDat}). Học viên sẽ trượt môn nếu không đạt cả hai điều kiện: điểm thi ≥ ${gradeSettings.diemThiToiThieu} VÀ điểm trung bình ≥ ${gradeSettings.diemTrungBinhDat}.`}
                     </Alert>
-                    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                    <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleButtonClick}
+                            sx={{ boxShadow: 2 }}
+                        >
+                            Import điểm thi lại
+                        </Button>
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                                const f = e.target.files[0];
+                                if (f) {
+                                    setFile(f);
+                                    setFileName(f.name);
+                                    importExcelThiLai(classGroup, course, batch, f);
+                                }
+                                e.target.value = '';
+                            }}
+                        />
                         <Button
                             variant="contained"
                             color="warning"
-                            onClick={() => exportExcel(classGroup, batch, course, 1, courseOptions, classOptions, searchType)}
+                            onClick={() => exportExcelThiLai(classGroup, batch, course, courseOptions, classOptions, searchType)}
                             sx={{ boxShadow: 2 }}
                         >
                             Export danh sách thi lại

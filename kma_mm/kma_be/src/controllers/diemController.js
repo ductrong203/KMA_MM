@@ -260,6 +260,21 @@ class DiemController {
     }
   }
 
+  // Import điểm thi lại (CK2)
+  static async importExcelThiLai(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
+      }
+      const { mon_hoc_id, khoa_dao_tao_id, lop_id } = req.body;
+      const filePath = req.file.path;
+      const result = await DiemService.importExcelThiLai(filePath, { mon_hoc_id, khoa_dao_tao_id, lop_id });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
   static async getThongKeDiem(req, res) {
     try {
       const { he_dao_tao_id, khoa_dao_tao_id, lop_id, ky_hoc_id } = req.query;

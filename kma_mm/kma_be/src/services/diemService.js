@@ -597,7 +597,7 @@ class DiemService {
 
           if (newCK2 !== null && currentGK !== null && currentGK !== undefined) {
             // Tính HP2 using same formula: GK * 0.3 + CK2 * 0.7
-            const diemHP2 = parseFloat((currentGK * 0.3 + newCK2 * 0.7).toFixed(2));
+            const diemHP2 = Math.round((currentGK * 0.3 + newCK2 * 0.7 + 1e-9) * 10) / 10;
 
             let heDaoTaoId = rulesCache.get(lopId);
             if (heDaoTaoId === undefined) {
@@ -634,7 +634,7 @@ class DiemService {
           }
 
           // Tính diem_hp
-          const diemHP = parseFloat((newGK * 0.3 + newCK * 0.7).toFixed(2));
+          const diemHP = Math.round((newGK * 0.3 + newCK * 0.7 + 1e-9) * 10) / 10;
 
           // Quy đổi - CẦN TRUYỀN ruleIdCK1 vào hàm calculateGradeFields
           // Nhưng hàm calculateGradeFields hiện tại dùng heDaoTaoId để fetch current rules.
@@ -825,7 +825,7 @@ class DiemService {
           ghi_chu = invalidScore;
         } else if (diem_tp1 !== null && diem_tp2 !== null) {
           // Tính diem_gk = 0.3 * diem_tp1 + 0.7 * diem_tp2
-          diem_gk = parseFloat((0.7 * diem_tp1 + 0.3 * diem_tp2).toFixed(2));
+          diem_gk = Math.round((0.7 * diem_tp1 + 0.3 * diem_tp2 + 1e-9) * 10) / 10;
         }
 
         // Tìm id của bảng diem từ sinh_vien_id và thoi_khoa_bieu_id
@@ -1048,7 +1048,7 @@ class DiemService {
           let diem_chu = null;
 
           if (diem_gk !== null && finalDiemCK !== null) {
-            diem_hp = parseFloat((diem_gk * 0.3 + finalDiemCK * 0.7).toFixed(2));
+            diem_hp = Math.round((diem_gk * 0.3 + finalDiemCK * 0.7 + 1e-9) * 10) / 10;
 
             if (conversionRules.length > 0) {
               const match = conversionRules.find(r => diem_hp >= r.diemMin);
@@ -1121,6 +1121,252 @@ class DiemService {
       throw new Error("Lỗi xử lý file Excel: " + error.message);
     }
   }
+
+  // Import điểm thi lại (CK2) - similar to importExcelCuoiKy but saves to diem_ck2
+  static async importExcelThiLai(filePath, { mon_hoc_id, khoa_dao_tao_id, lop_id }) {
+    const transaction = await sequelize.transaction();
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.worksheets[0];
+
+      // Tìm vị trí của cột "Mã HVSV" và "Điểm" trong header
+      const headerRow = worksheet.getRow(11);
+      let maHVSVIndex = -1;
+      let diemIndex = -1;
+
+      for (let i = 1; i <= headerRow.cellCount; i++) {
+        const cellValue = headerRow.getCell(i).value;
+        if (typeof cellValue === "string") {
+          const normalizedValue = cellValue.toLowerCase().trim();
+          if (normalizedValue.includes("mã") && normalizedValue.includes("hvsv")) maHVSVIndex = i - 1;
+          if (normalizedValue === "điểm") diemIndex = i - 1;
+        }
+      }
+
+      if (maHVSVIndex === -1 || diemIndex === -1) {
+        throw new Error("Không tìm thấy cột 'Mã HVSV' hoặc 'Điểm' trong file Excel!");
+      }
+
+      // Đọc dữ liệu từ dòng 12 trở đi
+      const dataRows = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber >= 12) {
+          const rowData = [];
+          row.eachCell({ includeEmpty: true }, (cell) => {
+            rowData.push(cell.value === null ? "" : cell.value);
+          });
+          if (rowData.some((cell) => cell !== "")) {
+            dataRows.push(rowData);
+          }
+        }
+      });
+
+      // Build where clause for students
+      const whereClauseSinhVien = {};
+      if (lop_id) {
+        whereClauseSinhVien.lop_id = lop_id;
+      } else if (khoa_dao_tao_id) {
+        const lopIds = await lop.findAll({
+          where: { khoa_dao_tao_id },
+          attributes: ['id']
+        });
+        whereClauseSinhVien.lop_id = lopIds.map(l => l.id);
+      }
+
+      // Lấy danh sách sinh viên hợp lệ (có trong lớp/khoá)
+      const sinhVienData = await sinh_vien.findAll({
+        where: whereClauseSinhVien,
+        attributes: ['id', 'ma_sinh_vien', 'lop_id'],
+        raw: true
+      });
+      const sinhVienIds = sinhVienData.map(sv => sv.id);
+
+      // Lấy thoi_khoa_bieu_ids cho môn học này
+      const whereClauseTKB = { mon_hoc_id };
+      if (lop_id) {
+        whereClauseTKB.lop_id = lop_id;
+      }
+      const tkbData = await thoi_khoa_bieu.findAll({
+        where: whereClauseTKB,
+        attributes: ['id', 'lop_id'],
+        raw: true
+      });
+      const thoiKhoaBieuIds = tkbData.map(t => t.id);
+
+      // Lấy tất cả bản ghi điểm có sẵn
+      const diemRecords = await diem.findAll({
+        where: {
+          sinh_vien_id: sinhVienIds,
+          thoi_khoa_bieu_id: thoiKhoaBieuIds,
+        },
+        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_gk', 'diem_ck', 'diem_hp'],
+        raw: true
+      });
+
+      // Map: ma_sinh_vien -> { sinh_vien_id, diem_id, diem_gk, diem_ck, diem_hp, thoi_khoa_bieu_id }
+      const sinhVienMap = new Map();
+      for (const sv of sinhVienData) {
+        const diemRecord = diemRecords.find(d => d.sinh_vien_id === sv.id);
+        if (diemRecord) {
+          sinhVienMap.set(sv.ma_sinh_vien, {
+            sinh_vien_id: sv.id,
+            diem_id: diemRecord.id,
+            diem_gk: diemRecord.diem_gk,
+            diem_ck: diemRecord.diem_ck,
+            diem_hp: diemRecord.diem_hp,
+            thoi_khoa_bieu_id: diemRecord.thoi_khoa_bieu_id
+          });
+        }
+      }
+
+      // Lấy quy định điểm
+      const targetLopId = lop_id || (sinhVienData[0] && sinhVienData[0].lop_id);
+      const gradingRules = await DiemService.getGradingRules(targetLopId);
+
+      // Lấy rules quy đổi điểm
+      const he_dao_tao_id = await DiemService.getHeDaoTaoId(targetLopId);
+      const conversionRules = he_dao_tao_id ? await QuyDoiDiem.findAll({
+        where: { he_dao_tao_id },
+        order: [['diem_min', 'DESC']]
+      }) : [];
+
+      const jsonResult = [];
+      let successCount = 0; // Track successful updates
+
+      // Xử lý từng dòng trong Excel
+      for (const row of dataRows) {
+        let ma_hvsv = row[maHVSVIndex];
+        let diemRaw = row[diemIndex];
+
+        // Skip rows without student code (footer, header, valid empty rows)
+        if (!ma_hvsv || ma_hvsv.toString().trim() === '') {
+          continue;
+        }
+
+        const svInfo = sinhVienMap.get(ma_hvsv);
+        if (!svInfo) {
+          continue;
+        }
+
+        // Xử lý điểm thi lại (CK2) - Parse AFTER confirming valid student
+        let diem_ck2 = null;
+        if (typeof diemRaw === "string") {
+          diemRaw = diemRaw.replace(",", ".").trim();
+        }
+        if (diemRaw !== null && diemRaw !== "" && diemRaw !== undefined) {
+          if (!isNaN(Number(diemRaw))) {
+            diem_ck2 = parseFloat(Number(diemRaw).toFixed(2));
+            if (diem_ck2 < 0 || diem_ck2 > 10) {
+              throw new Error(`Điểm không hợp lệ cho sinh viên ${ma_hvsv}: ${diem_ck2}`);
+            }
+          } else {
+            throw new Error(`Điểm không hợp lệ cho sinh viên ${ma_hvsv}: ${diemRaw}`);
+          }
+        }
+
+        const { sinh_vien_id, diem_id, diem_gk, thoi_khoa_bieu_id } = svInfo;
+
+        if (!diem_id) {
+          throw new Error(`Bản ghi điểm chưa tồn tại cho sinh viên ${ma_hvsv}`);
+        }
+
+        // Tính điểm học phần 2 (HP2) using GK * 0.3 + CK2 * 0.7
+        let diem_hp_2 = null;
+        let diem_he_4_2 = null;
+        let diem_chu_2 = null;
+        let trang_thai = 'rot_mon';
+
+        if (diem_gk !== null && diem_ck2 !== null) {
+          diem_hp_2 = Math.round((diem_gk * 0.3 + diem_ck2 * 0.7 + 1e-9) * 10) / 10;
+
+          if (conversionRules.length > 0) {
+            const match = conversionRules.find(r => diem_hp_2 >= r.diemMin);
+            if (match) {
+              diem_he_4_2 = match.diemHe4;
+              diem_chu_2 = match.diemChu;
+            } else {
+              diem_he_4_2 = 0;
+              diem_chu_2 = 'F';
+            }
+          }
+
+          // Kiểm tra qua môn
+          const minExamScore = gradingRules.diemThiToiThieu || 4;
+          const minAvgScore = gradingRules.diemTrungBinhDat || 4;
+          if (diem_ck2 >= minExamScore && diem_hp_2 >= minAvgScore) {
+            trang_thai = 'qua_mon';
+          }
+        }
+
+        const diemData = {
+          id: diem_id,
+          sinh_vien_id,
+          thoi_khoa_bieu_id,
+          diem_ck2,
+          diem_hp_2,
+          diem_he_4_2,
+          diem_chu_2,
+          trang_thai,
+          updated: false,
+        };
+
+        jsonResult.push(diemData);
+
+        // Update database SEQUENTIALLY to avoid transaction rollback issues
+        console.log(`Processing update for diem_id=${diem_id}, sv=${ma_hvsv}`);
+        try {
+          // Check transaction state before update
+          if (transaction.finished) {
+            console.error(`Transaction finished (${transaction.finished}) before update for diem_id=${diem_id}`);
+          }
+
+          const [affectedCount] = await diem.update(
+            {
+              diem_ck2: diem_ck2,
+              diem_hp_2: diem_hp_2,
+              diem_he_4_2: diem_he_4_2,
+              diem_chu_2: diem_chu_2,
+              trang_thai: trang_thai
+            },
+            { where: { id: diem_id } } // Removed transaction to avoid premature rollback issues
+          );
+
+          if (affectedCount > 0) {
+            console.log(`Cập nhật điểm thi lại diem_id=${diem_id}: diem_ck2=${diem_ck2}, status=${trang_thai}`);
+            diemData.updated = true;
+            successCount++;
+          }
+        } catch (updateErr) {
+          console.error(`Error updating diem_id=${diem_id}:`, updateErr);
+          throw updateErr;
+        }
+      }
+
+
+      console.log('Finished processing all rows.');
+      // const updateResults = await Promise.all(updates); // Removed parallel execution
+      // const successCount = updateResults.reduce((count, [affectedCount]) => count + affectedCount, 0);
+
+      // Xóa file sau khi xử lý
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      await transaction.commit();
+
+      return {
+        message: "Cập nhật điểm thi lại thành công!",
+        count: successCount,
+        data: jsonResult,
+      };
+    } catch (error) {
+      console.error("Critical error in importExcelThiLai:", error);
+      await transaction.rollback();
+      throw new Error("Lỗi xử lý file Excel điểm thi lại: " + error.message);
+    }
+  }
+
   static async themSinhVienHocLaiVaoLop(thoi_khoa_bieu_id, ma_sinh_vien) {
     try {
       // Tìm thông tin thời khóa biểu
@@ -1279,11 +1525,10 @@ class DiemService {
         distinct: true,
       });
 
-      // Tạo danh sách môn học
-      const monHocList = monHocs
-        .filter(m => m && m.mon_hoc && m.mon_hoc.ten_mon_hoc)
-        .map(m => m.mon_hoc.ten_mon_hoc)
-        .filter((value, index, self) => self.indexOf(value) === index);
+      // Lấy danh sách môn học - sẽ được xây dựng động từ dữ liệu điểm
+      // để bao gồm cả các môn học lại (lần 2, lần 3, ...)
+      // monHocList will be built after processing grade records
+      const monHocKeys = new Set();
 
       // Lấy danh sách thời khóa biểu
       const thoiKhoaBieus = await thoi_khoa_bieu.findAll({
@@ -1362,7 +1607,10 @@ class DiemService {
         const soTinChi = record.thoi_khoa_bieu.mon_hoc?.so_tin_chi || 0;
         const lanHoc = record.lan_hoc || 1;
         // Create unique key for each learning attempt
-        const monHocKey = lanHoc > 1 ? `${monHocName} (học lại lần ${lanHoc})` : monHocName;
+        const monHocKey = lanHoc > 1 ? `${monHocName} (học lần ${lanHoc})` : monHocName;
+
+        // Collect all subject keys (including retakes) for monHocList
+        monHocKeys.add(monHocKey);
 
         // Lấy thông tin lớp và khóa
         const lopInfo = lops.find(l => l.id === lopId);
@@ -1549,6 +1797,25 @@ class DiemService {
         diem_tb_he4: data.tong_tin_chi > 0 ? parseFloat((data.tong_diem_he4 / data.tong_tin_chi).toFixed(1)) : 0,
         so_sinh_vien: data.so_sinh_vien.size,
       }));
+
+      // Build final monHocList from collected keys
+      // Sort to show regular subjects first, then retakes (lần 2, lần 3, etc.)
+      const monHocList = Array.from(monHocKeys).sort((a, b) => {
+        // Extract base subject name and learning attempt number
+        const matchA = a.match(/^(.+?)(?:\s*\(học lần (\d+)\))?$/);
+        const matchB = b.match(/^(.+?)(?:\s*\(học lần (\d+)\))?$/);
+        const baseA = matchA ? matchA[1] : a;
+        const baseB = matchB ? matchB[1] : b;
+        const lanA = matchA && matchA[2] ? parseInt(matchA[2]) : 1;
+        const lanB = matchB && matchB[2] ? parseInt(matchB[2]) : 1;
+
+        // First sort by base subject name alphabetically
+        if (baseA !== baseB) {
+          return baseA.localeCompare(baseB, 'vi');
+        }
+        // Then by learning attempt number
+        return lanA - lanB;
+      });
 
       return {
         thongKeTongQuan,
