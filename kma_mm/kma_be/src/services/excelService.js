@@ -855,6 +855,398 @@ class ExcelService {
 
     return workbook;
   }
+
+  // Lấy danh sách sinh viên cần thi lại (diem_ck < diemThiToiThieu OR diem_hp < diemTrungBinhDat)
+  static async getSinhVienThiLai({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score }) {
+    try {
+      console.log('=== getSinhVienThiLai START ===');
+      console.log('Input params:', { mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score });
+
+      if (!mon_hoc_id || !khoa_dao_tao_id) {
+        throw new Error("Thiếu mon_hoc_id hoặc khoa_dao_tao_id");
+      }
+
+      const minExam = parseFloat(min_exam_score) || 4;
+      const minAvg = parseFloat(min_avg_score) || 4;
+      console.log('Parsed thresholds:', { minExam, minAvg });
+
+      // Step 1: Check if there are any diem records with diem_ck
+      const diemCount = await diem.count({
+        where: { diem_ck: { [Op.ne]: null } }
+      });
+      console.log('Step 1 - Total diem records with CK score:', diemCount);
+
+      // Step 2: Check thoi_khoa_bieu for mon_hoc_id
+      const tkbCount = await thoi_khoa_bieu.count({
+        where: { mon_hoc_id: mon_hoc_id }
+      });
+      console.log('Step 2 - TKB records for mon_hoc_id', mon_hoc_id, ':', tkbCount);
+
+      // Step 3: Check lop for khoa_dao_tao_id
+      const lopCount = await lop.count({
+        where: { khoa_dao_tao_id: khoa_dao_tao_id }
+      });
+      console.log('Step 3 - Lop records for khoa_dao_tao_id', khoa_dao_tao_id, ':', lopCount);
+
+      // Step 4: Get TKB IDs for this mon_hoc and khoa_dao_tao (and lop_id if provided)
+      const tkbWhere = { mon_hoc_id: mon_hoc_id };
+      if (lop_id) {
+        tkbWhere.lop_id = lop_id;
+      }
+
+      const tkbRecords = await thoi_khoa_bieu.findAll({
+        attributes: ['id', 'lop_id', 'mon_hoc_id'],
+        where: tkbWhere,
+        include: [{
+          model: lop,
+          as: 'lop',
+          attributes: ['id', 'ma_lop', 'khoa_dao_tao_id'],
+          where: { khoa_dao_tao_id: khoa_dao_tao_id },
+          required: true
+        }]
+      });
+      console.log('Step 4 - TKB records for this mon_hoc + khoa:', tkbRecords.length);
+      if (tkbRecords.length > 0) {
+        console.log('TKB IDs:', tkbRecords.map(t => ({ id: t.id, lop_id: t.lop_id, lop_ma: t.lop?.ma_lop })));
+      }
+
+      if (tkbRecords.length === 0) {
+        throw new Error(`Không tìm thấy thời khóa biểu cho mon_hoc_id=${mon_hoc_id} và khoa_dao_tao_id=${khoa_dao_tao_id}`);
+      }
+
+      // Step 5: Get diem records for these TKB IDs (includes all students, not just those with CK score)
+      const tkbIds = tkbRecords.map(t => t.id);
+      const diemRecords = await diem.findAll({
+        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_ck', 'diem_hp', 'diem_ck2', 'trang_thai'],
+        where: {
+          thoi_khoa_bieu_id: { [Op.in]: tkbIds }
+        },
+        include: [{
+          model: sinh_vien,
+          as: 'sinh_vien',
+          attributes: ['id', 'ma_sinh_vien', 'ho_dem', 'ten', 'lop_id']
+        }]
+      });
+      console.log('Step 5 - Diem records for these TKBs:', diemRecords.length);
+
+      if (diemRecords.length === 0) {
+        throw new Error(`Không tìm thấy điểm nào cho các thời khóa biểu ID: ${tkbIds.join(', ')}`);
+      }
+
+      // Step 6: Filter for retake students
+      // Criteria: trang_thai in ['rot_mon', 'hoc_lai', 'thi_lai'] OR diem_ck2 != NULL OR scores < threshold
+      const retakeStudents = [];
+      const failStatuses = ['rot_mon', 'hoc_lai', 'thi_lai'];
+
+      for (const d of diemRecords) {
+        const hasDiemCK2 = d.diem_ck2 !== null && d.diem_ck2 !== undefined;
+        const isFailStatus = d.trang_thai && failStatuses.includes(d.trang_thai);
+
+        const diem_ck = parseFloat(d.diem_ck);
+        const diem_hp = d.diem_hp !== null && d.diem_hp !== undefined ? parseFloat(d.diem_hp) : null;
+        const scoreLow = (diem_ck < minExam) || (diem_hp === null) || (diem_hp < minAvg);
+
+        const needsRetake = hasDiemCK2 || isFailStatus || scoreLow;
+        console.log(`  - ${d.sinh_vien?.ma_sinh_vien}: CK=${diem_ck}, HP=${diem_hp}, CK2=${d.diem_ck2}, Status=${d.trang_thai}, Retake=${needsRetake}`);
+
+        if (needsRetake) {
+          // Get student's lop info
+          const studentLop = await lop.findOne({
+            where: { id: d.sinh_vien?.lop_id },
+            attributes: ['ma_lop']
+          });
+
+          retakeStudents.push({
+            id: d.sinh_vien?.id,
+            ma_sinh_vien: d.sinh_vien?.ma_sinh_vien,
+            ho_dem: d.sinh_vien?.ho_dem,
+            ten: d.sinh_vien?.ten,
+            lop: studentLop,
+            diems: [{
+              diem_ck: d.diem_ck,
+              diem_hp: d.diem_hp,
+              diem_ck2: d.diem_ck2
+            }]
+          });
+        }
+      }
+
+      console.log('Step 6 - Students needing retake:', retakeStudents.length);
+
+      if (retakeStudents.length === 0) {
+        throw new Error("Không tìm thấy sinh viên nào cần thi lại (tất cả đều đạt điều kiện)");
+      }
+
+      // Sort by ma_sinh_vien
+      retakeStudents.sort((a, b) => {
+        const codeA = a.ma_sinh_vien || '';
+        const codeB = b.ma_sinh_vien || '';
+        return codeA.localeCompare(codeB);
+      });
+
+      console.log('=== getSinhVienThiLai END - Success ===');
+      return retakeStudents;
+    } catch (error) {
+      console.log('=== getSinhVienThiLai ERROR ===');
+      console.log('Error:', error.message);
+      throw new Error("Lỗi khi lấy dữ liệu sinh viên thi lại: " + error.message);
+    }
+  }
+
+  // Export danh sách thi lại - same format as cuối kỳ but for retake students
+  static async exportToExcelThiLai(sinhVienData, { khoa_dao_tao_id, mon_hoc_id }) {
+    // Lấy thông tin bổ sung
+    const exportInfo = await this.getExportInfoCuoiKy({ khoa_dao_tao_id, mon_hoc_id });
+
+    const headersRow = [
+      "STT",
+      "SBD",
+      "Mã HVSV",
+      "Họ đệm",
+      "Tên",
+      "Lớp",
+      "Mã đề",
+      "Điểm",
+      "Ký tên",
+      "Ghi chú",
+    ];
+
+    const totalColumns = 10;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("SinhVien", {
+      pageSetup: {
+        orientation: "portrait",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        paperSize: 9,
+        margins: {
+          left: 0.4,
+          right: 0.4,
+          top: 0.5,
+          bottom: 0.2,
+          header: 0.3,
+          footer: 0.3,
+        },
+        horizontalCentered: true,
+        printTitlesRow: "13:14",
+      },
+    });
+
+    // Dòng 1: Tiêu đề chính
+    let row = worksheet.addRow([]);
+    row.getCell(1).value = "HỌC VIỆN KỸ THUẬT MẬT MÃ".toUpperCase();
+    row.getCell(5).value = "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM".toUpperCase();
+    worksheet.mergeCells(row.number, 1, row.number, 4);
+    worksheet.mergeCells(row.number, 5, row.number, 10);
+    row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(5).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(1).font = { bold: true, size: 12 };
+    row.getCell(5).font = { bold: true, size: 12 };
+
+    // Dòng 2: Phòng và câu slogan
+    row = worksheet.addRow([]);
+    row.getCell(1).value = "PHÒNG KT&ĐBCLĐT";
+    row.getCell(5).value = "Độc lập - Tự do - Hạnh phúc";
+    worksheet.mergeCells(row.number, 1, row.number, 4);
+    worksheet.mergeCells(row.number, 5, row.number, 10);
+    row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(5).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(1).font = { bold: true, underline: true, size: 12 };
+    row.getCell(5).font = { bold: true, underline: true, size: 12 };
+
+    // Dòng 3: Khoảng trống
+    row = worksheet.addRow([]);
+
+    // Dòng 4: Tiêu đề danh sách - THI LẠI
+    row = worksheet.addRow([]);
+    row.getCell(1).value = "DANH SÁCH THI LẠI".toUpperCase();
+    worksheet.mergeCells(row.number, 1, row.number, totalColumns);
+    row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(1).font = { size: 12, bold: true };
+
+    // Dòng 5: Năm học
+    row = worksheet.addRow([]);
+    row.getCell(1).value = exportInfo.hoc_ky_text;
+    worksheet.mergeCells(row.number, 1, row.number, totalColumns);
+    row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    row.getCell(1).font = { bold: true, size: 12 };
+
+    // Dòng 6: Môn thi
+    row = worksheet.addRow([]);
+    row.getCell(1).value = `Môn thi: ${exportInfo.ten_mon_hoc}`;
+    worksheet.mergeCells(row.number, 1, row.number, totalColumns);
+    row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(1).font = { size: 11 };
+
+    // Dòng 7: Lần thi và hình thức thi
+    row = worksheet.addRow([]);
+    row.getCell(1).value = "Lần thi: 2";
+    row.getCell(4).value = "Hình thức thi: ";
+    row.getCell(7).value = "Thời gian làm bài:  (phút)";
+    worksheet.mergeCells(row.number, 1, row.number, 3);
+    worksheet.mergeCells(row.number, 4, row.number, 6);
+    worksheet.mergeCells(row.number, 7, row.number, 10);
+    row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(4).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(7).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(1).font = { size: 12 };
+    row.getCell(4).font = { size: 12 };
+    row.getCell(7).font = { size: 12 };
+
+    // Dòng 8: Ngày thi, giờ thi, phòng thi, mã phòng thi
+    row = worksheet.addRow([]);
+    row.getCell(1).value = "Ngày thi: ...               Giờ thi: ...               Phòng thi: ...             Mã phòng thi: ...";
+    worksheet.mergeCells(row.number, 1, row.number, totalColumns);
+    row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(1).font = { size: 12 };
+
+    // Dòng 9: Tổng số thí sinh
+    row = worksheet.addRow([]);
+    row.getCell(1).value = `Tổng số thí sinh: ${sinhVienData.length}    Có mặt:......   Vắng: ......    Có lý do: ......    Không lý do: .......`;
+    worksheet.mergeCells(row.number, 1, row.number, totalColumns);
+    row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+    row.getCell(1).font = { size: 12 };
+
+    // Dòng trống
+    worksheet.addRow([]);
+
+    // Phần header bảng (dòng 11)
+    const headerRow = worksheet.addRow(headersRow);
+    headerRow.eachCell((cell) => {
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      cell.font = { bold: true, size: 12 };
+    });
+
+    const tableStart = headerRow.number;
+
+    // Xử lý dữ liệu
+    const dataRows = sinhVienData.map((sv, index) => {
+      const diemData = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
+      // Lấy diem_ck2 nếu có, để trống nếu NULL
+      const diemCK2 = diemData.diem_ck2 !== null && diemData.diem_ck2 !== undefined ? diemData.diem_ck2 : "";
+      return [
+        `${index + 1}`,
+        `${index + 1}` || "",
+        sv.ma_sinh_vien || "",
+        sv.ho_dem || "",
+        sv.ten || "",
+        sv.lop?.ma_lop || "",
+        "",
+        diemCK2, // Điểm thi lại (CK2) - để trống nếu NULL
+        "", // Ký tên
+        "",
+      ];
+    });
+
+    dataRows.forEach((rData) => {
+      const dataRow = worksheet.addRow(rData);
+      dataRow.eachCell((cell) => {
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+        cell.font = { name: "Times New Roman", size: 12 };
+      });
+
+      // Căn trái và wrapText: true cho cột 4 (Họ đệm) và cột 5 (Tên)
+      dataRow.getCell(4).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+      dataRow.getCell(5).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+    });
+
+    const tableEnd = worksheet.lastRow.number;
+
+    // Phần footer
+    worksheet.addRow([]);
+
+    row = worksheet.addRow([]);
+    row.getCell(7).value = "Hà Nội, ngày ___ tháng ___ năm 20___";
+    worksheet.mergeCells(row.number, 7, row.number, 10);
+    row.getCell(7).alignment = { horizontal: "right", vertical: "top", wrapText: true };
+    row.getCell(7).font = { name: "Times New Roman", size: 11, italic: true, bold: false };
+
+    row = worksheet.addRow([]);
+    row.getCell(1).value = "CBCTChT thứ nhất";
+    row.getCell(4).value = "CBCTChT thứ hai";
+    row.getCell(7).value = "Đại diện Phòng KT&ĐBCLĐT";
+    worksheet.mergeCells(row.number, 1, row.number, 3);
+    worksheet.mergeCells(row.number, 4, row.number, 6);
+    worksheet.mergeCells(row.number, 7, row.number, 10);
+    row.getCell(1).alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+    row.getCell(4).alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+    row.getCell(7).alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+    row.getCell(1).font = { name: "Times New Roman", size: 11, bold: true };
+    row.getCell(4).font = { name: "Times New Roman", size: 11, bold: true };
+    row.getCell(7).font = { name: "Times New Roman", size: 11, bold: true };
+
+    // Định dạng chung
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        if (rowNumber >= tableStart && rowNumber <= tableEnd) {
+          if (rowNumber === tableStart) {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF000000" } },
+              left: { style: "thin", color: { argb: "FF000000" } },
+              bottom: { style: "thin", color: { argb: "FF000000" } },
+              right: { style: "thin", color: { argb: "FF000000" } },
+            };
+          } else if (rowNumber === tableStart + 1) {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF000000" } },
+              left: { style: "thin", color: { argb: "FF000000" } },
+              bottom: { style: "thin", color: { argb: "FF808080" } },
+              right: { style: "thin", color: { argb: "FF000000" } },
+            };
+          } else if (rowNumber === tableEnd) {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF808080" } },
+              left: { style: "thin", color: { argb: "FF000000" } },
+              bottom: { style: "thin", color: { argb: "FF000000" } },
+              right: { style: "thin", color: { argb: "FF000000" } },
+            };
+          } else {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF808080" } },
+              left: { style: "thin", color: { argb: "FF000000" } },
+              bottom: { style: "thin", color: { argb: "FF808080" } },
+              right: { style: "thin", color: { argb: "FF000000" } },
+            };
+          }
+          cell.alignment = {
+            horizontal: cell.alignment?.horizontal || "left",
+            vertical: "middle",
+            wrapText: cell.alignment?.wrapText || false,
+          };
+        } else {
+          cell.border = undefined;
+          cell.alignment = {
+            horizontal: cell.alignment?.horizontal || "left",
+            vertical: "top",
+            wrapText: cell.alignment?.wrapText || false,
+          };
+        }
+        cell.font = {
+          name: "Times New Roman",
+          size: cell.font?.size || 12,
+          bold: cell.font?.bold || false,
+          underline: cell.font?.underline || false,
+          italic: cell.font?.italic || false,
+        };
+      });
+    });
+
+    // Độ rộng cột
+    worksheet.getColumn(1).width = 4.29 * 1.2;
+    worksheet.getColumn(2).width = 4.4 * 1.2;
+    worksheet.getColumn(3).width = 11.5 * 1.2;
+    worksheet.getColumn(4).width = 18.79 * 1.2;
+    worksheet.getColumn(5).width = 13.58 * 1.2;
+    worksheet.getColumn(6).width = 7.71 * 1.2;
+    worksheet.getColumn(7).width = 6.29 * 1.2;
+    worksheet.getColumn(8).width = 7.71 * 1.2;
+    worksheet.getColumn(9).width = 8 * 1.2;
+    worksheet.getColumn(10).width = 12.57 * 1.2;
+
+    return workbook;
+  }
 }
 
 module.exports = ExcelService;

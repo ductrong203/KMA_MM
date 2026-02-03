@@ -58,6 +58,37 @@ export const importDanhSachDiemCK = async (data) => {
   }
 };
 
+// Export danh sách thi lại (chỉ sinh viên cần thi lại)
+export const exportDanhSachThiLai = async (data) => {
+  console.log(data);
+  try {
+    const response = await api.post(`/excel/exportthilai`, data, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
+// Import điểm thi lại (điểm CK2)
+export const importDanhSachDiemThiLai = async (data) => {
+  console.log(data);
+  try {
+    const response = await api.post(`/diem/importdiemthilai`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log('API Response:', response);
+    return response;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
 export const exportStudentsToExcel = async (data) => {
   console.log(data);
   try {

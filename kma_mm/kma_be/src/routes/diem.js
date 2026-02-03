@@ -6,6 +6,7 @@ const upload = multer({ dest: "uploads/" });
 
 router.post("/importdiemgk", upload.single("file"), DiemController.importExcel);
 router.post("/importdiemck", upload.single("file"), DiemController.importExcelCuoiKy);
+router.post("/importdiemthilai", upload.single("file"), DiemController.importExcelThiLai);
 router.get('/thong-ke-diem', DiemController.getThongKeDiem);
 router.get('/export-grade-hoc-phan', DiemController.exportGradeHocPhan);
 router.get('/sinh-vien/:sinh_vien_id/all-diem', DiemController.getAllDiem);
