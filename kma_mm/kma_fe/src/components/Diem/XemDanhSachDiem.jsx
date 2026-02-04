@@ -267,6 +267,15 @@ function XemDanhSachDiem() {
         return;
       }
 
+      // Sort by Student Code (Mã SV)
+      response.data.sort((a, b) => {
+        const svA = a.sinh_vien || a;
+        const svB = b.sinh_vien || b;
+        const codeA = svA.ma_sinh_vien || '';
+        const codeB = svB.ma_sinh_vien || '';
+        return codeA.localeCompare(codeB);
+      });
+
       const formattedStudents = await Promise.all(
         response.data.map(async (student) => {
           // Handle potential missing data
