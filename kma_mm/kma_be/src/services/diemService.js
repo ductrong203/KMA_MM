@@ -722,6 +722,39 @@ class DiemService {
           }
         }
         // --- Kết thúc Logic tính lại điểm ---
+        const finalTP1 = updateData.diem_tp1 !== undefined ? updateData.diem_tp1 : record.diem_tp1;
+        const finalTP2 = updateData.diem_tp2 !== undefined ? updateData.diem_tp2 : record.diem_tp2;
+        const numTP1 = (finalTP1 !== null && finalTP1 !== '') ? Number(finalTP1) : null;
+        const numTP2 = (finalTP2 !== null && finalTP2 !== '') ? Number(finalTP2) : null;
+
+        try {
+          if (targetTKB.mon_hoc_id) {
+            const mhCheck = await mon_hoc.findByPk(targetTKB.mon_hoc_id, { attributes: ['bao_ve'] });
+            // Không phải môn bảo vệ
+            if (mhCheck && mhCheck.bao_ve !== true && mhCheck.bao_ve !== 1 && String(mhCheck.bao_ve) !== '1') {
+              const finalRules = await DiemService.getGradingRules(targetTKB.lop_id);
+              const reqTP1 = (finalRules.diemGiuaKyToiThieu !== undefined && finalRules.diemGiuaKyToiThieu !== null) ? Number(finalRules.diemGiuaKyToiThieu) : 4;
+              const reqTP2 = (finalRules.diemChuyenCanToiThieu !== undefined && finalRules.diemChuyenCanToiThieu !== null) ? Number(finalRules.diemChuyenCanToiThieu) : 4;
+
+              const failTP1 = numTP1 !== null && numTP1 < reqTP1;
+              const failTP2 = numTP2 !== null && numTP2 < reqTP2;
+
+              if (failTP1 || failTP2) {
+                console.log(`[FINAL ENFORCE] Sinh viên ${sinh_vien_id} không đủ điều kiện: TP1=${numTP1}(min ${reqTP1}), TP2=${numTP2}(min ${reqTP2}). Force hoc_lai.`);
+                updateData.trang_thai = 'hoc_lai';
+                updateData.diem_hp = null;
+                updateData.diem_hp_2 = null;
+                updateData.diem_he_4 = 0;
+                updateData.diem_chu = 'F';
+                updateData.diem_he_4_2 = null;
+                updateData.diem_chu_2 = null;
+              }
+            }
+          }
+        } catch (finalErr) {
+          console.error('[FINAL ENFORCE] Lỗi:', finalErr);
+        }
+        // === END FINAL ENFORCEMENT ===
 
         await record.update(updateData);
 
