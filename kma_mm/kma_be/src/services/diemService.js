@@ -759,7 +759,12 @@ class DiemService {
         // DEBUG: Log giá trị updateData trước khi lưu
         console.log(`[DEBUG SAVE] SV_ID=${sinh_vien_id}, trang_thai=${updateData.trang_thai}, diem_hp=${updateData.diem_hp}, diem_he_4=${updateData.diem_he_4}`);
 
-        await record.update(updateData);
+        // FIX: Set giá trị trực tiếp lên record object thay vì dùng record.update()
+        // vì record.update() có thể không apply đúng các giá trị
+        Object.keys(updateData).forEach(key => {
+          record[key] = updateData[key];
+        });
+        await record.save();
 
         updatedRecords.push(record);
       }
