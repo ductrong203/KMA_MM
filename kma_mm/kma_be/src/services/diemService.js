@@ -980,11 +980,15 @@ class DiemService {
         if (diemIds.length > 0) {
           const diemGKRecords = await diem.findAll({
             where: { id: diemIds },
-            attributes: ['id', 'diem_gk'],
+            attributes: ['id', 'diem_gk', 'diem_tp1', 'diem_tp2'],
             transaction,
           });
           diemGKRecords.forEach(record => {
-            diemGKMap.set(record.id, record.diem_gk);
+            diemGKMap.set(record.id, {
+              gk: record.diem_gk,
+              tp1: record.diem_tp1,
+              tp2: record.diem_tp2
+            });
           });
         }
       }
@@ -1041,16 +1045,38 @@ class DiemService {
             throw new Error(`Bản ghi điểm chưa tồn tại cho sinh viên ${ma_hvsv} trong khoá đào tạo có id ${khoa_dao_tao_id}`);
           }
 
-          // Lấy điểm giữa kỳ để kiểm tra điều kiện
-          const diem_gk = diemGKMap.get(diem_id);
+          // Lấy điểm thành phần để kiểm tra điều kiện
+          const diemInfo = diemGKMap.get(diem_id) || {};
+          const diem_gk = diemInfo.gk;
+          const diem_tp1 = diemInfo.tp1 !== null ? parseFloat(diemInfo.tp1) : null;
+          const diem_tp2 = diemInfo.tp2 !== null ? parseFloat(diemInfo.tp2) : null;
+
+          // Kiểm tra điều kiện TP1 và TP2 (nếu không phải bảo vệ đồ án)
+          const svCurrent = sinhVienData.find(s => s.id === sinh_vien_id);
+          const isDefense = svCurrent?.bao_ve_do_an;
+
+          const minTP1 = gradingRules.diemGiuaKyToiThieu || 0;
+          const minTP2 = gradingRules.diemChuyenCanToiThieu || 0;
+
+          if (!isDefense) {
+            if (diem_tp1 === null || diem_tp1 < minTP1 || diem_tp2 === null || diem_tp2 < minTP2) {
+              console.warn(`Sinh viên ${ma_hvsv} không đủ điều kiện dự thi (TP1=${diem_tp1}, TP2=${diem_tp2}), bỏ qua import.`);
+              continue;
+            }
+          }
 
           // Kiểm tra điều kiện diem_gk (phải >= diemGiuaKyToiThieu)
           let finalDiemCK = diem_ck;
           const minGK = gradingRules.diemGiuaKyToiThieu;
 
+          // Logic cũ: gán về 0 nếu GK thấp. Nhưng logic mới ở trên đã skip rồi. 
+          // Giữ lại logic này như fallback hoặc nếu TP1/TP2 đủ nhưng GK thấp (hiếm)
           if (diem_gk === null || diem_gk === undefined || diem_gk < minGK) {
-            finalDiemCK = 0;
-            console.warn(`Sinh viên ${ma_hvsv} có điểm giữa kỳ ${diem_gk} < ${minGK}, gán điểm cuối kỳ = 0`);
+            // ... existing logic fallback ...
+            if (!isDefense) { // Chỉ gán 0 nếu không phải bảo vệ
+              finalDiemCK = 0;
+              console.warn(`Sinh viên ${ma_hvsv} có điểm giữa kỳ ${diem_gk} < ${minGK}, gán điểm cuối kỳ = 0`);
+            }
           }
 
           // Tính điểm tổng kết (Học phần) và quy đổi
@@ -1211,7 +1237,7 @@ class DiemService {
           sinh_vien_id: sinhVienIds,
           thoi_khoa_bieu_id: thoiKhoaBieuIds,
         },
-        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_gk', 'diem_ck', 'diem_hp', 'trang_thai'],
+        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_gk', 'diem_ck', 'diem_hp', 'trang_thai', 'diem_tp1', 'diem_tp2'],
         raw: true
       });
 
@@ -1226,7 +1252,10 @@ class DiemService {
             diem_gk: diemRecord.diem_gk,
             diem_ck: diemRecord.diem_ck,
             diem_hp: diemRecord.diem_hp,
+            diem_hp: diemRecord.diem_hp,
             trang_thai: diemRecord.trang_thai,
+            diem_tp1: diemRecord.diem_tp1,
+            diem_tp2: diemRecord.diem_tp2,
             thoi_khoa_bieu_id: diemRecord.thoi_khoa_bieu_id
           });
         }
@@ -1263,6 +1292,21 @@ class DiemService {
 
         // Check if student is in 'hoc_lai' status (should not be in retake list)
         if (svInfo.trang_thai === 'hoc_lai') {
+          continue;
+        }
+
+        // Strict Eligibility Check for Retake Import
+        const minTP1 = gradingRules.diemGiuaKyToiThieu || 0;
+        const minTP2 = gradingRules.diemChuyenCanToiThieu || 0;
+
+        // Find if defense (Retake usually not for defense, but checking anyway)
+        // sinhVienData in importExcelThiLai does not have bao_ve_do_an selected in Line 1191.
+        // Assuming Retake is for Exams. 
+        const tp1 = svInfo.diem_tp1 !== null ? parseFloat(svInfo.diem_tp1) : null;
+        const tp2 = svInfo.diem_tp2 !== null ? parseFloat(svInfo.diem_tp2) : null;
+
+        if (tp1 === null || tp1 < minTP1 || tp2 === null || tp2 < minTP2) {
+          console.warn(`Sinh viên ${ma_hvsv} không đủ điều kiện thi lại (TP1=${tp1}, TP2=${tp2}), bỏ qua import.`);
           continue;
         }
 
