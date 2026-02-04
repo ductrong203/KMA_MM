@@ -554,6 +554,32 @@ class DiemService {
         }
 
         // --- Bắt đầu Logic tính lại điểm ---
+
+        // --- ENFORCE ELIGIBILITY CHECK: Đảm bảo trạng thái 'hoc_lai' được cập nhật đúng nếu điểm thấp ---
+        const currentTP1 = updateData.diem_tp1 !== undefined ? updateData.diem_tp1 : record.diem_tp1;
+        const currentTP2 = updateData.diem_tp2 !== undefined ? updateData.diem_tp2 : record.diem_tp2;
+
+        if (currentTP1 !== null || currentTP2 !== null) {
+          try {
+            // Lấy thông tin môn học để kiểm tra bảo vệ đồ án
+            const mhInfo = await mon_hoc.findByPk(targetTKB.mon_hoc_id, { attributes: ['bao_ve'] });
+
+            if (mhInfo && !mhInfo.bao_ve) {
+              const rules = await DiemService.getGradingRules(targetTKB.lop_id);
+              const minTP1 = (rules.diemGiuaKyToiThieu !== undefined && rules.diemGiuaKyToiThieu !== null) ? rules.diemGiuaKyToiThieu : 4;
+              const minTP2 = (rules.diemChuyenCanToiThieu !== undefined && rules.diemChuyenCanToiThieu !== null) ? rules.diemChuyenCanToiThieu : 4;
+
+              if ((currentTP1 !== null && currentTP1 < minTP1) || (currentTP2 !== null && currentTP2 < minTP2)) {
+                updateData.trang_thai = 'hoc_lai';
+                // console.log(`Enforcing hoc_lai for student ${sinh_vien_id} due to low scores (TP1: ${currentTP1}, TP2: ${currentTP2})`);
+              }
+            }
+          } catch (errCheck) {
+            console.error('Error checking eligibility in update:', errCheck);
+          }
+        }
+        // --- END ENFORCE ---
+
         const newGK = updateData.diem_gk !== undefined ? updateData.diem_gk : record.diem_gk;
         const newCK = updateData.diem_ck !== undefined ? updateData.diem_ck : record.diem_ck;
 
