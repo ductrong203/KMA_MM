@@ -314,6 +314,8 @@ class ExportGradeHocPhanService {
                 cell.border = headerBorder;
                 if (colNumber <= numStaticCols) {
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F8F0' } }; // Very light green
+                } else {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 }
             });
         });
@@ -322,7 +324,7 @@ class ExportGradeHocPhanService {
         worksheet.columns.forEach((column, index) => {
             if (index < numStaticCols) {
                 // Static columns - smaller widths
-                const widths = [10, 18, 12, 8, 15, 8]; // Mã HV, Tên HV, Ngày sinh, Giới tính, Nơi sinh, Đối tượng
+                const widths = [10, 30, 12, 8, 25, 8]; // Mã HV, Tên HV, Ngày sinh, Giới tính, Nơi sinh, Đối tượng
                 column.width = widths[index] || 12;
             } else {
                 // Grade columns - compact

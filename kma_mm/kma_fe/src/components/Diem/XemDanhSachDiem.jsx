@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import * as XLSX from 'xlsx-js-style';
 import {
   Box,
   Typography,
@@ -273,21 +274,16 @@ function XemDanhSachDiem() {
           const lopInfo = sinhVien.lop_id ? await getLopHocById(sinhVien.lop_id) : null;
           const maLop = lopInfo?.ma_lop || student.lop_id || 'N/A';
 
-          // Debug status fields
-          console.log('Student status fields:', {
-            id: student.id,
-            qua_mon: student.qua_mon,
-            rot_mon: student.rot_mon,
-            type_qua_mon: typeof student.qua_mon,
-            type_rot_mon: typeof student.rot_mon
-          });
+          // Mapping status from Database (trang_thai)
+          const rawStatus = student.trang_thai || student.diem?.trang_thai || '';
+          let trangThai = rawStatus;
+          if (rawStatus === 'qua_mon') trangThai = 'Qua môn';
+          else if (rawStatus === 'hoc_lai') trangThai = 'Học lại';
+          else if (rawStatus === 'rot_mon' || rawStatus === 'trượt môn' || rawStatus === 'truot_mon') trangThai = 'Trượt môn';
 
-          // Determine status based on various possible data formats
-          let trangThai = '';
-          if (student.qua_mon === true || student.qua_mon === 1 || student.qua_mon === '1' || student.qua_mon === 'true') {
-            trangThai = 'Qua môn';
-          } else if (student.rot_mon === true || student.rot_mon === 1 || student.rot_mon === '1' || student.rot_mon === 'true') {
-            trangThai = 'Trượt môn';
+          if (!trangThai) {
+            // Fallback logic for legacy data if needed, or just empty
+            trangThai = '-';
           }
 
           return {
@@ -322,7 +318,132 @@ function XemDanhSachDiem() {
 
   // Hàm xử lý xuất dữ liệu
   const handleExportData = () => {
-    // Logic xuất dữ liệu
+    if (students.length === 0) {
+      toast.warning("Không có dữ liệu để xuất.");
+      return;
+    }
+
+    const dataToExport = students.map((s, index) => {
+      // Use DB status directly
+      const displayStatus = s.trang_thai || '';
+
+      // Recalc Total for display only if needed
+      const tp1 = s.diem.TP1 !== null && s.diem.TP1 !== undefined ? parseFloat(s.diem.TP1) : 0;
+      const tp2 = s.diem.TP2 !== null && s.diem.TP2 !== undefined ? parseFloat(s.diem.TP2) : 0;
+      const ck1 = s.diem.CK1 !== null ? parseFloat(s.diem.CK1) : null;
+      const ck2 = s.diem.CK2 !== null ? parseFloat(s.diem.CK2) : null;
+      const finalExamScore = ck2 !== null ? ck2 : (ck1 !== null ? ck1 : 0);
+      let totalScore = 0;
+      if (tp1 >= 0 && tp2 >= 0 && finalExamScore >= 0) {
+        totalScore = (tp1 * 0.7 + tp2 * 0.3) * 0.3 + finalExamScore * 0.7;
+        totalScore = Math.round((totalScore + 1e-9) * 10) / 10;
+      }
+
+      const displayCK1 = s.diem.CK1 !== null ? s.diem.CK1 : '';
+      const displayCK2 = s.diem.CK2 !== null ? s.diem.CK2 : '';
+
+      return {
+        stt: index + 1,
+        ma_sv: s.ma_sinh_vien,
+        ho_dem: s.ho_dem,
+        ten: s.ten,
+        lop: s.lop,
+        lan_hoc: s.lan_hoc,
+        tp1: s.diem.TP1 !== null ? s.diem.TP1 : '',
+        tp2: s.diem.TP2 !== null ? s.diem.TP2 : '',
+        ck1: displayCK1,
+        ck2: displayCK2,
+        tk: totalScore > 0 ? totalScore.toFixed(1) : '',
+        status: displayStatus,
+        ghi_chu: s.ghi_chu
+      };
+    });
+
+    // Create Worksheet
+    const ws = XLSX.utils.json_to_sheet([]);
+
+    // Custom Headers
+    XLSX.utils.sheet_add_aoa(ws, [[
+      "STT", "Mã SV", "Họ đệm", "Tên", "Lớp", "Lần học",
+      "TP1", "TP2", "CK lần 1", "CK lần 2", "Điểm TK", "Trạng thái", "Ghi chú"
+    ]], { origin: "A1" });
+
+    // Add Data
+    const dataRows = dataToExport.map(item => [
+      item.stt, item.ma_sv, item.ho_dem, item.ten, item.lop, item.lan_hoc,
+      item.tp1, item.tp2, item.ck1, item.ck2, item.tk, item.status, item.ghi_chu
+    ]);
+    XLSX.utils.sheet_add_aoa(ws, dataRows, { origin: "A2" });
+
+    // Styling
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = 1; R <= range.e.r; ++R) { // Start from row 1 (index 0 is header)
+      // Check status column (Index 11 -> L column)
+      const statusCell = ws[XLSX.utils.encode_cell({ c: 11, r: R })];
+      if (statusCell) {
+        const statusVal = statusCell.v;
+        let fileColor = null;
+        if (statusVal === 'Học lại' || statusVal === 'Trượt môn') {
+          const colorHex = statusVal === 'Học lại' ? "FFCC80" : "FFCDD2"; // Orange / Red
+
+          for (let C = 0; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+            if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' }; // Ensure cell exists
+            ws[cellRef].s = {
+              fill: { fgColor: { rgb: colorHex } },
+              border: {
+                top: { style: "thin" },
+                bottom: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" }
+              },
+              alignment: (C >= 6 && C <= 10) ? { horizontal: "center", vertical: "center" } : { vertical: "center" }
+            };
+          }
+        } else {
+          // Default border for others
+          for (let C = 0; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+            if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+            ws[cellRef].s = {
+              border: {
+                top: { style: "thin" },
+                bottom: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" }
+              },
+              alignment: (C >= 6 && C <= 10) ? { horizontal: "center", vertical: "center" } : { vertical: "center" }
+            };
+          }
+        }
+      }
+    }
+
+    // Header Style
+    for (let C = 0; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({ c: C, r: 0 });
+      if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+      ws[cellRef].s = {
+        font: { bold: true },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: "E0E0E0" } }, // Grey header
+        border: {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" }
+        }
+      };
+    }
+
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 10 },
+      { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 15 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DanhSachDiem");
+    XLSX.writeFile(wb, `DanhSachDiem_${course}_${classGroup}.xlsx`);
     toast.success('Đã xuất dữ liệu thành công!');
   };
 
@@ -581,26 +702,20 @@ function XemDanhSachDiem() {
             <TableBody>
               {students.length > 0 ? (
                 students.map((student) => {
-                  // Safe handling of null/undefined values for calculation
+                  const displayStatus = student.trang_thai;
+
+                  // Recalc Total for display only
                   const tp1 = student.diem.TP1 !== null && student.diem.TP1 !== undefined ? parseFloat(student.diem.TP1) : 0;
                   const tp2 = student.diem.TP2 !== null && student.diem.TP2 !== undefined ? parseFloat(student.diem.TP2) : 0;
-                  const ck1 = student.diem.CK1 !== null && student.diem.CK1 !== undefined ? parseFloat(student.diem.CK1) : 0;
-                  const ck2 = student.diem.CK2 !== null && student.diem.CK2 !== undefined ? parseFloat(student.diem.CK2) : null;
-
-                  const finalExamScore = ck2 !== null ? ck2 : ck1;
+                  const ck1 = student.diem.CK1 !== null ? parseFloat(student.diem.CK1) : null;
+                  const ck2 = student.diem.CK2 !== null ? parseFloat(student.diem.CK2) : null;
+                  const finalExamScore = ck2 !== null ? ck2 : (ck1 !== null ? ck1 : 0);
                   let totalScore = 0;
 
                   // Only calculate if we have valid scores
                   if (tp1 >= 0 && tp2 >= 0 && finalExamScore >= 0) {
                     totalScore = (tp1 * 0.7 + tp2 * 0.3) * 0.3 + finalExamScore * 0.7;
                     totalScore = Math.round((totalScore + 1e-9) * 10) / 10; // Rounding like backend
-                  }
-
-                  // If no status from database, calculate based on score using SETTINGS
-                  let displayStatus = student.trang_thai;
-                  if (!displayStatus && totalScore > 0) {
-                    const passed = finalExamScore >= gradeSettings.diemThiToiThieu && totalScore >= gradeSettings.diemTrungBinhDat;
-                    displayStatus = passed ? 'Qua môn' : 'Trượt môn';
                   }
 
                   return (
@@ -620,6 +735,8 @@ function XemDanhSachDiem() {
                           <span style={{ color: 'green', fontWeight: 'bold' }}>{displayStatus}</span>
                         ) : displayStatus === 'Trượt môn' ? (
                           <span style={{ color: 'red', fontWeight: 'bold' }}>{displayStatus}</span>
+                        ) : displayStatus === 'Học lại' ? (
+                          <span style={{ color: 'orange', fontWeight: 'bold' }}>{displayStatus}</span>
                         ) : (
                           displayStatus
                         )}
