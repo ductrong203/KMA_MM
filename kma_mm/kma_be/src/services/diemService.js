@@ -756,6 +756,9 @@ class DiemService {
         }
         // === END FINAL ENFORCEMENT ===
 
+        // DEBUG: Log giá trị updateData trước khi lưu
+        console.log(`[DEBUG SAVE] SV_ID=${sinh_vien_id}, trang_thai=${updateData.trang_thai}, diem_hp=${updateData.diem_hp}, diem_he_4=${updateData.diem_he_4}`);
+
         await record.update(updateData);
 
         updatedRecords.push(record);
