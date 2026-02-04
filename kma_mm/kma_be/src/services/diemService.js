@@ -1310,6 +1310,13 @@ class DiemService {
           continue;
         }
 
+        // Check availability of CK1 score (Cannot retake if never took first exam)
+        const ck1 = svInfo.diem_ck !== null && svInfo.diem_ck !== undefined ? parseFloat(svInfo.diem_ck) : null;
+        if (ck1 === null) {
+          console.warn(`Sinh viên ${ma_hvsv} chưa có điểm thi lần 1 (CK1), bỏ qua import thi lại.`);
+          continue;
+        }
+
         // Xử lý điểm thi lại (CK2) - Parse AFTER confirming valid student
         let diem_ck2 = null;
         if (typeof diemRaw === "string") {
