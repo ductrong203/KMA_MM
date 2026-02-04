@@ -1010,6 +1010,10 @@ class DiemService {
       const jsonResult = [];
       const updates = [];
 
+      // Fetch mon_hoc info to determine if it's a defense subject
+      const monHocInfo = await mon_hoc.findByPk(mon_hoc_id);
+      const isDefenseSubject = monHocInfo?.bao_ve;
+
       // Xử lý từng dòng trong Excel
       for (let row of dataRows) {
         let ma_hvsv = row[maHVSVIndex];
@@ -1060,8 +1064,7 @@ class DiemService {
           }
 
           // Kiểm tra điều kiện TP1 và TP2 (nếu không phải bảo vệ đồ án)
-          const svCurrent = sinhVienData.find(s => s.id === sinh_vien_id);
-          const isDefense = svCurrent?.bao_ve_do_an;
+          const isDefense = isDefenseSubject;
 
           const minTP1 = (gradingRules.diemGiuaKyToiThieu !== undefined && gradingRules.diemGiuaKyToiThieu !== null) ? gradingRules.diemGiuaKyToiThieu : 4;
           const minTP2 = (gradingRules.diemChuyenCanToiThieu !== undefined && gradingRules.diemChuyenCanToiThieu !== null) ? gradingRules.diemChuyenCanToiThieu : 4;
