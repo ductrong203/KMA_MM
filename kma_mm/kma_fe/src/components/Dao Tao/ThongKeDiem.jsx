@@ -146,7 +146,20 @@ const ThongKeDiem = () => {
       const lopId = filterType === 'lop' ? filterLop?.id : null;
       const thongKeData = await fetchThongKeDiem(filterHeDaoTao, filterKhoa, lopId, filterKyHoc);
       setThongKeTongQuan(thongKeData.thongKeTongQuan || []);
-      setChiTietMonHoc(thongKeData.chiTietMonHoc || []);
+
+      // Consolidate ChiTietMonHoc: Group by ma_sinh_vien to merge semesters
+      const rawChiTiet = thongKeData.chiTietMonHoc || [];
+      const consolidatedMap = new Map();
+      rawChiTiet.forEach(item => {
+        if (!consolidatedMap.has(item.ma_sinh_vien)) {
+          consolidatedMap.set(item.ma_sinh_vien, { ...item, mon_hoc: { ...item.mon_hoc } });
+        } else {
+          const existing = consolidatedMap.get(item.ma_sinh_vien);
+          existing.mon_hoc = { ...existing.mon_hoc, ...item.mon_hoc };
+        }
+      });
+
+      setChiTietMonHoc(Array.from(consolidatedMap.values()));
       setMonHocList(thongKeData.monHocList || []);
     } catch (error) {
       toast.error('Không thể tải dữ liệu thống kê!');
@@ -173,24 +186,24 @@ const ThongKeDiem = () => {
       const row = {
         'Mã SV': item.ma_sinh_vien,
         'Họ tên': item.ho_ten,
-        'Kỳ học': item.ky_hoc
       };
       monHocList.forEach(mon => {
         const diem = item.mon_hoc[mon] || {};
         row[`${mon}_TP1`] = diem.tp1 ?? '-';
         row[`${mon}_TP2`] = diem.tp2 ?? '-';
         row[`${mon}_Điểm thi KTPH`] = diem.diem_thi_ktph ?? '-';
-        const diem_hp = (diem.diem_hp !== null && diem.diem_hp !== undefined) ? parseFloat(diem.diem_hp).toFixed(1) : '-';
+
+        let displayedHP = diem.diem_hp;
+        if (diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) {
+          displayedHP = diem.diem_hp2;
+        }
+        const diem_hp = (displayedHP !== null && displayedHP !== undefined) ? parseFloat(displayedHP).toFixed(1) : '-';
         row[`${mon}_Điểm HP`] = diem_hp;
+
         if (diem.diem_thi_lai !== null && diem.diem_thi_lai !== undefined) {
           row[`${mon}_Thi lại`] = diem.diem_thi_lai;
         }
-        if (diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) {
-          row[`${mon}_Điểm HP2`] = parseFloat(diem.diem_hp2).toFixed(1);
-        }
       });
-      row['ĐTB kỳ (hệ 10)'] = item.diem_tb_ky_he10;
-      row['ĐTB kỳ (hệ 4)'] = item.diem_tb_ky_he4;
       return row;
     });
 
@@ -470,19 +483,16 @@ const ThongKeDiem = () => {
             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
               <TableCell rowSpan={2} sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>Mã SV</TableCell>
               <TableCell rowSpan={2} sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>Họ tên</TableCell>
-              <TableCell rowSpan={2} sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>Kỳ học</TableCell>
               {monHocList.map(mon => (
                 <TableCell
                   key={mon}
-                  colSpan={subjectsWithRetake.has(mon) ? 6 : 4}
+                  colSpan={subjectsWithRetake.has(mon) ? 5 : 4}
                   align="center"
                   sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', backgroundColor: '#e3f2fd' }}
                 >
                   {mon}
                 </TableCell>
               ))}
-              <TableCell rowSpan={2} sx={{ fontWeight: 'bold' }}>ĐTB kỳ (hệ 10)</TableCell>
-              <TableCell rowSpan={2} sx={{ fontWeight: 'bold' }}>ĐTB kỳ (hệ 4)</TableCell>
             </TableRow>
             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
               {monHocList.map(mon => (
@@ -490,46 +500,43 @@ const ThongKeDiem = () => {
                   <TableCell sx={{ fontWeight: 'medium' }}>TP1</TableCell>
                   <TableCell sx={{ fontWeight: 'medium' }}>TP2</TableCell>
                   <TableCell sx={{ fontWeight: 'medium' }}>Thi KTPH</TableCell>
-                  <TableCell sx={{ fontWeight: 'medium', borderRight: subjectsWithRetake.has(mon) ? 'none' : '1px solid #e0e0e0' }}>Điểm HP</TableCell>
                   {subjectsWithRetake.has(mon) && (
-                    <>
-                      <TableCell sx={{ fontWeight: 'medium' }}>Thi lại</TableCell>
-                      <TableCell sx={{ fontWeight: 'medium', borderRight: '1px solid #e0e0e0' }}>Điểm HP2</TableCell>
-                    </>
+                    <TableCell sx={{ fontWeight: 'medium' }}>Thi lại</TableCell>
                   )}
+                  <TableCell sx={{ fontWeight: 'medium', borderRight: '1px solid #e0e0e0' }}>Điểm HP</TableCell>
                 </React.Fragment>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {chiTietMonHoc.map((item, index) => (
-              <TableRow key={`${item.ma_sinh_vien}-${item.ky_hoc}-${index}`} sx={{ backgroundColor: index % 2 ? '#fafafa' : 'white' }}>
+              <TableRow key={item.ma_sinh_vien} sx={{ backgroundColor: index % 2 ? '#fafafa' : 'white' }}>
                 <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{item.ma_sinh_vien}</TableCell>
                 <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{item.ho_ten}</TableCell>
-                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{item.ky_hoc}</TableCell>
                 {monHocList.map(mon => {
                   const diem = item.mon_hoc[mon] || {};
+                  // Logic: HP = HP2 if exists, else HP
+                  let displayedHP = diem.diem_hp;
+                  if (diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) {
+                    displayedHP = diem.diem_hp2;
+                  }
+
                   return (
                     <React.Fragment key={mon}>
                       <TableCell>{diem.tp1 ?? '-'}</TableCell>
                       <TableCell>{diem.tp2 ?? '-'}</TableCell>
                       <TableCell>{diem.diem_thi_ktph ?? '-'}</TableCell>
-                      <TableCell sx={{ borderRight: subjectsWithRetake.has(mon) ? 'none' : '1px solid #e0e0e0' }}>
-                        {(diem.diem_hp !== null && diem.diem_hp !== undefined) ? parseFloat(diem.diem_hp).toFixed(1) : '-'}
-                      </TableCell>
                       {subjectsWithRetake.has(mon) && (
-                        <>
-                          <TableCell>{diem.diem_thi_lai ?? '-'}</TableCell>
-                          <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
-                            {(diem.diem_hp2 !== null && diem.diem_hp2 !== undefined) ? parseFloat(diem.diem_hp2).toFixed(1) : '-'}
-                          </TableCell>
-                        </>
+                        <TableCell>
+                          {diem.diem_thi_lai ?? '-'}
+                        </TableCell>
                       )}
+                      <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                        {(displayedHP !== null && displayedHP !== undefined) ? parseFloat(displayedHP).toFixed(1) : '-'}
+                      </TableCell>
                     </React.Fragment>
                   );
                 })}
-                <TableCell>{item.diem_tb_ky_he10.toFixed(1)}</TableCell>
-                <TableCell>{item.diem_tb_ky_he4.toFixed(1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -935,18 +935,20 @@ class ExcelService {
 
       // Step 6: Filter for retake students
       // Criteria: trang_thai in ['rot_mon', 'hoc_lai', 'thi_lai'] OR diem_ck2 != NULL OR scores < threshold
+      // Criteria: trang_thai in ['rot_mon', 'thi_lai'] OR diem_ck2 != NULL
       const retakeStudents = [];
-      const failStatuses = ['rot_mon', 'hoc_lai', 'thi_lai'];
+      const failStatuses = ['rot_mon', 'thi_lai'];
 
       for (const d of diemRecords) {
         const hasDiemCK2 = d.diem_ck2 !== null && d.diem_ck2 !== undefined;
         const isFailStatus = d.trang_thai && failStatuses.includes(d.trang_thai);
 
+        // Variables needed for logging
         const diem_ck = parseFloat(d.diem_ck);
         const diem_hp = d.diem_hp !== null && d.diem_hp !== undefined ? parseFloat(d.diem_hp) : null;
-        const scoreLow = (diem_ck < minExam) || (diem_hp === null) || (diem_hp < minAvg);
 
-        const needsRetake = hasDiemCK2 || isFailStatus || scoreLow;
+        // Match Frontend logic: Only use status and CK2, ignore implicit score checks
+        const needsRetake = hasDiemCK2 || isFailStatus;
         console.log(`  - ${d.sinh_vien?.ma_sinh_vien}: CK=${diem_ck}, HP=${diem_hp}, CK2=${d.diem_ck2}, Status=${d.trang_thai}, Retake=${needsRetake}`);
 
         if (needsRetake) {

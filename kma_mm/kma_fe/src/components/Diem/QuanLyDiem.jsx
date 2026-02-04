@@ -52,6 +52,7 @@ import config from '../../config/config';
 
 function QuanLyDiem({ onSave, sampleStudents }) {
     const fileInputRef = useRef(null);
+    const fileInputRetakeRef = useRef(null);
     const [year, setYear] = useState('');
     const [semester, setSemester] = useState('');
     const [examPeriod, setExamPeriod] = useState('');
@@ -506,7 +507,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const eligibleForRetake = (student) => {
         // Simple check: allow retake if status is fail or already has CK2
         if (!student.trang_thai) return false; // Not graded yet
-        const failStatuses = ['rot_mon', 'hoc_lai', 'thi_lai'];
+        const failStatuses = ['rot_mon', 'thi_lai'];
         return failStatuses.includes(student.trang_thai) || student.diem.CK2 !== null;
     };
 
@@ -1668,7 +1669,39 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                         )}
                                     </Box>
                                 )}
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => fileInputRetakeRef.current.click()}
+                                    sx={{ boxShadow: 2, marginLeft: 2 }}
+                                    disabled={isLocked}
+                                >
+                                    Import điểm thi lại
+                                </Button>
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    ref={fileInputRetakeRef}
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        const f = e.target.files[0];
+                                        if (f) {
+                                            setFile(f);
+                                            setFileName(f.name);
+                                            importExcelThiLai(classGroup, course, batch, f);
+                                        }
+                                        e.target.value = '';
+                                    }}
+                                />
                                 <Box sx={{ flexGrow: 1 }} />
+                                <Button
+                                    variant="contained"
+                                    color="warning"
+                                    onClick={() => exportExcelThiLai(classGroup, batch, course, courseOptions, classOptions, searchType)}
+                                    sx={{ boxShadow: 2, marginLeft: 2 }}
+                                >
+                                    Export điểm thi lại
+                                </Button>
                                 <Button
                                     variant="contained"
                                     color="success"
@@ -2152,7 +2185,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                                             color: passed ? 'green' : 'red'
                                                         }}
                                                     >
-                                                        {passed ? 'Qua' : 'Trượt'}
+                                                        {passed ? 'Qua môn' : 'Trượt môn'}
                                                     </Typography>
                                                 ) : '-'}
                                             </TableCell>
