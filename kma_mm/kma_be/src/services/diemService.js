@@ -980,14 +980,15 @@ class DiemService {
         if (diemIds.length > 0) {
           const diemGKRecords = await diem.findAll({
             where: { id: diemIds },
-            attributes: ['id', 'diem_gk', 'diem_tp1', 'diem_tp2'],
+            attributes: ['id', 'diem_gk', 'diem_tp1', 'diem_tp2', 'trang_thai'],
             transaction,
           });
           diemGKRecords.forEach(record => {
             diemGKMap.set(record.id, {
               gk: record.diem_gk,
               tp1: record.diem_tp1,
-              tp2: record.diem_tp2
+              tp2: record.diem_tp2,
+              trang_thai: record.trang_thai
             });
           });
         }
@@ -1050,13 +1051,20 @@ class DiemService {
           const diem_gk = diemInfo.gk;
           const diem_tp1 = diemInfo.tp1 !== null ? parseFloat(diemInfo.tp1) : null;
           const diem_tp2 = diemInfo.tp2 !== null ? parseFloat(diemInfo.tp2) : null;
+          const diem_trang_thai = diemInfo.trang_thai;
+
+          // Check explicit status logic (User requested: "làm tương tự hoc_lai")
+          if (diem_trang_thai === 'hoc_lai') {
+            console.warn(`Sinh viên ${ma_hvsv} đang có trạng thái học lại, bỏ qua import cuối kỳ.`);
+            continue;
+          }
 
           // Kiểm tra điều kiện TP1 và TP2 (nếu không phải bảo vệ đồ án)
           const svCurrent = sinhVienData.find(s => s.id === sinh_vien_id);
           const isDefense = svCurrent?.bao_ve_do_an;
 
-          const minTP1 = gradingRules.diemGiuaKyToiThieu || 0;
-          const minTP2 = gradingRules.diemChuyenCanToiThieu || 0;
+          const minTP1 = (gradingRules.diemGiuaKyToiThieu !== undefined && gradingRules.diemGiuaKyToiThieu !== null) ? gradingRules.diemGiuaKyToiThieu : 4;
+          const minTP2 = (gradingRules.diemChuyenCanToiThieu !== undefined && gradingRules.diemChuyenCanToiThieu !== null) ? gradingRules.diemChuyenCanToiThieu : 4;
 
           if (!isDefense) {
             if (diem_tp1 === null || diem_tp1 < minTP1 || diem_tp2 === null || diem_tp2 < minTP2) {
@@ -1296,8 +1304,8 @@ class DiemService {
         }
 
         // Strict Eligibility Check for Retake Import
-        const minTP1 = gradingRules.diemGiuaKyToiThieu || 0;
-        const minTP2 = gradingRules.diemChuyenCanToiThieu || 0;
+        const minTP1 = (gradingRules.diemGiuaKyToiThieu !== undefined && gradingRules.diemGiuaKyToiThieu !== null) ? gradingRules.diemGiuaKyToiThieu : 4;
+        const minTP2 = (gradingRules.diemChuyenCanToiThieu !== undefined && gradingRules.diemChuyenCanToiThieu !== null) ? gradingRules.diemChuyenCanToiThieu : 4;
 
         // Find if defense (Retake usually not for defense, but checking anyway)
         // sinhVienData in importExcelThiLai does not have bao_ve_do_an selected in Line 1191.
