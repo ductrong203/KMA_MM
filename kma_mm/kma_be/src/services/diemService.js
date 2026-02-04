@@ -557,6 +557,17 @@ class DiemService {
         const newGK = updateData.diem_gk !== undefined ? updateData.diem_gk : record.diem_gk;
         const newCK = updateData.diem_ck !== undefined ? updateData.diem_ck : record.diem_ck;
 
+        // Fix: Nếu trạng thái là 'hoc_lai', reset toàn bộ điểm tổng kết
+        const isHocLai = updateData.trang_thai === 'hoc_lai';
+        if (isHocLai) {
+          updateData.diem_hp = null;
+          updateData.diem_hp_2 = null;
+          updateData.diem_he_4 = 0;
+          updateData.diem_chu = 'F';
+          updateData.diem_he_4_2 = null;
+          updateData.diem_chu_2 = null;
+        }
+
         // --- Xử lý Version Quy định điểm (CK1) ---
         let ruleIdCK1 = record.quy_dinh_id_ck1;
         const lopId = targetTKB.lop_id;
@@ -574,7 +585,7 @@ class DiemService {
 
         // --- Xử lý Version Quy định điểm (CK2 - Thi lại) ---
         // Nếu có cập nhật điểm CK2, cần đảm bảo có quy định CK2
-        if (updateData.diem_ck2 !== undefined && updateData.diem_ck2 !== null) {
+        if (!isHocLai && updateData.diem_ck2 !== undefined && updateData.diem_ck2 !== null) {
           if (!record.quy_dinh_id_ck2) {
             let heDaoTaoId = rulesCache.get(lopId);
             if (heDaoTaoId === undefined) {
@@ -626,7 +637,7 @@ class DiemService {
         }
 
         // --- Tính toán điểm HP (Lần 1) ---
-        if (newGK !== null && newGK !== undefined && newCK !== null && newCK !== undefined) {
+        if (!isHocLai && newGK !== null && newGK !== undefined && newCK !== null && newCK !== undefined) {
           let heDaoTaoId = rulesCache.get(lopId);
           if (heDaoTaoId === undefined) {
             heDaoTaoId = await DiemService.getHeDaoTaoId(lopId);
@@ -1200,7 +1211,7 @@ class DiemService {
           sinh_vien_id: sinhVienIds,
           thoi_khoa_bieu_id: thoiKhoaBieuIds,
         },
-        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_gk', 'diem_ck', 'diem_hp'],
+        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_gk', 'diem_ck', 'diem_hp', 'trang_thai'],
         raw: true
       });
 
@@ -1215,6 +1226,7 @@ class DiemService {
             diem_gk: diemRecord.diem_gk,
             diem_ck: diemRecord.diem_ck,
             diem_hp: diemRecord.diem_hp,
+            trang_thai: diemRecord.trang_thai,
             thoi_khoa_bieu_id: diemRecord.thoi_khoa_bieu_id
           });
         }
@@ -1246,6 +1258,11 @@ class DiemService {
 
         const svInfo = sinhVienMap.get(ma_hvsv);
         if (!svInfo) {
+          continue;
+        }
+
+        // Check if student is in 'hoc_lai' status (should not be in retake list)
+        if (svInfo.trang_thai === 'hoc_lai') {
           continue;
         }
 

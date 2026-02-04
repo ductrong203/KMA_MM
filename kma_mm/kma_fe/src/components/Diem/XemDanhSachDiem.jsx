@@ -40,6 +40,8 @@ import { getDanhSachLopTheoKhoaDaoTao, getLopHocById } from '../../Api_controlle
 import { chiTietMonHoc, getDanhSachMonHocTheoKhoaVaKi } from '../../Api_controller/Service/monHocService';
 import { getThoiKhoaBieu } from '../../Api_controller/Service/thoiKhoaBieuService';
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
+import { getGradeSettings } from '../../Api_controller/Service/gradeSettingsService';
+import { getConversionRules } from '../../Api_controller/gradeSettingsApi';
 import axios from 'axios';
 import PageHeader from '../../layout/PageHeader';
 
@@ -73,6 +75,61 @@ function XemDanhSachDiem() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef(null);
+
+  // Grade settings state
+  const [conversionRules, setConversionRules] = useState([]);
+  const [gradeSettings, setGradeSettings] = useState({
+    diemThiToiThieu: 2.0,
+    diemTrungBinhDat: 4.0,
+    diemGiuaKyToiThieu: 4.0,
+    diemChuyenCanToiThieu: 4.0
+  });
+
+  // Fetch grade settings when educationType changes
+  useEffect(() => {
+    if (!educationType) return;
+
+    const fetchGradeSettings = async () => {
+      try {
+        const params = { he_dao_tao_id: educationType };
+        const response = await getGradeSettings(params);
+
+        let settings = {};
+        if (response && typeof response === 'object') {
+          settings = response;
+        }
+
+        const normalizedSettings = {
+          diemThiToiThieu: settings.diemThiToiThieu ?? settings.diem_thi_toi_thieu ?? 2.0,
+          diemTrungBinhDat: settings.diemTrungBinhDat ?? settings.diem_trung_binh_dat ?? 4.0,
+          diemGiuaKyToiThieu: settings.diemGiuaKyToiThieu ?? settings.diem_giua_ky_toi_thieu ?? 4.0,
+          diemChuyenCanToiThieu: settings.diemChuyenCanToiThieu ?? settings.diem_chuyen_can_toi_thieu ?? 4.0,
+          heDaoTaoId: settings.heDaoTaoId ?? settings.he_dao_tao_id ?? educationType,
+        };
+
+        // Fetch conversion rules
+        try {
+          const ruleResponse = await getConversionRules({ he_dao_tao_id: educationType });
+          if (ruleResponse && ruleResponse.data && ruleResponse.data.data) {
+            const r = ruleResponse.data.data;
+            r.sort((a, b) => b.diemMin - a.diemMin);
+            setConversionRules(r);
+          } else {
+            setConversionRules([]);
+          }
+        } catch (err) {
+          console.error('Error fetching conversion rules:', err);
+          setConversionRules([]);
+        }
+
+        setGradeSettings(normalizedSettings);
+      } catch (error) {
+        console.error('Error fetching grade settings:', error);
+        toast.error('Không thể tải thiết lập điểm. Sử dụng giá trị mặc định.');
+      }
+    };
+    fetchGradeSettings();
+  }, [educationType]);
 
   // Fetch education types
   useEffect(() => {
@@ -536,12 +593,14 @@ function XemDanhSachDiem() {
                   // Only calculate if we have valid scores
                   if (tp1 >= 0 && tp2 >= 0 && finalExamScore >= 0) {
                     totalScore = (tp1 * 0.7 + tp2 * 0.3) * 0.3 + finalExamScore * 0.7;
+                    totalScore = Math.round((totalScore + 1e-9) * 10) / 10; // Rounding like backend
                   }
 
-                  // If no status from database, calculate based on score
+                  // If no status from database, calculate based on score using SETTINGS
                   let displayStatus = student.trang_thai;
                   if (!displayStatus && totalScore > 0) {
-                    displayStatus = totalScore >= 5.0 ? 'Qua môn' : 'Trượt môn';
+                    const passed = finalExamScore >= gradeSettings.diemThiToiThieu && totalScore >= gradeSettings.diemTrungBinhDat;
+                    displayStatus = passed ? 'Qua môn' : 'Trượt môn';
                   }
 
                   return (
