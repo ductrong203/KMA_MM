@@ -758,8 +758,13 @@ class DiemService {
 
         // DEBUG: Log giá trị updateData trước khi lưu
         console.log(`[DEBUG SAVE] SV_ID=${sinh_vien_id}, trang_thai=${updateData.trang_thai}, diem_hp=${updateData.diem_hp}, diem_he_4=${updateData.diem_he_4}`);
-        await diem.update(updateData, { where: { id: record.id } });
+        await record.update(updateData);
+
+        // Verify save was successful
         await record.reload();
+        if (updateData.trang_thai && record.trang_thai !== updateData.trang_thai) {
+          console.error(`[SAVE ERROR] trang_thai mismatch! Expected: ${updateData.trang_thai}, Got: ${record.trang_thai}`);
+        }
 
         updatedRecords.push(record);
       }

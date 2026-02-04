@@ -136,7 +136,7 @@ class DiemController {
         for (let item of req.body) {
           if (item.id) {
             var oldData = await DiemService.getById(item.id);
-            if (oldData) oldDataMap[item.id] = oldData;
+            if (oldData) oldDataMap[item.id] = oldData.get({ plain: true });
           }
         }
       }

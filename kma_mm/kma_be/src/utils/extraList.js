@@ -29,12 +29,23 @@ const logDiem = (async (oldDataRaw, newData) => {
         const oldData = oldDataRaw[item.id] || {};
         const changes = {};
 
+        // Lấy data từ item (hỗ trợ cả Sequelize instance và plain object)
+        const itemData = item.dataValues || item;
+        const itemId = itemData.id || item.id;
+
         // So sánh các trường điểm
-        Object.keys(item.dataValues).forEach(field => {
-          if (item.dataValues[field] !== undefined && item.dataValues[field] !== oldData[field] && field !== "diem_gk") {
+        Object.keys(itemData).forEach(field => {
+          const newValue = itemData[field];
+          const oldValue = oldData[field];
+
+          // So sánh với xử lý kiểu dữ liệu (convert cả hai về cùng kiểu để so sánh chính xác)
+          const newStr = newValue === null || newValue === undefined ? null : String(newValue);
+          const oldStr = oldValue === null || oldValue === undefined ? null : String(oldValue);
+
+          if (newStr !== oldStr && field !== "diem_gk" && field !== "ngay_cap_nhat") {
             changes[field] = {
-              old: oldData[field] || null,
-              new: item.dataValues[field]
+              old: oldValue ?? null,
+              new: newValue
             };
           }
         });
