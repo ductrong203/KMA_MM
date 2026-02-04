@@ -554,28 +554,42 @@ class DiemService {
         }
 
         // --- Bắt đầu Logic tính lại điểm ---
+        const p_TP1 = updateData.diem_tp1 !== undefined ? updateData.diem_tp1 : record.diem_tp1;
+        const p_TP2 = updateData.diem_tp2 !== undefined ? updateData.diem_tp2 : record.diem_tp2;
 
-        // --- ENFORCE ELIGIBILITY CHECK: Đảm bảo trạng thái 'hoc_lai' được cập nhật đúng nếu điểm thấp ---
-        const currentTP1 = updateData.diem_tp1 !== undefined ? updateData.diem_tp1 : record.diem_tp1;
-        const currentTP2 = updateData.diem_tp2 !== undefined ? updateData.diem_tp2 : record.diem_tp2;
+        const valTP1 = (p_TP1 !== null && p_TP1 !== '') ? Number(p_TP1) : null;
+        const valTP2 = (p_TP2 !== null && p_TP2 !== '') ? Number(p_TP2) : null;
 
-        if (currentTP1 !== null || currentTP2 !== null) {
+        if (valTP1 !== null || valTP2 !== null) {
           try {
-            // Lấy thông tin môn học để kiểm tra bảo vệ đồ án
-            const mhInfo = await mon_hoc.findByPk(targetTKB.mon_hoc_id, { attributes: ['bao_ve'] });
+            if (targetTKB.mon_hoc_id) {
+              const mhInfo = await mon_hoc.findByPk(targetTKB.mon_hoc_id, { attributes: ['bao_ve'] });
 
-            if (mhInfo && !mhInfo.bao_ve) {
-              const rules = await DiemService.getGradingRules(targetTKB.lop_id);
-              const minTP1 = (rules.diemGiuaKyToiThieu !== undefined && rules.diemGiuaKyToiThieu !== null) ? rules.diemGiuaKyToiThieu : 4;
-              const minTP2 = (rules.diemChuyenCanToiThieu !== undefined && rules.diemChuyenCanToiThieu !== null) ? rules.diemChuyenCanToiThieu : 4;
+              // Chỉ kiểm tra nếu KHÔNG phải môn bảo vệ và tìm thấy môn học
+              if (mhInfo && mhInfo.bao_ve !== true && mhInfo.bao_ve !== 1) {
+                const rules = await DiemService.getGradingRules(targetTKB.lop_id);
 
-              if ((currentTP1 !== null && currentTP1 < minTP1) || (currentTP2 !== null && currentTP2 < minTP2)) {
-                updateData.trang_thai = 'hoc_lai';
-                // console.log(`Enforcing hoc_lai for student ${sinh_vien_id} due to low scores (TP1: ${currentTP1}, TP2: ${currentTP2})`);
+                const minTP1 = (rules.diemGiuaKyToiThieu !== undefined && rules.diemGiuaKyToiThieu !== null) ? Number(rules.diemGiuaKyToiThieu) : 4;
+                const minTP2 = (rules.diemChuyenCanToiThieu !== undefined && rules.diemChuyenCanToiThieu !== null) ? Number(rules.diemChuyenCanToiThieu) : 4;
+
+                let reason = '';
+                if (valTP1 !== null && valTP1 < minTP1) reason = `TP1 ${valTP1} < ${minTP1}`;
+                else if (valTP2 !== null && valTP2 < minTP2) reason = `TP2 ${valTP2} < ${minTP2}`;
+
+                if (reason) {
+                  updateData.trang_thai = 'hoc_lai';
+                  // console.log(`[UPDATE] Force 'hoc_lai' for sv ${sinh_vien_id}: ${reason}`);
+
+                  // Also clear final scores ensures logic consistency
+                  updateData.diem_hp = null;
+                  updateData.diem_hp_2 = null;
+                  updateData.diem_he_4 = 0;
+                  updateData.diem_chu = 'F';
+                }
               }
             }
           } catch (errCheck) {
-            console.error('Error checking eligibility in update:', errCheck);
+            console.error('Error checking eligibility in update (Robust):', errCheck);
           }
         }
         // --- END ENFORCE ---
