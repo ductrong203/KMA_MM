@@ -712,10 +712,11 @@ class DiemService {
             const passed = newCK >= ruleScore && diemHP >= ruleAvg;
 
             // Chỉ cập nhật trạng thái nếu không có thi lại (CK2) đang được nhập hoặc đã tồn tại
+            // VÀ chưa bị đánh dấu 'hoc_lai' bởi logic kiểm tra điều kiện trước đó
             const isCK2Present = (updateData.diem_ck2 !== undefined && updateData.diem_ck2 !== null && updateData.diem_ck2 !== '')
               || record.diem_ck2 || record.diem_hp_2;
 
-            if (!isCK2Present) {
+            if (!isCK2Present && updateData.trang_thai !== 'hoc_lai') {
               updateData.trang_thai = passed ? 'qua_mon' : 'rot_mon';
             }
           }
