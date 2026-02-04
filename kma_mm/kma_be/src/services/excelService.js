@@ -857,10 +857,10 @@ class ExcelService {
   }
 
   // Lấy danh sách sinh viên cần thi lại (diem_ck < diemThiToiThieu OR diem_hp < diemTrungBinhDat)
-  static async getSinhVienThiLai({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score }) {
+  static async getSinhVienThiLai({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score, min_tp1, min_tp2, is_defense }) {
     try {
       console.log('=== getSinhVienThiLai START ===');
-      console.log('Input params:', { mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score });
+      console.log('Input params:', { mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score, min_tp1, min_tp2, is_defense });
 
       if (!mon_hoc_id || !khoa_dao_tao_id) {
         throw new Error("Thiếu mon_hoc_id hoặc khoa_dao_tao_id");
@@ -868,7 +868,10 @@ class ExcelService {
 
       const minExam = parseFloat(min_exam_score) || 4;
       const minAvg = parseFloat(min_avg_score) || 4;
-      console.log('Parsed thresholds:', { minExam, minAvg });
+      const minTp1 = parseFloat(min_tp1) || 4;
+      const minTp2 = parseFloat(min_tp2) || 4;
+      const isDefense = is_defense === 'true' || is_defense === true;
+      console.log('Parsed thresholds:', { minExam, minAvg, minTp1, minTp2, isDefense });
 
       // Step 1: Check if there are any diem records with diem_ck
       const diemCount = await diem.count({
@@ -917,7 +920,7 @@ class ExcelService {
       // Step 5: Get diem records for these TKB IDs (includes all students, not just those with CK score)
       const tkbIds = tkbRecords.map(t => t.id);
       const diemRecords = await diem.findAll({
-        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_ck', 'diem_hp', 'diem_ck2', 'trang_thai'],
+        attributes: ['id', 'sinh_vien_id', 'thoi_khoa_bieu_id', 'diem_ck', 'diem_hp', 'diem_ck2', 'trang_thai', 'diem_tp1', 'diem_tp2'],
         where: {
           thoi_khoa_bieu_id: { [Op.in]: tkbIds }
         },
@@ -940,6 +943,17 @@ class ExcelService {
       const failStatuses = ['rot_mon', 'thi_lai'];
 
       for (const d of diemRecords) {
+        // Strict Eligibility Check: Must have passed TP1 and TP2 conditions (unless Defense)
+        if (!isDefense) {
+          const tp1 = d.diem_tp1 !== null && d.diem_tp1 !== undefined ? parseFloat(d.diem_tp1) : null;
+          const tp2 = d.diem_tp2 !== null && d.diem_tp2 !== undefined ? parseFloat(d.diem_tp2) : null;
+
+          if (tp1 === null || tp1 < minTp1 || tp2 === null || tp2 < minTp2) {
+            console.log(`  - ${d.sinh_vien?.ma_sinh_vien}: Skipped (Ineligible: TP1=${tp1}, TP2=${tp2})`);
+            continue;
+          }
+        }
+
         const hasDiemCK2 = d.diem_ck2 !== null && d.diem_ck2 !== undefined;
         const isFailStatus = d.trang_thai && failStatuses.includes(d.trang_thai);
 

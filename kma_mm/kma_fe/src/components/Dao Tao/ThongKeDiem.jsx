@@ -150,7 +150,18 @@ const ThongKeDiem = () => {
       // Consolidate ChiTietMonHoc: Group by ma_sinh_vien to merge semesters
       const rawChiTiet = thongKeData.chiTietMonHoc || [];
       const consolidatedMap = new Map();
+      const subjectSemesterMap = new Map();
+
       rawChiTiet.forEach(item => {
+        // Map subject to semester (ky_hoc)
+        if (item.mon_hoc) {
+          Object.keys(item.mon_hoc).forEach(mon => {
+            if (!subjectSemesterMap.has(mon)) {
+              subjectSemesterMap.set(mon, Number(item.ky_hoc));
+            }
+          });
+        }
+
         if (!consolidatedMap.has(item.ma_sinh_vien)) {
           consolidatedMap.set(item.ma_sinh_vien, { ...item, mon_hoc: { ...item.mon_hoc } });
         } else {
@@ -159,8 +170,15 @@ const ThongKeDiem = () => {
         }
       });
 
+      // Sort subjects by semester
+      const sortedSubjects = (thongKeData.monHocList || []).sort((a, b) => {
+        const kyA = subjectSemesterMap.get(a) || 999;
+        const kyB = subjectSemesterMap.get(b) || 999;
+        return kyA - kyB;
+      });
+
       setChiTietMonHoc(Array.from(consolidatedMap.values()));
-      setMonHocList(thongKeData.monHocList || []);
+      setMonHocList(sortedSubjects);
     } catch (error) {
       toast.error('Không thể tải dữ liệu thống kê!');
     } finally {
