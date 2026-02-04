@@ -1159,7 +1159,10 @@ function QuanLyDiem({ onSave, sampleStudents }) {
             khoa_dao_tao_id,
             ...(searchType === 'class' && lop_id && { lop_id }),
             min_exam_score: gradeSettings.diemThiToiThieu,
-            min_avg_score: gradeSettings.diemTrungBinhDat
+            min_avg_score: gradeSettings.diemTrungBinhDat,
+            min_tp1: gradeSettings.diemGiuaKyToiThieu,
+            min_tp2: gradeSettings.diemChuyenCanToiThieu,
+            is_defense: currentSubjectInfo?.bao_ve
         };
 
         exportDanhSachThiLai(data)
