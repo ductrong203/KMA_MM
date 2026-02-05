@@ -288,7 +288,7 @@ function XemDanhSachDiem() {
           let trangThai = rawStatus;
           if (rawStatus === 'qua_mon') trangThai = 'Qua môn';
           else if (rawStatus === 'hoc_lai') trangThai = 'Học lại';
-          else if (rawStatus === 'rot_mon' || rawStatus === 'trượt môn' || rawStatus === 'truot_mon') trangThai = 'Trượt môn';
+          else if (rawStatus === 'rot_mon') trangThai = 'Trượt môn';
 
           if (!trangThai) {
             // Fallback logic for legacy data if needed, or just empty
