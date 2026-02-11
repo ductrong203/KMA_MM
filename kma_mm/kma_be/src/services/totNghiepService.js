@@ -114,12 +114,12 @@ class TotNghiepService {
           {
             model: lop,
             as: 'lop',
-            attributes: ['id', 'ma_lop', 'ten_lop']
+            attributes: ['id', 'ma_lop']
           },
           {
             model: khoa_dao_tao,
             as: 'khoa_dao_tao',
-            attributes: ['id', 'ten_khoa', 'nam_bat_dau', 'nam_ket_thuc']
+            attributes: ['id', 'ten_khoa']
           },
           {
             model: danh_muc_dao_tao,
@@ -188,6 +188,7 @@ class TotNghiepService {
 
       await graduation.update({
         so_hieu_bang: certificateData.so_hieu_bang,
+        so_vao_so: certificateData.so_vao_so,
         xep_loai: certificateData.xep_loai,
         ngay_cap_bang: certificateData.ngay_cap_bang,
         noi_cap_bang: certificateData.noi_cap_bang,
@@ -290,6 +291,30 @@ class TotNghiepService {
       };
     } catch (error) {
       throw new Error(`Lỗi khi kiểm tra trạng thái xét duyệt: ${error.message}`);
+    }
+  }
+
+  // Cập nhật hàng loạt thông tin bằng tốt nghiệp
+  async batchUpdateDiploma(updates) {
+    try {
+      const results = [];
+      for (const item of updates) {
+        const graduation = await tot_nghiep.findByPk(item.id);
+        if (!graduation) continue;
+
+        const updateData = {};
+        if (item.ngay_cap_bang !== undefined) updateData.ngay_cap_bang = item.ngay_cap_bang;
+        if (item.so_vao_so !== undefined) updateData.so_vao_so = item.so_vao_so;
+        if (item.so_hieu_bang !== undefined) updateData.so_hieu_bang = item.so_hieu_bang;
+
+        if (Object.keys(updateData).length > 0) {
+          await graduation.update(updateData);
+          results.push(graduation);
+        }
+      }
+      return results;
+    } catch (error) {
+      throw new Error(`Lỗi khi cập nhật hàng loạt thông tin bằng: ${error.message}`);
     }
   }
 }

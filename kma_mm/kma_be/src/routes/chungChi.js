@@ -3,6 +3,10 @@ const chungChiController = require("../controllers/chungChiController");
 
 const router = express.Router();
 
+const multler = require("multer");
+const upload = multler();
+
+router.post('/import', upload.single('file'), chungChiController.importChungChi);
 router.get("/loai-chung-chi", chungChiController.layDanhSachLoaiChungChi);
 router.get('/loai-chung-chi/:id', chungChiController.layChiTietLoaiChungChi);
 router.get('/', chungChiController.layDanhSachChungChiTheoHeKhoaLop);

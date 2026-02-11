@@ -14,6 +14,9 @@ router.get('/student/:sinh_vien_id', totNghiepController.getStudentGraduation);
 // Route cập nhật thông tin bằng tốt nghiệp
 router.put('/certificate/:graduation_id', totNghiepController.updateGraduationCertificate);
 
+// Route cập nhật hàng loạt thông tin bằng
+router.put('/batch-update', totNghiepController.batchUpdateDiploma);
+
 // Route lấy thống kê tốt nghiệp
 router.get('/statistics', totNghiepController.getGraduationStatistics);
 

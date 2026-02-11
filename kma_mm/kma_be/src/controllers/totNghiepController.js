@@ -324,6 +324,33 @@ class TotNghiepController {
       });
     }
   }
-}
 
+  // Cập nhật hàng loạt thông tin bằng tốt nghiệp
+  async batchUpdateDiploma(req, res) {
+    try {
+      const { updates } = req.body;
+
+      if (!updates || !Array.isArray(updates) || updates.length === 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Danh sách cập nhật không được để trống'
+        });
+      }
+
+      const result = await totNghiepService.batchUpdateDiploma(updates);
+
+      res.status(200).json({
+        status: 'success',
+        message: `Đã cập nhật ${result.length} bản ghi`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error in batchUpdateDiploma:', error);
+      res.status(500).json({
+        status: 'error',
+        message: error.message || 'Lỗi khi cập nhật hàng loạt thông tin bằng'
+      });
+    }
+  }
+}
 module.exports = new TotNghiepController();

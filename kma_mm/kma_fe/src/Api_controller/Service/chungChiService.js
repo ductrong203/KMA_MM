@@ -157,3 +157,17 @@ export const layChiTietLoaiChungChi = async (id) => {
         throw error;
     }
 };
+
+export const importChungChi = async (formData) => {
+    try {
+        const response = await api.post("/chung-chi/import", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error importing chung chi:", error);
+        throw error;
+    }
+};

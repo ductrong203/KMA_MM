@@ -39,6 +39,7 @@ import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
 import QuanLyKhoa from '../Khoa/QuanLyKhoa';
 import QuanLyLop from '../LOP/ClassManagement';
 import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
+import ThongTinBangTN from '../QuanLyTotNghiep/ThongTinBangTN';
 import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
 import QuanLyKhenKyLuat from '../QLHV/khen_kyLuat';
 import QuanLyChungChi from '../QuanLyChungChi/QuanLyChungChi';
@@ -369,11 +370,13 @@ const GradeImportSystem = () => {
                             <Tabs value={subTab} onChange={handleSubTabChange}>
                                 <Tab label="Danh sách học viên" />
                                 <Tab label="Xét tốt nghiệp" />
+                                <Tab label="Thông tin bằng TN" />
                                 <Tab label="Quản lý bằng cấp" />
                             </Tabs>
                             {subTab === 0 && <StudentManagement />}
                             {subTab === 1 && <DieuKienTotNghiep />}
-                            {subTab === 2 && <QuanLyBangCap />}
+                            {subTab === 2 && <ThongTinBangTN />}
+                            {subTab === 3 && <QuanLyBangCap />}
                         </Box>
                     )}
 
@@ -385,7 +388,7 @@ const GradeImportSystem = () => {
                             <Tabs value={subTab} onChange={handleSubTabChange}>
                                 <Tab label="Thống kê" />
                                 <Tab label="Thống kê điểm" />
-                                
+
                             </Tabs>
                             <Grid container spacing={3} sx={{ mt: 2 }}>
                                 {subTab === 0 && <ThongKeTotNghiep />}

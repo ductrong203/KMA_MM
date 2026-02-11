@@ -139,15 +139,9 @@ class SinhVienService {
           },
           {
             model: chung_chi,
-            as: 'chungChis', // Alias from init-models: sinh_vien.hasMany(chung_chi, as: 'chung_chis'...) CHECK ALIAS? 
-            // In init-models.js: sinh_vien.hasMany(chung_chi, { as: "chung_chis", ... });. But user code had 'chungChis' in find? 
-            // Let's use the alias from existing code if it worked, or fix it.
-            // Previous code used 'chungChis'. I will use 'chung_chis' based on init-models, OR keep 'chungChis' if the user defined it differently in their working code.
-            // The previous code snippet used `as: 'chungChis'` in `include`.
-            // Wait, init-models says `as: "chung_chis"`. Using `chung_chis` is safer if init-models is source of truth.
-            as: 'chungChis',
+            as: 'chung_chis',
             required: false,
-            include: [{ model: db.loai_chung_chi, as: 'loaiChungChi' }]
+            include: [{ model: db.loai_chung_chi, as: 'loai_chung_chi_detail' }]
           }
         ],
         where: whereCondition,
@@ -186,12 +180,12 @@ class SinhVienService {
         // Extract complex data
         const gradInfo = (sv.tot_nghieps && sv.tot_nghieps.length > 0) ? sv.tot_nghieps[0] : {};
 
-        const chungChis = sv.chungChis || [];
+        const chungChis = sv.chung_chis || [];
 
         // Certificates - Mapping based on Name logic
-        const gdqpan = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('gdqp'));
-        const chuanTA = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('chuẩn đầu ra ta') || c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('tiếng anh'));
-        const qdTn = chungChis.find(c => c.loaiChungChi?.ten_loai_chung_chi?.toLowerCase().includes('tốt nghiệp') || c.loai_chung_chi_id === 3);
+        const gdqpan = chungChis.find(c => c.loai_chung_chi_detail?.ten_loai_chung_chi?.toLowerCase().includes('gdqp'));
+        const chuanTA = chungChis.find(c => c.loai_chung_chi_detail?.ten_loai_chung_chi?.toLowerCase().includes('chuẩn đầu ra ta') || c.loai_chung_chi_detail?.ten_loai_chung_chi?.toLowerCase().includes('tiếng anh'));
+        const qdTn = chungChis.find(c => c.loai_chung_chi_detail?.ten_loai_chung_chi?.toLowerCase().includes('tốt nghiệp') || c.loai_chung_chi_id === 3);
 
         // Split Nam Hoc
         let dao_tao_tu = '';
@@ -262,7 +256,7 @@ class SinhVienService {
 
           ngay_cap_bang: formatDate(gradInfo.ngay_cap_bang), // AV
           so_hieu_bang: gradInfo.so_hieu_bang || '', // AW
-          // AX - Empty
+          so_vao_so: gradInfo.so_vao_so || '', // AX
         }
       });
 
@@ -340,7 +334,7 @@ class SinhVienService {
         { header: 'Ngày phát hành QĐ/Ký CCTA', key: 'ngay_qd_ta', width: 15 }, // AU
         { header: 'Ngày cấp bằng', key: 'ngay_cap_bang', width: 15 }, // AV
         { header: 'Số hiệu văn bằng', key: 'so_hieu_bang', width: 15 }, // AW
-        { header: 'Số vào sổ cấp bằng', key: '', width: 15 }, // AX
+        { header: 'Số vào sổ cấp bằng', key: 'so_vao_so', width: 15 }, // AX
       ];
 
       // Thêm dữ liệu
@@ -1124,7 +1118,7 @@ class SinhVienService {
       const isTinChiValid = tongTinChi >= tongTinChiYeuCau;
 
       // Lấy tất cả các loại chứng chỉ có xet_tot_nghiep = true
-      const allRequiredCertTypes = await LoaiChungChiModel.findAll({
+      const allRequiredCertTypes = await loai_chung_chi.findAll({
         where: {
           xet_tot_nghiep: true,
           tinh_trang: 'hoạt động' // Chỉ lấy loại chứng chỉ đang hoạt động
@@ -1140,8 +1134,8 @@ class SinhVienService {
         },
         include: [
           {
-            model: LoaiChungChiModel,
-            as: 'loaiChungChi',
+            model: loai_chung_chi,
+            as: 'loai_chung_chi_detail',
             where: {
               xet_tot_nghiep: true,
             },
@@ -1176,7 +1170,7 @@ class SinhVienService {
         tong_tin_chi: tongTinChi,
         chung_chi_tot_nghiep: chungChiList.map((cc) => ({
           ...cc.toJSON(),
-          loai_chung_chi_info: cc.loaiChungChi ? cc.loaiChungChi.toJSON() : null,
+          loai_chung_chi_info: cc.loai_chung_chi_detail ? cc.loai_chung_chi_detail.toJSON() : null,
         })),
         dieu_kien_tot_nghiep: {
           du_tin_chi: isTinChiValid,

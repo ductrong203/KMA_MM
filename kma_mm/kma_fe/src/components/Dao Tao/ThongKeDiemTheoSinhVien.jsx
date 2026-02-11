@@ -215,6 +215,11 @@ const ThongKeDiemTheoSinhVien = () => {
     // Xử lý dữ liệu từ fetchThongKeDiem trước
     if (studentChiTiet && studentChiTiet.mon_hoc) {
       monHocList.forEach(monHoc => {
+        // Bỏ qua các môn học là học lại (có tên chứa "(học lần") để tránh trùng lặp
+        if (monHoc.toLowerCase().includes('(học lần') || monHoc.toLowerCase().includes('(hoc lan')) {
+          return;
+        }
+
         const diemMonHoc = studentChiTiet.mon_hoc[monHoc];
         if (diemMonHoc) {
           // Tìm detail tương ứng từ diem/filter
@@ -532,6 +537,7 @@ const ThongKeDiemTheoSinhVien = () => {
     );
   };
 
+
   // Render dialog chi tiết điểm sinh viên
   const renderGradeDetailDialog = () => {
     return (
@@ -628,7 +634,13 @@ const ThongKeDiemTheoSinhVien = () => {
                           <Chip
                             label={item.diem_chu || 'N/A'}
                             size="small"
-                            color={item.diem_chu && ['A', 'B', 'C', 'D'].includes(item.diem_chu) ? "success" : "error"}
+                            color={
+                              ['A', 'A+'].includes(item.diem_chu) ? 'success' :
+                                ['B', 'B+'].includes(item.diem_chu) ? 'primary' :
+                                  ['C', 'C+'].includes(item.diem_chu) ? 'warning' :
+                                    ['D', 'D+', 'F'].includes(item.diem_chu) ? 'error' :
+                                      'default'
+                            }
                           />
                         </TableCell>
                         <TableCell>{item.diem_hp ?? '-'}</TableCell>
@@ -636,7 +648,7 @@ const ThongKeDiemTheoSinhVien = () => {
                           <Chip
                             label={item.trang_thai == "qua_mon" ? 'qua môn' : "trượt môn" || 'N/A'}
                             size="small"
-                            color={item.trang_thai === 'qua_mon' ? "success" : "default"}
+                            color={item.trang_thai === 'qua_mon' ? "success" : "error"}
                           />
                         </TableCell>
                         <TableCell>

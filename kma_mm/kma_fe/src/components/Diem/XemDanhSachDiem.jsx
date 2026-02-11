@@ -332,6 +332,10 @@ function XemDanhSachDiem() {
       return;
     }
 
+    // Get Course Name
+    const selectedCourse = courseOptions.find(c => c.id === course);
+    const courseName = selectedCourse ? (selectedCourse.ten_mon_hoc || selectedCourse.name || '') : '';
+
     const dataToExport = students.map((s, index) => {
       // Use DB status directly
       const displayStatus = s.trang_thai || '';
@@ -371,66 +375,55 @@ function XemDanhSachDiem() {
     // Create Worksheet
     const ws = XLSX.utils.json_to_sheet([]);
 
-    // Custom Headers
+    // --- Title Rows ---
+    const titleHeaders = [
+      ["HỌC VIỆN KỸ THUẬT MẬT MÃ"], // A1
+      ["PHÒNG KT&ĐBCLĐT"],          // A2
+      [],                           // A3
+      [`DANH SÁCH ĐIỂM MÔN ${courseName.toUpperCase()}`], // A4
+      []                            // A5
+    ];
+    XLSX.utils.sheet_add_aoa(ws, titleHeaders, { origin: "A1" });
+
+    // --- Table Headers ---
     XLSX.utils.sheet_add_aoa(ws, [[
       "STT", "Mã SV", "Họ đệm", "Tên", "Lớp", "Lần học",
       "TP1", "TP2", "CK lần 1", "CK lần 2", "Điểm TK", "Trạng thái", "Ghi chú"
-    ]], { origin: "A1" });
+    ]], { origin: "A6" });
 
-    // Add Data
+    // --- Add Data ---
     const dataRows = dataToExport.map(item => [
       item.stt, item.ma_sv, item.ho_dem, item.ten, item.lop, item.lan_hoc,
       item.tp1, item.tp2, item.ck1, item.ck2, item.tk, item.status, item.ghi_chu
     ]);
-    XLSX.utils.sheet_add_aoa(ws, dataRows, { origin: "A2" });
+    XLSX.utils.sheet_add_aoa(ws, dataRows, { origin: "A7" });
 
-    // Styling
+    // --- Merges ---
+    if (!ws['!merges']) ws['!merges'] = [];
+    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }); // A1:D1
+    ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }); // A2:D2
+    ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 12 } }); // A4:M4 - across table
+
+    // --- Styling ---
     const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let R = 1; R <= range.e.r; ++R) { // Start from row 1 (index 0 is header)
-      // Check status column (Index 11 -> L column)
-      const statusCell = ws[XLSX.utils.encode_cell({ c: 11, r: R })];
-      if (statusCell) {
-        const statusVal = statusCell.v;
-        let fileColor = null;
-        if (statusVal === 'Học lại' || statusVal === 'Trượt môn') {
-          const colorHex = statusVal === 'Học lại' ? "FFCC80" : "FFCDD2"; // Orange / Red
 
-          for (let C = 0; C <= range.e.c; ++C) {
-            const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
-            if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' }; // Ensure cell exists
-            ws[cellRef].s = {
-              fill: { fgColor: { rgb: colorHex } },
-              border: {
-                top: { style: "thin" },
-                bottom: { style: "thin" },
-                left: { style: "thin" },
-                right: { style: "thin" }
-              },
-              alignment: (C >= 6 && C <= 10) ? { horizontal: "center", vertical: "center" } : { vertical: "center" }
-            };
-          }
-        } else {
-          // Default border for others
-          for (let C = 0; C <= range.e.c; ++C) {
-            const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
-            if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
-            ws[cellRef].s = {
-              border: {
-                top: { style: "thin" },
-                bottom: { style: "thin" },
-                left: { style: "thin" },
-                right: { style: "thin" }
-              },
-              alignment: (C >= 6 && C <= 10) ? { horizontal: "center", vertical: "center" } : { vertical: "center" }
-            };
-          }
-        }
-      }
-    }
+    // 1. Style Title Rows (0, 1, 3)
+    const titleStyle = { font: { bold: true }, alignment: { horizontal: "center", vertical: "center" } };
+    const mainTitleStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center", vertical: "center" } };
 
-    // Header Style
+    // A1
+    if (!ws['A1']) ws['A1'] = { v: "HỌC VIỆN KỸ THUẬT MẬT MÃ", t: 's' };
+    ws['A1'].s = titleStyle;
+    // A2
+    if (!ws['A2']) ws['A2'] = { v: "PHÒNG KT&ĐBCLĐT", t: 's' };
+    ws['A2'].s = titleStyle;
+    // A4
+    if (!ws['A4']) ws['A4'] = { v: `DANH SÁCH ĐIỂM MÔN ${courseName.toUpperCase()}`, t: 's' };
+    ws['A4'].s = mainTitleStyle;
+
+    // 2. Style Table Headers (Row 5 / index 5 / A6)
     for (let C = 0; C <= range.e.c; ++C) {
-      const cellRef = XLSX.utils.encode_cell({ c: C, r: 0 });
+      const cellRef = XLSX.utils.encode_cell({ c: C, r: 5 });
       if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
       ws[cellRef].s = {
         font: { bold: true },
@@ -443,6 +436,37 @@ function XemDanhSachDiem() {
           right: { style: "thin" }
         }
       };
+    }
+
+    // 3. Style Data Rows (Start from Row 6 / index 6 / A7)
+    for (let R = 6; R <= range.e.r; ++R) {
+      // Check status column (Index 11 -> L column)
+      const statusCell = ws[XLSX.utils.encode_cell({ c: 11, r: R })];
+      if (statusCell) {
+        const statusVal = statusCell.v;
+        const isFail = (statusVal === 'Học lại' || statusVal === 'Trượt môn');
+        const colorHex = statusVal === 'Học lại' ? "FFCC80" : "FFCDD2";
+
+        for (let C = 0; C <= range.e.c; ++C) {
+          const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+          if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' }; // Ensure cell exists
+
+          ws[cellRef].s = {
+            border: {
+              top: { style: "thin" },
+              bottom: { style: "thin" },
+              left: { style: "thin" },
+              right: { style: "thin" }
+            },
+            alignment: (C >= 6 && C <= 10) ? { horizontal: "center", vertical: "center" } : { vertical: "center" }
+          };
+
+          // Apply fill color for failed rows
+          if (isFail) {
+            ws[cellRef].s.fill = { fgColor: { rgb: colorHex } };
+          }
+        }
+      }
     }
 
     ws['!cols'] = [
@@ -656,7 +680,7 @@ function XemDanhSachDiem() {
         </Grid>
       </Grid>
 
-      {/* Phần nhập file Excel */}
+      {/* Phần xuất file Excel */}
       <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
         <Box sx={{ flexGrow: 1 }} />
         <Button
