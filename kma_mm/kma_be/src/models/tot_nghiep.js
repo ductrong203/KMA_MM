@@ -74,6 +74,10 @@ module.exports = function (sequelize, DataTypes) {
       allowNull: true,
       unique: "so_hieu_bang"
     },
+    so_vao_so: {
+      type: DataTypes.STRING(50),
+      allowNull: true
+    },
     xep_loai: {
       type: DataTypes.ENUM('xuat_sac', 'gioi', 'kha', 'trung_binh', 'kem'),
       allowNull: true

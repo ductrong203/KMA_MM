@@ -460,3 +460,51 @@ exports.xoaLoaiChungChi = async (req, res) => {
     });
   }
 };
+
+exports.importChungChi = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        thongBao: 'Vui lòng tải lên file Excel',
+      });
+    }
+
+    const { loai_chung_chi } = req.body;
+
+    const ketQua = await chungChiService.importChungChi(req.file, loai_chung_chi);
+
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      let user = verifyAccessToken(token);
+      let userN = await getFieldById("users", user.id, "username");
+      let userR = await getFieldById("users", user.id, "role");
+
+      if (ketQua.success > 0) {
+        let inforActivity = {
+          username: userN,
+          role: mapRole[userR],
+          action: req.method,
+          endpoint: req.originalUrl,
+          reqData: `Người dùng ${userN} đã import ${ketQua.success} chứng chỉ`,
+          response_status: 200,
+          resData: `Import thành công: ${ketQua.success}, Thất bại: ${ketQua.failed}`,
+          ip: req._remoteAddress,
+        };
+        await logActivity(inforActivity);
+      }
+    } catch (err) {
+      console.error("Log error:", err);
+    }
+
+    return res.status(200).json({
+      thongBao: 'Import hoàn tất',
+      duLieu: ketQua
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      thongBao: 'Lỗi khi import chứng chỉ',
+      loi: error.message,
+    });
+  }
+};

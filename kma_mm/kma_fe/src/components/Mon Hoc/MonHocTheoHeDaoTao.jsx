@@ -1041,10 +1041,11 @@ const MonHocTheoHeDaoTao = () => {
               <Autocomplete
                 multiple
                 options={subjectsByCurriculum.filter(subject => {
-                  // Lọc bỏ những môn đã có trong kế hoạch của kỳ được chọn
-                  const currentSemesterSubjects = formData.ky_hoc ?
-                    (subjectsBySemester[formData.ky_hoc] || []) : [];
-                  return !currentSemesterSubjects.some(existing => existing.mon_hoc_id === subject.id);
+                  // Lọc bỏ những môn đã có trong kế hoạch của BẤT KỲ kỳ nào
+                  const allPlannedMonHocIds = Object.values(subjectsBySemester)
+                    .flat()
+                    .map(existing => existing.mon_hoc_id);
+                  return !allPlannedMonHocIds.includes(subject.id);
                 })}
                 getOptionLabel={(option) => option.ten_mon_hoc}
                 value={formData.mon_hoc_ids.map(id =>

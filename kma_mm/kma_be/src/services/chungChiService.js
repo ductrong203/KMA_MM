@@ -167,7 +167,7 @@ class ChungChiService {
 
       // Xác định loai_chung_chi_id
       let finalLoaiChungChiId = loai_chung_chi_id || null;
-      
+
       // Nếu không có loai_chung_chi_id nhưng có loai_chung_chi, tìm ID dựa trên tên
       if (!finalLoaiChungChiId && loai_chung_chi) {
         const loaiChungChiRecord = await LoaiChungChiModel.findOne({
@@ -244,7 +244,7 @@ class ChungChiService {
       const chungChi = await chung_chi.findByPk(id);
       if (!chungChi) {
         throw new Error(`Chứng chỉ với id ${id} không tồn tại`);
-        
+
       }
 
       // Kiểm tra ma_sinh_vien (nếu có)
@@ -276,11 +276,11 @@ class ChungChiService {
 
       // Xác định loai_chung_chi_id
       let loaiChungChiId = chungChi.loai_chung_chi_id; // Giữ nguyên giá trị cũ
-      
+
       // Nếu có loai_chung_chi_id được gửi trực tiếp, sử dụng nó
       if (loai_chung_chi_id !== undefined) {
         loaiChungChiId = loai_chung_chi_id;
-      } 
+      }
       // Nếu không có loai_chung_chi_id nhưng có thay đổi loai_chung_chi
       else if (loai_chung_chi !== undefined && loai_chung_chi !== chungChi.loai_chung_chi) {
         if (loai_chung_chi) {
@@ -413,6 +413,172 @@ class ChungChiService {
       };
     } catch (error) {
       console.error("Lỗi khi tạo loại chứng chỉ:", error);
+      throw error;
+    }
+  }
+
+  static async importChungChi(file, loaiChungChiDefault) {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+
+    try {
+      await workbook.xlsx.load(file.buffer);
+      const worksheet = workbook.getWorksheet(1); // Lấy sheet đầu tiên
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: []
+      };
+
+      // Map column headers to keys (Case insensitive)
+      // Assuming first row is header
+      const headers = {};
+      worksheet.getRow(1).eachCell((cell, colNumber) => {
+        const header = cell.text.toLowerCase().trim();
+        if (header.includes('mã')) headers.maSinhVien = colNumber;
+        else if (header.includes('điểm')) headers.diemTrungBinh = colNumber;
+        else if (header.includes('xếp loại')) headers.xepLoai = colNumber;
+        else if (header.includes('ghi chú')) headers.ghiChu = colNumber;
+        else if (header.includes('số quyết định')) headers.soQuyetDinh = colNumber;
+        else if (header.includes('ngày')) headers.ngayKy = colNumber;
+        else if (header.includes('tình trạng')) headers.tinhTrang = colNumber;
+        else if (header.includes('loại chứng chỉ')) headers.loaiChungChi = colNumber;
+      });
+
+      if (!headers.maSinhVien) {
+        throw new Error("File thiếu cột 'Mã SV' hoặc 'Mã sinh viên'");
+      }
+
+      const rows = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header
+        rows.push({ row, rowNumber });
+      });
+
+      for (const { row, rowNumber } of rows) {
+        try {
+          const ma_sinh_vien = row.getCell(headers.maSinhVien).text?.trim();
+          if (!ma_sinh_vien) continue; // Skip empty rows
+
+          // Validate student
+          const sv = await sinh_vien.findOne({ where: { ma_sinh_vien } });
+          if (!sv) {
+            throw new Error(`Sinh viên mã ${ma_sinh_vien} không tồn tại`);
+          }
+
+          // Get other fields
+          const diem_trung_binh = headers.diemTrungBinh ? parseFloat(row.getCell(headers.diemTrungBinh).text) : null;
+          const xep_loai = headers.xepLoai ? row.getCell(headers.xepLoai).text?.trim() : null;
+          const ghi_chu = headers.ghiChu ? row.getCell(headers.ghiChu).text?.trim() : null;
+          const so_quyet_dinh = headers.soQuyetDinh ? row.getCell(headers.soQuyetDinh).text?.trim() : null;
+
+          let ngay_ky_quyet_dinh = null;
+          if (headers.ngayKy) {
+            const dateCell = row.getCell(headers.ngayKy);
+            // Handle Date object from Excel
+            if (dateCell.value instanceof Date) {
+              ngay_ky_quyet_dinh = dateCell.value;
+            }
+            // Handle string "dd/mm/yyyy" or other formats
+            else if (typeof dateCell.value === 'string') {
+              const dateStr = dateCell.value.trim();
+              // Check for dd/mm/yyyy format
+              if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                const part = dateStr.split('/');
+                // Month is 0-indexed in JS Date
+                ngay_ky_quyet_dinh = new Date(parseInt(part[2]), parseInt(part[1]) - 1, parseInt(part[0]));
+              } else {
+                // Try standard parsing
+                ngay_ky_quyet_dinh = new Date(dateStr);
+              }
+            } else if (dateCell.text) {
+              // Fallback to text property if value is something else but text exists
+              const dateStr = dateCell.text.trim();
+              if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                const part = dateStr.split('/');
+                ngay_ky_quyet_dinh = new Date(parseInt(part[2]), parseInt(part[1]) - 1, parseInt(part[0]));
+              } else {
+                ngay_ky_quyet_dinh = new Date(dateStr);
+              }
+            }
+          }
+
+          if (ngay_ky_quyet_dinh && isNaN(ngay_ky_quyet_dinh.getTime())) {
+            ngay_ky_quyet_dinh = null; // Invalid date
+          }
+
+          const tinh_trang_text = headers.tinhTrang ? row.getCell(headers.tinhTrang).text?.trim()?.toLowerCase() : 'bình thường';
+          const tinh_trang = (tinh_trang_text === 'tốt nghiệp') ? 'tốt nghiệp' : 'bình thường';
+
+          // Determine Loai Chung Chi
+          let loai_chung_chi = headers.loaiChungChi ? row.getCell(headers.loaiChungChi).text?.trim() : null;
+          if (!loai_chung_chi) {
+            loai_chung_chi = loaiChungChiDefault;
+          }
+
+          if (!loai_chung_chi) {
+            throw new Error("Chưa xác định loại chứng chỉ");
+          }
+
+          // Resolve Loai Chung Chi ID
+          let loai_chung_chi_id = null;
+          const loaiChungChiRecord = await LoaiChungChiModel.findOne({
+            where: { ten_loai_chung_chi: loai_chung_chi }
+          });
+
+          if (loaiChungChiRecord) {
+            loai_chung_chi_id = loaiChungChiRecord.id;
+          }
+
+          // Check if exists (Upsert logic)
+          const existingCert = await chung_chi.findOne({
+            where: {
+              sinh_vien_id: sv.id,
+              // Check by loai_chung_chi name as it is what we have
+              loai_chung_chi: loai_chung_chi
+            }
+          });
+
+          if (existingCert) {
+            // Update
+            await existingCert.update({
+              diem_trung_binh: isNaN(diem_trung_binh) ? existingCert.diem_trung_binh : diem_trung_binh,
+              xep_loai: xep_loai || existingCert.xep_loai,
+              ghi_chu: ghi_chu || existingCert.ghi_chu,
+              so_quyet_dinh: so_quyet_dinh || existingCert.so_quyet_dinh,
+              ngay_ky_quyet_dinh: ngay_ky_quyet_dinh || existingCert.ngay_ky_quyet_dinh,
+              tinh_trang: tinh_trang || existingCert.tinh_trang,
+              loai_chung_chi_id: loai_chung_chi_id || existingCert.loai_chung_chi_id
+            });
+          } else {
+            // Create
+            await chung_chi.create({
+              sinh_vien_id: sv.id,
+              diem_trung_binh: isNaN(diem_trung_binh) ? null : diem_trung_binh,
+              xep_loai,
+              ghi_chu,
+              so_quyet_dinh,
+              ngay_ky_quyet_dinh,
+              tinh_trang,
+              loai_chung_chi,
+              loai_chung_chi_id,
+              xet_tot_nghiep: false
+            });
+          }
+
+          results.success++;
+
+        } catch (err) {
+          results.failed++;
+          results.errors.push(`Dòng ${rowNumber}: ${err.message}`);
+        }
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error("Lỗi import:", error);
       throw error;
     }
   }

@@ -9,16 +9,16 @@ export const approveGraduation = async (data) => {
 // Lấy danh sách tốt nghiệp với filter
 export const getGraduationList = async (filters = {}) => {
   const params = new URLSearchParams()
-  
+
   Object.keys(filters).forEach(key => {
     if (filters[key] !== undefined && filters[key] !== '') {
       params.append(key, filters[key])
     }
   })
-  
+
   const queryString = params.toString()
   const url = queryString ? `/tot-nghiep/list?${queryString}` : `/tot-nghiep/list`
-  
+
   const response = await api.get(url)
   return response.data
 }
@@ -29,12 +29,12 @@ export const getStudentGraduation = async (sinhVienId, khoaDaoTaoId = null) => {
   if (khoaDaoTaoId) {
     params.append('khoa_dao_tao_id', khoaDaoTaoId)
   }
-  
+
   const queryString = params.toString()
   const url = queryString
     ? `/tot-nghiep/student/${sinhVienId}?${queryString}`
     : `/tot-nghiep/student/${sinhVienId}`
-  
+
   const response = await api.get(url)
   return response.data
 }
@@ -48,16 +48,16 @@ export const updateGraduationCertificate = async (graduationId, certificateData)
 // Lấy thống kê tốt nghiệp
 export const getGraduationStatistics = async (filters = {}) => {
   const params = new URLSearchParams()
-  
+
   Object.keys(filters).forEach(key => {
     if (filters[key] !== undefined && filters[key] !== '') {
       params.append(key, filters[key])
     }
   })
-  
+
   const queryString = params.toString()
   const url = queryString ? `/tot-nghiep/statistics?${queryString}` : `/tot-nghiep/statistics`
-  
+
   const response = await api.get(url)
   return response.data
 }
@@ -84,18 +84,18 @@ export const checkGraduationConditions = async (filters) => {
 // Lấy danh sách sinh viên đủ điều kiện tốt nghiệp
 export const getEligibleStudents = async (filters) => {
   const params = new URLSearchParams()
-  
+
   Object.keys(filters).forEach(key => {
     if (filters[key] !== undefined && filters[key] !== '') {
       params.append(key, filters[key])
     }
   })
-  
+
   const queryString = params.toString()
   const url = queryString
     ? `/tot-nghiep/eligible-students?${queryString}`
     : `/tot-nghiep/eligible-students`
-  
+
   const response = await api.get(url)
   return response.data
 }
@@ -103,18 +103,24 @@ export const getEligibleStudents = async (filters) => {
 // Kiểm tra sinh viên đã được xét duyệt tốt nghiệp chưa
 export const checkGraduationStatus = async (filters) => {
   const params = new URLSearchParams()
-  
+
   Object.keys(filters).forEach(key => {
     if (filters[key] !== undefined && filters[key] !== '') {
       params.append(key, filters[key])
     }
   })
-  
+
   const queryString = params.toString()
   const url = queryString
     ? `/tot-nghiep/check-status?${queryString}`
     : `/tot-nghiep/check-status`
-  
+
   const response = await api.get(url)
+  return response.data
+}
+
+// Cập nhật hàng loạt thông tin bằng tốt nghiệp
+export const batchUpdateDiploma = async (updates) => {
+  const response = await api.put(`/tot-nghiep/batch-update`, { updates })
   return response.data
 }

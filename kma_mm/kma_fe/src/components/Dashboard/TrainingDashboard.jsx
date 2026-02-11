@@ -54,6 +54,7 @@ import QuanLyLop from '../LOP/ClassManagement';
 import QuanLyDaoTao from '../Dao Tao/QuanLyDaoTao';
 import QuanLyMonHoc from '../Mon Hoc/QuanLyMonHoc';
 import DieuKienTotNghiep from '../Dao Tao/DieuKienTotNghiep';
+import ThongTinBangTN from '../QuanLyTotNghiep/ThongTinBangTN';
 import QuanLyBangCap from '../Dao Tao/QuanLyBangCap';
 import ThoiKhoaBieu from "../ThoiKhoaBieu/ThoiKhoaBieu";
 import QuanLyKhenKyLuat from "../QLHV/khen_kyLuat";
@@ -213,15 +214,17 @@ function TrainingDashboard() {
               <Tabs value={subTab} onChange={handleSubTabChange}>
                 <Tab label="Danh sách học viên" />
                 <Tab label="Xét tốt nghiệp" />
+                <Tab label="Thông tin bằng TN" />
                 <Tab label="Quản lý bằng cấp" />
                 <Tab label="Quản lý danh mục khen thưởng" />
                 <Tab label="Quản lý chứng chỉ" />
               </Tabs>
               {subTab === 0 && <StudentManagement />}
               {subTab === 1 && <DieuKienTotNghiep />}
-              {subTab === 2 && <QuanLyBangCap />}
-              {subTab === 3 && < QuanLyKhenKyLuat />}
-              {subTab === 4 && < QuanLyChungChi />}
+              {subTab === 2 && <ThongTinBangTN />}
+              {subTab === 3 && <QuanLyBangCap />}
+              {subTab === 4 && <QuanLyKhenKyLuat />}
+              {subTab === 5 && <QuanLyChungChi />}
             </Box>
           )}
 

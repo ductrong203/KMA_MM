@@ -202,42 +202,73 @@ class ExportGradeHocPhanService {
 
         const numGradeColumns = gradeColumnsPerSubject.length;
         const numStaticCols = staticHeaders.length;
+        const totalCols = numStaticCols + (sortedSubjects.length * numGradeColumns);
 
-        // Row 1: Static headers + Học kỳ, năm học info
+        // --- NEW HEADER SECTION START ---
+        // Row 1: Academy Name
+        worksheet.mergeCells(1, 1, 1, 3);
+        const cellA1 = worksheet.getCell(1, 1);
+        cellA1.value = "HỌC VIỆN KỸ THUẬT MẬT MÃ";
+        cellA1.font = { bold: true, size: 11 };
+        cellA1.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Row 2: Department Name
+        worksheet.mergeCells(2, 1, 2, 3);
+        const cellA2 = worksheet.getCell(2, 1);
+        cellA2.value = "PHÒNG KT&ĐBCLĐT";
+        cellA2.font = { bold: true, size: 11 };
+        cellA2.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Row 4: Title "KẾT QUẢ ĐIỂM HỌC PHẦN"
+        // Merge across all columns if possible, or a reasonable width
+        worksheet.mergeCells(4, 1, 4, totalCols > 6 ? totalCols : 6);
+        const cellTitle = worksheet.getCell(4, 1);
+        cellTitle.value = "KẾT QUẢ ĐIỂM HỌC PHẦN";
+        cellTitle.font = { bold: true, size: 14 }; // Larger font for title
+        cellTitle.alignment = { horizontal: 'left', vertical: 'middle' };
+
+        // Define Start Row for the original table (was 1, now 6)
+        const tableStartRow = 6;
+        // --- NEW HEADER SECTION END ---
+
+        // Row 1 (now tableStartRow): Static headers + Học kỳ, năm học info
         const headerRow1 = [];
         staticHeaders.forEach(h => headerRow1.push(h));
         sortedSubjects.forEach(([key, subj]) => {
             headerRow1.push(`Học kỳ ${subj.hocKy}, năm học ${subj.namHoc}`);
             for (let i = 1; i < numGradeColumns; i++) headerRow1.push('');
         });
-        worksheet.addRow(headerRow1);
+        const r1 = worksheet.getRow(tableStartRow);
+        r1.values = headerRow1;
 
-        // Row 2: Empty for static + subject names
+        // Row 2 (now tableStartRow + 1): Empty for static + subject names
         const headerRow2 = [];
         staticHeaders.forEach(() => headerRow2.push(''));
         sortedSubjects.forEach(([key, subj]) => {
             headerRow2.push(subj.tenMonHoc);
             for (let i = 1; i < numGradeColumns; i++) headerRow2.push('');
         });
-        worksheet.addRow(headerRow2);
+        const r2 = worksheet.getRow(tableStartRow + 1);
+        r2.values = headerRow2;
 
-        // Row 3: Static headers + grade column names
+        // Row 3 (now tableStartRow + 2): Static headers + grade column names
         const headerRow3 = [];
         staticHeaders.forEach(h => headerRow3.push(h));
         sortedSubjects.forEach(() => {
             gradeColumnsPerSubject.forEach(col => headerRow3.push(col));
         });
-        worksheet.addRow(headerRow3);
+        const r3 = worksheet.getRow(tableStartRow + 2);
+        r3.values = headerRow3;
 
         // Merge cells for header rows
         for (let i = 0; i < numStaticCols; i++) {
-            worksheet.mergeCells(1, i + 1, 3, i + 1);
+            worksheet.mergeCells(tableStartRow, i + 1, tableStartRow + 2, i + 1);
         }
 
         let colOffset = numStaticCols + 1;
         sortedSubjects.forEach(() => {
-            worksheet.mergeCells(1, colOffset, 1, colOffset + numGradeColumns - 1);
-            worksheet.mergeCells(2, colOffset, 2, colOffset + numGradeColumns - 1);
+            worksheet.mergeCells(tableStartRow, colOffset, tableStartRow, colOffset + numGradeColumns - 1);
+            worksheet.mergeCells(tableStartRow + 1, colOffset, tableStartRow + 1, colOffset + numGradeColumns - 1);
             colOffset += numGradeColumns;
         });
 
@@ -251,8 +282,8 @@ class ExportGradeHocPhanService {
             right: { style: 'thin' }
         };
 
-        // Apply styles to rows 1-3
-        [1, 2, 3].forEach(rowNum => {
+        // Apply styles to rows tableStartRow to tableStartRow + 2
+        [tableStartRow, tableStartRow + 1, tableStartRow + 2].forEach(rowNum => {
             const row = worksheet.getRow(rowNum);
             row.font = { bold: true };
             row.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };

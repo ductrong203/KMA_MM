@@ -25,7 +25,8 @@ import {
     taoLoaiChungChi,
     capNhatLoaiChungChi,
     xoaLoaiChungChi,
-    layChiTietLoaiChungChi
+    layChiTietLoaiChungChi,
+    importChungChi
 } from "../../Api_controller/Service/chungChiService";
 import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService"; // Thêm API lấy học viên
 import { toast } from "react-toastify";
@@ -94,6 +95,7 @@ const QuanLyChungChi = () => {
         openEditDialog: false,
         openManageTypeDialog: false,
         openEditTypeDialog: false,
+        openImportDialog: false,
         page: 1,
         pageSize: 10,
         totalPages: 1
@@ -108,7 +110,7 @@ const QuanLyChungChi = () => {
     const [newLoaiChungChi, setNewLoaiChungChi] = useState("");
     const [isAddingType, setIsAddingType] = useState(false);
     const [xetTotNghiep, setXetTotNghiep] = useState(false);
-    
+
     // State cho chỉnh sửa loại chứng chỉ
     const [editLoaiChungChi, setEditLoaiChungChi] = useState({
         id: null,
@@ -132,11 +134,11 @@ const QuanLyChungChi = () => {
             // Lấy tất cả sinh viên trong lớp
             let filtered = data.sinhVienTheoLop.map(sv => {
                 // Tìm chứng chỉ tương ứng (nếu có)
-                const chungChi = data.sinhVienList.find(cc => 
-                    cc.ma_sinh_vien === sv.ma_sinh_vien && 
+                const chungChi = data.sinhVienList.find(cc =>
+                    cc.ma_sinh_vien === sv.ma_sinh_vien &&
                     cc.loai_chung_chi === filters.loaiChungChi
                 );
-                
+
                 if (chungChi) {
                     // Sinh viên có chứng chỉ
                     return {
@@ -410,12 +412,12 @@ const QuanLyChungChi = () => {
 
     const handleApplyFilter = useCallback(async () => {
         setUi(prev => ({ ...prev, page: 1 }));
-        
+
         // Nếu chọn "Tất cả học viên", cần fetch danh sách sinh viên theo lớp
         if (filters.trangThai === "all" && filters.lopId) {
             await fetchSinhVienTheoLop(filters.lopId);
         }
-        
+
         // Fetch chứng chỉ
         await fetchChungChiData();
     }, [fetchChungChiData, fetchSinhVienTheoLop, filters.lopId, filters.trangThai]);
@@ -431,10 +433,10 @@ const QuanLyChungChi = () => {
             // Không reset loaiChungChi vì nó cần giữ giá trị để hiển thị
         }));
         setUi(prev => ({ ...prev, page: 1 }));
-        setData(prev => ({ 
-            ...prev, 
-            khoaDaoTao: [], 
-            lopList: prev.originalLopList, 
+        setData(prev => ({
+            ...prev,
+            khoaDaoTao: [],
+            lopList: prev.originalLopList,
             sinhVienList: [], // Xóa danh sách để ẩn bảng
             sinhVienTheoLop: [] // Reset danh sách sinh viên theo lớp
         }));
@@ -449,7 +451,7 @@ const QuanLyChungChi = () => {
 
         try {
             setUi(prev => ({ ...prev, isLoading: true }));
-            
+
             // Tạo array các promise để submit song song
             const submitPromises = selectedStudentsForNew.map(student => {
                 const apiData = {
@@ -466,18 +468,18 @@ const QuanLyChungChi = () => {
             });
 
             const results = await Promise.allSettled(submitPromises);
-            
+
             // Đếm thành công và thất bại
-            const successCount = results.filter(result => 
+            const successCount = results.filter(result =>
                 result.status === 'fulfilled' && result.value?.thongBao === "Tạo chứng chỉ thành công"
             ).length;
-            
+
             const failureCount = results.length - successCount;
-            
+
             if (successCount > 0) {
                 toast.success(`Thêm thành công ${successCount} chứng chỉ!`);
             }
-            
+
             if (failureCount > 0) {
                 toast.warning(`${failureCount} chứng chỉ không thể thêm (có thể đã tồn tại)`);
             }
@@ -486,7 +488,7 @@ const QuanLyChungChi = () => {
             setNewData(INIT_NEW_DATA);
             setSelectedStudentsForNew([]);
             fetchChungChiData();
-            
+
         } catch (error) {
             console.error("Lỗi khi thêm chứng chỉ:", error);
             toast.error("Có lỗi xảy ra khi thêm chứng chỉ");
@@ -633,7 +635,17 @@ const QuanLyChungChi = () => {
         setSelectedStudentsForNew([]); // Reset selected students
     }, []);
 
-    const formatDate = useCallback((dateString) => dateString || "", []);
+    const formatDate = useCallback((dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        return `${day}/${month}/${year}`;
+    }, []);
 
     const hasActiveFilters = useMemo(() =>
         !!(filters.heDaoTao && filters.khoaDaoTao && filters.lopId && filters.loaiChungChi),
@@ -677,9 +689,9 @@ const QuanLyChungChi = () => {
             if (response.success) {
                 // Reload danh sách loại chứng chỉ từ API
                 const loaiChungChiRes = await laydanhsachloaichungchi();
-                
+
                 // Xử lý cả format cũ và mới
-                if ((loaiChungChiRes?.success && loaiChungChiRes.data?.length > 0) || 
+                if ((loaiChungChiRes?.success && loaiChungChiRes.data?.length > 0) ||
                     (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0)) {
                     const loaiChungChiList = loaiChungChiRes.data.map(item => ({
                         id: item.id,
@@ -746,11 +758,11 @@ const QuanLyChungChi = () => {
         }
 
         // Kiểm tra trùng lặp (trừ chính nó)
-        const exists = data.loaiChungChiList.some(item => 
-            item.value.toLowerCase() === editLoaiChungChi.ten_loai_chung_chi.trim().toLowerCase() 
+        const exists = data.loaiChungChiList.some(item =>
+            item.value.toLowerCase() === editLoaiChungChi.ten_loai_chung_chi.trim().toLowerCase()
             && item.id !== editLoaiChungChi.id
         );
-        
+
         if (exists) {
             toast.error("Tên loại chứng chỉ này đã tồn tại");
             return;
@@ -769,10 +781,10 @@ const QuanLyChungChi = () => {
                 // Cập nhật danh sách loại chứng chỉ
                 setData(prev => ({
                     ...prev,
-                    loaiChungChiList: prev.loaiChungChiList.map(item => 
-                        item.id === editLoaiChungChi.id 
-                            ? { 
-                                ...item, 
+                    loaiChungChiList: prev.loaiChungChiList.map(item =>
+                        item.id === editLoaiChungChi.id
+                            ? {
+                                ...item,
                                 value: editLoaiChungChi.ten_loai_chung_chi.trim(),
                                 label: editLoaiChungChi.ten_loai_chung_chi.trim(),
                                 mo_ta: editLoaiChungChi.mo_ta.trim(),
@@ -799,23 +811,85 @@ const QuanLyChungChi = () => {
         if (!window.confirm(`Bạn có chắc chắn muốn xóa loại chứng chỉ "${item.label}"?`)) {
             return;
         }
-
         try {
             const response = await xoaLoaiChungChi(item.id);
-            
             if (response.success) {
-                // Xóa khỏi danh sách
-                setData(prev => ({
-                    ...prev,
-                    loaiChungChiList: prev.loaiChungChiList.filter(x => x.id !== item.id)
-                }));
-                
                 toast.success("Xóa loại chứng chỉ thành công");
+                // Refresh list
+                const loaiChungChiRes = await laydanhsachloaichungchi();
+                if ((loaiChungChiRes?.success && loaiChungChiRes.data?.length > 0) ||
+                    (loaiChungChiRes?.thongBao === "Lấy danh sách loại chứng chỉ thành công" && loaiChungChiRes.data?.length > 0)) {
+                    const loaiChungChiList = loaiChungChiRes.data.map(item => ({
+                        id: item.id,
+                        value: item.ten_loai_chung_chi,
+                        label: item.ten_loai_chung_chi,
+                        mo_ta: item.mo_ta,
+                        xet_tot_nghiep: item.xet_tot_nghiep,
+                        tinh_trang: item.tinh_trang
+                    }));
+                    setData(prev => ({ ...prev, loaiChungChiList }));
+                }
             } else {
                 toast.error("Không thể xóa loại chứng chỉ");
             }
         } catch (error) {
-            toast.error("Không thể xóa loại chứng chỉ. Có thể loại chứng chỉ này đang được sử dụng.");
+            toast.error("Lỗi khi xóa loại chứng chỉ");
+        }
+    };
+
+    // Import handlers
+    const [importFile, setImportFile] = useState(null);
+    const [importLoaiChungChi, setImportLoaiChungChi] = useState("");
+
+    const handleOpenImportDialog = () => {
+        setUi(prev => ({ ...prev, openImportDialog: true }));
+        setImportLoaiChungChi(filters.loaiChungChi || "");
+    };
+
+    const handleCloseImportDialog = () => {
+        setUi(prev => ({ ...prev, openImportDialog: false }));
+        setImportFile(null);
+        setImportLoaiChungChi("");
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setImportFile(e.target.files[0]);
+        }
+    };
+
+    const handleImport = async () => {
+        if (!importFile) {
+            toast.error("Vui lòng chọn file Excel");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', importFile);
+        if (importLoaiChungChi) {
+            formData.append('loai_chung_chi', importLoaiChungChi);
+        }
+
+        try {
+            setUi(prev => ({ ...prev, isLoading: true }));
+            const res = await importChungChi(formData);
+
+            if (res.duLieu && res.duLieu.success !== undefined) {
+                toast.success(`Import hoàn tất: ${res.duLieu.success} thành công, ${res.duLieu.failed} thất bại`);
+                if (res.duLieu.error && res.duLieu.error.length > 0) {
+                    console.error("Import errors:", res.duLieu.error);
+                }
+            } else {
+                toast.success("Import thành công");
+            }
+
+            handleCloseImportDialog();
+            fetchChungChiData();
+        } catch (error) {
+            console.error("Lỗi import:", error);
+            toast.error(error?.response?.data?.thongBao || "Lỗi khi import chứng chỉ");
+        } finally {
+            setUi(prev => ({ ...prev, isLoading: false }));
         }
     };
 
@@ -856,6 +930,15 @@ const QuanLyChungChi = () => {
                             sx={{ textTransform: "none" }}
                         >
                             Thêm học viên
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={<FileUploadIcon />}
+                            onClick={handleOpenImportDialog}
+                            sx={{ textTransform: "none" }}
+                        >
+                            Import Excel
                         </Button>
                         <Button
                             variant="outlined"
@@ -1027,7 +1110,7 @@ const QuanLyChungChi = () => {
                                 <TableBody>
                                     {filteredSinhVien.map((sv, index) => (
                                         <TableRow key={sv.hasChungChi ? sv.id : `no-cert-${sv.ma_sinh_vien}`} sx={{
-                                            backgroundColor: sv.hasChungChi 
+                                            backgroundColor: sv.hasChungChi
                                                 ? (sv.tinh_trang === 'Tốt nghiệp' || sv.tinh_trang === 'tốt nghiệp' ? '#f0f8ff' : 'inherit')
                                                 : '#fffbf0', // màu khác cho sinh viên chưa có chứng chỉ
                                         }}>
@@ -1224,7 +1307,7 @@ const QuanLyChungChi = () => {
                                             <Box
                                                 component="span"
                                                 onClick={() => {
-                                                    setSelectedStudentsForNew(prev => 
+                                                    setSelectedStudentsForNew(prev =>
                                                         prev.filter(s => s.id !== option.id)
                                                     );
                                                 }}
@@ -1813,6 +1896,73 @@ const QuanLyChungChi = () => {
                         sx={{ minWidth: 120 }}
                     >
                         {isEditingType ? "Đang cập nhật..." : "Cập nhật"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog Import */}
+            <Dialog open={ui.openImportDialog} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Import Danh Sách Chứng Chỉ</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel id="import-loai-chung-chi-label">Loại chứng chỉ (Mặc định)</InputLabel>
+                            <Select
+                                labelId="import-loai-chung-chi-label"
+                                value={importLoaiChungChi}
+                                label="Loại chứng chỉ (Mặc định)"
+                                onChange={(e) => setImportLoaiChungChi(e.target.value)}
+                            >
+                                <MenuItem value="">
+                                    <em>-- Chọn loại chứng chỉ (Nếu không có cột này trong file) --</em>
+                                </MenuItem>
+                                {data.loaiChungChiList.map((item) => (
+                                    <MenuItem key={item.id} value={item.value}>
+                                        {item.label}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            fullWidth
+                            startIcon={<FileUploadIcon />}
+                            sx={{ mb: 2, height: 56 }}
+                        >
+                            {importFile ? importFile.name : "Chọn file Excel (.xlsx)"}
+                            <input
+                                type="file"
+                                hidden
+                                accept=".xlsx, .xls"
+                                onChange={handleFileChange}
+                            />
+                        </Button>
+
+                        {importFile && (
+                            <Typography variant="body2" color="textSecondary" align="center">
+                                Đã chọn: {importFile.name} ({(importFile.size / 1024).toFixed(2)} KB)
+                            </Typography>
+                        )}
+
+                        <Typography variant="caption" display="block" sx={{ mt: 2, fontStyle: 'italic', color: 'text.secondary' }}>
+                            <span style={{ color: 'red' }}>Đọc kỹ HDSD trước khi dùng:</span>
+                            <br />
+                            * File Excel cần có cột: Mã SV.
+                            <br />
+                            * Các cột khác (tùy chọn): Điểm TB, Xếp loại, Ghi chú, Số quyết định, Ngày ký (mm/dd/yyyy), Tình trạng.
+                            <br />
+                            * Cột "Loại chứng chỉ" trong file sẽ được ưu tiên hơn lựa chọn ở trên.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseImportDialog} color="secondary">
+                        Hủy
+                    </Button>
+                    <Button onClick={handleImport} color="primary" variant="contained" disabled={!importFile || ui.isLoading}>
+                        {ui.isLoading ? <CircularProgress size={24} /> : "Import"}
                     </Button>
                 </DialogActions>
             </Dialog>
