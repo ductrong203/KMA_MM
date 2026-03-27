@@ -144,3 +144,27 @@ export const exportPhuLucBangDiemWord = async (id) => {
     throw error;
   }
 };
+
+export const exportPhuLucBangDiemBatchExcel = async (data) => {
+  try {
+    const response = await api.post(`/excel-phu-luc-bang/export-excel-batch`, data, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
+export const exportPhuLucBangDiemBatchWord = async (data) => {
+  try {
+    const response = await api.post(`/excel-phu-luc-bang/export-docx-batch`, data, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};

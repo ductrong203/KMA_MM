@@ -30,6 +30,7 @@ import {
 } from "../../Api_controller/Service/chungChiService";
 import { getDanhSachSinhVienTheoLop } from "../../Api_controller/Service/sinhVienService"; // Thêm API lấy học viên
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx-js-style";
 
 // Constants
 const TRANG_THAI_OPTIONS = [
@@ -893,6 +894,77 @@ const QuanLyChungChi = () => {
         }
     };
 
+    const handleExportTemplate = () => {
+        const columns = [
+            { wpx: 50 },  // STT
+            { wpx: 120 }, // Mã SV
+            { wpx: 180 }, // Họ và tên
+            { wpx: 150 }, // Loại chứng chỉ
+            { wpx: 80 },  // Điểm TB
+            { wpx: 100 }, // Xếp loại
+            { wpx: 150 }, // Ghi chú
+            { wpx: 120 }, // Số quyết định
+            { wpx: 120 }, // Ngày ký
+            { wpx: 120 }  // Tình trạng
+        ];
+
+        const headers = [
+            "STT",
+            "Mã SV",
+            "Họ và tên",
+            "Loại chứng chỉ",
+            "Điểm TB",
+            "Xếp loại",
+            "Ghi chú",
+            "Số quyết định",
+            "Ngày ký",
+            "Tình trạng"
+        ];
+
+        // Create header row with style
+        const headerRow = headers.map(header => ({
+            v: header,
+            t: "s",
+            s: {
+                font: { bold: true, color: { rgb: "FFFFFF" }, name: "Times New Roman", sz: 12 },
+                fill: { fgColor: { rgb: "1976D2" } },
+                alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                border: {
+                    top: { style: "thin", color: { auto: 1 } },
+                    right: { style: "thin", color: { auto: 1 } },
+                    bottom: { style: "thin", color: { auto: 1 } },
+                    left: { style: "thin", color: { auto: 1 } }
+                }
+            }
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headerRow]);
+
+        // Add some empty rows with border to show where data goes
+        for (let i = 0; i < 5; i++) {
+            const emptyRow = headers.map(() => ({
+                v: "",
+                s: {
+                    font: { name: "Times New Roman", sz: 11 },
+                    border: {
+                        top: { style: "thin", color: { auto: 1 } },
+                        right: { style: "thin", color: { auto: 1 } },
+                        bottom: { style: "thin", color: { auto: 1 } },
+                        left: { style: "thin", color: { auto: 1 } }
+                    }
+                }
+            }));
+            XLSX.utils.sheet_add_aoa(ws, [emptyRow], { origin: -1 });
+        }
+
+        ws["!cols"] = columns;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Template");
+        XLSX.writeFile(wb, "Mau_Import_Chung_Chi.xlsx");
+        toast.success("Đã tải mẫu Excel chứng chỉ");
+    };
+
     // Effects
     useEffect(() => {
         fetchInitialData();
@@ -932,6 +1004,15 @@ const QuanLyChungChi = () => {
                             Thêm học viên
                         </Button>
                         <Button
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<ManageSearchIcon />}
+                            onClick={handleOpenManageTypeDialog}
+                            sx={{ textTransform: "none" }}
+                        >
+                            Quản lý loại chứng chỉ
+                        </Button>
+                        <Button
                             variant="contained"
                             color="success"
                             startIcon={<FileUploadIcon />}
@@ -942,12 +1023,12 @@ const QuanLyChungChi = () => {
                         </Button>
                         <Button
                             variant="outlined"
-                            color="secondary"
-                            startIcon={<ManageSearchIcon />}
-                            onClick={handleOpenManageTypeDialog}
+                            color="info"
+                            startIcon={<FileDownloadIcon />}
+                            onClick={handleExportTemplate}
                             sx={{ textTransform: "none" }}
                         >
-                            Quản lý loại chứng chỉ
+                            Xuất excel mẫu
                         </Button>
                     </Box>
 
@@ -1949,11 +2030,13 @@ const QuanLyChungChi = () => {
                         <Typography variant="caption" display="block" sx={{ mt: 2, fontStyle: 'italic', color: 'text.secondary' }}>
                             <span style={{ color: 'red' }}>Đọc kỹ HDSD trước khi dùng:</span>
                             <br />
-                            * File Excel cần có cột: Mã SV.
+                            - Bắt buộc cần có cột "Mã SV" nếu không sẽ không import được
                             <br />
-                            * Các cột khác (tùy chọn): Điểm TB, Xếp loại, Ghi chú, Số quyết định, Ngày ký (mm/dd/yyyy), Tình trạng.
+                            - Loại chứng chỉ viết đúng tên như ở trên web
                             <br />
-                            * Cột "Loại chứng chỉ" trong file sẽ được ưu tiên hơn lựa chọn ở trên.
+                            - "Ngày ký" cần theo định dạng text và chuẩn dd/mm/yyyy
+                            <br />
+                            - Cột "Loại chứng chỉ" trong file sẽ được ưu tiên hơn lựa chọn ở trên
                         </Typography>
                     </Box>
                 </DialogContent>

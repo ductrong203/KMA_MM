@@ -68,6 +68,12 @@ class TotNghiepService {
           });
           graduations.push(newGraduation);
         }
+
+        // Cập nhật trạng thái sinh viên sang 4 (Tốt nghiệp)
+        await sinh_vien.update(
+          { dang_hoc: 4 },
+          { where: { id: sinh_vien_id } }
+        );
       }
 
       return graduations;

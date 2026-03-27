@@ -11,5 +11,8 @@ router.get('/export-excel', ExcelPhuLucBangController.exportExcelPhuLucBang);
 
 router.get('/export-docx', ExcelPhuLucBangController.exportDocsPhuLucBang);
 
+// Tính năng tải hàng loạt
+router.post('/export-excel-batch', ExcelPhuLucBangController.exportExcelBatch);
+router.post('/export-docx-batch', ExcelPhuLucBangController.exportDocsBatch);
 
 module.exports = router;

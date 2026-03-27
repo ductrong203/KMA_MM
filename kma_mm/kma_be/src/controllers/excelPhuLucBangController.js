@@ -2,6 +2,7 @@ const ExcelPhuLucBangService = require("../services/excelPhuLucBangService");
 const path = require("path");
 const fs = require("fs");
 const SinhVienService = require("../services/studentService");
+const archiver = require("archiver");
 
 const exportDir = path.join(__dirname, "..", "exports", "phulucbang");
 if (!fs.existsSync(exportDir)) {
@@ -165,6 +166,91 @@ class ExcelPhuLucBangController{
                 message: "Đã xảy ra lỗi khi xuất file DOCX phụ lục bảng",
                 error: error.message
             });
+        }
+    }
+
+    static async exportExcelBatch(req, res) {
+        try {
+            const { sinh_vien_ids } = req.body;
+            if (!sinh_vien_ids || !Array.isArray(sinh_vien_ids) || sinh_vien_ids.length === 0) {
+                return res.status(400).json({ success: false, message: "Danh sách sinh_vien_ids không hợp lệ" });
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'application/zip',
+                'Content-Disposition': 'attachment; filename="phu_luc_bang_excel_batch.zip"'
+            });
+
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            
+            archive.on('error', function(err) {
+                console.error("Lỗi khi tạo file ZIP:", err);
+                if (!res.headersSent) {
+                    res.status(500).send({ error: err.message });
+                }
+            });
+
+            archive.pipe(res);
+
+            for (const id of sinh_vien_ids) {
+                try {
+                    const sinhVien = await ExcelPhuLucBangService.exportExcelPhuLucBang_v2(parseInt(id));
+                    const buffer = await sinhVien.xlsx.writeBuffer();
+                    archive.append(buffer, { name: `phu_luc_bang_sinh_vien_${id}.xlsx` });
+                } catch (err) {
+                    console.error(`Lỗi khi xử lý Excel tải hàng loạt cho sinh viên ${id}:`, err.message);
+                }
+            }
+
+            await archive.finalize();
+
+        } catch (error) {
+            console.error("Lỗi khi tải hàng loạt file Excel:", error);
+            if (!res.headersSent) {
+                return res.status(500).json({ success: false, message: "Lỗi nội bộ server" });
+            }
+        }
+    }
+
+    static async exportDocsBatch(req, res) {
+        try {
+            const { sinh_vien_ids } = req.body;
+            if (!sinh_vien_ids || !Array.isArray(sinh_vien_ids) || sinh_vien_ids.length === 0) {
+                return res.status(400).json({ success: false, message: "Danh sách sinh_vien_ids không hợp lệ" });
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'application/zip',
+                'Content-Disposition': 'attachment; filename="phu_luc_bang_word_batch.zip"'
+            });
+
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            
+            archive.on('error', function(err) {
+                console.error("Lỗi khi tạo file ZIP:", err);
+                if (!res.headersSent) {
+                    res.status(500).send({ error: err.message });
+                }
+            });
+
+            archive.pipe(res);
+
+            for (const id of sinh_vien_ids) {
+                try {
+                    const docxBuffer = await ExcelPhuLucBangService.docxPhuLucBang(parseInt(id));
+                    archive.append(docxBuffer, { name: `phu_luc_bang_sinh_vien_${id}.docx` });
+                } catch (err) {
+                    console.error(`Lỗi khi xử lý Word tải hàng loạt cho sinh viên ${id}:`, err.message);
+                }
+            }
+
+            await archive.finalize();
+
+        } catch (error) {
+            console.error("Lỗi khi tải hàng loạt file Word:", error);
+            if (!res.headersSent) {
+                return res.status(500).json({ success: false, message: "Lỗi nội bộ server" });
+            }
         }
     }
 }
