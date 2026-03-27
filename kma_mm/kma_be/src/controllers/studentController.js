@@ -163,6 +163,38 @@ class SinhVienController {
 
       }
       const updatedSinhVien = await SinhVienService.updateSinhVien(req.params.id, req.body);
+      
+      // Tự động tạo bản ghi Kỷ luật nếu Sinh viên bị chuyển sang Thôi học
+      if (updatedSinhVien && Number(req.body.dang_hoc) === 3 && oldDataRaw.dang_hoc !== 3) {
+        try {
+          const { danh_muc_khen_ky_luat, khen_thuong_ky_luat } = require("../models").initModels(require("../models").sequelize);
+          let dm = await danh_muc_khen_ky_luat.findOne({ where: { ma_danh_muc: "THOI_HOC" } });
+          if (!dm) {
+            dm = await danh_muc_khen_ky_luat.create({
+              ma_danh_muc: "THOI_HOC",
+              ten_danh_muc: "Buộc thôi học / Nghỉ học",
+              loai: "ky_luat",
+              mo_ta: "Sinh viên bị buộc thôi học hoặc tự xin nghỉ học",
+              trang_thai: 1
+            });
+          }
+          await khen_thuong_ky_luat.create({
+            sinh_vien_id: req.params.id,
+            danh_muc_id: dm.id,
+            ngay_quyet_dinh: new Date(),
+            so_quyet_dinh: "",
+            nguoi_ky: "",
+            ly_do: req.body.ghi_chu || "Thôi học",
+            hinh_thuc: "Kỷ luật",
+            muc_thuong_phat: 0,
+            ghi_chu: "Hệ thống tự động tạo khi Xét thôi học",
+            ngay_tao: new Date(),
+            trang_thai: 1
+          });
+        } catch (error) {
+          console.error("Lỗi khi tự động tạo kỷ luật Thôi học:", error.message);
+        }
+      }
       try {
         const token = req.headers.authorization?.split(" ")[1];
         // console.log(token);

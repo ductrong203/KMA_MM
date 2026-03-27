@@ -16,7 +16,8 @@ import {
   TableRow,
   Box,
   CircularProgress,
-  Stack
+  Stack,
+  Checkbox
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -24,7 +25,7 @@ import { getDanhSachKhoaTheoDanhMucDaoTao } from '../../Api_controller/Service/k
 import { fetchDanhSachHeDaoTao } from '../../Api_controller/Service/trainingService';
 import { getDanhSachLopTheoKhoaDaoTao } from '../../Api_controller/Service/lopService';
 import { getDanhSachSinhVienTheoLop } from '../../Api_controller/Service/sinhVienService';
-import { exportPhuLucBangDiem, exportPhuLucBangDiemWord } from '../../Api_controller/Service/excelService';
+import { exportPhuLucBangDiem, exportPhuLucBangDiemWord, exportPhuLucBangDiemBatchWord, exportPhuLucBangDiemBatchExcel } from '../../Api_controller/Service/excelService';
 import PageHeader from '../../layout/PageHeader';
 
 
@@ -35,6 +36,7 @@ const PhuLucBangDiem = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState([]);
 
   // State cho danh sách dữ liệu
   const [danhSachHeDaoTao, setDanhSachHeDaoTao] = useState([]);
@@ -139,6 +141,7 @@ const PhuLucBangDiem = () => {
     setSelectedKhoa('');
     setSelectedClass('');
     setStudents([]);
+    setSelectedStudents([]);
   };
 
   const handleKhoaChange = (event) => {
@@ -146,10 +149,12 @@ const PhuLucBangDiem = () => {
     setSelectedKhoa(khoa);
     setSelectedClass('');
     setStudents([]);
+    setSelectedStudents([]);
   };
 
   const handleClassChange = (event) => {
     setSelectedClass(event.target.value);
+    setSelectedStudents([]);
   };
 
   const handleExportReport = async (studentId, exportType = 'excel') => {
@@ -194,6 +199,71 @@ const PhuLucBangDiem = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting report:', error);
+      alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedStudents(students.map(s => s.id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleSelectOne = (event, id) => {
+    if (event.target.checked) {
+      setSelectedStudents(prev => [...prev, id]);
+    } else {
+      setSelectedStudents(prev => prev.filter(item => item !== id));
+    }
+  };
+
+  const handleExportBatch = async (exportType = 'excel') => {
+    let idsToExport = selectedStudents;
+    if (idsToExport.length === 0) {
+      idsToExport = students.map(s => s.id);
+      if (idsToExport.length === 0) {
+        alert("Không có sinh viên nào để xuất!");
+        return;
+      }
+    }
+
+    setExportLoading(true);
+
+    try {
+      let response;
+      let fileName;
+      
+      if (exportType === 'word') {
+        response = await exportPhuLucBangDiemBatchWord({ sinh_vien_ids: idsToExport });
+        fileName = `phu-luc-bang-diem-word-batch.zip`;
+      } else {
+        response = await exportPhuLucBangDiemBatchExcel({ sinh_vien_ids: idsToExport });
+        fileName = `phu-luc-bang-diem-excel-batch.zip`;
+      }
+
+      if (!response || !response.data) {
+        throw new Error('Không có dữ liệu trả về từ server.');
+      }
+
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/zip',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error batch exporting report:', error);
       alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
     } finally {
       setExportLoading(false);
@@ -275,10 +345,38 @@ const PhuLucBangDiem = () => {
             <CircularProgress />
           </Box>
         ) : students.length > 0 ? (
-          <TableContainer component={Paper} sx={{ mt: 3, mb: 3 }}>
-            <Table>
+          <>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<FileDownloadIcon />}
+                onClick={() => handleExportBatch('excel')}
+                disabled={exportLoading}
+              >
+                Xuất Excel ({selectedStudents.length > 0 ? `Đã chọn ${selectedStudents.length}` : 'Tất cả'})
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<DescriptionIcon />}
+                onClick={() => handleExportBatch('word')}
+                disabled={exportLoading}
+              >
+                Xuất Word ({selectedStudents.length > 0 ? `Đã chọn ${selectedStudents.length}` : 'Tất cả'})
+              </Button>
+            </Box>
+            <TableContainer component={Paper} sx={{ mt: 3, mb: 3 }}>
+              <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={selectedStudents.length > 0 && selectedStudents.length < students.length}
+                      checked={students.length > 0 && selectedStudents.length === students.length}
+                      onChange={handleSelectAll}
+                    />
+                  </TableCell>
                   <TableCell>Mã sinh viên</TableCell>
                   <TableCell>Họ đệm</TableCell>
                   <TableCell>Tên</TableCell>
@@ -289,9 +387,17 @@ const PhuLucBangDiem = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.ma_sinh_vien}</TableCell>
+                {students.map((student) => {
+                  const isSelected = selectedStudents.includes(student.id);
+                  return (
+                    <TableRow key={student.id} selected={isSelected}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={(e) => handleSelectOne(e, student.id)}
+                        />
+                      </TableCell>
+                      <TableCell>{student.ma_sinh_vien}</TableCell>
                     <TableCell>{student.ho_dem}</TableCell>
                     <TableCell>{student.ten}</TableCell>
                     <TableCell>{new Date(student.ngay_sinh).toLocaleDateString('vi-VN')}</TableCell>
@@ -302,11 +408,19 @@ const PhuLucBangDiem = () => {
                           p: 0.5,
                           borderRadius: 1,
                           display: 'inline-block',
-                          bgcolor: student.dang_hoc === 1 ? 'success.light' : 'warning.light',
+                          bgcolor: student.dang_hoc === 1 ? 'success.light' : 
+                                   student.dang_hoc === 2 ? 'info.light' :
+                                   student.dang_hoc === 3 ? 'error.light' :
+                                   student.dang_hoc === 4 ? 'warning.light' :
+                                   student.dang_hoc === 5 ? 'secondary.light' : 'grey.500',
                           color: 'white'
                         }}
                       >
-                        {student.dang_hoc === 1 ? 'Đang học' : 'Thôi học'}
+                        {student.dang_hoc === 1 ? 'Đang học' : 
+                         student.dang_hoc === 2 ? 'Bảo lưu' : 
+                         student.dang_hoc === 3 ? 'Thôi học' : 
+                         student.dang_hoc === 4 ? 'Tốt nghiệp' : 
+                         student.dang_hoc === 5 ? 'Chuyển trường' : 'Chưa cập nhật'}
                       </Box>
                     </TableCell>
                     <TableCell align="center">
@@ -334,10 +448,12 @@ const PhuLucBangDiem = () => {
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
+          </>
         ) : selectedClass ? (
           <Box sx={{ textAlign: 'center', py: 3 }}>
             <Typography variant="body1" color="text.secondary">

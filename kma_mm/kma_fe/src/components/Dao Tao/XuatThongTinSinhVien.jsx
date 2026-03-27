@@ -372,7 +372,7 @@ const XuatThongTinSinhVien = () => {
                                                     <TableCell>{row.ngay_qd_tn}</TableCell>
                                                     <TableCell>{row.qd_gdqpan}</TableCell>
                                                     <TableCell>{row.ngay_qd_gdqpan}</TableCell>
-                                                    <TableCell></TableCell>
+                                                    <TableCell>{row.xl_gdtc}</TableCell>
                                                     <TableCell>{row.qd_ta}</TableCell>
                                                     <TableCell>{row.ngay_qd_ta}</TableCell>
                                                     <TableCell>{row.ngay_cap_bang}</TableCell>

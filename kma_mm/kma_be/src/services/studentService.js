@@ -29,6 +29,18 @@ class SinhVienService {
     }
   }
 
+  static async updateSinhVien(id, data) {
+    try {
+      const sv = await sinh_vien.findByPk(id);
+      if (!sv) return null;
+      
+      await sv.update(data);
+      return sv;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
   static async getAllSinhViens() {
     return await sinh_vien.findAll({
       include: [
@@ -142,6 +154,21 @@ class SinhVienService {
             as: 'chung_chis',
             required: false,
             include: [{ model: db.loai_chung_chi, as: 'loai_chung_chi_detail' }]
+          },
+          {
+            model: diem,
+            as: 'diems',
+            required: false,
+            include: [{
+              model: thoi_khoa_bieu,
+              as: 'thoi_khoa_bieu',
+              required: false,
+              include: [{
+                model: mon_hoc,
+                as: 'mon_hoc',
+                required: false
+              }]
+            }]
           }
         ],
         where: whereCondition,
@@ -250,7 +277,24 @@ class SinhVienService {
           ngay_qd_tn: formatDate(qdTn?.ngay_ky_quyet_dinh), // AP
           qd_gdqpan: gdqpan?.so_quyet_dinh || '', // AQ
           ngay_qd_gdqpan: formatDate(gdqpan?.ngay_ky_quyet_dinh), // AR
-          // AS - Empty
+
+          // XL GDTC Logic (AS)
+          xl_gdtc: (() => {
+            const diems = sv.diems || [];
+            const nonCreditSubjects = diems.filter(d => d.thoi_khoa_bieu?.mon_hoc?.tinh_diem === 0);
+
+            if (nonCreditSubjects.length === 0) return 'Đạt';
+
+            const hasFailed = nonCreditSubjects.some(d => {
+              // Failed if diem_hp < 4.0 or trang_thai is thi_lai, hoc_lai. Prioritize diem_hp_2 if exists
+              const diemFinal = d.diem_hp_2 !== null && d.diem_hp_2 !== undefined ? d.diem_hp_2 : d.diem_hp;
+              const isFailedScore = diemFinal !== null && diemFinal !== undefined && parseFloat(diemFinal) < 4.0;
+              const isFailedStatus = ['thi_lai', 'hoc_lai'].includes(d.trang_thai);
+              return isFailedScore || isFailedStatus;
+            });
+
+            return hasFailed ? 'Không đạt' : 'Đạt';
+          })(), // AS
           qd_ta: chuanTA?.so_quyet_dinh || '', // AT
           ngay_qd_ta: formatDate(chuanTA?.ngay_ky_quyet_dinh), // AU
 
@@ -329,7 +373,7 @@ class SinhVienService {
         { header: 'Ngày ban hành QĐ tốt nghiệp', key: 'ngay_qd_tn', width: 15 }, // AP
         { header: 'QĐ đạt chuẩn GDQPAN', key: 'qd_gdqpan', width: 15 }, // AQ
         { header: 'Ngày phát hành QĐ đạt chuẩn ', key: 'ngay_qd_gdqpan', width: 15 }, // AR
-        { header: 'Xếp loại GDTC', key: '', width: 10 }, // AS
+        { header: 'Xếp loại GDTC', key: 'xl_gdtc', width: 15 }, // AS
         { header: 'QĐ công nhận đạt chuẩn TA', key: 'qd_ta', width: 15 }, // AT
         { header: 'Ngày phát hành QĐ/Ký CCTA', key: 'ngay_qd_ta', width: 15 }, // AU
         { header: 'Ngày cấp bằng', key: 'ngay_cap_bang', width: 15 }, // AV

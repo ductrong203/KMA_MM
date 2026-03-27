@@ -236,7 +236,7 @@ const formatValueByField = (fieldName, value) => {
   }
 
   if (fieldName === "dang_hoc") {
-    return getStudyingStatusLabel(value);
+    return getStudentStatusLabel(value);
   }
 
   if (fieldName === "thuoc_khoa") {
