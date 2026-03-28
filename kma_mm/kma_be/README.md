@@ -17,7 +17,7 @@ A Node.js-based backend for managing data using Express, MySQL, and Sequelize.
    DB_DATABASE=quan_ly_dao_tao
    DB_HOST=127.0.0.1
    DB_DIALECT=mysql
-   PORT=3306
+   PORT=3307
    APPPORT=8000
    ACCESS_TOKEN =access_token
    REFRESH_TOKEN=refresh_token
