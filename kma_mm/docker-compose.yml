@@ -4,7 +4,7 @@ services:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: zxcvbnmKMA2803
       MYSQL_DATABASE: quanlydaotao
     ports:
       - "127.0.0.1:3307:3306"
@@ -18,7 +18,7 @@ services:
       - mysql
     environment:
       DB_USERNAME: root
-      DB_PASSWORD: 123456
+      DB_PASSWORD: zxcvbnmKMA2803
       DB_DATABASE: quanlydaotao
       DB_HOST: mysql
       DB_DIALECT: mysql
