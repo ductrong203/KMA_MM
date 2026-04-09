@@ -41,7 +41,7 @@ class ExcelService {
           lop_id: lop_id,
           mon_hoc_id: mon_hoc_id
         },
-        attributes: ['giang_vien']
+        attributes: ['giang_vien', 'ma_giang_vien']
       });
 
       // Tính toán học kỳ và năm học
@@ -64,7 +64,7 @@ class ExcelService {
         ma_mon_hoc: monHocInfo?.ma_mon_hoc || '',
         ten_mon_hoc: monHocInfo?.ten_mon_hoc || '',
         so_tin_chi: monHocInfo?.so_tin_chi || '',
-        giang_vien: thoiKhoaBieu?.giang_vien || '',
+        giang_vien: thoiKhoaBieu?.giang_vien ? (thoiKhoaBieu.ma_giang_vien ? `${thoiKhoaBieu.giang_vien} (Mã GV: ${thoiKhoaBieu.ma_giang_vien})` : thoiKhoaBieu.giang_vien) : '',
         hoc_ky_text: hocKyText || 'HỌC KỲ 1 NĂM HỌC 2024 - 2025'
       };
     } catch (error) {
@@ -81,8 +81,29 @@ class ExcelService {
       };
     }
   }
-  static async getSinhVienData({ lop_id, mon_hoc_id }) {
+  static async getSinhVienData({ lop_ids, lop_id, mon_hoc_id, khoa_dao_tao_id, ky_hoc }) {
     try {
+      let finalLopIds = [];
+      if (lop_ids && lop_ids.length > 0) {
+          finalLopIds = lop_ids;
+      } else if (lop_id) {
+          finalLopIds = [lop_id];
+      } else if (khoa_dao_tao_id && mon_hoc_id && ky_hoc) {
+          const tkbs = await thoi_khoa_bieu.findAll({
+              where: { mon_hoc_id, ky_hoc },
+              include: [{
+                  model: lop,
+                  as: 'lop',
+                  where: { khoa_dao_tao_id }
+              }]
+          });
+          finalLopIds = tkbs.map(t => t.lop_id);
+      }
+
+      if (finalLopIds.length === 0) {
+          throw new Error("Không có lớp học phần nào để export.");
+      }
+
       const sinhVienData = await sinh_vien.findAll({
         attributes: ["id", "ma_sinh_vien", "ho_dem", "ten"],
         include: [
@@ -95,9 +116,9 @@ class ExcelService {
               {
                 model: thoi_khoa_bieu,
                 as: "thoi_khoa_bieu",
-                attributes: [],
+                attributes: ["lop_id", "mon_hoc_id"],
                 where: {
-                  lop_id: lop_id,
+                  lop_id: { [Op.in]: finalLopIds },
                   mon_hoc_id: mon_hoc_id,
                 },
                 required: true,
@@ -131,28 +152,49 @@ class ExcelService {
     }
   }
 
-  static async exportToExcel(sinhVienData, { lop_id, mon_hoc_id }) {
-    // Lấy thông tin bổ sung
-    const exportInfo = await this.getExportInfo({ lop_id, mon_hoc_id });
-
-    const headersRow1 = [
-      "STT",
-      "Mã Sinh Viên",
-      "Họ và tên",
-      "", "", "", "",
-      "Lớp",
-      "Điểm thành phần 1",
-      "Điểm thành phần 2",
-      "Điểm quá trình",
-      "",
-      "Ghi chú",
-      "",
-    ];
-
-    const totalColumns = 14;
-
+  static async exportToExcel(sinhVienData, { mon_hoc_id }) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("SinhVien", {
+    
+    // Group students by thoi_khoa_bieu.lop_id
+    const groupedData = {};
+    for (const sv of sinhVienData) {
+        if (!sv.diems || sv.diems.length === 0) continue;
+        const lopId = sv.diems[0].thoi_khoa_bieu.lop_id;
+        if (!groupedData[lopId]) groupedData[lopId] = [];
+        groupedData[lopId].push(sv);
+    }
+    
+    const lopIds = Object.keys(groupedData);
+    
+    for (let cidx = 0; cidx < lopIds.length; cidx++) {
+        const lId = lopIds[cidx];
+        const classStudents = groupedData[lId];
+        const exportInfo = await this.getExportInfo({ lop_id: lId, mon_hoc_id });
+
+        const headersRow1 = [
+          "STT",
+          "Mã Sinh Viên",
+          "Họ và tên",
+          "", "", "", "",
+          "Lớp",
+          "Điểm thành phần 1",
+          "Điểm thành phần 2",
+          "Điểm quá trình",
+          "",
+          "Ghi chú",
+          "",
+        ];
+
+        const totalColumns = 14;
+
+        let sheetName = exportInfo.ma_lop;
+        if (!sheetName) sheetName = `Lop_${lId}`;
+        sheetName = sheetName.replace(/[\*\?\:\]\[\\\/\/]/g, '').substring(0, 31);
+        if (workbook.getWorksheet(sheetName)) {
+            sheetName = `${sheetName}_${cidx}`;
+        }
+        
+        const worksheet = workbook.addWorksheet(sheetName, {
       pageSetup: {
         orientation: "portrait",
         fitToPage: true,
@@ -256,7 +298,7 @@ class ExcelService {
     row.getCell(1).alignment = { horizontal: "left", vertical: "top", wrapText: false };
 
     row = worksheet.addRow([]);
-    row.getCell(1).value = `Tổng số SV: ${sinhVienData.length}`;
+    row.getCell(1).value = `Tổng số SV: ${classStudents.length}`;
     worksheet.mergeCells(row.number, 1, row.number, 2);
     row.getCell(5).value = "Số SV dự thi: ... Vắng ... Có lý do ... Không lý do ...";
     worksheet.mergeCells(row.number, 5, row.number, 14);
@@ -301,7 +343,7 @@ class ExcelService {
     const tableStart = headerRow1.number;
 
     // **Xử lý dữ liệu**
-    const dataRows = sinhVienData.map((sv, index) => {
+    const dataRows = classStudents.map((sv, index) => {
       const diem = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
       return [
         `${index + 1}`,
@@ -453,26 +495,23 @@ class ExcelService {
     worksheet.getColumn(12).width = 11.43;
     worksheet.getColumn(13).width = 5;
     worksheet.getColumn(14).width = 5;
-
+    } // End of loop
     return workbook;
   }
 
-  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_tp1, min_tp2, is_defense }) {
+  static async getSinhVienCuoiKy({ mon_hoc_id, khoa_dao_tao_id, lop_ids, lop_id, min_tp1, min_tp2, is_defense }) {
     try {
-      // Kiểm tra tham số đầu vào
       if (!mon_hoc_id || !khoa_dao_tao_id) {
         throw new Error("Thiếu mon_hoc_id hoặc khoa_dao_tao_id trong form-data");
       }
-      if (lop_id) {
-        const lopCheck = await lop.findOne({
-          where: { id: lop_id, khoa_dao_tao_id: khoa_dao_tao_id }
-        });
-        if (!lopCheck) {
-          throw new Error("Lớp không tồn tại trong khóa đào tạo này");
-        }
+
+      let finalLopIds = [];
+      if (lop_ids && lop_ids.length > 0) {
+          finalLopIds = lop_ids;
+      } else if (lop_id) {
+          finalLopIds = [lop_id];
       }
 
-      // Create filter condition for scores
       const scoreFilter = {};
       if (is_defense !== 'true' && is_defense !== true && min_tp1 !== undefined && min_tp2 !== undefined) {
         scoreFilter[Op.and] = [
@@ -494,7 +533,7 @@ class ExcelService {
               {
                 model: thoi_khoa_bieu,
                 as: "thoi_khoa_bieu",
-                attributes: [],
+                attributes: ["lop_id"],
                 where: {
                   mon_hoc_id: mon_hoc_id,
                 },
@@ -503,10 +542,10 @@ class ExcelService {
                   {
                     model: lop,
                     as: "lop",
-                    attributes: [],
+                    attributes: ["id", "ma_lop"],
                     where: {
                       khoa_dao_tao_id: khoa_dao_tao_id,
-                      ...(lop_id && { id: lop_id }), // Nếu có lop_id thì thêm điều kiện này
+                      ...(finalLopIds.length > 0 && { id: { [Op.in]: finalLopIds } }),
                     },
                     required: true,
                   },
@@ -604,26 +643,46 @@ class ExcelService {
   }
 
   static async exportToExcelCuoiKy(sinhVienData, { khoa_dao_tao_id, mon_hoc_id }) {
-    // Lấy thông tin bổ sung
-    const exportInfo = await this.getExportInfoCuoiKy({ khoa_dao_tao_id, mon_hoc_id });
-
-    const headersRow = [
-      "STT",
-      "SBD",
-      "Mã HVSV",
-      "Họ đệm",
-      "Tên",
-      "Lớp",
-      "Mã đề",
-      "Điểm",
-      "Ký tên",
-      "Ghi chú",
-    ];
-
-    const totalColumns = 10; // 10 cột từ A đến J
-
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("SinhVien", {
+    
+    const groupedData = {};
+    for (const sv of sinhVienData) {
+        if (!sv.diems || sv.diems.length === 0) continue;
+        const lopId = sv.diems[0].thoi_khoa_bieu?.lop?.id || sv.diems[0].thoi_khoa_bieu?.lop_id || sv.lop?.id;
+        if (!groupedData[lopId]) groupedData[lopId] = [];
+        groupedData[lopId].push(sv);
+    }
+    
+    const lopIds = Object.keys(groupedData);
+    
+    for (let cidx = 0; cidx < lopIds.length; cidx++) {
+        const lId = lopIds[cidx];
+        const classStudents = groupedData[lId];
+        const exportInfo = await this.getExportInfoCuoiKy({ khoa_dao_tao_id, mon_hoc_id });
+        
+        let submaLop = classStudents.length > 0 && classStudents[0].lop ? classStudents[0].lop.ma_lop : `Lop_${lId}`;
+        
+        const headersRow = [
+          "STT",
+          "SBD",
+          "Mã HVSV",
+          "Họ đệm",
+          "Tên",
+          "Lớp",
+          "Mã đề",
+          "Điểm",
+          "Ký tên",
+          "Ghi chú",
+        ];
+
+        const totalColumns = 10;
+
+        let sheetName = String(submaLop).replace(/[\*\?\:\]\[\\\/\/]/g, '').substring(0, 31);
+        if (workbook.getWorksheet(sheetName)) {
+            sheetName = `${sheetName}_${cidx}`;
+        }
+
+        const worksheet = workbook.addWorksheet(sheetName, {
       pageSetup: {
         orientation: "portrait",
         fitToPage: true,
@@ -731,7 +790,7 @@ class ExcelService {
     const tableStart = headerRow.number;
 
     // Xử lý dữ liệu
-    const dataRows = sinhVienData.map((sv, index) => {
+    const dataRows = classStudents.map((sv, index) => {
       const diem = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
       return [
         `${index + 1}`,
@@ -851,13 +910,13 @@ class ExcelService {
     worksheet.getColumn(7).width = 6.29 * 1.2;  // G: Mã đề
     worksheet.getColumn(8).width = 7.71 * 1.2;  // H: Điểm
     worksheet.getColumn(9).width = 8 * 1.2;     // I: Ký tên
-    worksheet.getColumn(10).width = 12.57 * 1.2;// J: Ghi chú
-
+    worksheet.getColumn(10).width = 12.57 * 1.2;
+    } // end for loop
     return workbook;
   }
 
   // Lấy danh sách sinh viên cần thi lại (diem_ck < diemThiToiThieu OR diem_hp < diemTrungBinhDat)
-  static async getSinhVienThiLai({ mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score, min_tp1, min_tp2, is_defense }) {
+  static async getSinhVienThiLai({ mon_hoc_id, khoa_dao_tao_id, lop_ids, lop_id, min_exam_score, min_avg_score, min_tp1, min_tp2, is_defense }) {
     try {
       console.log('=== getSinhVienThiLai START ===');
       console.log('Input params:', { mon_hoc_id, khoa_dao_tao_id, lop_id, min_exam_score, min_avg_score, min_tp1, min_tp2, is_defense });
@@ -891,10 +950,14 @@ class ExcelService {
       });
       console.log('Step 3 - Lop records for khoa_dao_tao_id', khoa_dao_tao_id, ':', lopCount);
 
+      let finalLopIds = [];
+      if (lop_ids && lop_ids.length > 0) finalLopIds = lop_ids;
+      else if (lop_id) finalLopIds = [lop_id];
+
       // Step 4: Get TKB IDs for this mon_hoc and khoa_dao_tao (and lop_id if provided)
       const tkbWhere = { mon_hoc_id: mon_hoc_id };
-      if (lop_id) {
-        tkbWhere.lop_id = lop_id;
+      if (finalLopIds.length > 0) {
+        tkbWhere.lop_id = { [Op.in]: finalLopIds };
       }
 
       const tkbRecords = await thoi_khoa_bieu.findAll({
@@ -979,6 +1042,7 @@ class ExcelService {
             ten: d.sinh_vien?.ten,
             lop: studentLop,
             diems: [{
+              thoi_khoa_bieu: { lop_id: d.sinh_vien?.lop_id, lop: { id: d.sinh_vien?.lop_id, ma_lop: studentLop?.ma_lop } },
               diem_ck: d.diem_ck,
               diem_hp: d.diem_hp,
               diem_ck2: d.diem_ck2
@@ -1011,26 +1075,46 @@ class ExcelService {
 
   // Export danh sách thi lại - same format as cuối kỳ but for retake students
   static async exportToExcelThiLai(sinhVienData, { khoa_dao_tao_id, mon_hoc_id }) {
-    // Lấy thông tin bổ sung
-    const exportInfo = await this.getExportInfoCuoiKy({ khoa_dao_tao_id, mon_hoc_id });
-
-    const headersRow = [
-      "STT",
-      "SBD",
-      "Mã HVSV",
-      "Họ đệm",
-      "Tên",
-      "Lớp",
-      "Mã đề",
-      "Điểm",
-      "Ký tên",
-      "Ghi chú",
-    ];
-
-    const totalColumns = 10;
-
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("SinhVien", {
+    
+    const groupedData = {};
+    for (const sv of sinhVienData) {
+        if (!sv.diems || sv.diems.length === 0) continue;
+        const lopId = sv.diems[0].thoi_khoa_bieu?.lop?.id || sv.diems[0].thoi_khoa_bieu?.lop_id || sv.lop?.id;
+        if (!groupedData[lopId]) groupedData[lopId] = [];
+        groupedData[lopId].push(sv);
+    }
+    
+    const lopIds = Object.keys(groupedData);
+    
+    for (let cidx = 0; cidx < lopIds.length; cidx++) {
+        const lId = lopIds[cidx];
+        const classStudents = groupedData[lId];
+        const exportInfo = await this.getExportInfoCuoiKy({ khoa_dao_tao_id, mon_hoc_id });
+        
+        let submaLop = classStudents.length > 0 && classStudents[0].lop ? classStudents[0].lop.ma_lop : `Lop_${lId}`;
+        
+        const headersRow = [
+          "STT",
+          "SBD",
+          "Mã HVSV",
+          "Họ đệm",
+          "Tên",
+          "Lớp",
+          "Mã đề",
+          "Điểm",
+          "Ký tên",
+          "Ghi chú",
+        ];
+
+        const totalColumns = 10;
+
+        let sheetName = String(submaLop).replace(/[\*\?\:\]\[\\\/\/]/g, '').substring(0, 31);
+        if (workbook.getWorksheet(sheetName)) {
+            sheetName = `${sheetName}_${cidx}`;
+        }
+
+        const worksheet = workbook.addWorksheet(sheetName, {
       pageSetup: {
         orientation: "portrait",
         fitToPage: true,
@@ -1138,7 +1222,7 @@ class ExcelService {
     const tableStart = headerRow.number;
 
     // Xử lý dữ liệu
-    const dataRows = sinhVienData.map((sv, index) => {
+    const dataRows = classStudents.map((sv, index) => {
       const diemData = sv.diems && sv.diems.length > 0 ? sv.diems[0] : {};
       // Lấy diem_ck2 nếu có, để trống nếu NULL
       const diemCK2 = diemData.diem_ck2 !== null && diemData.diem_ck2 !== undefined ? diemData.diem_ck2 : "";
@@ -1260,7 +1344,7 @@ class ExcelService {
     worksheet.getColumn(8).width = 7.71 * 1.2;
     worksheet.getColumn(9).width = 8 * 1.2;
     worksheet.getColumn(10).width = 12.57 * 1.2;
-
+    } // end for loop
     return workbook;
   }
 }

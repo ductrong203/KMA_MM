@@ -3,6 +3,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PersonIcon from '@mui/icons-material/Person';
 import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {
     Alert,
     Badge,
@@ -19,6 +20,7 @@ import {
     MenuItem,
     Paper,
     Select,
+    ListItemText,
     Tab,
     Table,
     TableBody,
@@ -60,7 +62,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     const [educationTypeOptions, setEducationTypeOptions] = useState([]);
     const [batch, setBatch] = useState('');
     const [batchOptions, setBatchOptions] = useState([]);
-    const [classGroup, setClassGroup] = useState('');
+    const [classGroup, setClassGroup] = useState([]);
     const [classOptions, setClassOptions] = useState([]);
     const [course, setCourse] = useState('');
     const [courseOptions, setCourseOptions] = useState([]);
@@ -108,7 +110,8 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         setLoading(true);
         try {
             // lopId is optional: if classGroup is empty, fetch all for the batch
-            const result = await fetchApprovalList(batch, semester, classGroup);
+            const classIdToFetch = (classGroup && classGroup.length > 0) ? classGroup[0] : '';
+            const result = await fetchApprovalList(batch, semester, classIdToFetch);
             if (result && result.data) {
                 setApprovalList(result.data);
                 if (result.data.length === 0) {
@@ -255,7 +258,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         const fetchBatches = async () => {
             setLoadingBatches(true);
             setBatch('');
-            setClassGroup('');
+            setClassGroup([]);
             setCourse('');
             try {
                 const response = await getDanhSachKhoaTheoDanhMucDaoTao(educationType);
@@ -307,7 +310,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         if (!batch) return;
         const fetchClasses = async () => {
             setLoadingClasses(true);
-            setClassGroup('');
+            setClassGroup([]);
             setCourse('');
             try {
                 const response = await getDanhSachLopTheoKhoaDaoTao(batch);
@@ -367,11 +370,12 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     }, [course, courseOptions]);
 
     useEffect(() => {
-        if (!classGroup || !course || (searchType === 'class' && !classGroup)) return;
+        if (!classGroup || classGroup.length === 0 || !course || (searchType === 'class' && classGroup.length === 0)) return;
         const fetchScheduleId = async () => {
             setLoading(true);
             try {
-                const response = await getThoiKhoaBieu(course, classGroup, semester);
+                // if multiple classes are selected, we only load the first one for grade viewing/editing
+                const response = await getThoiKhoaBieu(course, classGroup[0], semester);
                 setScheduleId(response.data[0].id);
             } catch (error) {
                 console.error('Error fetching schedule ID:', error);
@@ -384,9 +388,13 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     }, [classGroup, course, semester, searchType]);
 
     const handleSearch = async () => {
-        if (!batch || !semester || !course || (searchType === 'class' && !classGroup)) {
+        if (!batch || !semester || !course || (searchType === 'class' && (!classGroup || classGroup.length === 0))) {
             toast.error('Vui lòng chọn đầy đủ thông tin để tìm kiếm học viên.');
             return;
+        }
+        if (searchType === 'class' && classGroup.length > 1) {
+            toast.warning('Chỉ hiển thị danh sách của 1 lớp trên giao diện. Vui lòng chọn 1 lớp duy nhất để xem điểm.');
+            // However, we will still proceed with the first selected class (as scheduleId uses classGroup[0])
         }
         setLoadingStudents(true);
         try {
@@ -960,20 +968,19 @@ function QuanLyDiem({ onSave, sampleStudents }) {
     };
 
     const exportExcel = (lop_id, khoa_dao_tao_id, mon_hoc_id, activeGradeTab, courseOptions, classOptions, searchType = 'class') => {
-        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+        if (!mon_hoc_id || (searchType === 'class' && (!lop_id || lop_id.length === 0)) || (searchType === 'batch' && !khoa_dao_tao_id)) {
             toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
             return;
         }
         if (activeGradeTab === 0 && searchType === 'batch') {
-            toast.error('Chỉ có thể export điểm giữa kỳ theo lớp học phần.');
-            return;
+            // Cho phép export theo batch (tất cả các lớp trong 1 kỳ)
         }
         const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
         const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
         let maLop = 'Unknown';
-        if (searchType === 'class' && lop_id) {
-            const classInfo = classOptions.find((option) => option.id === lop_id);
-            maLop = classInfo?.ma_lop || 'Unknown';
+        if (searchType === 'class' && lop_id && lop_id.length > 0) {
+            const classInfoNames = classOptions.filter(option => lop_id.includes(option.id)).map(opt => opt.ma_lop);
+            maLop = classInfoNames.join('_') || 'Unknown';
         } else {
             const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
             maLop = batchInfo?.ma_khoa || 'Unknown';
@@ -982,11 +989,17 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         const fileName = `${tenMonHoc} - ${maLop}${suffix}.xlsx`;
         const exportApi = activeGradeTab === 0 ? exportDanhSachDiemGK : exportDanhSachDiemCK;
         const data = activeGradeTab === 0
-            ? { lop_id, mon_hoc_id }
+            ? {
+                lop_ids: searchType === 'class' ? lop_id : undefined,
+                mon_hoc_id,
+                khoa_dao_tao_id,
+                ky_hoc: semester
+            }
             : {
                 mon_hoc_id,
                 khoa_dao_tao_id,
-                ...(searchType === 'class' && lop_id && { lop_id }),
+                lop_ids: searchType === 'class' ? lop_id : undefined,
+                ky_hoc: semester,
                 min_tp1: gradeSettings.diemGiuaKyToiThieu,
                 min_tp2: gradeSettings.diemChuyenCanToiThieu,
                 is_defense: currentSubjectInfo?.bao_ve || false
@@ -1138,16 +1151,16 @@ function QuanLyDiem({ onSave, sampleStudents }) {
 
     // Export danh sách thi lại - chỉ export sinh viên cần thi lại với tên file "tên môn - lớp - thi lại"
     const exportExcelThiLai = (lop_id, khoa_dao_tao_id, mon_hoc_id, courseOptions, classOptions, searchType = 'class') => {
-        if (!mon_hoc_id || (searchType === 'class' && !lop_id) || (searchType === 'batch' && !khoa_dao_tao_id)) {
+        if (!mon_hoc_id || (searchType === 'class' && (!lop_id || lop_id.length === 0)) || (searchType === 'batch' && !khoa_dao_tao_id)) {
             toast.error('Vui lòng chọn đầy đủ thông tin (môn học và lớp/khóa) trước khi export.');
             return;
         }
         const courseInfo = courseOptions.find((option) => option.id === mon_hoc_id);
         const tenMonHoc = courseInfo?.ten_mon_hoc || 'Unknown';
         let maLop = 'Unknown';
-        if (searchType === 'class' && lop_id) {
-            const classInfo = classOptions.find((option) => option.id === lop_id);
-            maLop = classInfo?.ma_lop || 'Unknown';
+        if (searchType === 'class' && lop_id && lop_id.length > 0) {
+            const classInfoNames = classOptions.filter(option => lop_id.includes(option.id)).map(opt => opt.ma_lop);
+            maLop = classInfoNames.join('_') || 'Unknown';
         } else {
             const batchInfo = batchOptions.find((option) => option.id === khoa_dao_tao_id);
             maLop = batchInfo?.ma_khoa || 'Unknown';
@@ -1157,7 +1170,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
         const data = {
             mon_hoc_id,
             khoa_dao_tao_id,
-            ...(searchType === 'class' && lop_id && { lop_id }),
+            lop_ids: searchType === 'class' ? lop_id : undefined,
             min_exam_score: gradeSettings.diemThiToiThieu,
             min_avg_score: gradeSettings.diemTrungBinhDat,
             min_tp1: gradeSettings.diemGiuaKyToiThieu,
@@ -1302,7 +1315,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                             label="Tìm kiếm theo"
                             onChange={(e) => {
                                 setSearchType(e.target.value);
-                                setClassGroup('');
+                                setClassGroup([]);
                             }}
                             disabled={!batch}
                         >
@@ -1316,24 +1329,45 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                         <FormControl fullWidth>
                             <InputLabel>Lớp</InputLabel>
                             <Select
-                                value={classGroup}
+                                multiple
+                                value={Array.isArray(classGroup) ? classGroup : []}
                                 label="Lớp"
-                                onChange={(e) => setClassGroup(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value.includes('ALL')) {
+                                        if (Array.isArray(classGroup) && classGroup.length === classOptions.length) {
+                                            setClassGroup([]);
+                                        } else {
+                                            setClassGroup(classOptions.map(opt => opt.id));
+                                        }
+                                    } else {
+                                        setClassGroup(typeof value === 'string' ? value.split(',') : value);
+                                    }
+                                }}
                                 disabled={!batch || loadingClasses}
+                                renderValue={(selected) => classOptions.filter(opt => selected.includes(opt.id)).map(opt => opt.ma_lop).join(', ')}
                             >
-                                <MenuItem value="">
-                                    <em>Tất cả</em>
-                                </MenuItem>
                                 {loadingClasses ? (
                                     <MenuItem value="" disabled>
                                         <CircularProgress size={20} />
                                     </MenuItem>
                                 ) : (
-                                    classOptions.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>
-                                            {option.ma_lop}
-                                        </MenuItem>
-                                    ))
+                                    [
+                                        <MenuItem key="all" value="ALL" sx={{ fontWeight: 'bold' }}>
+                                            <Checkbox
+                                                checked={classOptions.length > 0 && Array.isArray(classGroup) && classGroup.length === classOptions.length}
+                                                indeterminate={Array.isArray(classGroup) && classGroup.length > 0 && classGroup.length < classOptions.length}
+                                            />
+                                            <ListItemText primary="-- Chọn tất cả --" />
+                                        </MenuItem>,
+                                        <Divider key="divider" />,
+                                        ...classOptions.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>
+                                                <Checkbox checked={classGroup.indexOf(option.id) > -1} />
+                                                <ListItemText primary={option.ma_lop} />
+                                            </MenuItem>
+                                        ))
+                                    ]
                                 )}
                             </Select>
                         </FormControl>
@@ -1365,16 +1399,27 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                     </Grid>
                 )}
                 <Grid item xs={12} sm={6} md={3}>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SearchIcon />}
-                        onClick={role === 'lanhDaoDuyet' ? handleApprovalSearch : handleSearch}
-                        sx={{ height: '56px' }}
-                        disabled={role !== 'lanhDaoDuyet' && ((!classGroup && searchType === 'class') || !course || !batch || !semester)}
-                    >
-                        Tìm kiếm
-                    </Button>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<SearchIcon />}
+                            onClick={role === 'lanhDaoDuyet' ? handleApprovalSearch : handleSearch}
+                            sx={{ height: '56px', flex: 1 }}
+                            disabled={role !== 'lanhDaoDuyet' && ((!classGroup && searchType === 'class') || !course || !batch || !semester)}
+                        >
+                            Tìm kiếm
+                        </Button>
+                        <Tooltip title={
+                            <Typography variant="body2">
+                                <strong>Lưu ý:</strong><br />
+                                - Chọn "Theo lớp" thì 1 hoặc nhiều lớp, chọn "Theo khóa đào tạo" mặc định là xuất tất cả các lớp thuộc khóa đào tạo đó.<br />
+                                - Nhấn <strong>EXPORT Điểm Giữa Kỳ/Cuối kỳ/Thi lại</strong>.
+                            </Typography>
+                        } arrow placement="top">
+                            <HelpOutlineIcon color="primary" sx={{ cursor: 'pointer', fontSize: 32 }} />
+                        </Tooltip>
+                    </Box>
                 </Grid>
             </Grid>
 
