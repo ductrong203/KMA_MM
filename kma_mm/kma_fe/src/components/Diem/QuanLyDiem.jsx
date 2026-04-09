@@ -1417,7 +1417,7 @@ function QuanLyDiem({ onSave, sampleStudents }) {
                                 - Nhấn <strong>EXPORT Điểm Giữa Kỳ/Cuối kỳ/Thi lại</strong>.
                             </Typography>
                         } arrow placement="top">
-                            <HelpOutlineIcon color="primary" sx={{ cursor: 'pointer', fontSize:  }} />
+                            <HelpOutlineIcon color="primary" sx={{ cursor: 'pointer', fontSize: 32 }} />
                         </Tooltip>
                     </Box>
                 </Grid>
