@@ -7,15 +7,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 const createPhongBan = async (req, res) => {
   try {
@@ -38,7 +30,7 @@ const createPhongBan = async (req, res) => {
     if (response) {
       let inforActivity = {
         username: userN,
-        role: mapRole[userR],
+        role: getRoleName(userR),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: `Người dùng ${userN}  đã tạo thành công phòng ban  ${response.data.ten_phong_ban} ${temp}`,
@@ -82,7 +74,7 @@ const updatePhongBan = async (req, res) => {
     if (response) {
       let inforActivity = {
         username: userN,
-        role: mapRole[userR],
+        role: getRoleName(userR),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: getDiffData(oldData[0].dataValues, newData[0].dataValues),

@@ -4,6 +4,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { getDetailUserById } from "../Api_controller/Service/authService";
 import { useNavigate } from "react-router-dom";
+import { getRoleName, getRoleLabel } from "../constants/roleEnum";
 
 const Layout = ({ children, Info, title }) => {
     const [roleInfo, setRoleInfo] = useState();
@@ -11,52 +12,43 @@ const Layout = ({ children, Info, title }) => {
 
     const handleUserClick = () => {
         let role = localStorage.getItem("role")
-        navigate(`/${role}/info`); // Thay đường dẫn bằng URL trang thông tin người dùng
+        navigate(`/${role}/info`);
     };
+    
     const handleBackToHome = () => {
         navigate(`/${roleInfo}/dashboard`)
     }
+    
     const handleLogout = () => {
         localStorage.removeItem('role');
         localStorage.removeItem('access_token');
         console.log('Logging out...');
-        window.location.href = '/login'; // Điều hướng tới trang login
+        window.location.href = '/login';
     };
+    
     const [info, setInfo] = useState();
-    const roleMapping = {
-        1: "training",
-        2: "examination",
-        3: "student_manage",
-        4: "library",
-        5: "director",
-        6: "sv",
-        7: "admin",
-        8: "lanhDaoDuyet",
-    };
-    // Fix the useEffect hook usage and conditional rendering
+
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
-                setRoleInfo(localStorage.getItem("role"));
+                const currentRole = localStorage.getItem("role");
+                setRoleInfo(currentRole);
 
                 let id = localStorage.getItem("id");
                 if (id) {
                     const response = await getDetailUserById(id);
-
-                    //  console.log(">>", response.data)
                     if (response.data) {
                         setInfo(response.data);
-                        //  console.log(">>", info)
                     }
-
                 }
             } catch (e) {
-                throw e;
+                console.error("Error fetching user info in layout:", e);
             }
         };
 
         fetchUserInfo();
     }, []);
+
     return (
         <div>
             {/* Thanh điều hướng */}
@@ -80,7 +72,8 @@ const Layout = ({ children, Info, title }) => {
                                     {info ? info.username : "Đang tải..."}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    {info ? roleMapping[info.role] : "Đang tải..."}
+                                    {/* Hiển thị Tiếng Việt cho quyền hạn ở Header */}
+                                    {info ? getRoleLabel(info.role) : "Đang tải..."}
                                 </Typography>
                             </Box>
                         </Box>
@@ -104,7 +97,7 @@ const Layout = ({ children, Info, title }) => {
 
             {/* Nội dung chính */}
             <div style={{ padding: "20px" }}>
-                {children} {/* Các route con sẽ được render tại đây */}
+                {children}
             </div>
         </div>
     );

@@ -8,16 +8,7 @@ const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { formatDate } = require("../utils/formatDate");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 
 class KhenThuongKyLuatController {
@@ -36,7 +27,7 @@ class KhenThuongKyLuatController {
         if (KhenThuongKyLuat) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `${khen_phat === "khen_thuong" ? "khen thưởng" : "kỷ luật"} với sinh viên có mã ${maSinhVien}`,
@@ -129,7 +120,7 @@ class KhenThuongKyLuatController {
           }
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: getDiffData(oldData, newData),
@@ -177,7 +168,7 @@ class KhenThuongKyLuatController {
         if (KhenThuongKyLuat) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Xóa ${khen_phat === "khen_thuong" ? "khen thưởng" : "kỷ luật"} ${danhMuc} với sinh viên có mã ${maSinhVien}`,

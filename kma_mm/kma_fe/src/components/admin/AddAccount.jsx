@@ -3,6 +3,7 @@ import { Button, TextField, Grid, Typography, MenuItem, IconButton } from '@mui/
 import { AdminRegister } from '../../Api_controller/Service/authService';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
 import { useNavigate } from 'react-router-dom';
+import { getRoleName, ROLE_MAPPING, ROLE_LABELS } from "../../constants/roleEnum";
 
 const AddAccount = () => {
     const navigate = useNavigate(); // Hook điều hướng
@@ -12,16 +13,7 @@ const AddAccount = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [role, setRole] = useState(6); // Default to 'sv'
 
-    const roleMapping = {
-        1: "đào tạo",
-        2: "khảo thí",
-        3: "quản lý sinh viên",
-        4: "thư viện",
-        5: "giám đốc",
-        6: "sinh viên",
-        7: "admin",
-        8: "lãnh đạo duyệt",
-    };
+    
 
     const handleSubmit = async () => {
         console.log(password, confirmPassword, ho_ten)
@@ -67,7 +59,7 @@ const AddAccount = () => {
                     />
                 </Grid>
 
-                {/* Username */}
+                {/* Name */}
                 <Grid item xs={12} sm={6}>
                     <TextField
                         label="Họ tên"
@@ -111,7 +103,7 @@ const AddAccount = () => {
                         value={role}
                         onChange={(e) => setRole(parseInt(e.target.value))}
                     >
-                        {Object.entries(roleMapping).map(([key, value]) => (
+                        {Object.entries(ROLE_LABELS).map(([key, value]) => (
                             <MenuItem key={key} value={key}>
                                 {value}
                             </MenuItem>

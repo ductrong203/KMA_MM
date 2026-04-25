@@ -7,15 +7,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 class DanhMucKhenKyLuatController {
   static async create(req, res) {
@@ -30,7 +22,7 @@ class DanhMucKhenKyLuatController {
         if (DanhMucKhenKyLuat) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN}  đã thêm thành công danh mục ${DanhMucKhenKyLuat.loai === "khen_thuong" ? "khen thưởng" : "kỷ luật"} ${DanhMucKhenKyLuat.ten_danh_muc} `,
@@ -111,7 +103,7 @@ class DanhMucKhenKyLuatController {
           }
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: getDiffData(oldData, newData),
@@ -149,7 +141,7 @@ class DanhMucKhenKyLuatController {
         if (DanhMucKhenKyLuat) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN} đã xóa thành công danh mục ${loai === "khen_thuong" ? "khen thưởng" : "kỷ luật"} ${tenDanhMuc} `,

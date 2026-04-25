@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Typography } from '@mui/material';
 import { updateUserById } from '../../Api_controller/Service/adminService';  // Giả sử bạn đã có API cho việc cập nhật người dùng
+import { ROLE_LABELS } from "../../constants/roleEnum";
 
 const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
     const [username, setUsername] = useState('');
@@ -44,11 +45,11 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>Edit User</DialogTitle>
+            <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>Cập nhật tài khoản</DialogTitle>
             <DialogContent sx={{ padding: 3 }}>
-                <Typography variant="body2" sx={{ marginBottom: 2 }}>Please update the user details below:</Typography>
+                <Typography variant="body2" sx={{ marginBottom: 2 }}>Vui lòng cập nhật thông tin người dùng bên dưới:</Typography>
                 <TextField
-                    label="Username"
+                    label="Tên đăng nhập"
                     variant="outlined"
                     fullWidth
                     value={username}
@@ -57,7 +58,7 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
                     inputProps={{ style: { padding: '12px 14px' } }}
                 />
                 <TextField
-                    label="Role"
+                    label="Quyền hạn"
                     variant="outlined"
                     fullWidth
                     value={role}
@@ -66,17 +67,14 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
                     sx={{ mb: 3 }}
                     inputProps={{ style: { padding: '12px 14px' } }}
                 >
-                    <MenuItem value="1">Đào tạo</MenuItem>
-                    <MenuItem value="2">Khảo thí</MenuItem>
-                    <MenuItem value="3">QLSV</MenuItem>
-                    <MenuItem value="4">Thư viện</MenuItem>
-                    <MenuItem value="5">Giám đốc</MenuItem>
-                    <MenuItem value="6">SV</MenuItem>
-                    <MenuItem value="7">Admin</MenuItem>
-                    <MenuItem value="8">Lãnh đạo duyệt</MenuItem>
+                    {Object.entries(ROLE_LABELS).map(([key, value]) => (
+                        <MenuItem key={key} value={key}>
+                            {value}
+                        </MenuItem>
+                    ))}
                 </TextField>
                 <TextField
-                    label="Created At"
+                    label="Ngày tạo"
                     variant="outlined"
                     fullWidth
                     value={createdAt}
@@ -85,7 +83,7 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
                     inputProps={{ style: { padding: '12px 14px' } }}
                 />
                 <TextField
-                    label="Updated At"
+                    label="Ngày cập nhật"
                     variant="outlined"
                     fullWidth
                     value={updatedAt}
@@ -96,10 +94,10 @@ const EditUserModal = ({ user, open, onClose, onUserUpdated }) => {
             </DialogContent>
             <DialogActions sx={{ padding: '16px 24px' }}>
                 <Button onClick={onClose} color="secondary" sx={{ fontWeight: 'bold' }}>
-                    Cancel
+                    Hủy
                 </Button>
                 <Button onClick={handleSubmit} color="primary" sx={{ fontWeight: 'bold', '&:hover': { backgroundColor: '#3b82f6' } }}>
-                    Save Changes
+                    Lưu thay đổi
                 </Button>
             </DialogActions>
         </Dialog>

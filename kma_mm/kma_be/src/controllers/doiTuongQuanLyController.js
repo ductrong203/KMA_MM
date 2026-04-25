@@ -8,15 +8,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-    1: "daoTao",
-    2: "khaoThi",
-    3: "quanLiSinhVien",
-    5: "giamDoc",
-    6: "sinhVien",
-    7: "admin",
-    8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 
 class DoiTuongQuanLyController {
@@ -32,7 +24,7 @@ class DoiTuongQuanLyController {
                 if (doiTuongQuanLy) {
                     let inforActivity = {
                         username: userN,
-                        role: mapRole[userR],
+                        role: getRoleName(userR),
                         action: req.method,
                         endpoint: req.originalUrl,
                         reqData: `Người dùng ${userN}  đã tạo thành công đối tượng quản lí  ${doiTuongQuanLy.ten_doi_tuong} `,
@@ -93,7 +85,7 @@ class DoiTuongQuanLyController {
                     const newData = await doi_tuong_quan_ly.findByPk(req.params.id);
                     let inforActivity = {
                         username: userN,
-                        role: mapRole[userR],
+                        role: getRoleName(userR),
                         action: req.method,
                         endpoint: req.originalUrl,
                         reqData: getDiffData(oldData.dataValues, newData.dataValues),
@@ -133,7 +125,7 @@ class DoiTuongQuanLyController {
                 if (doiTuongQuanLy) {
                     let inforActivity = {
                         username: userN,
-                        role: mapRole[userR],
+                        role: getRoleName(userR),
                         action: req.method,
                         endpoint: req.originalUrl,
                         reqData: `Người dùng ${userN}  đã xóa thành công đối tượng quản lí ${tenDoiTuong} `,

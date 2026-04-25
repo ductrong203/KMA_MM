@@ -5,15 +5,7 @@
 //     const [username, setUsername] = useState('');
 //     const [role, setRole] = useState('');
 
-//     const roleMapping = {
-//         1: "training",
-//         2: "examination",
-//         3: "student_manage",
-//         4: "library",
-//         5: "director",
-//         6: "sv",
-//         7: "admin",
-//     };
+//     
 
 //     const handleAssignRole = () => {
 //         console.log(`Assigning role ${role} to user ${username}`);
@@ -42,7 +34,7 @@
 //                         value={role}
 //                         onChange={(e) => setRole(parseInt(e.target.value))} // Nếu muốn giữ role dạng số
 //                     >
-//                         {Object.entries(roleMapping).map(([key, value]) => (
+//                         {Object.entries(ROLE_LABELS).map(([key, value]) => (
 //                             <MenuItem key={key} value={parseInt(key)}>
 //                                 {value}
 //                             </MenuItem>
@@ -71,22 +63,14 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Icon quay lại
 import axios from 'axios';
 import { asignRole, getAllUser } from '../../Api_controller/Service/adminService';
 import { useNavigate } from 'react-router-dom';
+import { getRoleName, ROLE_MAPPING, ROLE_LABELS } from "../../constants/roleEnum";
 const AssignRoles = () => {
     const [username, setUsername] = useState('');
     const [userId, setUserId] = useState(null);
     const [role, setRole] = useState('');
     const [users, setUsers] = useState([]);
     const navigate = useNavigate(); // Hook điều hướng
-    const roleMapping = {
-        1: "đào tạo",
-        2: "khảo thí",
-        3: "quản lý sinh viên",
-        4: "thư viện",
-        5: "giám đốc",
-        6: "sinh viên",
-        7: "admin",
-        8: "lãnh đạo duyệt",
-    };
+    
 
     // Fetch all users on component mount
     useEffect(() => {
@@ -110,7 +94,7 @@ const AssignRoles = () => {
         }
         try {
             const response = await asignRole(userId, role);
-            alert(`Role ${roleMapping[role]} assigned to user ${username}`);
+            alert(`Role ${getRoleName(role)} assigned to user ${username}`);
         } catch (error) {
             console.error('Error assigning role:', error);
             alert('Failed to assign role');
@@ -167,7 +151,7 @@ const AssignRoles = () => {
                         value={role}
                         onChange={(e) => setRole(parseInt(e.target.value))}
                     >
-                        {Object.entries(roleMapping).map(([key, value]) => (
+                        {Object.entries(ROLE_LABELS).map(([key, value]) => (
                             <MenuItem key={key} value={parseInt(key)}>
                                 {value}
                             </MenuItem>

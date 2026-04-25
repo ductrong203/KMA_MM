@@ -10,7 +10,7 @@ const Dashboard = ({ role }) => {
             "Xem thông tin cá nhân",
         ],
         admin: ["Tùy chỉnh website", "Thêm cán bộ", "Xem file log"],
-        kho_thi: ["Nhập điểm", "Xuất điểm", "Thống kê"],
+        khao_thi: ["Nhập điểm", "Xuất điểm", "Thống kê"],
         dao_tao: ["Xét tốt nghiệp", "Cấp bằng", "Nhập thông tin học viên"],
         quan_ly: ["Duyệt đơn", "Cảnh báo học tập", "Thống kê"],
     };

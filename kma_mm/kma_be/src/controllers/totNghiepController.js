@@ -4,15 +4,7 @@ const { extraDanhSachTotNghiep } = require("../utils/extraList");
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-};
+const { getRoleName } = require("../enums/roleEnum");
 class TotNghiepController {
   // Xét duyệt tốt nghiệp
   async approveGraduation(req, res) {
@@ -65,7 +57,7 @@ class TotNghiepController {
         if (result) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: extraList,

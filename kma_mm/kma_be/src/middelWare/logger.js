@@ -39,38 +39,36 @@ const logActivity = async (req, res, next) => {
       }
     }
     //  getUsernameById(decoded?.id);      
-    const mapRole = {
-      1: "daoTao",
-      2: "khaoThi",
-      3: "quanLiSinhVien",
-      5: "giamDoc",
-      6: "sinhVien",
-      7: "admin",
-      8: "lanhDaoDuyet"
-
-    }
-
+    const { getRoleName } = require("../enums/roleEnum");
     const originalSend = res.send;
     let responseBody;
 
     res.send = function (body) {
-      responseBody = JSON.parse(body);
+      if (typeof body === 'string') {
+        try {
+          responseBody = JSON.parse(body);
+        } catch (e) {
+          responseBody = body;
+        }
+      } else {
+        responseBody = body;
+      }
       return originalSend.call(this, body);
     }
 
     res.on("finish", async () => {
       try {
 
-        if (req.method !== "GET" && req.path !== "/login" && res.statusCode < 400 && responseBody.status !== "ERR") {
+        if (req.method !== "GET" && req.path !== "/login" && res.statusCode < 400 && responseBody?.status !== "ERR") {
           // console.log(req.body.password);
           delete req.body.password;
           delete req.body.confirmPassword;
 
 
-          console.log("res#################", responseBody.message);
+          console.log("res#################", responseBody?.message);
           await activity_logs.create({
             Username: await getInforByUsername(decoded?.id) || "unknown",
-            Role: mapRole[decoded?.role] || "unknown",
+            Role: getRoleName(decoded?.role) || "unknown",
             action: `${req.method} : ${req.path}`,
             endpoint: req.originalUrl,
             request_data: req.body,

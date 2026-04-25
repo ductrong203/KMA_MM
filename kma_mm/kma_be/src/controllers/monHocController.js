@@ -8,15 +8,7 @@ const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const { text } = require("body-parser");
-const mapRole = {
-    1: "daoTao",
-    2: "khaoThi",
-    3: "quanLiSinhVien",
-    5: "giamDoc",
-    6: "sinhVien",
-    7: "admin",
-    8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 const createMonHoc = async (req, res) => {
     try {
@@ -51,7 +43,7 @@ const createMonHoc = async (req, res) => {
         if (response) {
             let inforActivity = {
                 username: userN,
-                role: mapRole[userR],
+                role: getRoleName(userR),
                 action: req.method,
                 endpoint: req.originalUrl,
                 reqData: `Người dùng ${userN}  đã tạo thành công môn học ${response.data[0].ten_mon_hoc} thuộc mã hệ đào tạo ${maHeDaoTao} `,
@@ -139,7 +131,7 @@ const updateMonHoc = async (req, res) => {
             }
             let inforActivity = {
                 username: userN,
-                role: mapRole[userR],
+                role: getRoleName(userR),
                 action: req.method,
                 endpoint: req.originalUrl,
                 reqData: `${getDiffData(oldData.dataValues, newData.dataValues) === null ? "" : getDiffData(oldData.dataValues, newData.dataValues)}  ${temp}`,

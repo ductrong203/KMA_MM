@@ -15,11 +15,12 @@ import {
   MenuItem,
   Box,
 } from "@mui/material";
-import { getAllUser } from "../../Api_controller/Service/adminService";
+import { getAllUser, resetPassword } from "../../Api_controller/Service/adminService";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { deleteUserById } from "../../Api_controller/Service/authService";
 import EditUserModal from "./EditUserModal"; // Import modal
+import { getRoleName, ROLE_MAPPING, ROLE_LABELS, getRoleLabel } from "../../constants/roleEnum";
 
 const ManageAccounts = () => {
   const [users, setUsers] = useState([]);
@@ -33,16 +34,7 @@ const ManageAccounts = () => {
   const rowsPerPage = 5;
   const navigate = useNavigate();
 
-  const roleMapping = {
-    1: "đào tạo",
-    2: "khảo thí",
-    3: "quản lý sinh viên",
-    4: "thư viện",
-    5: "giám đốc",
-    6: "sinh viên",
-    7: "admin",
-    8: "lãnh đạo duyệt",
-  };
+  
 
   const handleBackToDashboard = () => {
     navigate("/admin/dashboard");
@@ -88,6 +80,22 @@ const ManageAccounts = () => {
       } catch (error) {
         console.error("Lỗi khi xóa người dùng:", error);
         alert("Có lỗi xảy ra khi xóa người dùng.");
+      }
+    }
+  };
+
+  const handleResetPassword = async (userId) => {
+    if (window.confirm("Bạn có chắc chắn muốn đặt lại mật khẩu cho tài khoản này về '123'?")) {
+      try {
+        const response = await resetPassword(userId);
+        if (response.status === "OK") {
+          alert("Đặt lại mật khẩu thành công về '123'!");
+        } else {
+          alert("Không thể đặt lại mật khẩu. Vui lòng thử lại.");
+        }
+      } catch (error) {
+        console.error("Lỗi khi reset mật khẩu:", error);
+        alert("Có lỗi xảy ra khi đặt lại mật khẩu.");
       }
     }
   };
@@ -166,7 +174,7 @@ const ManageAccounts = () => {
           sx={{ flex: 1 }} // Chiếm 1 phần tỉ lệ
         >
           <MenuItem value="">Tất cả các quyền</MenuItem>
-          {Object.entries(roleMapping).map(([key, value]) => (
+          {Object.entries(ROLE_LABELS).map(([key, value]) => (
             <MenuItem key={key} value={key}>
               {value}
             </MenuItem>
@@ -187,7 +195,7 @@ const ManageAccounts = () => {
             {currentUsers.map((account) => (
               <TableRow key={account.id}>
                 <TableCell>{account.username}</TableCell>
-                <TableCell>{roleMapping[account.role]}</TableCell>
+                <TableCell>{getRoleLabel(account.role)}</TableCell>
                 <TableCell>
                   <Button
                     variant="outlined"
@@ -200,8 +208,17 @@ const ManageAccounts = () => {
                     variant="outlined"
                     color="secondary"
                     onClick={() => handleDeleteUser(account.id)} // Sửa lại id cho đúng
+                    sx={{ ml: 1 }}
                   >
                     Xóa
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => handleResetPassword(account.id)}
+                    sx={{ ml: 1 }}
+                  >
+                    Reset PW
                   </Button>
                 </TableCell>
               </TableRow>

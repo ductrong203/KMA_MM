@@ -13,6 +13,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import PersonIcon from "@mui/icons-material/Person";
 import LockIcon from "@mui/icons-material/Lock";
 import { changeUserPassWord, getDetailUserById } from "../../Api_controller/Service/authService";
+import { getRoleName, getRoleLabel } from "../../constants/roleEnum";
 
 
 const UserInfo = () => {
@@ -34,16 +35,7 @@ const UserInfo = () => {
     });
 
     // Map role to readable string
-    const roleMapping = {
-        1: "Training",
-        2: "Examination",
-        3: "Student Management",
-        4: "Library",
-        5: "Director",
-        6: "Student",
-        7: "Admin",
-        8: "lanhDaoDuyet",
-    };
+    
 
     // Lấy thông tin cá nhân từ API
     useEffect(() => {
@@ -105,7 +97,7 @@ const UserInfo = () => {
 
             if (response.status === 200) {
                 alert("Đổi mật khẩu thành công!");
-                setIsPasswordModalOpen(false); // Đóng modal
+                setIsPasswordModalOpen(false) // Đóng modal
                 setPasswords({
                     currentPassword: "",
                     newPassword: "",
@@ -184,7 +176,7 @@ const UserInfo = () => {
                 <Typography variant="subtitle1" fontWeight="bold">
                     Quyền hạn
                 </Typography>
-                <Typography>{roleMapping[userInfo.role]}</Typography>
+                <Typography>{getRoleLabel(userInfo.role)}</Typography>
 
                 {/* Ngày tạo */}
                 <Typography variant="subtitle1" fontWeight="bold">
