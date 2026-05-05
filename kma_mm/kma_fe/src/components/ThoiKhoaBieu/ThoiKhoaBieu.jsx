@@ -305,7 +305,7 @@ const ThoiKhoaBieu = () => {
                         ky_hoc: kyHoc,
                         lop_id: lopId,
                         mon_hoc_id: selectedMonHocIds[0],
-                        giang_vien_id: giangVienId,
+                        ma_giang_vien: giangVienId, // Changed to ma_giang_vien
                         giang_vien: giangVien,
                         phong_hoc: phongHoc,
                         tiet_hoc: tietHoc,
@@ -322,7 +322,7 @@ const ThoiKhoaBieu = () => {
                             ky_hoc: kyHoc,
                             lop_id: lopId,
                             mon_hoc_id: monHocId,
-                            giang_vien_id: giangVienId,
+                            ma_giang_vien: giangVienId, // Changed to ma_giang_vien
                             giang_vien: giangVien,
                             phong_hoc: phongHoc,
                             tiet_hoc: tietHoc,
@@ -455,25 +455,25 @@ const ThoiKhoaBieu = () => {
         setSelectedMonHocIds([tkb.mon_hoc_id]);
 
         // Debug giảng viên
-        console.log("Giảng viên ID:", tkb.giang_vien_id);
+        console.log("Mã Giảng viên:", tkb.ma_giang_vien);
         console.log("Giảng viên name:", tkb.giang_vien);
         console.log("Giảng viên list:", giangVienList);
 
         // Xử lý giảng viên một cách an toàn
-        if (tkb.giang_vien_id) {
+        if (tkb.ma_giang_vien) {
             // Tìm giảng viên trong danh sách
-            const foundGiangVien = giangVienList.find(gv => gv.id === tkb.giang_vien_id);
+            const foundGiangVien = giangVienList.find(gv => gv.ma_giang_vien === tkb.ma_giang_vien);
             if (foundGiangVien) {
-                setGiangVienId(tkb.giang_vien_id);
+                setGiangVienId(tkb.ma_giang_vien);
                 setGiangVien(foundGiangVien.ho_ten);
             } else {
                 // Nếu không tìm thấy trong danh sách, dùng tên có sẵn
-                setGiangVienId(tkb.giang_vien_id);
+                setGiangVienId(tkb.ma_giang_vien);
                 setGiangVien(tkb.giang_vien || "");
-                console.warn("Giảng viên không tồn tại trong danh sách:", tkb.giang_vien_id);
+                console.warn("Giảng viên không tồn tại trong danh sách:", tkb.ma_giang_vien);
             }
         } else if (tkb.giang_vien) {
-            // Nếu chỉ có tên mà không có ID (dữ liệu cũ)
+            // Nếu chỉ có tên mà không có mã (dữ liệu cũ)
             setGiangVienId("");
             setGiangVien(tkb.giang_vien);
         } else {
@@ -960,7 +960,7 @@ const ThoiKhoaBieu = () => {
                                                 return option.ho_ten || "";
                                             }}
                                             value={
-                                                giangVienList.find((gv) => gv.id === giangVienId) ||
+                                                giangVienList.find((gv) => gv.ma_giang_vien === giangVienId) ||
                                                 (giangVien ? giangVien : null) // Fallback về tên nếu không tìm thấy ID
                                             }
                                             onChange={(event, newValue) => {
@@ -970,7 +970,7 @@ const ThoiKhoaBieu = () => {
                                                     setGiangVien(newValue);
                                                 } else if (newValue) {
                                                     // Trường hợp chọn từ danh sách
-                                                    setGiangVienId(newValue.id);
+                                                    setGiangVienId(newValue.ma_giang_vien); // LƯU Ý: Lấy mã giảng viên
                                                     setGiangVien(newValue.ho_ten);
                                                 } else {
                                                     // Trường hợp clear

@@ -34,7 +34,11 @@ module.exports = function (sequelize, DataTypes) {
     },
     ma_giang_vien: {
       type: DataTypes.STRING(50),
-      allowNull: true
+      allowNull: true,
+      references: {
+        model: 'giang_vien',
+        key: 'ma_giang_vien'
+      }
     },
     giang_vien: {
       type: DataTypes.STRING(100),
@@ -92,12 +96,20 @@ module.exports = function (sequelize, DataTypes) {
           { name: "mon_hoc_id" },
         ]
       },
+      {
+        name: "fk_tkb_giang_vien_ma",
+        using: "BTREE",
+        fields: [
+          { name: "ma_giang_vien" },
+        ]
+      },
     ]
   });
 
   ThoiKhoaBieu.associate = function (models) {
     ThoiKhoaBieu.belongsTo(models.lop, { foreignKey: 'lop_id', as: 'lop' });
     ThoiKhoaBieu.belongsTo(models.mon_hoc, { foreignKey: 'mon_hoc_id', as: 'mon_hoc' });
+    ThoiKhoaBieu.belongsTo(models.giang_vien, { foreignKey: 'ma_giang_vien', targetKey: 'ma_giang_vien', as: 'giang_vien_detail' });
   };
 
   return ThoiKhoaBieu;

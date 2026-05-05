@@ -9,7 +9,8 @@ module.exports = function(sequelize, DataTypes) {
     },
     ma_giang_vien: {
       type: DataTypes.STRING(50),
-      allowNull: true
+      allowNull: true,
+      unique: "ma_giang_vien_unique"
     },
     ho_ten: {
       type: DataTypes.STRING(100),
@@ -118,6 +119,14 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "phong_ban_id" },
+        ]
+      },
+      {
+        name: "ma_giang_vien_unique",
+        unique: true,
+        using: "BTREE",
+        fields: [
+          { name: "ma_giang_vien" },
         ]
       },
     ]
