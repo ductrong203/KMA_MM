@@ -63,6 +63,16 @@ export const getDetailUserById = async (id) => {
     return response.data
 }
 
+export const updateUser = async (id, data) => {
+    try {
+        const response = await api.put(`/auth/update-user/${id}`, data);
+        return response;
+    } catch (error) {
+        console.error("Error in updateUser:", error);
+        throw error;
+    }
+};
+
 export const changeUserPassWord = async (id, data) => {
     try {
         const response = await api.put(`/auth/change-password/${id}`, data);
