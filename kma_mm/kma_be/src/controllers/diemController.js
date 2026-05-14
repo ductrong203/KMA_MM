@@ -4,15 +4,7 @@ const { logDiem } = require("../utils/extraList");
 const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 class DiemController {
   static async filter(req, res) {
@@ -100,7 +92,7 @@ class DiemController {
         if (result) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN} đã tạo bảng điểm kỳ ${kyHoc} cho học phần ${monHoc} của lớp ${lop} `,
@@ -152,7 +144,7 @@ class DiemController {
           const description = `Cập nhật điểm môn ${courseInfo}${classInfo} (${countSinhVien} sinh viên)`;
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: extraData,
@@ -193,7 +185,7 @@ class DiemController {
         if (result) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN} đã thêm sinh viên có mã sinh viên ${ma_sinh_vien} học lại vào lớp ${maLop} cho học phần ${monHoc} kỳ ${kyHoc}`,
@@ -335,7 +327,7 @@ class DiemController {
         let actionText = is_locked ? "duyệt điểm (khóa)" : "bỏ duyệt điểm (mở khóa)";
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN} đã ${actionText} cho lớp học phần ID ${thoi_khoa_bieu_id}`,

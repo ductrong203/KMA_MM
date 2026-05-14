@@ -70,6 +70,8 @@ function initModels(sequelize) {
   mon_hoc.hasMany(thoi_khoa_bieu, { as: "thoi_khoa_bieus", foreignKey: "mon_hoc_id" });
   giang_vien.belongsTo(phong_ban, { as: "phong_ban", foreignKey: "phong_ban_id" });
   phong_ban.hasMany(giang_vien, { as: "giang_viens", foreignKey: "phong_ban_id" });
+  thoi_khoa_bieu.belongsTo(giang_vien, { as: "giang_vien_detail", targetKey: "ma_giang_vien", foreignKey: "ma_giang_vien" });
+  giang_vien.hasMany(thoi_khoa_bieu, { as: "thoi_khoa_bieus", sourceKey: "ma_giang_vien", foreignKey: "ma_giang_vien" });
   diem.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id" });
   sinh_vien.hasMany(diem, { as: "diems", foreignKey: "sinh_vien_id" });
   khen_thuong_ky_luat.belongsTo(sinh_vien, { as: "sinh_vien", foreignKey: "sinh_vien_id" });

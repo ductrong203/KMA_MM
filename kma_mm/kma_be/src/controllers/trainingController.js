@@ -6,15 +6,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 const createTraining = async (req, res) => {
   try {
     const { code, name } = req.body;
@@ -43,7 +35,7 @@ const createTraining = async (req, res) => {
     if (response) {
       let inforActivity = {
         username: userN,
-        role: mapRole[userR],
+        role: getRoleName(userR),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: `Người dùng ${userN}  đã tạo thành công hệ đào tạo  ${response.data.ten_he_dao_tao} `,
@@ -88,7 +80,7 @@ const updateTraining = async (req, res) => {
     if (response) {
       let inforActivity = {
         username: userN,
-        role: mapRole[userR],
+        role: getRoleName(userR),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: getDiffData(oldData.dataValues, newData.dataValues),

@@ -7,15 +7,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 class ThoiKhoaBieuController {
   static async getAll(req, res) {
@@ -79,7 +71,7 @@ class ThoiKhoaBieuController {
         if (data) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN}  đã tạo thời khóa biểu kì ${req.body.ky_hoc} môn ${monHoc} cho lớp ${lop} `,
@@ -145,7 +137,7 @@ class ThoiKhoaBieuController {
           }
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: getDiffData(oldData, newData),
@@ -189,7 +181,7 @@ class ThoiKhoaBieuController {
 
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN}  đã xóa thời khóa biểu kì ${kyHoc} môn ${monHoc} của lớp ${lop}`,

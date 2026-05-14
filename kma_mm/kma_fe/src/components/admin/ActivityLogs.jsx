@@ -26,6 +26,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { getLogActivity } from "../../Api_controller/Service/adminService";
+import { getRoleName, ROLE_MAPPING, ROLE_LABELS, getRoleLabel } from "../../constants/roleEnum";
 
 // Component hiển thị bảng động cho is_list = 1
 const DynamicTableView = ({ data }) => {
@@ -339,16 +340,7 @@ const ActivityLogs = () => {
     };
 
     const navigate = useNavigate();
-    const roleMapping = {
-        daoTao: "Đào tạo",
-        khaoThi: "Khảo thí",
-        quanLiSinhVien: "Quản lý sinh viên",
-        unknown: "Ẩn danh",
-        giamDoc: "Giám đốc",
-        sinhVien: "Sinh viên",
-        admin: "Admin",
-        lanhDaoDuyet: "Lãnh đạo duyệt",
-    };
+    
 
     const actionMap = {
         POST: "Tạo mới",
@@ -503,7 +495,7 @@ const ActivityLogs = () => {
                     sx={{ flex: 1, minWidth: '200px' }}
                 >
                     <MenuItem value="">Tất cả các quyền</MenuItem>
-                    {Object.entries(roleMapping).map(([key, value]) => (
+                    {Object.entries(ROLE_LABELS).map(([key, value]) => (
                         <MenuItem key={key} value={key}>
                             {value}
                         </MenuItem>
@@ -575,7 +567,7 @@ const ActivityLogs = () => {
                                 <TableRow key={log.ID}>
                                     <TableCell>{indexOfFirstLog + index + 1}</TableCell>
                                     <TableCell>{log.Username}</TableCell>
-                                    <TableCell>{roleMapping[log.Role]}</TableCell>
+                                    <TableCell>{getRoleLabel(log.Role)}</TableCell>
                                     <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
                                     <TableCell>
                                         <Box
@@ -662,7 +654,7 @@ const ActivityLogs = () => {
                                         <strong>Tên tài khoản:</strong> {selectedLog.Username}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                        <strong>Quyền:</strong> {roleMapping[selectedLog.Role]}
+                                        <strong>Quyền:</strong> {getRoleLabel(selectedLog.Role)}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}

@@ -6,15 +6,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 class LopController {
   static async create(req, res) {
@@ -34,7 +26,7 @@ class LopController {
       if (newLop) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã tạo thành công lớp có mã ${newLop.ma_lop} `,
@@ -107,7 +99,7 @@ class LopController {
       if (updatedLop) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Chuyển khoa đào tạo: ${oldTenKhoa} => ${newTenKhoa}`,
@@ -142,7 +134,7 @@ class LopController {
       if (deletedLop) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã xóa thành công mã lớp ${maLop} `,

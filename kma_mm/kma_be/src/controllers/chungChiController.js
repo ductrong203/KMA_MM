@@ -8,15 +8,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 exports.layDanhSachLoaiChungChi = async (req, res) => {
   try {
@@ -130,7 +122,7 @@ exports.taoChungChi = async (req, res) => {
       if (ketQua) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã tạo chứng chỉ ${loaiChungChi} (${tinhTrang}) cho sinh viên ${hoTen} lớp ${lop} `,
@@ -246,7 +238,7 @@ exports.chinhSuaChungChi = async (req, res) => {
         }
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: getDiffData(oldData, newData),
@@ -298,7 +290,7 @@ exports.xoaChungChi = async (req, res) => {
       if (ketQua) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã xóa chứng chỉ ${loaiChungChi} của sinh viên ${hoTen}`,
@@ -338,7 +330,7 @@ exports.taoLoaiChungChi = async (req, res) => {
       if (ketQua) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN} đã tạo thành công chứng chỉ ${req.body.ten_loai_chung_chi} ${req.body.xet_tot_nghiep == false ? "không xét tốt nghiệp" : "xét tốt nghiệp"}`,
@@ -435,7 +427,7 @@ exports.xoaLoaiChungChi = async (req, res) => {
       if (ketQua) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã xóa thành công loại chứng chỉ ${loaiChungChi}`,
@@ -482,7 +474,7 @@ exports.importChungChi = async (req, res) => {
       if (ketQua.success > 0) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN} đã import ${ketQua.success} chứng chỉ`,

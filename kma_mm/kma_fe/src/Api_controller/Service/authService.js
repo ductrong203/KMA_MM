@@ -7,21 +7,10 @@ export const login = async (username, password) => {
     }
     const response = await api.post("/auth/login", { username, password });
     const { access_token, data } = response.data;
-    // Bảng ánh xạ role từ API sang tên vai trò
-    const roleMapping = {
-        1: "training",
-        2: "examination",
-        3: "student_manage",
-        4: "library",
-        5: "director",
-        6: "sv",
-        7: "admin",
-        8: "lanhDaoDuyet",
-    };
-    // Lấy tên role từ roleMapping
-    const roleName = roleMapping[data.role];
-    if (!roleName) {
-        throw new Error("Role không hợp lệ."); // Xử lý lỗi nếu role không xác định
+    const { getRoleName } = await import("../../constants/roleEnum");
+    const roleName = getRoleName(data.role);
+    if (!roleName || roleName === "unknown") {
+        throw new Error("Role không hợp lệ.");
     }
     // Lưu token và thông tin người dùng vào localStorage
     localStorage.setItem("access_token", access_token);
@@ -73,6 +62,16 @@ export const getDetailUserById = async (id) => {
     const response = await api.get(`/auth/get-detail-user/${id}`)
     return response.data
 }
+
+export const updateUser = async (id, data) => {
+    try {
+        const response = await api.put(`/auth/update-user/${id}`, data);
+        return response;
+    } catch (error) {
+        console.error("Error in updateUser:", error);
+        throw error;
+    }
+};
 
 export const changeUserPassWord = async (id, data) => {
     try {

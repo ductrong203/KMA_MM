@@ -6,15 +6,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 class KhoaDaoTaoController {
   static async create(req, res) {
@@ -29,7 +21,7 @@ class KhoaDaoTaoController {
       if (khoaDaoTao) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã tạo thành công khoa đào tạo  ${khoaDaoTao.ten_khoa} `,
@@ -99,7 +91,7 @@ class KhoaDaoTaoController {
       if (updatedKhoa) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: getDiffData(oldData.dataValues, newData.dataValues),
@@ -135,7 +127,7 @@ class KhoaDaoTaoController {
       if (result) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã xóa thành công khoa đào tạo  ${khoaDaoTao} `,

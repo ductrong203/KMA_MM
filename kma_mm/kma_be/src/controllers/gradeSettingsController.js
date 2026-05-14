@@ -3,15 +3,7 @@ const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { verifyAccessToken } = require("../utils/decodedToken");
 const { getDiffData } = require("../utils/getDiffData");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 
 const { QuyDinhDiem } = db;
 // Sử dụng console thay vì logger vì module logger chưa được cài đặt đúng cách
@@ -128,7 +120,7 @@ exports.updateGradeSettings = async (req, res) => {
       if (newSettings) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: getDiffData(newData, oldData),

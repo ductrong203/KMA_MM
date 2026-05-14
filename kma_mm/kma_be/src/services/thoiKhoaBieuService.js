@@ -108,7 +108,7 @@ class ThoiKhoaBieuService {
   }
 
   static async create(data) {
-    const { lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, ngay_hoc, ghi_chu, trang_thai, ky_hoc } = data;
+    const { lop_id, mon_hoc_id, giang_vien, ma_giang_vien, phong_hoc, tiet_hoc, ngay_hoc, ghi_chu, trang_thai, ky_hoc } = data;
 
     const lopExist = await lop.findByPk(lop_id);
     if (!lopExist) throw new Error('Lớp không tồn tại.');
@@ -125,11 +125,11 @@ class ThoiKhoaBieuService {
       return { skipped: true, message: `Môn học đã tồn tại trong TKB`, existingId: existingTKB.id };
     }
 
-    const newTKB = await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien, phong_hoc, tiet_hoc, ngay_hoc, ghi_chu, trang_thai, ky_hoc });
+    const newTKB = await thoi_khoa_bieu.create({ lop_id, mon_hoc_id, giang_vien, ma_giang_vien, phong_hoc, tiet_hoc, ngay_hoc, ghi_chu, trang_thai, ky_hoc });
     return { skipped: false, data: newTKB };
   }
 
-  static async createAll({ lop_id, giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc, khoa_dao_tao_id }) {
+  static async createAll({ lop_id, giang_vien, ma_giang_vien, phong_hoc, tiet_hoc, trang_thai, ky_hoc, khoa_dao_tao_id }) {
     try {
       // Kiểm tra các trường bắt buộc
       if (!lop_id || !ky_hoc || !khoa_dao_tao_id) {
@@ -168,6 +168,7 @@ class ThoiKhoaBieuService {
               lop_id,
               mon_hoc_id: mon.id,
               giang_vien,
+              ma_giang_vien,
               phong_hoc,
               tiet_hoc,
               trang_thai: trang_thai || '1', // Giá trị mặc định
@@ -349,7 +350,7 @@ class ThoiKhoaBieuService {
             attributes: ['id', 'ten_mon_hoc', 'ma_mon_hoc', 'so_tin_chi']
           }
         ],
-        attributes: ['id', 'ky_hoc', 'is_locked', 'trang_thai', 'giang_vien']
+        attributes: ['id', 'ky_hoc', 'is_locked', 'trang_thai', 'giang_vien', 'ma_giang_vien']
       });
 
       return results;

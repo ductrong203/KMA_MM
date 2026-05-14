@@ -37,6 +37,7 @@ import QuanLyMonHoc from "./components/Mon Hoc/QuanLyMonHoc";
 import QuanLyChungChi from "./components/QuanLyChungChi/QuanLyChungChi";
 
 import { ToastContainer } from 'react-toastify';
+import { getRoleTitle } from "./constants/roleEnum";
 const App = () => {
   // Lấy role từ localStorage khi khởi động
   const [role, setRole] = useState(localStorage.getItem("role") || "");
@@ -264,7 +265,7 @@ const App = () => {
           path={`/${role}/info`}
           element={
             <PrivateRoute role={role} allowedRoles={[`${role}`]}>
-              <Layout Info={info} title={`${role} dashboard`}>
+              <Layout Info={info} title={`HỆ QUẢN LÝ ${getRoleTitle(role)}`}>
                 <UserInfo />
               </Layout>
             </PrivateRoute>

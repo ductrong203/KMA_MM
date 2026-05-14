@@ -4,15 +4,7 @@ const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 class KeHoachMonHocController {
   static async getAll(req, res) {
     try {
@@ -77,7 +69,7 @@ class KeHoachMonHocController {
       if (data) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN} đã tạo thành công kế hoạch cho  môn học ${monHoc} của kì ${data.ky_hoc} thuộc khoa đào tạo ${khoaDaoTao} `,
@@ -107,7 +99,7 @@ class KeHoachMonHocController {
       if (data) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `kế hoạch môn học này được chuyển từ chuyển từ kỳ học ${oldData} sang kỳ học ${newData} `,
@@ -139,7 +131,7 @@ class KeHoachMonHocController {
       if (result) {
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: `Người dùng ${userN}  đã xóa thành công kế hoạch môn học cho môn ${monHoc} kỳ học ${kyHoc}`,

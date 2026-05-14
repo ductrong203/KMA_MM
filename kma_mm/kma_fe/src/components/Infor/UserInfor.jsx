@@ -12,14 +12,15 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import PersonIcon from "@mui/icons-material/Person";
 import LockIcon from "@mui/icons-material/Lock";
-import { changeUserPassWord, getDetailUserById } from "../../Api_controller/Service/authService";
+import { changeUserPassWord, getDetailUserById, updateUser } from "../../Api_controller/Service/authService";
+import { getRoleName, getRoleLabel } from "../../constants/roleEnum";
 
 
 const UserInfo = () => {
     const [isEditing, setIsEditing] = useState(false); // Trạng thái chỉnh sửa
     const [userInfo, setUserInfo] = useState({
         id: "",
-        name: "",
+        ho_ten: "",
         username: "",
         role: "",
         createdAt: "",
@@ -34,16 +35,7 @@ const UserInfo = () => {
     });
 
     // Map role to readable string
-    const roleMapping = {
-        1: "Training",
-        2: "Examination",
-        3: "Student Management",
-        4: "Library",
-        5: "Director",
-        6: "Student",
-        7: "Admin",
-        8: "lanhDaoDuyet",
-    };
+    
 
     // Lấy thông tin cá nhân từ API
     useEffect(() => {
@@ -74,7 +66,29 @@ const UserInfo = () => {
 
     // Lưu thông tin đã chỉnh sửa
     const handleSave = async () => {
-        console.log("Thông tin cập nhật:", editedInfo);
+        try {
+            const id = localStorage.getItem("id");
+            if (!id) {
+                alert("Không tìm thấy ID người dùng!");
+                return;
+            }
+            
+            const response = await updateUser(id, { 
+                ho_ten: editedInfo.ho_ten, 
+                username: editedInfo.username 
+            });
+            
+            if (response.status === 200) {
+                alert("Cập nhật thông tin thành công!");
+                setUserInfo(editedInfo);
+                setIsEditing(false);
+            } else {
+                alert("Cập nhật không thành công!");
+            }
+        } catch (error) {
+            console.error("Error updating user info:", error);
+            alert("Đã xảy ra lỗi khi cập nhật thông tin!");
+        }
     };
 
     // Xử lý thay đổi mật khẩu
@@ -105,7 +119,7 @@ const UserInfo = () => {
 
             if (response.status === 200) {
                 alert("Đổi mật khẩu thành công!");
-                setIsPasswordModalOpen(false); // Đóng modal
+                setIsPasswordModalOpen(false) // Đóng modal
                 setPasswords({
                     currentPassword: "",
                     newPassword: "",
@@ -154,13 +168,13 @@ const UserInfo = () => {
                 </Typography>
                 {isEditing ? (
                     <TextField
-                        value={editedInfo.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
+                        value={editedInfo.ho_ten || ""}
+                        onChange={(e) => handleChange("ho_ten", e.target.value)}
                         variant="outlined"
                         fullWidth
                     />
                 ) : (
-                    <Typography>{userInfo.name}</Typography>
+                    <Typography>{userInfo.ho_ten}</Typography>
                 )}
 
 
@@ -171,7 +185,7 @@ const UserInfo = () => {
                 </Typography>
                 {isEditing ? (
                     <TextField
-                        value={editedInfo.username}
+                        value={editedInfo.username || ""}
                         onChange={(e) => handleChange("username", e.target.value)}
                         variant="outlined"
                         fullWidth
@@ -184,7 +198,7 @@ const UserInfo = () => {
                 <Typography variant="subtitle1" fontWeight="bold">
                     Quyền hạn
                 </Typography>
-                <Typography>{roleMapping[userInfo.role]}</Typography>
+                <Typography>{getRoleLabel(userInfo.role)}</Typography>
 
                 {/* Ngày tạo */}
                 <Typography variant="subtitle1" fontWeight="bold">

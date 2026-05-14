@@ -8,15 +8,7 @@ const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { getDiffData } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 // Đảm bảo thư mục exports/sinhvien tồn tại
 const exportDir = path.join(__dirname, "..", "exports", "sinhvien");
 if (!fs.existsSync(exportDir)) {
@@ -38,7 +30,7 @@ class SinhVienController {
         if (sinhVien) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN}  đã thêm thành công sinh viên có mã ${req.body.ma_sinh_vien} lớp ${lop} thuộc đối tượng quản lý ${doiTuong}`,
@@ -248,7 +240,7 @@ class SinhVienController {
           }
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `${getDiffData(oldData, newData)}`,
@@ -363,7 +355,7 @@ class SinhVienController {
         if (result) {
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: `Người dùng ${userN}  đã nhập danh sách gồm ${result.newCount} sinh viên vào lớp có mã ${lop} `,
@@ -520,7 +512,7 @@ class SinhVienController {
           const description = `Cập nhật trạng thái đồ án tốt nghiệp của sinh viên ${classInfo} - Tổng số sinh viên thay đổi: ${countSinhVien}`;
           let inforActivity = {
             username: userN,
-            role: mapRole[userR],
+            role: getRoleName(userR),
             action: req.method,
             endpoint: req.originalUrl,
             reqData: extraData,

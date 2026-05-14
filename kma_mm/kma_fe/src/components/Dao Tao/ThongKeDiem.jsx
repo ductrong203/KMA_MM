@@ -754,12 +754,12 @@ const ThongKeDiem = () => {
             {exportType === 'kyHoc' ? (
               <TextField
                 fullWidth
-                label="Số kỳ học"
+                label="Kỳ học"
                 type="number"
                 value={exportKyHoc}
                 onChange={(e) => setExportKyHoc(e.target.value)}
-                placeholder="Nhập số kỳ học (ví dụ: 1, 2, 3...)"
-                inputProps={{ min: 1, max: numberOfSemesters || 8 }}
+                placeholder="Nhập kỳ học (ví dụ: 1, 2, 3...)"
+                inputProps={{ min: 1, max: numberOfSemesters || 10 }}
               />
             ) : (
               <TextField

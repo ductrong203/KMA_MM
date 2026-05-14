@@ -4,15 +4,7 @@ const { logActivity } = require("../services/activityLogService");
 const { getFieldById } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData } = require("../utils/getDiffData");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 const register = async (req, res) => {
   try {
     const { username, password, confirmPassword, ho_ten } = req.body;
@@ -36,10 +28,10 @@ const register = async (req, res) => {
     if (response) {
       let inforActivity = {
         username: userN,
-        role: mapRole[req.user.role],
+        role: getRoleName(req.user.role),
         action: req.method,
         endpoint: req.originalUrl,
-        reqData: `Người dùng ${userN} đã tạo tài khoản ${username} cho hệ ${mapRole[response?.data?.role]} `,
+        reqData: `Người dùng ${userN} đã tạo tài khoản ${username} cho hệ ${getRoleName(response?.data?.role)} `,
         response_status: 200,
         resData: "Đăng kí thành công",
         ip: req._remoteAddress,
@@ -97,10 +89,10 @@ const deleteUser = async (req, res) => {
     if (reponse) {
       let inforActivity = {
         username: userN1,
-        role: mapRole[req.user.role],
+        role: getRoleName(req.user.role),
         action: req.method,
         endpoint: req.originalUrl,
-        reqData: `Người dùng ${userN1} đã xóa tài khoản ${userN2} của hệ ${mapRole[roleN2]} `,
+        reqData: `Người dùng ${userN} đã xóa tài khoản ${userN2} của hệ ${getRoleName(roleN2)} `,
         response_status: 200,
         resData: "Xóa tài khoản thành công",
         ip: req._remoteAddress,
@@ -156,12 +148,12 @@ const updateUser = async (req, res) => {
       console.log(oldData.dataValues, "$$$$", newData.dataValues);
       let inforActivity = {
         username: userN1,
-        role: mapRole[req.user.role],
+        role: getRoleName(req.user.role),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: getDiffData(oldData.dataValues, newData.dataValues),
         response_status: 200,
-        resData: `Cập nhật tài khoản ${userN2} của hệ ${mapRole[roleN2]} thành công`,
+        resData: `Cập nhật tài khoản ${userN2} của hệ ${getRoleName(roleN2)} thành công`,
         ip: req._remoteAddress,
 
       }
@@ -257,6 +249,45 @@ const get_logs = async (req, res) => {
 
 }
 
+const resetPassword = async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "User ID is required!",
+      });
+    }
+    const response = await UserService.resetPassword(id);
+
+    // Ghi log hoạt động
+    let adminName = await getFieldById("users", req.user.id, "username");
+    let targetUserName = await getFieldById("users", id, "username");
+    let targetRole = await getFieldById("users", id, "role");
+
+    if (response.status === "OK") {
+      let inforActivity = {
+        username: adminName,
+        role: getRoleName(req.user.role),
+        action: "RESET_PASSWORD",
+        endpoint: req.originalUrl,
+        reqData: `Admin ${adminName} đã đặt lại mật khẩu cho ${targetUserName} (${getRoleName(targetRole)})`,
+        response_status: 200,
+        resData: "Đặt lại mật khẩu thành công",
+        ip: req._remoteAddress,
+      };
+      await logActivity(inforActivity);
+    }
+
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(500).json({
+      status: "ERR",
+      message: error.message || "Something went wrong!",
+    });
+  }
+};
+
 module.exports = {
   loginUser,
   refreshToken,
@@ -267,5 +298,5 @@ module.exports = {
   updateUser,
   changePassword,
   get_logs,
-
+  resetPassword,
 };

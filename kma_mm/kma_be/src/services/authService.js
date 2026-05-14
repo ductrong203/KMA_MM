@@ -258,6 +258,27 @@ const get_logs = async (role, startDate, endDate) => {
   }
 };
 
+const resetPassword = async (id) => {
+  try {
+    const user = await users.findOne({ where: { id } });
+    if (!user) {
+      return {
+        status: "ERR",
+        message: "User is not defined!",
+      };
+    }
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash("123", saltRounds);
+    await users.update({ password: hashedPassword }, { where: { id } });
+    return {
+      status: "OK",
+      message: "Đặt lại mật khẩu thành công về '123'",
+    };
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
   register,
   loginUser,
@@ -267,5 +288,5 @@ module.exports = {
   updateUser,
   changePassword,
   get_logs,
-
+  resetPassword,
 };

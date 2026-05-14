@@ -33,3 +33,13 @@ export const getLogActivity = async (role, startDate, endDate) => {
     });
     return response; 
 };
+
+export const resetPassword = async (id) => {
+    try {
+        const response = await api.post(`/auth/reset-password/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        throw error;
+    }
+};

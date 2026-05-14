@@ -6,15 +6,7 @@ const { getFieldById, getChucVuDiaDiem } = require("../utils/detailData");
 const { users } = require("../models");
 const { getDiffData, getDiffDataDetailed } = require("../utils/getDiffData");
 const { verifyAccessToken } = require("../utils/decodedToken");
-const mapRole = {
-  1: "daoTao",
-  2: "khaoThi",
-  3: "quanLiSinhVien",
-  5: "giamDoc",
-  6: "sinhVien",
-  7: "admin",
-  8: "lanhDaoDuyet"
-}
+const { getRoleName } = require("../enums/roleEnum");
 const createGiangVien = async (req, res) => {
   try {
     console.log(req.body);
@@ -54,7 +46,7 @@ const createGiangVien = async (req, res) => {
 
       let inforActivity = {
         username: userN,
-        role: mapRole[userR],
+        role: getRoleName(userR),
         action: req.method,
         endpoint: req.originalUrl,
         reqData: `Người dùng ${userN} đã thêm ${chucVu} có mã giảng viên là ${maGiangVien} với tên tài khoản là ${username} ; ${diaDiem}`,
@@ -149,7 +141,7 @@ const updateGiangVien = async (req, res) => {
         console.log("#################################", getDiffDataDetailed(oldD, newD));
         let inforActivity = {
           username: userN,
-          role: mapRole[userR],
+          role: getRoleName(userR),
           action: req.method,
           endpoint: req.originalUrl,
           reqData: getDiffData(oldD, newD),

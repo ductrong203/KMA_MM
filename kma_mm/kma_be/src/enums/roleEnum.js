@@ -6,7 +6,7 @@ const ROLES = Object.freeze({
   GIAM_DOC: 5,
   SINH_VIEN: 6,
   ADMIN: 7,
-  LanhDaoDuyet: 8
+  LANH_DAO_DUYET: 8
 });
 
 const ROLE_NAMES = Object.freeze({
@@ -17,7 +17,7 @@ const ROLE_NAMES = Object.freeze({
   [ROLES.GIAM_DOC]: "giamDoc",
   [ROLES.SINH_VIEN]: "sinhVien",
   [ROLES.ADMIN]: "admin",
-  [ROLES.LanhDaoDuyet]: "lanhDaoDuyet"
+  [ROLES.LANH_DAO_DUYET]: "lanhDaoDuyet"
 });
 
 const ROLE_LABELS = Object.freeze({
@@ -28,7 +28,7 @@ const ROLE_LABELS = Object.freeze({
   [ROLES.GIAM_DOC]: "Giám Đốc",
   [ROLES.SINH_VIEN]: "Sinh Viên",
   [ROLES.ADMIN]: "Quản Trị Viên",
-  [ROLES.LanhDaoDuyet]: "Lãnh Đạo Duyệt"
+  [ROLES.LANH_DAO_DUYET]: "Lãnh Đạo Duyệt"
 });
 
 /**

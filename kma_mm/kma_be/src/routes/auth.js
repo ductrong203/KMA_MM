@@ -21,7 +21,8 @@ router.get(
   authUSerMiddleWare,
   authController.getDetailUser
 );
-router.put("/update-user/:id", authAdminMiddleWare, authController.updateUser);
+router.put("/update-user/:id", authUSerMiddleWare, authController.updateUser);
+router.post("/reset-password/:id", authAdminMiddleWare, authController.resetPassword);
 router.put(
   "/change-password/:id",
   authUSerMiddleWare,
