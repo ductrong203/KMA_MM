@@ -679,6 +679,20 @@ function DieuKienTotNghiep() {
     return (
       <Box sx={{ p: 2, bgcolor: 'grey.50', mt: 1, borderRadius: 1 }}>
         <Grid container spacing={2}>
+          {graduationInfo.dieu_kien_tot_nghiep.is_dang_hoc_valid === false && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="error" gutterBottom>
+                Trạng thái học tập:
+              </Typography>
+              <Chip
+                size="small"
+                label="Sinh viên đã bị buộc thôi học / nghỉ học"
+                color="error"
+                icon={<Cancel />}
+              />
+            </Grid>
+          )}
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               <School sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
