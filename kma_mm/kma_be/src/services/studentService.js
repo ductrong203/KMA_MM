@@ -33,7 +33,7 @@ class SinhVienService {
     try {
       const sv = await sinh_vien.findByPk(id);
       if (!sv) return null;
-      
+
       await sv.update(data);
       return sv;
     } catch (error) {
@@ -1204,7 +1204,8 @@ class SinhVienService {
       const missingCertTypesInfo = allRequiredCertTypes.filter(cert => missingCertTypes.includes(cert.id));
 
       // Xác định điều kiện tốt nghiệp
-      const isEligible = isTinChiValid && isChungChiValid;
+      const isDangHocValid = sinhVien.dang_hoc == 1;
+      const isEligible = isTinChiValid && isChungChiValid && isDangHocValid;
 
       // Trả về kết quả
       const result = {
@@ -1219,6 +1220,7 @@ class SinhVienService {
         dieu_kien_tot_nghiep: {
           du_tin_chi: isTinChiValid,
           co_chung_chi_xet_tot_nghiep: isChungChiValid,
+          is_dang_hoc_valid: isDangHocValid,
           du_dieu_kien: isEligible,
           chi_tiet: {
             tong_tin_chi_hien_tai: tongTinChi,
