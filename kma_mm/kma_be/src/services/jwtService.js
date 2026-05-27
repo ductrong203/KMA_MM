@@ -7,7 +7,7 @@ const generalAccessToken = async (payload) => {
       ...payload,
     },
     process.env.ACCESS_TOKEN,
-    { expiresIn: "300m" }
+    { expiresIn: "60m" }
   );
   return access_token;
 };
@@ -18,7 +18,7 @@ const generalRefreshToken = async (payload) => {
     },
     process.env.REFRESH_TOKEN,
     {
-      expiresIn: "365d",
+      expiresIn: "7d",
     }
   );
   return refresh_token;
@@ -36,7 +36,7 @@ const refreshTokenJwtService = (token) => {
               message: "the authentication",
             });
           }
-          const access_token = await genneralAccessToken({
+          const access_token = await generalAccessToken({
             id: decoded?.id,
             isAdmin: decoded?.isAdmin,
           });

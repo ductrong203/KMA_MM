@@ -39,7 +39,7 @@ class ThongTinQuanNhanController {
       const { id } = req.params;
       const thongTin = await ThongTinQuanNhanService.getThongTinByIdSinhVien(id);
       if (!thongTin) {
-        return res.status(404).json({ error: "Không tìm thấy thông tin quân nhân" });
+        return res.status(200).json(null);
       }
       return res.json(thongTin);
     } catch (error) {

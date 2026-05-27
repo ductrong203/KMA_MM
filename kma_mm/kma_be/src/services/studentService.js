@@ -759,17 +759,39 @@ class SinhVienService {
       if (ma_sinh_vien) sinhVienWhere.ma_sinh_vien = ma_sinh_vien;
       if (lop_id) sinhVienWhere.lop_id = lop_id;
 
+      // Common nested include for retrieving all details
+      const commonInclude = [
+        {
+          model: doi_tuong_quan_ly,
+          as: 'doi_tuong',
+          attributes: ['ten_doi_tuong']
+        },
+        {
+          model: lop,
+          as: 'lop',
+          attributes: ['ma_lop', 'khoa_dao_tao_id'],
+          include: [
+            {
+              model: khoa_dao_tao,
+              as: 'khoa_dao_tao',
+              attributes: ['ma_khoa', 'he_dao_tao_id'],
+              include: [
+                {
+                  model: danh_muc_dao_tao,
+                  as: 'he_dao_tao',
+                  attributes: ['id', 'ten_he_dao_tao']
+                }
+              ]
+            }
+          ]
+        }
+      ];
+
       // Simple case: only search by ma_sinh_vien or lop_id
       if ((ma_sinh_vien || lop_id) && !khoa_id && !he_dao_tao_id) {
         const sinhVienList = await sinh_vien.findAll({
           where: sinhVienWhere,
-          include: [
-            {
-              model: lop,
-              as: 'lop',
-              attributes: ['ma_lop', 'khoa_dao_tao_id'],
-            },
-          ],
+          include: commonInclude
         });
 
         if (!sinhVienList || sinhVienList.length === 0) {
@@ -820,9 +842,49 @@ class SinhVienService {
           ho_dem: sv.ho_dem,
           ten: sv.ten,
           lop: sv.lop?.ma_lop || sv.lop_id,
-          khoa: null,
-          he_dao_tao_id: null,
-          ten_he_dao_tao: null,
+          khoa: sv.lop?.khoa_dao_tao?.ma_khoa || null,
+          he_dao_tao_id: sv.lop?.khoa_dao_tao?.he_dao_tao?.id || null,
+          ten_he_dao_tao: sv.lop?.khoa_dao_tao?.he_dao_tao?.ten_he_dao_tao || null,
+          ten_doi_tuong: sv.doi_tuong?.ten_doi_tuong || null,
+          gioi_tinh: sv.gioi_tinh,
+          que_quan: sv.que_quan,
+          lop_id: sv.lop_id,
+          doi_tuong_id: sv.doi_tuong_id,
+          dang_hoc: sv.dang_hoc,
+          ghi_chu: sv.ghi_chu,
+          so_dien_thoai: sv.so_dien_thoai,
+          email: sv.email,
+          ngay_sinh: sv.ngay_sinh,
+          so_tai_khoan: sv.so_tai_khoan,
+          ngan_hang: sv.ngan_hang,
+          chuc_vu: sv.chuc_vu,
+          CCCD: sv.CCCD,
+          ngay_cap_CCCD: sv.ngay_cap_CCCD,
+          noi_cap_CCCD: sv.noi_cap_CCCD,
+          ky_nhap_hoc: sv.ky_nhap_hoc,
+          ngay_vao_doan: sv.ngay_vao_doan,
+          ngay_vao_dang: sv.ngay_vao_dang,
+          ngay_vao_truong: sv.ngay_vao_truong,
+          ngay_ra_truong: sv.ngay_ra_truong,
+          tinh_thanh: sv.tinh_thanh,
+          quan_huyen: sv.quan_huyen,
+          phuong_xa_khoi: sv.phuong_xa_khoi,
+          dan_toc: sv.dan_toc,
+          ton_giao: sv.ton_giao,
+          quoc_tich: sv.quoc_tich,
+          to_hop_xet_tuyen: sv.to_hop_xet_tuyen,
+          diem_trung_tuyen: sv.diem_trung_tuyen,
+          quyet_dinh_trung_tuyen: sv.quyet_dinh_trung_tuyen,
+          ngay_ban_hanh_qd_trung_tuyen: sv.ngay_ban_hanh_qd_trung_tuyen,
+          nam_tot_nghiep_PTTH: sv.nam_tot_nghiep_PTTH,
+          thanh_phan_gia_dinh: sv.thanh_phan_gia_dinh,
+          doi_tuong_dao_tao: sv.doi_tuong_dao_tao,
+          dv_lien_ket_dao_tao: sv.dv_lien_ket_dao_tao,
+          dien_thoai_gia_dinh: sv.dien_thoai_gia_dinh,
+          dien_thoai_CQ: sv.dien_thoai_CQ,
+          khi_can_bao_tin_cho_ai: sv.khi_can_bao_tin_cho_ai,
+          noi_tru: sv.noi_tru,
+          ngoai_tru: sv.ngoai_tru,
           grade_history: gradeHistoryMap[sv.id] || []
         }));
       }
@@ -880,13 +942,7 @@ class SinhVienService {
 
       const sinhVienList = await sinh_vien.findAll({
         where: finalWhere,
-        include: [
-          {
-            model: lop,
-            as: 'lop',
-            attributes: ['ma_lop', 'khoa_dao_tao_id'],
-          },
-        ],
+        include: commonInclude
       });
 
       if (!sinhVienList || sinhVienList.length === 0) {
@@ -944,37 +1000,57 @@ class SinhVienService {
       }
 
       // Step 3: Get additional info for khoa and he_dao_tao
-      const result = [];
-      for (const sv of sinhVienList) {
-        let khoaInfo = null;
-        let heDaoTaoInfo = null;
-
-        if (sv.lop && sv.lop.khoa_dao_tao_id) {
-          khoaInfo = await khoa_dao_tao.findByPk(sv.lop.khoa_dao_tao_id, {
-            attributes: ['ma_khoa', 'he_dao_tao_id'],
-          });
-
-          if (khoaInfo && khoaInfo.he_dao_tao_id) {
-            heDaoTaoInfo = await danh_muc_dao_tao.findByPk(khoaInfo.he_dao_tao_id, {
-              attributes: ['id', 'ten_he_dao_tao'],
-            });
-          }
-        }
-
-        result.push({
-          id: sv.id,
-          ma_sinh_vien: sv.ma_sinh_vien,
-          ho_dem: sv.ho_dem,
-          ten: sv.ten,
-          lop: sv.lop?.ma_lop || sv.lop_id,
-          khoa: khoaInfo?.ma_khoa || null,
-          he_dao_tao_id: heDaoTaoInfo?.id || null,
-          ten_he_dao_tao: heDaoTaoInfo?.ten_he_dao_tao || null,
-          grade_history: gradeHistoryMap[sv.id] || []
-        });
-      }
-
-      return result;
+      return sinhVienList.map(sv => ({
+        id: sv.id,
+        ma_sinh_vien: sv.ma_sinh_vien,
+        ho_dem: sv.ho_dem,
+        ten: sv.ten,
+        lop: sv.lop?.ma_lop || sv.lop_id,
+        khoa: sv.lop?.khoa_dao_tao?.ma_khoa || null,
+        he_dao_tao_id: sv.lop?.khoa_dao_tao?.he_dao_tao?.id || null,
+        ten_he_dao_tao: sv.lop?.khoa_dao_tao?.he_dao_tao?.ten_he_dao_tao || null,
+        ten_doi_tuong: sv.doi_tuong?.ten_doi_tuong || null,
+        gioi_tinh: sv.gioi_tinh,
+        que_quan: sv.que_quan,
+        lop_id: sv.lop_id,
+        doi_tuong_id: sv.doi_tuong_id,
+        dang_hoc: sv.dang_hoc,
+        ghi_chu: sv.ghi_chu,
+        so_dien_thoai: sv.so_dien_thoai,
+        email: sv.email,
+        ngay_sinh: sv.ngay_sinh,
+        so_tai_khoan: sv.so_tai_khoan,
+        ngan_hang: sv.ngan_hang,
+        chuc_vu: sv.chuc_vu,
+        CCCD: sv.CCCD,
+        ngay_cap_CCCD: sv.ngay_cap_CCCD,
+        noi_cap_CCCD: sv.noi_cap_CCCD,
+        ky_nhap_hoc: sv.ky_nhap_hoc,
+        ngay_vao_doan: sv.ngay_vao_doan,
+        ngay_vao_dang: sv.ngay_vao_dang,
+        ngay_vao_truong: sv.ngay_vao_truong,
+        ngay_ra_truong: sv.ngay_ra_truong,
+        tinh_thanh: sv.tinh_thanh,
+        quan_huyen: sv.quan_huyen,
+        phuong_xa_khoi: sv.phuong_xa_khoi,
+        dan_toc: sv.dan_toc,
+        ton_giao: sv.ton_giao,
+        quoc_tich: sv.quoc_tich,
+        to_hop_xet_tuyen: sv.to_hop_xet_tuyen,
+        diem_trung_tuyen: sv.diem_trung_tuyen,
+        quyet_dinh_trung_tuyen: sv.quyet_dinh_trung_tuyen,
+        ngay_ban_hanh_qd_trung_tuyen: sv.ngay_ban_hanh_qd_trung_tuyen,
+        nam_tot_nghiep_PTTH: sv.nam_tot_nghiep_PTTH,
+        thanh_phan_gia_dinh: sv.thanh_phan_gia_dinh,
+        doi_tuong_dao_tao: sv.doi_tuong_dao_tao,
+        dv_lien_ket_dao_tao: sv.dv_lien_ket_dao_tao,
+        dien_thoai_gia_dinh: sv.dien_thoai_gia_dinh,
+        dien_thoai_CQ: sv.dien_thoai_CQ,
+        khi_can_bao_tin_cho_ai: sv.khi_can_bao_tin_cho_ai,
+        noi_tru: sv.noi_tru,
+        ngoai_tru: sv.ngoai_tru,
+        grade_history: gradeHistoryMap[sv.id] || []
+      }));
     } catch (error) {
       throw new Error(error.message);
     }

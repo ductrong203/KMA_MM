@@ -1,3 +1,4 @@
+const fs = require('fs');
 const DiemService = require('../services/diemService');
 const ExportGradeHocPhanService = require('../services/exportGradeHocPhanService');
 const { logDiem } = require("../utils/extraList");
@@ -223,47 +224,74 @@ class DiemController {
   }
 
   static async importExcel(req, res) {
+    let filePath;
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
       }
       const { lop_id, mon_hoc_id } = req.body;
-      const filePath = req.file.path;
+      filePath = req.file.path;
 
       const result = await DiemService.importExcel(filePath, { lop_id, mon_hoc_id });
       const data = await DiemService.update(result);
       res.json(data);
     } catch (error) {
       res.status(500).json({ message: error.message });
+    } finally {
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error("Lỗi khi xóa file tạm importExcel:", unlinkErr);
+        }
+      }
     }
   }
 
   static async importExcelCuoiKy(req, res) {
+    let filePath;
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
       }
       const { mon_hoc_id, khoa_dao_tao_id, lop_id } = req.body;
-      const filePath = req.file.path;
+      filePath = req.file.path;
       const result = await DiemService.importExcelCuoiKy(filePath, { mon_hoc_id, khoa_dao_tao_id, lop_id });
       res.json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
+    } finally {
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error("Lỗi khi xóa file tạm importExcelCuoiKy:", unlinkErr);
+        }
+      }
     }
   }
 
   // Import điểm thi lại (CK2)
   static async importExcelThiLai(req, res) {
+    let filePath;
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Vui lòng tải lên file Excel!" });
       }
       const { mon_hoc_id, khoa_dao_tao_id, lop_id } = req.body;
-      const filePath = req.file.path;
+      filePath = req.file.path;
       const result = await DiemService.importExcelThiLai(filePath, { mon_hoc_id, khoa_dao_tao_id, lop_id });
       res.json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
+    } finally {
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error("Lỗi khi xóa file tạm importExcelThiLai:", unlinkErr);
+        }
+      }
     }
   }
 

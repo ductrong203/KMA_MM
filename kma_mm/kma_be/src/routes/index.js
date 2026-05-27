@@ -41,31 +41,33 @@ const conversionRoute = require('./conversionRoutes');
 
 // const docsPhuLucBangRoute = require('./docsPhuLucBang');
 
+const { authRequired } = require("../middelWare/authMiddelWare");
+
 const routes = (app) => {
   // app.use(logActivity);
 
   app.use("/auth", authRouter);
-  app.use("/lop", lopRouter);
+  app.use("/lop", authRequired, lopRouter);
   //app.use()
-  app.use("/training", trainingRouter);
+  app.use("/training", authRequired, trainingRouter);
 
-  app.use("/student", studentRouter);
-  app.use("/doituongquanly", doiTuongQuanLyRouter);
-  app.use("/danhmuckhenkyluat", danhMucKhenKyLuatRouter);
-  app.use("/khenthuongkyluat", khenThuongKyLuatRouter);
-  app.use("/thongtinquannhan", thongTinQuanNhanRouter);
+  app.use("/student", authRequired, studentRouter);
+  app.use("/doituongquanly", authRequired, doiTuongQuanLyRouter);
+  app.use("/danhmuckhenkyluat", authRequired, danhMucKhenKyLuatRouter);
+  app.use("/khenthuongkyluat", authRequired, khenThuongKyLuatRouter);
+  app.use("/thongtinquannhan", authRequired, thongTinQuanNhanRouter);
 
-  app.use("/phong-ban", phongBanRouter);
-  app.use("/giang-vien", giangVienRouter);
-  app.use("/khoadaotao", khoaDaoTaoRouter);
-  app.use("/mon-hoc", monHocRouter);
+  app.use("/phong-ban", authRequired, phongBanRouter);
+  app.use("/giang-vien", authRequired, giangVienRouter);
+  app.use("/khoadaotao", authRequired, khoaDaoTaoRouter);
+  app.use("/mon-hoc", authRequired, monHocRouter);
 
-  app.use("/kehoachmonhoc", keHoachMonHocRouter);
-  app.use("/thoikhoabieu", thoiKhoaBieuRoute);
-  app.use('/diem', diemRoute);
-  app.use('/excel', excelRoute);
-  app.use('/excel-phu-luc-bang', excelPhuLucBangRoute);
-  app.use('/excel-docs', exportDocx);
+  app.use("/kehoachmonhoc", authRequired, keHoachMonHocRouter);
+  app.use("/thoikhoabieu", authRequired, thoiKhoaBieuRoute);
+  app.use('/diem', authRequired, diemRoute);
+  app.use('/excel', authRequired, excelRoute);
+  app.use('/excel-phu-luc-bang', authRequired, excelPhuLucBangRoute);
+  app.use('/excel-docs', authRequired, exportDocx);
 
   // app.use('/docs-phu-luc-bang', docsPhuLucBangRoute);
 
@@ -77,13 +79,13 @@ const routes = (app) => {
   //   app.use("schedule", scheduleRouter);
   //   app.use("library", libraryRouter);
   //   app.use("statistic", statisticRouter);
-  app.use('/chung-chi', chungChiRoute);
-  app.use('/loai-chung-chi', loaiChungChiRoute);
-  app.use('/chuong-trinh-dao-tao', chuongTrinhDaoTaoRoute);
-  app.use('/export-excel', exportExcelRoute);
-  app.use('/tot-nghiep', totNghiepRoute);
-  app.use('/grade-settings', gradeSettingsRoute);
-  app.use('/conversion-rules', conversionRoute);
-  app.use('/statistic', statisticRouter);
+  app.use('/chung-chi', authRequired, chungChiRoute);
+  app.use('/loai-chung-chi', authRequired, loaiChungChiRoute);
+  app.use('/chuong-trinh-dao-tao', authRequired, chuongTrinhDaoTaoRoute);
+  app.use('/export-excel', authRequired, exportExcelRoute);
+  app.use('/tot-nghiep', authRequired, totNghiepRoute);
+  app.use('/grade-settings', authRequired, gradeSettingsRoute);
+  app.use('/conversion-rules', authRequired, conversionRoute);
+  app.use('/statistic', authRequired, statisticRouter);
 };
 module.exports = routes;

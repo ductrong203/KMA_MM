@@ -6,9 +6,27 @@ const routes = require("./routes");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const db = require("./models");
 
 const app = express();
+
+app.use(helmet());
+
+// Thiết lập rate limit cho toàn bộ ứng dụng
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 200, // Tối đa 200 requests mỗi 15 phút từ 1 IP
+  message: {
+    status: "ERR",
+    message: "Quá nhiều yêu cầu từ địa chỉ IP này. Vui lòng thử lại sau 15 phút."
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb" }));
 const port = process.env.APPPORT;

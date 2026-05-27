@@ -61,8 +61,9 @@ const loginUser = async (req, res) => {
     const { refresh_token, ...newReponse } = response;
     res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
-      secure: false,
-      samesite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
     return res.status(200).json(newReponse);
   } catch (error) {

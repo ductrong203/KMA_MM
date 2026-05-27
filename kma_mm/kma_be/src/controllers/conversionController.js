@@ -7,12 +7,11 @@ const getConversionRules = async (req, res) => {
     try {
         const { he_dao_tao_id } = req.query;
 
-        if (!he_dao_tao_id) {
-            return res.status(400).json({ success: false, message: 'Thiếu he_dao_tao_id' });
-        }
+        const isChung = he_dao_tao_id === undefined || he_dao_tao_id === null || he_dao_tao_id === 'null' || he_dao_tao_id === 'NULL' || he_dao_tao_id === '';
+        const whereClause = isChung ? { he_dao_tao_id: null } : { he_dao_tao_id };
 
         const rules = await QuyDoiDiem.findAll({
-            where: { he_dao_tao_id },
+            where: whereClause,
             order: [['diem_min', 'DESC']] // Sort by highest score first
         });
 
@@ -30,12 +29,14 @@ const createConversionRule = async (req, res) => {
     try {
         const { he_dao_tao_id, diem_min, diem_max, diem_he_4, diem_chu, xep_loai } = req.body;
 
-        if (!he_dao_tao_id || diem_min === undefined || diem_max === undefined) {
+        if (diem_min === undefined || diem_max === undefined) {
             return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc' });
         }
 
+        const heDaoTaoIdVal = (he_dao_tao_id === undefined || he_dao_tao_id === null || he_dao_tao_id === 'null' || he_dao_tao_id === 'NULL' || he_dao_tao_id === '') ? null : he_dao_tao_id;
+
         const newRule = await QuyDoiDiem.create({
-            heDaoTaoId: he_dao_tao_id,
+            heDaoTaoId: heDaoTaoIdVal,
             diemMin: diem_min,
             diemMax: diem_max,
             diemHe4: diem_he_4,

@@ -439,6 +439,16 @@ const ActivityLogs = () => {
         console.log('Đã hủy lọc');
     };
 
+    const LOG_ROLE_LABELS = {
+        'admin': 'Quản trị viên',
+        'daoTao': 'Phòng đào tạo',
+        'khaoThi': 'Phòng khảo thí',
+        'giamDoc': 'Ban giám đốc',
+        'quanLiSinhVien': 'Quản lý sinh viên',
+        'sinhVien': 'Sinh viên',
+        'unknown': 'Không xác định'
+    };
+
     return (
         <Box sx={{ padding: 2 }}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -495,7 +505,7 @@ const ActivityLogs = () => {
                     sx={{ flex: 1, minWidth: '200px' }}
                 >
                     <MenuItem value="">Tất cả các quyền</MenuItem>
-                    {Object.entries(ROLE_LABELS).map(([key, value]) => (
+                    {Object.entries(LOG_ROLE_LABELS).filter(([k]) => k !== 'unknown').map(([key, value]) => (
                         <MenuItem key={key} value={key}>
                             {value}
                         </MenuItem>
@@ -567,7 +577,7 @@ const ActivityLogs = () => {
                                 <TableRow key={log.ID}>
                                     <TableCell>{indexOfFirstLog + index + 1}</TableCell>
                                     <TableCell>{log.Username}</TableCell>
-                                    <TableCell>{getRoleLabel(log.Role)}</TableCell>
+                                    <TableCell>{LOG_ROLE_LABELS[log.Role] || 'Khách'}</TableCell>
                                     <TableCell>{actionMap[(log.action).split(":")[0].trim()]}</TableCell>
                                     <TableCell>
                                         <Box
@@ -654,7 +664,7 @@ const ActivityLogs = () => {
                                         <strong>Tên tài khoản:</strong> {selectedLog.Username}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                        <strong>Quyền:</strong> {getRoleLabel(selectedLog.Role)}
+                                        <strong>Quyền:</strong> {LOG_ROLE_LABELS[selectedLog.Role] || 'Khách'}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         <strong>Hành động:</strong> {actionMap[(selectedLog.action).split(":")[0].trim()]}
