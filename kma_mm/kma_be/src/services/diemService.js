@@ -240,7 +240,7 @@ class DiemService {
         {
           model: thoi_khoa_bieu,
           as: 'thoi_khoa_bieu',
-          attributes: ['id', 'is_locked'], // Include is_locked
+          attributes: ['id', 'is_locked'], 
           include: [
             {
               model: mon_hoc,
@@ -559,6 +559,12 @@ class DiemService {
 
         const valTP1 = (p_TP1 !== null && p_TP1 !== '') ? Number(p_TP1) : null;
         const valTP2 = (p_TP2 !== null && p_TP2 !== '') ? Number(p_TP2) : null;
+
+        // Auto-calculate diem_gk from TP1+TP2 if not explicitly provided
+        // Formula: diem_gk = round((0.7 * TP1 + 0.3 * TP2 + 1e-9) * 10) / 10
+        if (valTP1 !== null && valTP2 !== null && updateData.diem_gk === undefined) {
+          updateData.diem_gk = Math.round((0.7 * valTP1 + 0.3 * valTP2 + 1e-9) * 10) / 10;
+        }
 
         if (valTP1 !== null || valTP2 !== null) {
           try {

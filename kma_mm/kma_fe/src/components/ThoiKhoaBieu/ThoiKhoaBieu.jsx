@@ -305,12 +305,12 @@ const ThoiKhoaBieu = () => {
                         ky_hoc: kyHoc,
                         lop_id: lopId,
                         mon_hoc_id: selectedMonHocIds[0],
-                        ma_giang_vien: giangVienId, // Changed to ma_giang_vien
-                        giang_vien: giangVien,
-                        phong_hoc: phongHoc,
-                        tiet_hoc: tietHoc,
-                        ngay_hoc: ngayHoc,
-                        ghi_chu: ghiChu,
+                        ma_giang_vien: giangVienId || null, // Changed to ma_giang_vien
+                        giang_vien: giangVien || null,
+                        phong_hoc: phongHoc || null,
+                        tiet_hoc: tietHoc || null,
+                        ngay_hoc: ngayHoc || null,
+                        ghi_chu: ghiChu || null,
                         trang_thai: trangThai,
                     };
                     await updateThoiKhoaBieu(editId, thoiKhoaBieuData);
@@ -322,12 +322,12 @@ const ThoiKhoaBieu = () => {
                             ky_hoc: kyHoc,
                             lop_id: lopId,
                             mon_hoc_id: monHocId,
-                            ma_giang_vien: giangVienId, // Changed to ma_giang_vien
-                            giang_vien: giangVien,
-                            phong_hoc: phongHoc,
-                            tiet_hoc: tietHoc,
-                            ngay_hoc: ngayHoc,
-                            ghi_chu: ghiChu,
+                            ma_giang_vien: giangVienId || null, // Changed to ma_giang_vien
+                            giang_vien: giangVien || null,
+                            phong_hoc: phongHoc || null,
+                            tiet_hoc: tietHoc || null,
+                            ngay_hoc: ngayHoc || null,
+                            ghi_chu: ghiChu || null,
                             trang_thai: trangThai,
                         };
                         return themThoiKhoaBieu(thoiKhoaBieuData);

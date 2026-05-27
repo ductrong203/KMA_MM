@@ -86,8 +86,31 @@ const authQuanLyHocVienMiddleWare = (req, res, next) => {
     }
   });
 };
+const authRequired = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({
+      status: "ERR",
+      Message: "Authentication failed. Token is missing.",
+    });
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(401).json({
+        status: "ERR",
+        Message: "Authentication failed. Token is invalid or expired.",
+      });
+    }
+    req.user = decoded ? decoded : "";
+    next();
+  });
+};
+
 module.exports = {
   authAdminMiddleWare,
   authUSerMiddleWare,
   authQuanLyHocVienMiddleWare,
+  authRequired,
 };
+
